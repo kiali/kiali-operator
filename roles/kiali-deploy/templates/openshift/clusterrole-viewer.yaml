@@ -1,79 +1,12 @@
-# NOTE: Changes to this file must be reflected in the OperatorHub.io CSV file
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kiali-operator
+  name: kiali-viewer
+  namespace: {{ kiali_vars.deployment.namespace }}
   labels:
-    app: kiali-operator
-    version: ${OPERATOR_VERSION_LABEL}
+    app: kiali
+    version: {{ kiali_vars.deployment.version_label }}
 rules:
-- apiGroups: [""]
-  resources:
-  - configmaps
-  - endpoints
-  - events
-  - persistentvolumeclaims
-  - pods
-  - serviceaccounts
-  - services
-  verbs:
-  - '*'
-- apiGroups: ["apps"]
-  resources:
-  - deployments
-  - replicasets
-  verbs:
-  - '*'
-- apiGroups: ["monitoring.coreos.com"]
-  resources:
-  - servicemonitors
-  verbs:
-  - create
-  - get
-- apiGroups: ["apps"]
-  resourceNames:
-  - kiali-operator
-  resources:
-  - deployments/finalizers
-  verbs:
-  - update
-- apiGroups: ["kiali.io"]
-  resources:
-  - '*'
-  verbs:
-  - '*'
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources:
-  - clusterrolebindings
-  - clusterroles
-  verbs:
-  - '*'
-- apiGroups: ["apiextensions.k8s.io"]
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - '*'
-- apiGroups: ["extensions"]
-  resources:
-  - ingresses
-  verbs:
-  - '*'
-- apiGroups: ["route.openshift.io"]
-  resources:
-  - routes
-  verbs:
-  - '*'
-- apiGroups: ["oauth.openshift.io"]
-  resources:
-  - oauthclients
-  verbs:
-  - '*'
-- apiGroups: ["monitoring.kiali.io"]
-  resources:
-  - monitoringdashboards
-  verbs:
-  - '*'
-# The permissions below are for Kiali itself; operator needs these so it can escalate when creating Kiali's roles
 - apiGroups: [""]
   resources:
   - configmaps
@@ -153,11 +86,8 @@ rules:
   - tracespans
   - zipkins
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
 - apiGroups: ["networking.istio.io"]
   resources:
@@ -166,22 +96,16 @@ rules:
   - serviceentries
   - virtualservices
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
 - apiGroups: ["authentication.istio.io"]
   resources:
   - meshpolicies
   - policies
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
 - apiGroups: ["rbac.istio.io"]
   resources:
@@ -190,11 +114,8 @@ rules:
   - servicerolebindings
   - serviceroles
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
 - apiGroups: ["apps.openshift.io"]
   resources:
