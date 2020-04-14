@@ -1,0 +1,51 @@
+# Developing Kiali Operator
+
+## Setting up your local git repositories
+
+The Kiali Operator source lives in its link:https://github.com/kiali/kiali-operator[own git repository], but because it is necessary for Kiali developers to use it, the Kiali Operator repository should be accessible in the link:https://github.com/kiali/kiali[Kiali git repo] via a softlink in the "operator" directory or just cloned right inside the "operator" directory.
+
+For example:
+
+```
+# Clone Kiali Operator in a local git repository location
+cd $HOME/source
+git clone git@github.com:kiali/kiali-operator.git
+
+# Go to your existing Kiali local git repository
+GOPATH=<your GO path to the Kiali project - something like $HOME/source/kiali>
+cd $GOPATH/src/github.com/kiali/kiali
+
+# Provide a link to your Kiali Operator local git repository
+ln -s $HOME/source/kiali-operator operator
+```
+
+This now makes it easy for Kiali developers to use the operator when working directly in the Kiali git repo. The Kiali git repo has all the necessary `make` targets to build, deploy, and test the Kiali Operator along with Kiali itself. This is very similiar to how things worked prior to moving the operator code to a separate git repo.
+
+The Kiali Operator git repo itself has a very small link:Makefile[] whose sole job is to build and push the Kiali Operator container image. This Makefile is used mainly for CI and release automation; developers typically will not need to use it.
+
+## Developing Kiali Operator While Working In Kiali Git Repo
+
+Assuming you set up your local git repositories as explained in the above section link:#setting-up-your-local-git-repositories[Setting up your local git repositories], then, as in the past, you can continue developing Kiali Operator features and bug fixes while working in the Kiali repo. So from a development perspective, the git repo the Kiali developer continues to work in remains the Kiali local git repo. In fact, if you are merely a consumer of the Kiali Operator code (that is, you do not plan on ever making any changes or commits to the operator code) you can stop reading now. Nothing changes in the way you work.
+
+If, however, a developer needs to make changes to the operator, because the Kiali Operator code really lives in a separate repo, the developer will need to create PRs to the Kiali Operator git repo (just like any other git repo you want to commit to). Simply use the same basic workflow and commands that you are used to using already when creating PRs - just remember you need to create a PR from within the Kiali local repo (if changes were made to it) and you need to create another PR from within the "operator" local repo (if changes were made to the operator code).
+
+## The Initial Kiali Operator Git Repo Creation
+
+This section documents how the Kiali Operator git repo was originally created. This only had to be performed one time and one time only. Developers and consumers of Kiali and Kiali Operator do not need to know any of this, so you can skip this section. This is here just for historical purposes.
+
+The new Kiali Operator git repo was created with a empty history. Once a repo was created, it then needed to be populated with the original operator code from the Kiali git repo while retaining all history. Here is how this was done:
+
+1. Go to a local git repository of the Kiali repo.
+2. Create a new branch to be used to populate the new Kiali Operator git repo: `git checkout -b split-operator-master origin/master`
+3. Extract only the operator files retaining all history: `git filter-branch --subdirectory-filter operator`
+4. Push the operator files to the Kiali Operator git repo's master branch: `git push --force -u git@github.com:kiali/kiali-operator.git split-operator-master:master`
+
+Analogous steps were done for the other branches `v1.0` and `v1.12`.
+
+The `operator` directory in the Kiali git repository is no longer used - it thus is removed and ignored, leaving room for developers to link in their working copy of their local Kiali Operator git repository.
+
+1. Go to a local git repository of the Kiali repo.
+2. Create a branch to create a PR with: `git checkout -b remove-operator origin/master`
+3. Delete the `operator` directory and ignore it to get it out of the way permanently: `rm -rf operator && echo operator >> .gitignore`
+4. Commit the change: `git commit -am "Remove and ignore the operator directory"`
+5. Push and create a PR from this remove-operator branch, then merge the PR to fully remove the operator from master.
