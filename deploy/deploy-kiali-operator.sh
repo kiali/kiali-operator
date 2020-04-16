@@ -590,6 +590,23 @@ resolve_latest_kiali_release() {
   fi
 }
 
+resolve_latest_kiali_operator_release() {
+  get_downloader
+  github_api_url="https://api.github.com/repos/kiali/kiali-operator/releases"
+  kiali_operator_version_we_want=$(${downloader} ${github_api_url} 2> /dev/null |\
+    grep  "tag_name" | \
+    sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | \
+    grep -v "snapshot" | \
+    sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | \
+    tail -n 1)
+  if [ -z "${kiali_operator_version_we_want}" ]; then
+    echo "ERROR: Failed to determine latest Kiali Operator release."
+    echo "Make sure this URL is accessible and returning valid results:"
+    echo ${github_api_url}
+    exit 1
+  fi
+}
+
 delete_kiali_cr() {
   local _name="$1"
   local _ns="$2"
@@ -686,11 +703,11 @@ fi
 # If asking for the last release of operator (which is the default), then pick up the latest release.
 # Note that you could ask for "latest" - that would pick up the current image built from master.
 if [ "${OPERATOR_IMAGE_VERSION}" == "lastrelease" ]; then
-  resolve_latest_kiali_release
-  echo "Will use the last Kiali operator release: ${kiali_version_we_want}"
-  OPERATOR_IMAGE_VERSION=${kiali_version_we_want}
+  resolve_latest_kiali_operator_release
+  echo "Will use the last Kiali operator release: ${kiali_operator_version_we_want}"
+  OPERATOR_IMAGE_VERSION=${kiali_operator_version_we_want}
   if [ "${OPERATOR_VERSION_LABEL}" == "lastrelease" ]; then
-    OPERATOR_VERSION_LABEL=${kiali_version_we_want}
+    OPERATOR_VERSION_LABEL=${kiali_operator_version_we_want}
   fi
 else
   if [ "${OPERATOR_IMAGE_VERSION}" == "latest" ]; then
@@ -915,7 +932,7 @@ apply_yaml() {
 apply_operator_resource() {
   local yaml_file="${1}.yaml"
   local yaml_path="${_OP_YAML_DIR}/${yaml_file}"
-  local yaml_url="https://raw.githubusercontent.com/kiali/kiali/${OPERATOR_VERSION_LABEL}/operator/deploy/${yaml_file}"
+  local yaml_url="https://raw.githubusercontent.com/kiali/kiali-operator/${OPERATOR_VERSION_LABEL}/deploy/${yaml_file}"
   apply_yaml ${yaml_path} ${yaml_url} ${OPERATOR_NAMESPACE}
 }
 
@@ -965,9 +982,9 @@ print_skip_kiali_create_msg() {
   echo "Skipping the automatic Kiali installation."
   echo "To install Kiali, create a Kiali custom resource in the namespace [$_ns]."
   echo "An example Kiali CR with all settings documented can be found here:"
-  echo "  https://raw.githubusercontent.com/kiali/kiali/${_branch}/operator/deploy/kiali/kiali_cr.yaml"
+  echo "  https://raw.githubusercontent.com/kiali/kiali-operator/${_branch}/deploy/kiali/kiali_cr.yaml"
   echo "To install Kiali with all default settings, you can run:"
-  echo "  ${CLIENT_EXE} apply -n ${_ns} -f https://raw.githubusercontent.com/kiali/kiali/${_branch}/operator/deploy/kiali/kiali_cr.yaml"
+  echo "  ${CLIENT_EXE} apply -n ${_ns} -f https://raw.githubusercontent.com/kiali/kiali-operator/${_branch}/deploy/kiali/kiali_cr.yaml"
   echo "Do not forget to create a secret if you wish to use an auth strategy of 'login' (This is"
   echo "the default setting when installing in Kubernetes but not OpenShift)."
   echo "An example would be:"

@@ -82,7 +82,7 @@ spec:
 #   "default", "v1.0", "v1.12"
 #
 # Refer to this file to see where these values are defined in the master branch:
-# https://github.com/kiali/kiali/tree/master/operator/playbooks/default-supported-images.yml
+# https://github.com/kiali/kiali-operator/tree/master/playbooks/default-supported-images.yml
 #
 # See the Kiali documentation to determine which of these versions support
 # the version of Istio you are installing Kiali with.
