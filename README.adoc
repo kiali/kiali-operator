@@ -1,0 +1,8 @@
+# kiali-operator
+
+This contains the Kiali Operator source. It has a small link:Makefile[] whose only job is to build the operator image
+and push the built image to Quay.io. Thus you can build releases directly from this repo.
+
+This git repo is meant to be used within the link:https://github.com/kiali/kiali[kiali/kiali] parent repo (as its "operator" subdirectory). That parent repo has additional Makefile targets to do more things with this operator such as run molecule tests and push the operator image to remote clusters for testing.
+
+For more details on how developers can consume and work with this Kiali Operator git repo, see link:DEVELOPING.adoc[]
