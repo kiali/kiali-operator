@@ -340,10 +340,17 @@
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_version': github_lastrelease.stdout}}, recursive=True) }}"
   when:
   - kiali_vars.deployment.image_version == "lastrelease"
+
+- name: Determine image version when it explicitly was configured as the operator_version
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_version': 'latest' if operator_version == 'master' else operator_version}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.image_version == "operator_version"
+
 - fail:
     msg: "Could not determine what the image version should be. Set deployment.image_version to a valid value"
   when:
-  - kiali_vars.deployment.image_version == ""
+  - kiali_vars.deployment.image_version == "" or kiali_vars.deployment.image_version == "unknown"
 
 - name: Determine version_label based on image_version
   set_fact:
