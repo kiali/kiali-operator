@@ -184,10 +184,13 @@
 #    This can be set to "latest" in which case the latest image is installed (which may or
 #    may not be a released version of Kiali). This is normally for developer use only.
 #    This can be set to "lastrelease" in which case the last Kiali release is installed.
+#    This can be set to "operator_version" in which case the version of Kiali to be
+#    installed will be the same version as that of the operator. Use with care - the
+#    operator version may not be the version of Kiali you want.
 #    Otherwise, you can set this to any valid Kiali version (such as "v1.0").
 #    NOTE: If this is set to "latest" then the KIALI_IMAGE_PULL_POLICY will be "Always".
 #    If you set this, you must make sure that image is supported by the operator.
-#    If left empty (the default), the operator will use a known supported image.
+#    If left empty (the default), the operator will use the last Kiali release.
 #    Default: ""
 #
 # ISTIO_NAMESPACE
