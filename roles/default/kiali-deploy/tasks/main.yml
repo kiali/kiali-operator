@@ -332,7 +332,7 @@
   - kiali_vars.deployment.ingress_enabled == False
 
 - name: Determine image version when last release is to be installed
-  shell: echo -n $(curl -s https://api.github.com/repos/kiali/kiali/releases 2> /dev/null | grep "tag_name" | sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | grep -v "snapshot" | sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | tail -n 1)
+  shell: echo -n $(curl -s https://api.github.com/repos/kiali/kiali-operator/releases 2> /dev/null | grep "tag_name" | sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | grep -v "snapshot" | sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | tail -n 1)
   register: github_lastrelease
   when:
   - kiali_vars.deployment.image_version == "lastrelease"

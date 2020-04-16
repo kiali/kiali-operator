@@ -112,7 +112,7 @@ spec:
 
     For quick descriptions of all the settings you can configure in the Kiali
     Custom Resource (CR), see the file
-    [kiali_cr.yaml](https://github.com/kiali/kiali/blob/v1.16.0/operator/deploy/kiali/kiali_cr.yaml)
+    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml)
 
     Note that the Kiali operator can be told to restrict Kiali's access to
     specific namespaces, or can provide to Kiali cluster-wide access to all
