@@ -37,7 +37,7 @@ clean:
 	    echo "You do not have operator-sdk installed in your PATH. Will use the one found here: ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	  else \
 	    echo "You do not have operator-sdk installed in your PATH. The binary will be downloaded to ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
-	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v0.17.0/operator-sdk-v0.17.0-x86_64-linux-gnu > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
+	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v0.17.0/operator-sdk-v0.17.0-$$(uname -m)-linux-gnu > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	    chmod +x "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	  fi ;\
 	fi
