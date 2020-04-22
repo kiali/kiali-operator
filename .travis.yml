@@ -1,0 +1,30 @@
+dist: xenial
+os: linux
+
+arch:
+  - amd64
+  - arm64
+
+language: python
+addons:
+  apt:
+    update: true
+    packages:
+      - python3
+      - python3-pip
+      - python3-setuptools
+
+before_install:
+  - pip3 install --upgrade pip
+  - pip3 install --upgrade operator-courier
+  - uname -a
+
+script:
+  # ensures we can build the operator on each supported architecture
+  - make build
+
+  # test the validity of the metadata in manifests
+  - operator-courier --version
+  - operator-courier --verbose verify manifests/kiali-ossm
+  - operator-courier --verbose verify manifests/kiali-community
+  - operator-courier --verbose verify manifests/kiali-upstream
