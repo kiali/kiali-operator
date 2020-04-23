@@ -3,7 +3,10 @@ os: linux
 
 arch:
   - amd64
-  - arm64
+  # It takes a very long time to spin up an ARM machine on travis.
+  # Because of this, it takes a long time before we can merge PRs.
+  # So this is disabled for now. We can re-enable if we need this.
+  #- arm64
 
 language: python
 addons:
