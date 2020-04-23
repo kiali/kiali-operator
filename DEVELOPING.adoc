@@ -19,6 +19,10 @@ cd $GOPATH/src/github.com/kiali/kiali
 ln -s $HOME/source/kiali-operator operator
 ```
 
+NOTE: If you want to clone directly into your kiali/kiali operator directory, you run something like: `git clone git@github.com:kiali/kiali-operator.git $GOPATH/src/github.com/kiali/kiali/operator`
+
+NOTE: If you ever checkout an older branch from your kiali git repo, your operator directory will get replaced with the old branch's original operator content. When you then checkout the master branch again, your operator directory will be deleted. At this point, you will need to either create your softlink again or re-clone the git repo.
+
 This now makes it easy for Kiali developers to use the operator when working directly in the Kiali git repo. The Kiali git repo has all the necessary `make` targets to build, deploy, and test the Kiali Operator along with Kiali itself. This is very similiar to how things worked prior to moving the operator code to a separate git repo.
 
 The Kiali Operator git repo itself has a very small link:Makefile[] whose sole job is to build and push the Kiali Operator container image. This Makefile is used mainly for CI and release automation; developers typically will not need to use it.
@@ -28,6 +32,8 @@ The Kiali Operator git repo itself has a very small link:Makefile[] whose sole j
 Assuming you set up your local git repositories as explained in the above section link:#setting-up-your-local-git-repositories[Setting up your local git repositories], then, as in the past, you can continue developing Kiali Operator features and bug fixes while working in the Kiali repo. So from a development perspective, the git repo the Kiali developer continues to work in remains the Kiali local git repo. In fact, if you are merely a consumer of the Kiali Operator code (that is, you do not plan on ever making any changes or commits to the operator code) you can stop reading now. Nothing changes in the way you work.
 
 If, however, a developer needs to make changes to the operator, because the Kiali Operator code really lives in a separate repo, the developer will need to create PRs to the Kiali Operator git repo (just like any other git repo you want to commit to). Simply use the same basic workflow and commands that you are used to using already when creating PRs - just remember you need to create a PR from within the Kiali local repo (if changes were made to it) and you need to create another PR from within the "operator" local repo (if changes were made to the operator code).
+
+WARNING: If you git cloned the operator repo directly into your kiali/kiali git repo's operator directory, and you need to checkout an older branch of your kiali/kiali git repo, then you must make sure you push any operator changes to your remote fork *before* you checkout that older branch, otherwise you will lose those operator changes. It is for this reason that it is recommended that the operator directory be a softlink that points to an external directory where you have git cloned the operator repo.
 
 ## The Initial Kiali Operator Git Repo Creation
 

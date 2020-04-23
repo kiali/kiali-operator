@@ -1,4 +1,7 @@
-# kiali-operator
+# Kiali Operator
+
+image:https://travis-ci.org/kiali/kiali-operator.svg["Build Status", link="https://travis-ci.org/kiali/kiali-operator"]
+image:https://img.shields.io/badge/license-Apache2-blue.svg["Apache 2.0 license", link="LICENSE"]
 
 This contains the Kiali Operator source. It has a small link:Makefile[] whose only job is to build the operator image
 and push the built image to Quay.io. Thus you can build releases directly from this repo.
