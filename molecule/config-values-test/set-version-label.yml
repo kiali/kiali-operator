@@ -1,0 +1,7 @@
+- name: Set new deployment.version_label in current Kiali CR
+  vars:
+    current_kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+  set_fact:
+    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'version_label': new_version_label }}}, recursive=True) }}"
+
+- import_tasks: set-kiali-cr.yml
