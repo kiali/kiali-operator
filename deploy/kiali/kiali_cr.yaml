@@ -402,9 +402,10 @@ spec:
 #     service: The name of a variable that holds the service name, if used in that dashboard (else it must be omitted)
 #     workload: The name of a variable that holds the workload name, if used in that dashboard (else it must be omitted)
 # enabled: When true, Grafana support will be enabled in Kiali.
-# in_cluster_url: Set URL for in-cluster access. Example: "http://grafana.istio-system:3000".
+# in_cluster_url: Set URL for in-cluster access. Example: "http://grafana.istio-system:3000". This URL can contain query parameters if needed, such as "?orgId=1".
 # url: The URL that Kiali uses when integrating with Grafana. This URL must be accessible to clients external to
 #      the cluster in order for the integration to work properly. If empty, an attempt to auto-discover it is made.
+#      This URL can contain query parameters if needed, such as "?orgId=1".
 #    ---
 #    grafana:
 #      auth:
