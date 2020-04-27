@@ -1,0 +1,4 @@
+- name: Change Kiali CR with new Kiali CR
+  k8s:
+    namespace: '{{ cr_namespace }}'
+    definition: "{{ new_kiali_cr }}"
