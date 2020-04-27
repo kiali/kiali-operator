@@ -185,7 +185,7 @@
 # Kubernetes limits the length of version label strings to 63 characters or less - make sure our label is valid
 - name: Trim version_label when appropriate
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'version_label': kiali_vars.deployment.version_label | truncate(63, True, 'XXX', 0)}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'version_label': kiali_vars.deployment.version_label | truncate(60, True, 'XXX')}}, recursive=True) }}"
   when:
   - kiali_vars.deployment.version_label | length > 63
 
