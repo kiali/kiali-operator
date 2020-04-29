@@ -78,7 +78,7 @@ kiali_defaults:
       adapter_port: "3333"
       adapter_service: "threescale-istio-adapter"
       enabled: false
-    iter8:
+    iter_8:
       enabled: false
 
   external_services:
