@@ -5,6 +5,8 @@ arch:
   - amd64
   - arm64
 
+# This is for operator-courier. In the near future we won't need courier to validate the metadata
+# so we will be able to remove this and simply use operator-sdk for all validation.
 language: python
 addons:
   apt:
@@ -39,10 +41,15 @@ before_install:
 
 script:
   # ensures we can build the operator on each supported architecture
+  # This also downloads operator-sdk which we will use below to validate the metadata.
   - make build
 
-  # test the validity of the metadata in manifests
+  # test the validity of the ossm metadata
+  - _output/operator-sdk-install/operator-sdk version
+  - _output/operator-sdk-install/operator-sdk bundle validate --verbose manifests/kiali-ossm
+
+  # test the validity of the community metadata
   - operator-courier --version
-  - operator-courier --verbose verify manifests/kiali-ossm
   - operator-courier --verbose verify manifests/kiali-community
   - operator-courier --verbose verify manifests/kiali-upstream
+
