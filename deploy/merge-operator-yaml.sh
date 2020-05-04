@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ##############################################################################
 # merge-operator-yaml.sh
@@ -15,6 +15,10 @@ YAML_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
+    -crc|--cluster-role-creator)
+      CLUSTER_ROLE_CREATOR="$2"
+      shift;shift
+      ;;
     -f|--file)
       YAML_FILE="$2"
       shift;shift
@@ -48,9 +52,17 @@ while [[ $# -gt 0 ]]; do
 
 $0 [option...]
 
+  -crc|--cluster-role-creator
+      When true, the operator will be given permission to create cluster roles and
+      cluster role bindings so it can, in turn, assign Kiali a cluster role and
+      cluster role binding to access all namespaces. This is to support the Kiali CR
+      setting deployment.accessible_namespaces="**" (see the Kiali documentation for
+      more details on this setting). Therefore, be very careful when setting this value
+      to "true" because of the superpowers this will grant to the Kiali operator.
+      Default: "false"
   -f|--file
       The file where the output is written to. This will be the file that has the combined YAML.
-      Default: ${YAML_DIR}/kiali-operator.yaml
+      Default: ${YAML_DIR}/kiali-operator-all-in-one.yaml
   -oin|--operator-image-name
       Image of the Kiali operator to download and install.
       Default: "quay.io/kiali/kiali-operator"
@@ -88,8 +100,20 @@ export OPERATOR_IMAGE_PULL_POLICY="${OPERATOR_IMAGE_PULL_POLICY:-IfNotPresent}"
 export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
 export OPERATOR_VERSION_LABEL="${OPERATOR_VERSION_LABEL:-${OPERATOR_IMAGE_VERSION}}"
 export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-${OPERATOR_NAMESPACE}}"
-export OPERATOR_ROLE_CLUSTERROLES="# no clusterroles support"
-export OPERATOR_ROLE_CLUSTERROLEBINDINGS="# no clusterrolebindings support"
+
+# Determine if the operator should be granted permissions to create cluster roles/rolebindings
+if [ "${CLUSTER_ROLE_CREATOR}" == "true" ]; then
+  export OPERATOR_ROLE_CLUSTERROLES="- clusterroles"
+  export OPERATOR_ROLE_CLUSTERROLEBINDINGS="- clusterrolebindings"
+else
+  export OPERATOR_ROLE_CLUSTERROLES="# Add '- clusterroles' to support accessible_namespaces=**"
+  export OPERATOR_ROLE_CLUSTERROLEBINDINGS="# Add '- clusterrolebindings' to support accessible_namespaces=**"
+fi
+
+# Operator and Kiali will not be considered view-only
+export OPERATOR_ROLE_CREATE="- create"
+export OPERATOR_ROLE_DELETE="- delete"
+export OPERATOR_ROLE_PATCH="- patch"
 
 echo OPERATOR_IMAGE_NAME="${OPERATOR_IMAGE_NAME}"
 echo OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION}"
@@ -98,8 +122,8 @@ echo OPERATOR_NAMESPACE=${OPERATOR_NAMESPACE}
 echo OPERATOR_VERSION_LABEL="${OPERATOR_VERSION_LABEL}"
 echo OPERATOR_WATCH_NAMESPACE=${OPERATOR_WATCH_NAMESPACE}
 
-YAML_LIST="crd.yaml role.yaml service_account.yaml role_binding.yaml operator.yaml "
-YAML_FILE="${YAML_FILE:-${YAML_DIR}/kiali-operator.yaml}"
+YAML_LIST="crd.yaml namespace.yaml role.yaml service_account.yaml role_binding.yaml operator.yaml "
+YAML_FILE="${YAML_FILE:-${YAML_DIR}/kiali-operator-all-in-one.yaml}"
 
 # remove any old file that still exists
 rm -f ${YAML_FILE}
@@ -111,4 +135,4 @@ do
 done
 
 echo "Done! Combined yaml file is here: ${YAML_FILE}"
-
+echo "Run this to apply: kubectl apply -n ${OPERATOR_NAMESPACE} -f ${YAML_FILE}"
