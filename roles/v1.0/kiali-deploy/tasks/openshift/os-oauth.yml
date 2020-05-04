@@ -8,8 +8,14 @@
     name: kiali
     namespace: "{{ kiali_vars.deployment.namespace }}"
   register: kiali_route_raw
-  until: kiali_route_raw['resources'] is defined and kiali_route_raw['resources'][0] is defined
-  retries: 6
+  until:
+  - kiali_route_raw['resources'] is defined
+  - kiali_route_raw['resources'][0] is defined
+  - kiali_route_raw['resources'][0]['status'] is defined
+  - kiali_route_raw['resources'][0]['status']['ingress'] is defined
+  - kiali_route_raw['resources'][0]['status']['ingress'][0] is defined
+  - kiali_route_raw['resources'][0]['status']['ingress'][0]['host'] is defined
+  retries: 30
   delay: 10
   when:
   - is_openshift == True
