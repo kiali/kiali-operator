@@ -65,5 +65,4 @@ endif
 generate-all-in-one:
 	@mkdir -p ${OUTDIR}
 	@OPERATOR_IMAGE_VERSION=$${OPERATOR_IMAGE_VERSION:-${VERSION}} \
-	OPERATOR_VERSION_LABEL=${OPERATOR_VERSION_LABEL} \
-	${ROOTDIR}/deploy/merge-operator-yaml.sh --file ${OUTDIR}/kiali-operator-all-in-one.yaml
+	  ${ROOTDIR}/deploy/merge-operator-yaml.sh --file ${OUTDIR}/kiali-operator-all-in-one.yaml
