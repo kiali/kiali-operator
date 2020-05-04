@@ -13,7 +13,7 @@
   # Make sure version label is truncated to the k8s maximum 63 chars and must start/end with alphanum char
   - import_tasks: set-version-label.yml
     vars:
-      new_version_label: "1234567890123456789012345678901234567890123456789012345678901234"
+      new_version_label: "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeee12345678901234"
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
@@ -21,5 +21,5 @@
   - name: Make sure version_label was truncated properly
     assert:
       that:
-      - kiali_configmap.deployment.version_label == "123456789012345678901234567890123456789012345678901234567890XXX"
+      - kiali_configmap.deployment.version_label == "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeee1234567890XXX"
       - "{{ kiali_deployment.resources[0].metadata.labels.version | length == 63 }}"
