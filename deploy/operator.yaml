@@ -3,6 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kiali-operator
+  namespace: ${OPERATOR_NAMESPACE}
   labels:
     app: kiali-operator
     version: ${OPERATOR_VERSION_LABEL}
