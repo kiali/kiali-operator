@@ -15,6 +15,10 @@ YAML_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
+    -con|--create-operator-namespace)
+      CREATE_OPERATOR_NAMESPACE="$2"
+      shift;shift
+      ;;
     -crc|--cluster-role-creator)
       CLUSTER_ROLE_CREATOR="$2"
       shift;shift
@@ -52,6 +56,11 @@ while [[ $# -gt 0 ]]; do
 
 $0 [option...]
 
+  -con|--create-operator-namespace
+      When true, the generated YAML will create the operator namespace and label it.
+      When false, it will be assumed the namespace will already exist and that the operator
+      will simply be deployed inside it.
+      Default: true
   -crc|--cluster-role-creator
       When true, the operator will be given permission to create cluster roles and
       cluster role bindings so it can, in turn, assign Kiali a cluster role and
@@ -94,6 +103,8 @@ HELPMSG
   esac
 done
 
+export CLUSTER_ROLE_CREATOR="${CLUSTER_ROLE_CREATOR:-false}"
+export CREATE_OPERATOR_NAMESPACE="${CREATE_OPERATOR_NAMESPACE:-true}"
 export OPERATOR_IMAGE_NAME="${OPERATOR_IMAGE_NAME:-quay.io/kiali/kiali-operator}"
 export OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION:-latest}"
 export OPERATOR_IMAGE_PULL_POLICY="${OPERATOR_IMAGE_PULL_POLICY:-IfNotPresent}"
@@ -125,6 +136,8 @@ export OPERATOR_ROLE_CREATE="- create"
 export OPERATOR_ROLE_DELETE="- delete"
 export OPERATOR_ROLE_PATCH="- patch"
 
+echo CLUSTER_ROLE_CREATOR="${CLUSTER_ROLE_CREATOR}"
+echo CREATE_OPERATOR_NAMESPACE="${CREATE_OPERATOR_NAMESPACE}"
 echo OPERATOR_IMAGE_NAME="${OPERATOR_IMAGE_NAME}"
 echo OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION}"
 echo OPERATOR_IMAGE_PULL_POLICY="${OPERATOR_IMAGE_PULL_POLICY}"
@@ -132,7 +145,10 @@ echo OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE}"
 echo OPERATOR_VERSION_LABEL="${OPERATOR_VERSION_LABEL}"
 echo OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE}"
 
-YAML_LIST="crd.yaml namespace.yaml role.yaml service_account.yaml role_binding.yaml operator.yaml "
+if [ "${CREATE_OPERATOR_NAMESPACE}" == "true" ]; then
+  YAML_LIST="namespace.yaml"
+fi
+YAML_LIST="${YAML_LIST} crd.yaml role.yaml service_account.yaml role_binding.yaml operator.yaml "
 YAML_FILE="${YAML_FILE:-${YAML_DIR}/kiali-operator-all-in-one.yaml}"
 
 # remove any old file that still exists
