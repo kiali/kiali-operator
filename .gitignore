@@ -1,2 +1,5 @@
 molecule/maistra-e2e/assets/secret.yaml
 _output
+
+# Do not commit any compiled Ansible filter plugins
+*.pyc
