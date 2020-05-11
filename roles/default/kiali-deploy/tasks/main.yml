@@ -427,15 +427,15 @@
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
-    all_accessible_namespaces: "{{ ((all_accessible_namespaces | default([ kiali_vars.deployment.namespace ])) + [ item.1 | regex_search(item.0) ]) | unique }}"
+    all_accessible_namespaces: "{{ ((all_accessible_namespaces | default([ kiali_vars.deployment.namespace, kiali_vars.istio_namespace ])) + [ item.1 | regex_search(item.0) ]) | unique }}"
   loop: "{{ kiali_vars.deployment.accessible_namespaces | product(all_namespaces) | list }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - item.1 | regex_search(item.0)
 
-- name: If Kiali has not been granted access to any namespaces, just use the deployment namespace
+- name: If Kiali has not been granted access to any namespaces, use the deployment namespace and the control plane namespace
   set_fact:
-    all_accessible_namespaces: "{{ [ kiali_vars.deployment.namespace ]}}"
+    all_accessible_namespaces: "{{ [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace ] | unique }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - all_accessible_namespaces is not defined or all_accessible_namespaces | length == 0
@@ -445,6 +445,11 @@
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - kiali_vars.deployment.namespace not in all_accessible_namespaces
+- fail:
+    msg: "Kiali has not been granted access to the control plane namespace [{{ kiali_vars.istio_namespace }}]. This is explicitly required. Check the deployment.accessible_namespaces setting."
+  when:
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.istio_namespace not in all_accessible_namespaces
 
 - name: If accessible namespaces list has the special all-namespaces indicator, remove all other namespaces from the list
   set_fact:

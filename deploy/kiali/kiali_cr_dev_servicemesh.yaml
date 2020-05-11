@@ -5,6 +5,7 @@ metadata:
   annotations:
     ansible.operator-sdk/verbosity: "1"
 spec:
+  istio_namespace: "${ISTIO_NAMESPACE}"
   version: "${KIALI_CR_SPEC_VERSION}"
   auth:
     strategy: "${AUTH_STRATEGY}"
