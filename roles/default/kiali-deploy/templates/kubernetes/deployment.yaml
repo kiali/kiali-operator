@@ -26,8 +26,13 @@ spec:
         app: kiali
         version: {{ kiali_vars.deployment.version_label }}
       annotations:
+{% if kiali_vars.server.metrics_enabled == True %}
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ kiali_vars.server.metrics_port }}"
+{% else %}
+        prometheus.io/scrape: "false"
+        prometheus.io/port: null
+{% endif %}
         kiali.io/runtimes: go,kiali
         operator.kiali.io/last-updated: "{{ deployment_last_updated }}"
 {% if kiali_vars.deployment.pod_annotations|length > 0 %}
@@ -57,6 +62,10 @@ spec:
         ports:
           - name: api-port
             containerPort: {{ kiali_vars.server.port }}
+{% if kiali_vars.server.metrics_enabled == True %}
+          - name: http-metrics
+            containerPort: {{ kiali_vars.server.metrics_port }}
+{% endif %}
         readinessProbe:
           httpGet:
             path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
