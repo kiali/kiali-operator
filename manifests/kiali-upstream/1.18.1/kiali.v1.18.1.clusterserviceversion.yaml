@@ -1,17 +1,17 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: kiali-operator.v1.16.0
+  name: kiali-operator.v1.18.1
   namespace: placeholder
   annotations:
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: quay.io/kiali/kiali-operator:v1.16.0
+    containerImage: quay.io/kiali/kiali-operator:v1.18.1
     capabilities: Deep Insights
     support: Kiali
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: 2020-03-25T00:00:00Z
+    createdAt: 2020-05-15T00:00:00Z
     alm-examples: |-
       [
         {
@@ -24,7 +24,7 @@ metadata:
             "installation_tag": "My Kiali",
             "istio_namespace": "istio-system",
             "deployment": {
-              "namespace": "istio-system",
+              "namespace": "default",
               "verbose_mode": "4",
               "view_only_mode": false
             },
@@ -73,7 +73,7 @@ metadata:
         }
       ]
 spec:
-  version: 1.16.0
+  version: 1.18.1
   maturity: stable
   replaces: kiali-operator.v1.15.1
   displayName: Kiali Operator
@@ -261,26 +261,16 @@ spec:
               name: kiali-operator
               labels:
                 app: kiali-operator
-                version: v1.16.0
+                # required for the operator SDK metric service selector
+                name: kiali-operator
+                version: v1.18.1
               annotations:
                 prometheus.io/scrape: "true"
-                prometheus.io/port: "8383"
             spec:
               serviceAccountName: kiali-operator
               containers:
-              - name: ansible
-                command:
-                - /usr/local/bin/ao-logs
-                - /tmp/ansible-operator/runner
-                - stdout
-                image: quay.io/kiali/kiali-operator:v1.16.0
-                imagePullPolicy: "IfNotPresent"
-                volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
-                  readOnly: true
               - name: operator
-                image: quay.io/kiali/kiali-operator:v1.16.0
+                image: quay.io/kiali/kiali-operator:v1.18.1
                 imagePullPolicy: "IfNotPresent"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
@@ -302,6 +292,11 @@ spec:
                   value: "kiali-operator"
                 - name: ANSIBLE_DEBUG_LOGS
                   value: "True"
+                ports:
+                - name: http-metrics
+                  containerPort: 8383
+                - name: cr-metrics
+                  containerPort: 8686
               volumes:
               - name: runner
                 emptyDir: {}
