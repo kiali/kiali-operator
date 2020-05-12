@@ -1,0 +1,19 @@
+- name: Get Prometheus HTTP endpoint route (this test requires a HTTP route to the Prometheus endpoint)
+  k8s_facts:
+    api_version: route.openshift.io/v1
+    kind: Route
+    name: prometheus
+    namespace: "{{ istio.control_plane_namespace }}"
+  register: prometheus_route_raw
+  until:
+  - prometheus_route_raw['resources'] is defined
+  - prometheus_route_raw['resources'][0] is defined
+  - prometheus_route_raw['resources'][0]['status'] is defined
+  - prometheus_route_raw['resources'][0]['status']['ingress'] is defined
+  - prometheus_route_raw['resources'][0]['status']['ingress'][0] is defined
+  - prometheus_route_raw['resources'][0]['status']['ingress'][0]['host'] is defined
+  retries: 10
+  delay: 6
+
+- set_fact:
+    prometheus_url: "http://{{ prometheus_route_raw['resources'][0]['status']['ingress'][0]['host'] }}/api/v1"

@@ -1,0 +1,71 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Send a request into Kiali to ensure metrics from this will not be collected
+    uri:
+      url: "{{ kiali_base_url }}/api"
+      validate_certs: no
+  - name: Waiting a few seconds to make sure metrics aren't being collected
+    pause:
+      seconds: 30
+
+  - import_tasks: ../common/prepare-prometheus.yml
+
+  - set_fact:
+      test_start_time: "{{ ansible_date_time.iso8601 }}"
+
+  # Operator metrics are always enabled - make sure we have them
+
+  # an operator http-metric
+  - import_tasks: ../common/query-prometheus.yml
+    vars:
+      prometheus_query: "workqueue_work_duration_seconds_count{app=\"kiali-operator\",namespace=\"{{ kiali.operator_namespace }}\"}&time={{ test_start_time}}"
+  - assert:
+      that:
+      - prometheus_query_results.json.data.result | length > 0
+
+  # an operator cr-metric
+  - import_tasks: ../common/query-prometheus.yml
+    vars:
+      prometheus_query: "kiali_info{app=\"kiali-operator\",namespace=\"{{ kiali.operator_namespace }}\"}&time={{ test_start_time}}"
+  - assert:
+      that:
+      - prometheus_query_results.json.data.result | length > 0
+
+  # The test is initialized with Kiali metrics turned off so there should not be any yet
+  - import_tasks: ../common/query-prometheus.yml
+    vars:
+      prometheus_query: "kiali_api_processing_duration_seconds_count{app=\"kiali\",namespace=\"{{ kiali.install_namespace }}\"}&time={{ test_start_time}}"
+  - assert:
+      that:
+      - prometheus_query_results.json.data.result | length == 0
+
+  # Turn on Kiali metrics
+  - import_tasks: enable-metrics.yml
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Send a request into Kiali to build up metrics
+    uri:
+      url: "{{ kiali_base_url }}/api"
+      validate_certs: no
+  - name: Waiting a few seconds for metrics to be collected
+    pause:
+      seconds: 30
+
+  # A Kiali metric
+  - import_tasks: ../common/query-prometheus.yml
+    vars:
+      prometheus_query: "kiali_api_processing_duration_seconds_count{app=\"kiali\",namespace=\"{{ kiali.install_namespace }}\"}"
+  - assert:
+      that:
+      - prometheus_query_results.json.data.result | length > 0
+

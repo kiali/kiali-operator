@@ -1,0 +1,19 @@
+# To use this, import the task passing in the variable "prometheus_query" which must be URL encoded correctly.
+# If you already imported "prepare-prometheus.yml" you will already have the other var "prometheus_url".
+# If successful, the query results are in JSON format in "prometheus_query_results.json".
+
+- debug:
+    msg: "Prometheus query to be run: {{ prometheus_query }}"
+- name: Query Prometheus
+  uri:
+    url: "{{ prometheus_url }}/query?query={{ prometheus_query }}"
+    method: GET
+    return_content: yes
+    body_format: json
+  register: prometheus_query_results
+  until: prometheus_query_results.json.status == "success"
+  retries: 3
+  delay: 1
+
+- debug:
+    msg: "Prometheus query [{{ prometheus_query }}] results: {{ prometheus_query_results.json }}"
