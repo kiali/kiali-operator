@@ -80,7 +80,7 @@ spec:
   - name: kiali-v1.0
     annotation: kiali-v1.0
     required: true
-    image: registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:16055c18280f1bdf4e09a98ddb3240ceb739825eb4e7e15f7cfffc39bb80348b
+    image: registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:1b9eff98f69d3f4cc7083f558cea07e73f24d7c864a6f956904969368acf4401
   - name: kiali-v1.12
     annotation: kiali-v1.12
     required: true
@@ -311,9 +311,9 @@ spec:
                 - name: OPERATOR_NAME
                   value: "kiali-operator"
                 - name: KIALI_IMAGE_default
-                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:16055c18280f1bdf4e09a98ddb3240ceb739825eb4e7e15f7cfffc39bb80348b"
+                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:1b9eff98f69d3f4cc7083f558cea07e73f24d7c864a6f956904969368acf4401"
                 - name: KIALI_IMAGE_v1_0
-                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:16055c18280f1bdf4e09a98ddb3240ceb739825eb4e7e15f7cfffc39bb80348b"
+                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:1b9eff98f69d3f4cc7083f558cea07e73f24d7c864a6f956904969368acf4401"
                 - name: KIALI_IMAGE_v1_12
                   value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:e1fb3df10a7f7862e8549ad29e4dad97b22719896c10fe5109cbfb3b98f56900"
                 ports:
