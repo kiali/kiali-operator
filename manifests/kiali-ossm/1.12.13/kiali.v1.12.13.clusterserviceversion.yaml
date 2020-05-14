@@ -1,17 +1,17 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: kiali-operator.v1.16.0
+  name: kiali-operator.v1.12.13
   namespace: placeholder
   annotations:
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: quay.io/kiali/kiali-operator:v1.16.0
+    containerImage: registry.redhat.io/openshift-service-mesh/kiali-rhel7-operator:1.12.13
     capabilities: Deep Insights
-    support: Kiali
+    support: Red Hat
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: 2020-03-25T00:00:00Z
+    createdAt: 2020-04-27T22:07:13Z
     alm-examples: |-
       [
         {
@@ -73,9 +73,18 @@ metadata:
         }
       ]
 spec:
-  version: 1.16.0
+  version: 1.12.13
   maturity: stable
-  replaces: kiali-operator.v1.15.1
+  replaces: kiali-operator.v1.12.12
+  relatedImages:
+  - name: kiali-v1.0
+    annotation: kiali-v1.0
+    required: true
+    image: registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:1b9eff98f69d3f4cc7083f558cea07e73f24d7c864a6f956904969368acf4401
+  - name: kiali-v1.12
+    annotation: kiali-v1.12
+    required: true
+    image: registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:e1fb3df10a7f7862e8549ad29e4dad97b22719896c10fe5109cbfb3b98f56900
   displayName: Kiali Operator
   description: |-
     ## About the managed application
@@ -112,7 +121,7 @@ spec:
 
     For quick descriptions of all the settings you can configure in the Kiali
     Custom Resource (CR), see the file
-    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml)
+    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/v1.12/deploy/kiali/kiali_cr.yaml)
 
     Note that the Kiali operator can be told to restrict Kiali's access to
     specific namespaces, or can provide to Kiali cluster-wide access to all
@@ -150,7 +159,7 @@ spec:
   - name: Kiali Developers Google Group
     email: kiali-dev@googlegroups.com
   provider:
-    name: Kiali
+    name: Red Hat
   labels:
     name: kiali-operator
   selector:
@@ -261,10 +270,11 @@ spec:
               name: kiali-operator
               labels:
                 app: kiali-operator
-                version: v1.16.0
+                # required for the operator SDK metric service selector
+                name: kiali-operator
+                version: v1.12.13
               annotations:
                 prometheus.io/scrape: "true"
-                prometheus.io/port: "8383"
             spec:
               serviceAccountName: kiali-operator
               containers:
@@ -273,14 +283,14 @@ spec:
                 - /usr/local/bin/ao-logs
                 - /tmp/ansible-operator/runner
                 - stdout
-                image: quay.io/kiali/kiali-operator:v1.16.0
+                image: registry.redhat.io/openshift-service-mesh/kiali-rhel7-operator@sha256:e816022618522d3c4cb687f876d93a827cabbfcaf665eb6db11ccf2fe7f80bc0
                 imagePullPolicy: "IfNotPresent"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
                   readOnly: true
               - name: operator
-                image: quay.io/kiali/kiali-operator:v1.16.0
+                image: registry.redhat.io/openshift-service-mesh/kiali-rhel7-operator@sha256:e816022618522d3c4cb687f876d93a827cabbfcaf665eb6db11ccf2fe7f80bc0
                 imagePullPolicy: "IfNotPresent"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
@@ -300,8 +310,17 @@ spec:
                       fieldPath: metadata.namespace
                 - name: OPERATOR_NAME
                   value: "kiali-operator"
-                - name: ANSIBLE_DEBUG_LOGS
-                  value: "True"
+                - name: KIALI_IMAGE_default
+                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:1b9eff98f69d3f4cc7083f558cea07e73f24d7c864a6f956904969368acf4401"
+                - name: KIALI_IMAGE_v1_0
+                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:1b9eff98f69d3f4cc7083f558cea07e73f24d7c864a6f956904969368acf4401"
+                - name: KIALI_IMAGE_v1_12
+                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7@sha256:e1fb3df10a7f7862e8549ad29e4dad97b22719896c10fe5109cbfb3b98f56900"
+                ports:
+                - name: http-metrics
+                  containerPort: 8383
+                - name: cr-metrics
+                  containerPort: 8686
               volumes:
               - name: runner
                 emptyDir: {}
@@ -571,14 +590,4 @@ spec:
           verbs:
           - get
           - list
-        - apiGroups: ["iter8.tools"]
-          resources:
-          - experiments
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - watch
         serviceAccountName: kiali-operator

@@ -1,5 +1,5 @@
 packageName: kiali-ossm
 channels:
 - name: stable
-  currentCSV: kiali-operator.v1.12.12
+  currentCSV: kiali-operator.v1.12.13
 defaultChannel: stable

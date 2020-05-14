@@ -17,10 +17,11 @@ spec:
       name: kiali-operator
       labels:
         app: kiali-operator
+        # required for the operator SDK metric service selector
+        name: kiali-operator
         version: ${OPERATOR_VERSION_LABEL}
       annotations:
         prometheus.io/scrape: "true"
-        prometheus.io/port: "8383"
     spec:
       serviceAccountName: kiali-operator
       containers:
@@ -45,6 +46,11 @@ spec:
           value: "kiali-operator"
         - name: ANSIBLE_DEBUG_LOGS
           value: "True"
+        ports:
+        - name: http-metrics
+          containerPort: 8383
+        - name: cr-metrics
+          containerPort: 8686
       volumes:
       - name: runner
         emptyDir: {}
