@@ -433,8 +433,7 @@ spec:
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
 # istio_status_enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
-# url_service_version: The Istio service used to determine the Istio version.
-#                      If empty, assumes it is in the istio namespace at the URL "http://istio-pilot.<istio_namespace>:8080/version"
+# url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
 #      istio_identity_domain: "svc.cluster.local"

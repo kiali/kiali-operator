@@ -8,6 +8,12 @@ all:
       image_version: dev
       namespace: istio-system
 
+    external_services:
+      istio:
+        url_service_version: http://istiod.istio-system:15014/version
+        # For Istio 1.5 and earlier
+        #url_service_version: http://istio-pilot.istio-system:8080/version
+
     # The Operator SDK creates a "_kiali_io_kiali" variable that
     # mimics the Kiali CR but maintains camelCase in key names.
     # This will only be useful for certain cases (e.g. when

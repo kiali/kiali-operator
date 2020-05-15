@@ -198,11 +198,17 @@
   when:
   - kiali_vars.istio_component_namespaces.tracing is not defined or kiali_vars.istio_component_namespaces.tracing == ""
 
-- name: "Set default istio component namespace: pilot"
+- name: "Set default istio component namespace: pilot - needed for Istio 1.5 and earlier"
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'pilot': kiali_vars.istio_namespace}}, recursive=True) }}"
   when:
   - kiali_vars.istio_component_namespaces.pilot is not defined or kiali_vars.istio_component_namespaces.pilot == ""
+
+- name: "Set default istio component namespace: istiod - needed for Istio 1.6 and later"
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'istiod': kiali_vars.istio_namespace}}, recursive=True) }}"
+  when:
+  - kiali_vars.istio_component_namespaces.istiod is not defined or kiali_vars.istio_component_namespaces.istiod == ""
 
 - name: "Set default istio component namespace: prometheus"
   set_fact:
@@ -228,7 +234,25 @@
   when:
     kiali_vars.external_services.tracing.in_cluster_url == "" and is_maistra == False
 
-- name: Set default Istio service that provides version info
+- name: Check for the existence of istiod version endpoint
+  uri:
+    url: "http://istiod.{{ kiali_vars.istio_component_namespaces.istiod }}:15014/version"
+  register: istiod_version_url_results_raw
+  until: istiod_version_url_results_raw.status == 200
+  retries: 5
+  delay: 1
+  ignore_errors: yes
+  when:
+  - kiali_vars.external_services.istio.url_service_version == ""
+
+- name: Set default Istio service that provides version info (istiod for Istio 1.6 and later)
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istiod.' + kiali_vars.istio_component_namespaces.istiod + ':15014/version'}}}, recursive=True) }}"
+  when:
+  - kiali_vars.external_services.istio.url_service_version == ""
+  - istiod_version_url_results_raw.status == 200
+
+- name: Fallback to Istio pilot service that provides version info (for Istio 1.5 and earlier)
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istio-pilot.' + kiali_vars.istio_component_namespaces.pilot + ':8080/version'}}}, recursive=True) }}"
   when:
@@ -403,15 +427,15 @@
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
-    all_accessible_namespaces: "{{ ((all_accessible_namespaces | default([ kiali_vars.deployment.namespace ])) + [ item.1 | regex_search(item.0) ]) | unique }}"
+    all_accessible_namespaces: "{{ ((all_accessible_namespaces | default([ kiali_vars.deployment.namespace, kiali_vars.istio_namespace ])) + [ item.1 | regex_search(item.0) ]) | unique }}"
   loop: "{{ kiali_vars.deployment.accessible_namespaces | product(all_namespaces) | list }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - item.1 | regex_search(item.0)
 
-- name: If Kiali has not been granted access to any namespaces, just use the deployment namespace
+- name: If Kiali has not been granted access to any namespaces, use the deployment namespace and the control plane namespace
   set_fact:
-    all_accessible_namespaces: "{{ [ kiali_vars.deployment.namespace ]}}"
+    all_accessible_namespaces: "{{ [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace ] | unique }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - all_accessible_namespaces is not defined or all_accessible_namespaces | length == 0
@@ -421,6 +445,11 @@
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - kiali_vars.deployment.namespace not in all_accessible_namespaces
+- fail:
+    msg: "Kiali has not been granted access to the control plane namespace [{{ kiali_vars.istio_namespace }}]. This is explicitly required. Check the deployment.accessible_namespaces setting."
+  when:
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.istio_namespace not in all_accessible_namespaces
 
 - name: If accessible namespaces list has the special all-namespaces indicator, remove all other namespaces from the list
   set_fact:
