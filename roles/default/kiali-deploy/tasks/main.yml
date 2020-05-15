@@ -241,7 +241,7 @@
   until: istiod_version_url_results_raw.status == 200
   retries: 5
   delay: 1
-  ignore_errors: true
+  ignore_errors: yes
   when:
   - kiali_vars.external_services.istio.url_service_version == ""
 
