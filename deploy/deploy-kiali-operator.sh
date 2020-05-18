@@ -25,6 +25,16 @@
 # -----------
 # Environment variables that affect the overall behavior of this script:
 #
+# ALLOW_UPDATES
+#    This script's purpose is to be an installer for the operator. It may not be able to
+#    update existing operator or Kiali instances. This is why the default behavior of this
+#    script is to uninstall existing installations before attempting to install new ones.
+#    However, you can force this script to attempt to update existing installations by setting
+#    this to true. When true, any existing operator or Kiali instances will remain and this
+#    script will invoke the "oc" or "kubectl" apply commands with the hope that the updates
+#    will succeed (though they are not guaranteed to succeed).
+#    Default: "false"
+#
 # DRY_RUN
 #    If set to a file path, the script will not create any objects in the cluster but will instead
 #    write to that file all the YAML for the resources that would have been created.
@@ -34,7 +44,7 @@
 # UNINSTALL_EXISTING_KIALI
 #    If true, this script first will attempt to uninstall any currently existing Kiali resources.
 #    Note that if Kiali is already installed and you opt not to uninstall it, this script
-#    will abort and the operator will not be installed.
+#    will abort and the operator will not be installed unless you explicitly allow updates.
 #    This will only remove resources from Kiali itself, not a previously installed
 #    Kiali Operator. If you have a previously installed Kiali that was installed by
 #    a Kiali Operator, you can use that operator to uninstall that Kiali by deleting the Kiali CR.
@@ -45,7 +55,8 @@
 #
 # UNINSTALL_EXISTING_OPERATOR
 #    If true, this script will attempt to uninstall any currently existing operator resources.
-#    If the operator is already installed and you opt not to uninstall it, this script will abort.
+#    If the operator is already installed and you opt not to uninstall it, this script will abort
+#    unless you explicitly allow updates.
 #    Uninstalling the operator will also uninstall any existing Kiali installation as well.
 #    If UNINSTALL_MODE is true, this value is ignored.
 #    Default: If not explicitly defined, an interactive prompt will ask for confirmation.
@@ -233,6 +244,10 @@ _CMD=""
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
+    -au|--allow-updates)
+      ALLOW_UPDATES="$2"
+      shift;shift
+      ;;
     -an|--accessible-namespaces)
       ACCESSIBLE_NAMESPACES="$2"
       shift;shift
@@ -351,6 +366,14 @@ while [[ $# -gt 0 ]]; do
 $0 [option...]
 
 Valid options for overall script behavior:
+  -au|--allow-updates
+      This script's purpose is to be an installer for the operator, thus the default
+      behavior is to uninstall existing installations before attempting to install new ones.
+      However, you can force this script to attempt to update existing installations by setting
+      this to true. When true, any existing operator or Kiali instances will remain and this
+      script will invoke the "oc" or "kubectl" apply commands with the hope that the updates
+      will succeed (though they are not guaranteed to succeed).
+      Default: "false"
   -dr|--dry-run
       If set to a file path, the script will not create any objects in the cluster but will instead
       write to that file all the YAML for the resources that would have been created.
@@ -677,6 +700,7 @@ delete_operator_resources() {
 }
 
 echo "=== UNINSTALL SETTINGS ==="
+echo ALLOW_UPDATES=$ALLOW_UPDATES
 echo UNINSTALL_EXISTING_KIALI=$UNINSTALL_EXISTING_KIALI
 echo UNINSTALL_EXISTING_OPERATOR=$UNINSTALL_EXISTING_OPERATOR
 echo UNINSTALL_MODE=$UNINSTALL_MODE
@@ -840,27 +864,33 @@ echo "=== OPERATOR SETTINGS ==="
 # Give the user an opportunity to tell us if they want to uninstall the operator if they did not set the envar yet.
 # The default to the prompt is "yes" because the user will normally want to uninstall an already existing Operator.
 # Note: to allow for non-interactive installations, the user can set UNINSTALL_EXISTING_OPERATOR=true to ensure
-# the operator will always be removed if it exists. If the user does not want the operator removed if it exists, that setting
-# can be set to false which will cause this script to abort if the operator exists.
+# the operator will always be removed if it exists. If the user does not want the operator removed if it exists,
+# that setting can be set to false which will cause this script to abort if the operator exists unless ALLOW_UPDATES
+# is true.
 if [ "${UNINSTALL_EXISTING_OPERATOR}" != "true" ]; then
-  if ${CLIENT_EXE} get deployment kiali-operator -n "${OPERATOR_NAMESPACE}" > /dev/null 2>&1 ; then
-    if [ -z "${UNINSTALL_EXISTING_OPERATOR}" ]; then
-      read -p 'It appears the operator has already been installed. Do you want to uninstall it? This will uninstall Kiali, too. [Y/n]: ' _yn
-      case "${_yn}" in
-        [yY][eE][sS]|[yY]|"")
-          echo "The existing operator will be uninstalled, along with any existing Kiali installation."
-          UNINSTALL_EXISTING_OPERATOR="true"
-          ;;
-        *)
-          echo "The existing operator will NOT be uninstalled. Aborting the operator installation."
-          exit 1
-          ;;
-      esac
+  if [ "${ALLOW_UPDATES}" != "true" ]; then
+    if ${CLIENT_EXE} get deployment kiali-operator -n "${OPERATOR_NAMESPACE}" > /dev/null 2>&1 ; then
+      if [ -z "${UNINSTALL_EXISTING_OPERATOR}" ]; then
+        read -p 'It appears the operator has already been installed. Do you want to uninstall it? This will uninstall Kiali, too. [Y/n]: ' _yn
+        case "${_yn}" in
+          [yY][eE][sS]|[yY]|"")
+            echo "The existing operator will be uninstalled, along with any existing Kiali installation."
+            UNINSTALL_EXISTING_OPERATOR="true"
+            ;;
+          *)
+            echo "The existing operator will NOT be uninstalled. Aborting the operator installation."
+            exit 1
+            ;;
+        esac
+      else
+        echo "It appears the operator has already been installed. It will NOT be uninstalled. Aborting the operator installation."
+        exit 1
+      fi
     else
-      echo "It appears the operator has already been installed. It will NOT be uninstalled. Aborting the operator installation."
-      exit 1
+      UNINSTALL_EXISTING_OPERATOR="false"
     fi
   else
+    echo "If an operator is already installed, an attempt to update it will be made. If the update fails, you must rerun this script with --allow-updates=false to force an uninstall and re-install of the operator."
     UNINSTALL_EXISTING_OPERATOR="false"
   fi
 fi
@@ -879,26 +909,31 @@ fi
 # The default to the prompt is "yes" because the user will normally want to uninstall an already existing Kiali.
 # Note: to allow for non-interactive installations, the user can set UNINSTALL_EXISTING_KIALI=true to ensure
 # Kiali will always be removed if it exists. If the user does not want Kiali removed if it exists, that setting
-# can be set to false which will cause this script to abort if Kiali exists.
+# can be set to false which will cause this script to abort if Kiali exists unless ALLOW_UPDATES is true.
 if [ "${UNINSTALL_EXISTING_KIALI}" != "true" ]; then
-  if ${CLIENT_EXE} get deployment kiali -n "${NAMESPACE}" > /dev/null 2>&1 ; then
-    if [ -z "${UNINSTALL_EXISTING_KIALI}" ]; then
-      read -p 'It appears Kiali has already been installed. Do you want to uninstall it? [Y/n]: ' _yn
-      case "${_yn}" in
-        [yY][eE][sS]|[yY]|"")
-          echo "The existing Kiali will be uninstalled."
-          UNINSTALL_EXISTING_KIALI="true"
-          ;;
-        *)
-          echo "The existing Kiali will NOT be uninstalled. Aborting the Kiali operator installation."
-          exit 1
-          ;;
-      esac
+  if [ "${ALLOW_UPDATES}" != "true" ]; then
+    if ${CLIENT_EXE} get deployment kiali -n "${NAMESPACE}" > /dev/null 2>&1 ; then
+      if [ -z "${UNINSTALL_EXISTING_KIALI}" ]; then
+        read -p 'It appears Kiali has already been installed. Do you want to uninstall it? [Y/n]: ' _yn
+        case "${_yn}" in
+          [yY][eE][sS]|[yY]|"")
+            echo "The existing Kiali will be uninstalled."
+            UNINSTALL_EXISTING_KIALI="true"
+            ;;
+          *)
+            echo "The existing Kiali will NOT be uninstalled. Aborting the Kiali operator installation."
+            exit 1
+            ;;
+        esac
+      else
+        echo "It appears Kiali has already been installed. It will NOT be uninstalled. Aborting the Kiali operator installation."
+        exit 1
+      fi
     else
-      echo "It appears Kiali has already been installed. It will NOT be uninstalled. Aborting the Kiali operator installation."
-      exit 1
+      UNINSTALL_EXISTING_KIALI="false"
     fi
   else
+    echo "If a Kiali server is already installed, an attempt to update the Kiali CR will be made. If the update fails, you must rerun this script with --allow-updates=false to force an uninstall and re-install of the Kiali CR."
     UNINSTALL_EXISTING_KIALI="false"
   fi
 fi
