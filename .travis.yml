@@ -3,18 +3,7 @@ os: linux
 
 arch:
   - amd64
-  # It takes a very long time to spin up an ARM machine on travis.
-  # Because of this, it takes a long time before we can merge PRs.
-  # So this is disabled for now. We can re-enable if we need this.
-  #- arm64
-
-# The channel name "chat.freenode.net#kiali" is encrypted to prevent IRC spam from forks
-notifications:
-￼ irc:
-￼   channels:
-      - secure: D7BiCSh0qJzKsEYmWsCdt2XaQve2yQPqF97LaCVU70nNDUMmzwvd8B24lVp4LcmS0t6jkIMvOiLB4PJldjNk/s5Y6IH23+7id/gRFopKLAI2DynqhLlDs0asRRzeUbzDlqdMP8AtyzIUcKnB0MLExoM1TIoHHHc9z1CbyFFFw3JDS12NWf35Lr5KNf0YojtdU/YSDGse33lGuUlZD8p9JacSI09BEUrzgtfuetD5LInbp9f+283hAlj7kY5psonDVvISQTRavT98GIpimo/7Gq0fesKoWPSOks5Y30MkAB+NVfVmECe6r1iqIeUXrdttjTnT+kqiW0OPQPYek5vO9RCr1N7qjhz8xjEbfV5MM5a1utc0VfniLs+1nwHoMqoYW9G8ke2XGgxvWhJyLi8uX6ATutpMMIbVkHsUIx12Y86rxF30VLnt7EhFMZVagp3zcJaoTUua2aXOhpNue3HA2SBpmUW7uqXQyDMf3H27sosdW0isF/J2utYTK+ENv6lyZ7eqDbNnlJiVRGunMfuQosVe+NT5Fpn7k3d+yw94decCMWfxg7SbWapeRcy3V1GTfDo5lhp4qO040Zf9FKa3GCjTXWQFxsFVipllun8aRELibA7uZJnoXEavJNYoaT5TfSFBgBQVfyRkM2X004B+VuALowE2NOYzOqTLgWHPzS8=
-￼   on_success: change
-￼   on_failure: change
+  - arm64
 
 language: python
 addons:
@@ -24,6 +13,24 @@ addons:
       - python3
       - python3-pip
       - python3-setuptools
+
+jobs:
+  # It takes a very long time to spin up an ARM machine on travis.
+  # Because of this, we will allow arm64 builds to fail.
+  fast_finish: true
+  allow_failures:
+  - arch: arm64
+  include:
+    - arch: amd64
+    - arch: arm64
+
+# The channel name "chat.freenode.net#kiali" is encrypted to prevent IRC spam from forks
+notifications:
+￼ irc:
+￼   channels:
+      - secure: D7BiCSh0qJzKsEYmWsCdt2XaQve2yQPqF97LaCVU70nNDUMmzwvd8B24lVp4LcmS0t6jkIMvOiLB4PJldjNk/s5Y6IH23+7id/gRFopKLAI2DynqhLlDs0asRRzeUbzDlqdMP8AtyzIUcKnB0MLExoM1TIoHHHc9z1CbyFFFw3JDS12NWf35Lr5KNf0YojtdU/YSDGse33lGuUlZD8p9JacSI09BEUrzgtfuetD5LInbp9f+283hAlj7kY5psonDVvISQTRavT98GIpimo/7Gq0fesKoWPSOks5Y30MkAB+NVfVmECe6r1iqIeUXrdttjTnT+kqiW0OPQPYek5vO9RCr1N7qjhz8xjEbfV5MM5a1utc0VfniLs+1nwHoMqoYW9G8ke2XGgxvWhJyLi8uX6ATutpMMIbVkHsUIx12Y86rxF30VLnt7EhFMZVagp3zcJaoTUua2aXOhpNue3HA2SBpmUW7uqXQyDMf3H27sosdW0isF/J2utYTK+ENv6lyZ7eqDbNnlJiVRGunMfuQosVe+NT5Fpn7k3d+yw94decCMWfxg7SbWapeRcy3V1GTfDo5lhp4qO040Zf9FKa3GCjTXWQFxsFVipllun8aRELibA7uZJnoXEavJNYoaT5TfSFBgBQVfyRkM2X004B+VuALowE2NOYzOqTLgWHPzS8=
+￼   on_success: change
+￼   on_failure: change
 
 before_install:
   - pip3 install --upgrade pip
