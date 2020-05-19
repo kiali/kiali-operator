@@ -135,6 +135,9 @@ spec:
 #  the individual's  RBAC roles in OpenShift. Not valid for non-OpenShift environments.
 # Choose "ldap" to enable LDAP based authentication. There are additional configurations for
 #  LDAP auth strategy that are required. See below for the additional LDAP configuration section.
+# Choose "openid" to enable OpenID connect based authentication. Your cluster is required to
+#  be configured to accept the tokens issued by your IdP. There are additional required
+#  configurations for this strategy. See below for the additional OpenID configuration section.
 # When empty, its value will default to "openshift" on OpenShift and "login" on Kubernetes.
 #    ---
 #    strategy: ""
@@ -159,6 +162,38 @@ spec:
 #      ldap_use_ssl: false
 #      ldap_user_filter: "(cn=%s)"
 #      ldap_user_id_key: "cn"
+#
+#    ---
+# When "openid" strategy is chosen for authentication, you will need to fill some
+# required configurations in the following openid section. The "openid" authentication strategy
+# assumes that your Kubernetes cluster is properly configured to accept OpenID connect
+# tokens and delegates token validation to the cluster's API Server. Thus, "openid" strategy
+# won't work without the proper configuration on your Kubernetes cluster
+# (see https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
+#
+# The "openid" strategy should NOT be used when installing Kiali in OpenShift. In this case, you
+# still should use "openshift" strategy and, in turn, setup OpenShift to use your IdP. For
+# OpenShift 4.4, you can find related docs here: https://docs.openshift.com/container-platform/4.4/authentication/identity_providers/configuring-oidc-identity-provider.html
+#
+# Kiali requires that your IdP allows the Implicit Flow grant. The 'issuer_uri' and 'client_id' attributes
+# are required values and must match your OpenId-Connect Kubernetes configuration. The 'username_claim'
+# is optional, but must match the value configured in your cluster (default value is "sub").
+#
+# You can, optionally, specify an 'authorization_endpoint' which is the URI where users will
+# be redirected to login and authorize access to Kiali. If you don't specify it, Kiali will try
+# to discover it using the 'issuer_uri'.
+#
+# By default, Kiali will ask for "openid" (forced), "profile" and "email" scopes when asking
+# for authentication to the OpenID provider. These are standard OpenID scopes. If this doesn't
+# suit your needs, you can change the 'scopes' setting as long as your cluster will accept
+# the issued token.
+#
+#    openid:
+#      issuer_uri: ""
+#      client_id: ""
+#      scopes: ["profile", "email"]
+#      username_claim: "sub"
+#      authorization_endpoint: ""
 
 ##########
 #  ---

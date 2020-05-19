@@ -333,19 +333,26 @@
   - kiali_vars.auth.strategy != 'token'
 - name: Confirm auth strategy is valid for Kubernetes environments
   fail:
-    msg: "Invalid auth.strategy [{{ kiali_vars.auth.strategy }}]! Must be one of either 'login', 'ldap', 'token' or 'anonymous'"
+    msg: "Invalid auth.strategy [{{ kiali_vars.auth.strategy }}]! Must be one of either 'login', 'ldap', 'token', 'openid' or 'anonymous'"
   when:
   - is_k8s == True
   - kiali_vars.auth.strategy != 'login'
   - kiali_vars.auth.strategy != 'anonymous'
   - kiali_vars.auth.strategy != 'ldap'
   - kiali_vars.auth.strategy != 'token'
+  - kiali_vars.auth.strategy != 'openid'
 - name: Confirm ldap configuration when auth strategy is 'ldap'
   fail:
     msg: "Invalid configuration for LDAP! The mandatory parameters should be provided like `ldap_host', 'ldap_port', 'ldap_bind_dn', and 'ldap_base'"
   when:
   - kiali_vars.auth.strategy == "ldap"
   - kiali_vars.auth.ldap.ldap_host == "" or kiali_vars.auth.ldap.ldap_port <= 0 or kiali_vars.auth.ldap.ldap_bind_dn == "" or kiali_vars.auth.ldap.ldap_base == ""
+- name: Confirm OpenID configuration when auth strategy is 'openid'
+  fail:
+    msg: "Invalid configuration for OpenID connect! The mandatory parameters should be provided: `issuer_uri', 'client_id'. Also, the 'username_claim' cannot be set to the empty string."
+  when:
+  - kiali_vars.auth.strategy == "openid"
+  - kiali_vars.auth.openid.issuer_uri == "" or kiali_vars.auth.openid.client_id == "" or kiali_vars.auth.openid.username_claim == ""
 # Fail if ingress is disabled but auth_strategy is openshift. This is because the openshift auth strategy
 # requires OAuth Client which requires a Route. So ingress must be enabled if strategy is openshift.
 - name: Ensure Ingress is Enabled if Auth Strategy is openshift

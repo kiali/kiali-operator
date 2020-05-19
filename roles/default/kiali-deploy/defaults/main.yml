@@ -43,6 +43,12 @@ kiali_defaults:
       ldap_use_ssl: false
       ldap_user_filter: "(cn=%s)"
       ldap_user_id_key: "cn"
+    openid:
+      issuer_uri: ""
+      client_id: ""
+      scopes: ["profile", "email"]
+      username_claim: "sub"
+      authorization_endpoint: ""
     strategy: ""
 
   deployment:
