@@ -311,6 +311,7 @@ spec:
           - pods
           - serviceaccounts
           - services
+          - services/finalizers
           verbs:
           - create
           - delete
