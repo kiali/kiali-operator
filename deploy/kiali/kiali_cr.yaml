@@ -163,7 +163,6 @@ spec:
 #      ldap_user_filter: "(cn=%s)"
 #      ldap_user_id_key: "cn"
 #
-#    ---
 # When "openid" strategy is chosen for authentication, you will need to fill some
 # required configurations in the following openid section. The "openid" authentication strategy
 # assumes that your Kubernetes cluster is properly configured to accept OpenID connect
@@ -188,12 +187,13 @@ spec:
 # suit your needs, you can change the 'scopes' setting as long as your cluster will accept
 # the issued token.
 #
+#    ---
 #    openid:
-#      issuer_uri: ""
+#      authorization_endpoint: ""
 #      client_id: ""
+#      issuer_uri: ""
 #      scopes: ["profile", "email"]
 #      username_claim: "sub"
-#      authorization_endpoint: ""
 
 ##########
 #  ---

@@ -44,11 +44,11 @@ kiali_defaults:
       ldap_user_filter: "(cn=%s)"
       ldap_user_id_key: "cn"
     openid:
-      issuer_uri: ""
+      authorization_endpoint: ""
       client_id: ""
+      issuer_uri: ""
       scopes: ["profile", "email"]
       username_claim: "sub"
-      authorization_endpoint: ""
     strategy: ""
 
   deployment:
