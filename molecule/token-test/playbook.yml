@@ -8,12 +8,27 @@
   - import_tasks: ../asserts/pod_asserts.yml
 
   # prepare the test token
+  - name: Create Token Test Resources
+    vars:
+      sa_namespace: "token-test-ns"
+    k8s:
+      state: present
+      definition: "{{ lookup('template', token.resources_yaml_file) }}"
+
   - import_tasks: prepare-token.yml
     vars:
-      sa_namespace: "{{ istio.control_plane_namespace }}"
+      sa_namespace: "token-test-ns"
 
   # test Kiali access via token
   - import_tasks: ../asserts/token-test/assert-token-access.yml
     vars:
       test_token: "{{ test_token }}"
-      sa_namespace: "{{ istio.control_plane_namespace }}"
+      sa_namespace: "token-test-ns"
+
+  - name: Delete Token Test Resources
+    vars:
+      sa_namespace: "token-test-ns"
+    k8s:
+      state: absent
+      namespace: "token-test-ns"
+      definition: "{{ lookup('template', token.resources_yaml_file) }}"
