@@ -21,6 +21,8 @@ provisioner:
         cr_namespace: kiali-operator
         istio:
           control_plane_namespace: istio-system
+        token:
+          resources_yaml_file: token-test-resources.yaml
         kiali:
           install_namespace: istio-system
           accessible_namespaces: ["**"]
