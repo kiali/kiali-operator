@@ -44,8 +44,10 @@ kiali_defaults:
       ldap_user_filter: "(cn=%s)"
       ldap_user_id_key: "cn"
     openid:
+      authentication_timeout: 300
       authorization_endpoint: ""
       client_id: ""
+      insecure_skip_verify_tls: false
       issuer_uri: ""
       scopes: ["profile", "email"]
       username_claim: "sub"

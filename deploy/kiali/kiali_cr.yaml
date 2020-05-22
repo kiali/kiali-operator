@@ -187,10 +187,20 @@ spec:
 # suit your needs, you can change the 'scopes' setting as long as your cluster will accept
 # the issued token.
 #
+# When users are logging in, Kiali will wait at most 5 minutes after the "Login" button is pressed
+# in Kiali and redirected to the OpenID provider. If users don't login withing 5 minutes, Kiali will
+# reject login even if the user authenticates successfully. You can change this time by adjusting
+# the 'authentication_timeout' option.
+#
+# If your OpenID provider is using a certificate signed by an unknown CA, adjust the 'insecure_skip_verify_tls'
+# to disable the certificate verification. Remember this should be for testing purposes only.
+#
 #    ---
 #    openid:
+#      authentication_timeout: 300
 #      authorization_endpoint: ""
 #      client_id: ""
+#      insecure_skip_verify_tls: false
 #      issuer_uri: ""
 #      scopes: ["profile", "email"]
 #      username_claim: "sub"
