@@ -9,7 +9,7 @@ metadata:
 spec:
   href: {{ kiali_route_url }}
   location: ApplicationMenu
-  text: Kiali
+  text: Kiali [{{ kiali_vars.deployment.namespace }}]
 {% if openshift_version is version('4.3', '>=') %}
 {% for namespace in namespaces %}
 ---
