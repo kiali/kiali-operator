@@ -34,7 +34,7 @@ provisioner:
           operator_role_create: "- create"
           operator_role_delete: "- delete"
           operator_role_patch: "- patch"
-          auth_strategy: openshift
+          auth_strategy: anonymous
           image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')|default('quay.io/kiali/kiali', True)) }}"
           image_version: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION')|default('latest', True) }}"
           label_selector: ""

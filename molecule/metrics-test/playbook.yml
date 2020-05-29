@@ -69,3 +69,5 @@
       that:
       - prometheus_query_results.json.data.result | length > 0
 
+  # Clean up anything we had to create to prepare prometheus for the test
+  - import_tasks: ../common/unprepare-prometheus.yml
