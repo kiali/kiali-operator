@@ -49,7 +49,7 @@ kiali_defaults:
       client_id: ""
       insecure_skip_verify_tls: false
       issuer_uri: ""
-      scopes: ["profile", "email"]
+      scopes: ["openid", "profile", "email"]
       username_claim: "sub"
     strategy: ""
 
@@ -181,7 +181,9 @@ kiali_defaults:
     metrics_enabled: true
     metrics_port: 9090
     port: 20001
+    web_fqdn: ""
     web_root: ""
+    web_schema: ""
 
 # These variables are outside of the kiali_defaults. Their values will be
 # auto-detected by the role and are not meant to be set by the user.

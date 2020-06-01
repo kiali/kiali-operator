@@ -284,6 +284,14 @@
   - kiali_vars.server.web_root != "/"
   - kiali_vars.server.web_root is match(".*/$")
 
+- name: Validate web_schema configuration
+  fail:
+    msg: "Invalid server.web_schema [{{ kiali_vars.server.web_schema }}]! Must be empty, or one of either 'http' or 'https'"
+  when:
+  - kiali_vars.server.web_schema != ''
+  - kiali_vars.server.web_schema != 'https'
+  - kiali_vars.server.web_schema != 'http'
+
 - name: Set default identity cert_file based on cluster type
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'identity': {'cert_file': '/kiali-cert/tls.crt' if is_openshift else ''}}, recursive=True) }}"

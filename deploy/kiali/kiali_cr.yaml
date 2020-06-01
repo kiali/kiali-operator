@@ -188,7 +188,7 @@ spec:
 # the issued token.
 #
 # When users are logging in, Kiali will wait at most 5 minutes after the "Login" button is pressed
-# in Kiali and redirected to the OpenID provider. If users don't login withing 5 minutes, Kiali will
+# in Kiali and redirected to the OpenID provider. If users don't login within 5 minutes, Kiali will
 # reject login even if the user authenticates successfully. You can change this time by adjusting
 # the 'authentication_timeout' option.
 #
@@ -202,7 +202,7 @@ spec:
 #      client_id: ""
 #      insecure_skip_verify_tls: false
 #      issuer_uri: ""
-#      scopes: ["profile", "email"]
+#      scopes: ["openid", "profile", "email"]
 #      username_claim: "sub"
 
 ##########
@@ -691,10 +691,23 @@ spec:
 #    ---
 #    port: 20001
 #
+# Defines the public domain where Kiali is being served. This the "domain" part
+# of the URL (usually it's a full-qualified domain name).
+# For example, "kiali.example.org".
+# When empty, Kiali will try to guess this value from HTTP headers.
+#    ---
+#    web_fqdn: ""
+#
 # Defines the context root path for the Kiali console and API endpoints and readiness probes.
 # When providing a context root path that is not "/", do not add a trailing slash.
 # For example, use "/kiali" not "/kiali/".
 # When empty, will default to "/" on OpenShift and "/kiali" on Kubernetes.
 #    ---
 #    web_root: ""
+#
+# Defines the public HTTP schema used to serve Kiali. This can only take
+# two possible values: either "http" or "https".
+# When empty, Kiali will try to guess this value from HTTP headers.
+#    ---
+#    web_schema: ""
 
