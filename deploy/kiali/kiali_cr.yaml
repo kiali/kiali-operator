@@ -691,8 +691,8 @@ spec:
 #    ---
 #    port: 20001
 #
-# Defines the public domain where Kiali is being served. This the "domain" part
-# of the URL (usually it's a full-qualified domain name).
+# Defines the public domain where Kiali is being served. This is the "domain" part
+# of the URL (usually it's a fully-qualified domain name).
 # For example, "kiali.example.org".
 # When empty, Kiali will try to guess this value from HTTP headers.
 #    ---
@@ -710,4 +710,3 @@ spec:
 # When empty, Kiali will try to guess this value from HTTP headers.
 #    ---
 #    web_schema: ""
-
