@@ -1,3 +1,11 @@
+- name: Get information about the cluster
+  set_fact:
+    api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+- name: Determine the cluster type
+  set_fact:
+    is_openshift: "{{ True if 'route.openshift.io' in api_groups else False }}"
+    is_k8s: "{{ False if 'route.openshift.io' in api_groups else True }}"
+
 - name: Get Kiali CR if present
   set_fact:
     kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
@@ -54,7 +62,18 @@
     label_selectors:
     - app = kiali
   register: kiali_route
+  when:
+  - is_openshift == True
 
-- name: Set Kiali's Route URL
+- name: Determine the Kiali Route URL on OpenShift
   set_fact:
     kiali_base_url: "https://{{ kiali_route.resources[0].spec.host }}"
+  when:
+  - is_openshift == True
+
+- name: Determine the Kiali Ingress URL on minikube
+  set_fact:
+    kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}/kiali"
+  when:
+  - is_k8s == True
+
