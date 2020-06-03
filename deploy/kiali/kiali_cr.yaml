@@ -135,6 +135,9 @@ spec:
 #  the individual's  RBAC roles in OpenShift. Not valid for non-OpenShift environments.
 # Choose "ldap" to enable LDAP based authentication. There are additional configurations for
 #  LDAP auth strategy that are required. See below for the additional LDAP configuration section.
+# Choose "openid" to enable OpenID connect based authentication. Your cluster is required to
+#  be configured to accept the tokens issued by your IdP. There are additional required
+#  configurations for this strategy. See below for the additional OpenID configuration section.
 # When empty, its value will default to "openshift" on OpenShift and "login" on Kubernetes.
 #    ---
 #    strategy: ""
@@ -159,6 +162,48 @@ spec:
 #      ldap_use_ssl: false
 #      ldap_user_filter: "(cn=%s)"
 #      ldap_user_id_key: "cn"
+#
+# When "openid" strategy is chosen for authentication, you will need to fill some
+# required configurations in the following openid section. The "openid" authentication strategy
+# assumes that your Kubernetes cluster is properly configured to accept OpenID connect
+# tokens and delegates token validation to the cluster's API Server. Thus, "openid" strategy
+# won't work without the proper configuration on your Kubernetes cluster
+# (see https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
+#
+# The "openid" strategy should NOT be used when installing Kiali in OpenShift. In this case, you
+# still should use "openshift" strategy and, in turn, setup OpenShift to use your IdP. For
+# OpenShift 4.4, you can find related docs here: https://docs.openshift.com/container-platform/4.4/authentication/identity_providers/configuring-oidc-identity-provider.html
+#
+# Kiali requires that your IdP allows the Implicit Flow grant. The 'issuer_uri' and 'client_id' attributes
+# are required values and must match your OpenId-Connect Kubernetes configuration. The 'username_claim'
+# is optional, but must match the value configured in your cluster (default value is "sub").
+#
+# You can, optionally, specify an 'authorization_endpoint' which is the URI where users will
+# be redirected to login and authorize access to Kiali. If you don't specify it, Kiali will try
+# to discover it using the 'issuer_uri'.
+#
+# By default, Kiali will ask for "openid" (forced), "profile" and "email" scopes when asking
+# for authentication to the OpenID provider. These are standard OpenID scopes. If this doesn't
+# suit your needs, you can change the 'scopes' setting as long as your cluster will accept
+# the issued token.
+#
+# When users are logging in, Kiali will wait at most 5 minutes after the "Login" button is pressed
+# in Kiali and redirected to the OpenID provider. If users don't login within 5 minutes, Kiali will
+# reject login even if the user authenticates successfully. You can change this time by adjusting
+# the 'authentication_timeout' option.
+#
+# If your OpenID provider is using a certificate signed by an unknown CA, adjust the 'insecure_skip_verify_tls'
+# to disable the certificate verification. Remember this should be for testing purposes only.
+#
+#    ---
+#    openid:
+#      authentication_timeout: 300
+#      authorization_endpoint: ""
+#      client_id: ""
+#      insecure_skip_verify_tls: false
+#      issuer_uri: ""
+#      scopes: ["openid", "profile", "email"]
+#      username_claim: "sub"
 
 ##########
 #  ---
@@ -646,10 +691,22 @@ spec:
 #    ---
 #    port: 20001
 #
+# Defines the public domain where Kiali is being served. This is the "domain" part
+# of the URL (usually it's a fully-qualified domain name).
+# For example, "kiali.example.org".
+# When empty, Kiali will try to guess this value from HTTP headers.
+#    ---
+#    web_fqdn: ""
+#
 # Defines the context root path for the Kiali console and API endpoints and readiness probes.
 # When providing a context root path that is not "/", do not add a trailing slash.
 # For example, use "/kiali" not "/kiali/".
 # When empty, will default to "/" on OpenShift and "/kiali" on Kubernetes.
 #    ---
 #    web_root: ""
-
+#
+# Defines the public HTTP schema used to serve Kiali. This can only take
+# two possible values: either "http" or "https".
+# When empty, Kiali will try to guess this value from HTTP headers.
+#    ---
+#    web_schema: ""
