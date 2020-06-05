@@ -149,7 +149,9 @@
 #     based on the individual's RBAC roles in OpenShift.
 #    Choose "ldap" to enable LDAP based authentication. There are additional configurations for
 #     LDAP auth strategy that are required. See below for the additional LDAP configuration section.
-#    Default: "openshift" (when using OpenShift), "login" (when using Kubernetes)
+#    Choose "openid" to enable openid based authentication. There are additional configurations for
+#     openid strategy that are required. See below for the additional configuration section.
+#    Default: "openshift" (when using OpenShift), "token" (when using Kubernetes)
 #
 # CREDENTIALS_CREATE_SECRET
 #    When "true" a secret will be created with the credentials provided to this script.
@@ -443,8 +445,8 @@ Valid options for Kiali installation (if Kiali is to be installed):
       Default: "^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"
   -as|--auth-strategy
       Determines what authentication strategy to use.
-      Valid values are "login", "anonymous", "token", "ldap" and "openshift"
-      Default: "openshift" (when using OpenShift), "login" (when using Kubernetes)
+      Valid values are "login", "anonymous", "token", "ldap", "openshift" and "openid"
+      Default: "openshift" (when using OpenShift), "token" (when using Kubernetes)
   -ccs|--credentials-create-secret
       When "true" a secret will be created with the credentials provided to this script.
       Only used when the authentication strategy is set to "login".
@@ -538,8 +540,8 @@ else
   CLIENT_EXE=$(which kubectl 2>/dev/null)
   if [ "$?" == "0" ]; then
     echo "Using 'kubectl' located here: ${CLIENT_EXE}"
-    _AUTH_STRATEGY_DEFAULT="login"
-    _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'login', 'token', 'ldap' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
+    _AUTH_STRATEGY_DEFAULT="token"
+    _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'login', 'token', 'ldap', 'openid' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
   else
     echo "ERROR: You do not have 'oc' or 'kubectl' in your PATH. Please install it and retry."
     exit 1
@@ -813,11 +815,11 @@ if [ "${KIALI_CR}" != "" ]; then
     # If auth strategy isn't in the yaml, then we need to fallback to the known default the operator will use
     # which is based on cluster type. If the client is "oc" (anything ending with "oc" such as "istiooc" for example)
     # then assume the cluster is OpenShift and the default auth strategy is "openshift"; otherwise assume the
-    # cluster is Kubernetes which means the default auth strategy is "login".
+    # cluster is Kubernetes which means the default auth strategy is "token".
     if [[ "$CLIENT_EXE" = *"oc" ]]; then
       AUTH_STRATEGY="openshift"
     else
-      AUTH_STRATEGY="login"
+      AUTH_STRATEGY="token"
     fi
   fi
 
@@ -1020,8 +1022,7 @@ print_skip_kiali_create_msg() {
   echo "  https://raw.githubusercontent.com/kiali/kiali-operator/${_branch}/deploy/kiali/kiali_cr.yaml"
   echo "To install Kiali with all default settings, you can run:"
   echo "  ${CLIENT_EXE} apply -n ${_ns} -f https://raw.githubusercontent.com/kiali/kiali-operator/${_branch}/deploy/kiali/kiali_cr.yaml"
-  echo "Do not forget to create a secret if you wish to use an auth strategy of 'login' (This is"
-  echo "the default setting when installing in Kubernetes but not OpenShift)."
+  echo "Do not forget to create a secret if you wish to use an auth strategy of 'login'"
   echo "An example would be:"
   echo "  ${CLIENT_EXE} create secret generic ${SECRET_NAME} -n ${NAMESPACE} --from-literal 'username=admin' --from-literal 'passphrase=admin'"
   echo "=========================================="
@@ -1057,8 +1058,8 @@ if [ "${AUTH_STRATEGY}" == "" ]; then
 fi
 
 # Verify the AUTH_STRATEGY is a proper known value
-if [ "${AUTH_STRATEGY}" != "login" ] && [ "${AUTH_STRATEGY}" != "openshift" ] && [ "${AUTH_STRATEGY}" != "anonymous" ] && [ "${AUTH_STRATEGY}" != "token" ] && [ "${AUTH_STRATEGY}" != "ldap" ]; then
-  echo "ERROR: unknown AUTH_STRATEGY [$AUTH_STRATEGY] must be either 'login', 'openshift', 'token', 'ldap' or 'anonymous'"
+if [ "${AUTH_STRATEGY}" != "login" ] && [ "${AUTH_STRATEGY}" != "openshift" ] && [ "${AUTH_STRATEGY}" != "anonymous" ] && [ "${AUTH_STRATEGY}" != "token" ] && [ "${AUTH_STRATEGY}" != "ldap" ] && [ "${AUTH_STRATEGY}" != "openid" ]; then
+  echo "ERROR: unknown AUTH_STRATEGY [$AUTH_STRATEGY] must be either 'login', 'openshift', 'token', 'ldap', 'openid' or 'anonymous'"
   exit 1
 fi
 
@@ -1246,3 +1247,4 @@ EOF
 fi
 
 echo "Done."
+
