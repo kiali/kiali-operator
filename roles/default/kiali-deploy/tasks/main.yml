@@ -322,7 +322,7 @@
 
 - name: Set default auth strategy based on cluster type
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'auth': {'strategy': 'openshift' if is_openshift else 'login'}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'auth': {'strategy': 'openshift' if is_openshift else 'token'}}, recursive=True) }}"
   when:
   - kiali_vars.auth.strategy == ""
 

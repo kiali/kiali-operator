@@ -138,7 +138,7 @@ spec:
 # Choose "openid" to enable OpenID connect based authentication. Your cluster is required to
 #  be configured to accept the tokens issued by your IdP. There are additional required
 #  configurations for this strategy. See below for the additional OpenID configuration section.
-# When empty, its value will default to "openshift" on OpenShift and "login" on Kubernetes.
+# When empty, its value will default to "openshift" on OpenShift and "token" on Kubernetes.
 #    ---
 #    strategy: ""
 #    ---
