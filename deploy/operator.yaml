@@ -28,6 +28,8 @@ spec:
       - name: operator
         image: ${OPERATOR_IMAGE_NAME}:${OPERATOR_IMAGE_VERSION}
         imagePullPolicy: ${OPERATOR_IMAGE_PULL_POLICY}
+        args:
+        - "--zap-level=info"
         volumeMounts:
         - mountPath: /tmp/ansible-operator/runner
           name: runner
@@ -46,6 +48,8 @@ spec:
           value: "kiali-operator"
         - name: ANSIBLE_DEBUG_LOGS
           value: "True"
+        - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
+          value: "1"
         ports:
         - name: http-metrics
           containerPort: 8383
