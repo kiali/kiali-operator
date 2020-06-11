@@ -5,10 +5,6 @@
 # the user will never be able to delete the Kiali CR - in fact, the delete will hang indefinitely
 # and the user will need to do an ugly hack to fix it.
 
-- ignore_errors: yes
-  debug:
-    msg: REMOVING KIALI
-
 - name: Get information about the cluster
   ignore_errors: yes
   set_fact:
@@ -166,8 +162,3 @@
   - "{{ query('k8s', kind='ConsoleLink', label_selector='kiali.io/home=' + kiali_vars.deployment.namespace)}}"
   loop_control:
     loop_var: os_item
-
-- name: Kiali operator has completed all processing for removal.
-  ignore_errors: yes
-  debug:
-    msg: "KIALI REMOVAL IS DONE."
