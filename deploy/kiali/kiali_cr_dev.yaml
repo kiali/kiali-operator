@@ -9,6 +9,12 @@ spec:
   version: "${KIALI_CR_SPEC_VERSION}"
   auth:
     strategy: $AUTH_STRATEGY
+#    openid:
+#      client_id: kiali-app
+#      insecure_skip_verify_tls: true
+#      issuer_uri: "https://192-168-99-100.nip.io:32000"
+#      username_claim: email
+
   deployment:
     accessible_namespaces: [ "${ACCESSIBLE_NAMESPACES}" ]
     image_name: $KIALI_IMAGE_NAME

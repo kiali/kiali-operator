@@ -1,0 +1,181 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  # Wait for Kiali to be running and accepting requests.
+  # This has the added benefit of confirming that we can access a
+  # Kiali endpoint that does not need authentication.
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  - name: Make sure the test set the strategy to openid
+    assert:
+      that:
+      - kiali_configmap.auth.strategy == "openid"
+
+  - name: Assert that we can access Kiali console login screen that does not need authentication
+    uri:
+      url: "{{ kiali_base_url }}/console"
+      validate_certs: false
+
+  - name: Try to access Kiali api endpoint that requires authentication (should return 401)
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      status_code: 401
+      validate_certs: false
+
+  - name: Attempt login with invalid credentials
+    uri:
+      url: "{{ kiali_base_url }}/api/authenticate"
+      user: invalid
+      password: invalid
+      status_code: 401
+      return_content: yes
+      validate_certs: false
+    register: kiali_output
+
+  - name: Attempt login with good credentials but not logging in via OpenID
+    uri:
+      url: "{{ kiali_base_url }}/api/authenticate"
+      user: "{{ openid.username }}"
+      password: "{{ openid.password }}"
+      status_code: 401
+      return_content: yes
+      validate_certs: false
+    register: kiali_output
+
+  # BEGIN A SUCCESSFUL OPENID LOGIN PROCESS
+
+  - name: Get auth info from Kiali Server
+    uri:
+      url: "{{ kiali_base_url }}/api/auth/info"
+      return_content: yes
+      validate_certs: false
+    register: kiali_output
+  - name: Assert that the auth info is for openid
+    assert:
+      that:
+      - kiali_output.json.strategy == "openid"
+      - kiali_output.json.authorizationEndpoint is search("openid_redirect")
+      - kiali_output.json.sessionInfo.keys() | length == 0
+  - name: Set the auth endpoint we are being redirected to and change it to use http because an error occurs later if using https
+    set_fact:
+      auth_endpoint: "{{ kiali_output.json.authorizationEndpoint | regex_replace('^http[s]?:(.*)','http:\\1')  }}"
+
+  - name: Send request to auth endpoint
+    uri:
+      url: "{{ auth_endpoint }}"
+      return_content: yes
+      validate_certs: false
+      follow_redirects: none
+      status_code: 302
+    register: kiali_output
+  - name: Assert that the auth endpoint returned valid data
+    assert:
+      that:
+      - kiali_output.location is defined
+      - kiali_output.set_cookie is defined
+      - kiali_output.set_cookie is search("kiali-token-openid-nonce")
+  - set_fact:
+      auth2_endpoint: "{{ kiali_output.location }}"
+      nonce_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-openid-nonce=[^;]+).*', '\\1') }}"
+
+  - name: Send request to auth2 endpoint which will redirect to the OpenID login screen
+    uri:
+      url: "{{ auth2_endpoint }}"
+      return_content: yes
+      validate_certs: false
+      follow_redirects: all
+      status_code: 200
+    register: kiali_output
+  - name: Assert that the auth2 endpoint returned valid data
+    assert:
+      that:
+      - kiali_output.url is defined
+  - set_fact:
+      openid_login_endpoint: "{{ kiali_output.url }}"
+
+  - name: Send login post request to openid login screen endpoint
+    uri:
+      url: "{{ openid_login_endpoint }}"
+      return_content: yes
+      validate_certs: false
+      follow_redirects: none
+      status_code: 303
+      method: POST
+      body_format: form-urlencoded
+      body:
+        login: "{{ openid.username }}"
+        password: "{{ openid.password }}"
+    register: kiali_output
+  - name: Assert that the login endpoint returned valid data
+    assert:
+      that:
+      - kiali_output.location is defined
+  - name: There is a weird problem where the location has two '?' portions - I think its a bug. So build the URL that we know is good.
+    set_fact:
+      openid_approval_endpoint: "{{ kiali_output.url | regex_replace('auth/local','approval')  }}"
+
+  - name: Send request to OpenID approval endpoint
+    uri:
+      url: "{{ openid_approval_endpoint }}"
+      return_content: yes
+      validate_certs: false
+      follow_redirects: none
+      status_code: 303
+    register: kiali_output
+  - name: Assert that the OpenID approval endpoint returned valid data
+    assert:
+      that:
+      - kiali_output.location is defined
+  - set_fact:
+      final_kiali_endpoint: "{{ kiali_output.location }}"
+      access_token: "{{ kiali_output.location | regex_replace('.*access_token=([^&]+).*', '\\1') }}"
+      expires_in: "{{ kiali_output.location | regex_replace('.*expires_in=([^&]+).*', '\\1') }}"
+      id_token: "{{ kiali_output.location | regex_replace('.*id_token=([^&]+).*', '\\1') }}"
+      token_type: "{{ kiali_output.location | regex_replace('.*token_type=([^&]+).*', '\\1') }}"
+
+  - name: Send request to final Kiali endpoint with a valid session
+    uri:
+      url: "{{ final_kiali_endpoint }}"
+      return_content: yes
+      validate_certs: false
+      follow_redirects: all
+      status_code: 200
+    register: kiali_output
+
+  - name: With the login cookie and nonce code, make a request to the kiali auth endpoint
+    uri:
+      url: "{{ kiali_base_url }}/api/authenticate"
+      headers:
+        Cookie: "{{ nonce_cookie }}"
+      method: POST
+      body_format: form-urlencoded
+      body:
+        access_token: "{{ access_token }}"
+        expires_in: "{{ expires_in }}"
+        id_token: "{{ id_token }}"
+        token_type: "{{ token_type }}"
+      return_content: yes
+      validate_certs: false
+    register: kiali_output
+
+  - set_fact:
+      new_kiali_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token=[^;]+).*', '\\1') }}"
+
+  - name: With the updated login cookie, make a request that requires authentication (should now return 200)
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      headers:
+        Cookie: "{{ new_kiali_cookie }}"
+      return_content: yes
+      validate_certs: false
+    register: kiali_output
+  - name: Assert that we were able to get the list of namespaces
+    assert:
+      that:
+      - kiali_output.json | length > 0
