@@ -9,7 +9,7 @@
 ################################################
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
-DEFAULT_GIT_REPO=${SCRIPT_DIR}/../../../../../../../../community-operators
+DEFAULT_GIT_REPO=${SCRIPT_DIR}/../../../community-operators
 GIT_REPO=${DEFAULT_GIT_REPO}
 
 while [[ $# -gt 0 ]]; do
