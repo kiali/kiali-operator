@@ -1,5 +1,5 @@
 - debug:
-    msg: INSTALLING KIALI
+    msg: "KIALI RECONCILIATION START: {{ lookup('pipe','date') }}"
 
 - name: Get information about the cluster
   set_fact:
@@ -776,4 +776,4 @@
 
 - name: Kiali operator has completed all processing for installation.
   debug:
-    msg: "KIALI INSTALLATION IS DONE."
+    msg: "KIALI RECONCILIATION FINISHED: {{ lookup('pipe','date') }}"
