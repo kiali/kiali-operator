@@ -2,6 +2,13 @@
   gather_facts: no
   tasks:
 
+  - debug:
+      msg: KIALI RECONCILIATION START
+
+  - name: Playbook start time
+    set_fact:
+      playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
   - name: Determine the default playbook
     include_vars:
       file: "default-playbook.yml"
@@ -41,3 +48,16 @@
   - name: Run the version-specific deploy role
     include_role:
       name: "{{ version }}/kiali-deploy"
+
+  - name: Playbook end time
+    set_fact:
+      playbook_time_end: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - name: Log reconciliation processing time
+    ignore_errors: yes
+    debug:
+      msg: "Processing time: [{{ (playbook_time_end|to_datetime - playbook_time_start|to_datetime).total_seconds() | int }}] seconds"
+
+  - debug:
+      msg: KIALI RECONCILIATION IS DONE.
+

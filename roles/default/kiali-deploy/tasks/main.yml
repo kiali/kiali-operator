@@ -1,6 +1,3 @@
-- debug:
-    msg: "KIALI RECONCILIATION START: {{ lookup('pipe','date') }}"
-
 - name: Get information about the cluster
   set_fact:
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
@@ -773,7 +770,3 @@
   - processed_resources.configmap is defined
   - processed_resources.configmap.changed == True
   - processed_resources.configmap.method == "patch"
-
-- name: Kiali operator has completed all processing for installation.
-  debug:
-    msg: "KIALI RECONCILIATION FINISHED: {{ lookup('pipe','date') }}"

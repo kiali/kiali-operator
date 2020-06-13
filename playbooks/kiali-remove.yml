@@ -1,10 +1,36 @@
 - hosts: localhost
   gather_facts: no
   tasks:
-  - name: Determine the default playbook
+
+  - ignore_errors: yes
+    debug:
+      msg: REMOVING KIALI
+
+  - ignore_errors: yes
+    name: Playbook start time
+    set_fact:
+      playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - ignore_errors: yes
+    name: Determine the default playbook
     include_vars:
       file: "default-playbook.yml"
       name: default_playbook
 
-  - include_role:
+  - ignore_errors: yes
+    include_role:
       name: "{{ version | default(default_playbook.playbook) }}/kiali-remove"
+
+  - ignore_errors: yes
+    name: Playbook end time
+    set_fact:
+      playbook_time_end: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - ignore_errors: yes
+    name: Log removal processing time
+    debug:
+      msg: "Processing time: [{{ (playbook_time_end|to_datetime - playbook_time_start|to_datetime).total_seconds() | int }}] seconds"
+
+  - ignore_errors: yes
+    debug:
+      msg: KIALI REMOVAL IS DONE.
