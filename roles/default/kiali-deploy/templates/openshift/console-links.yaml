@@ -12,7 +12,7 @@ metadata:
 spec:
   href: {{ kiali_route_url }}{{ '/' if kiali_vars.server.web_root == '/' else (kiali_vars.server.web_root + '/') }}console/graph/namespaces?namespaces={{ namespace }}
   location: NamespaceDashboard
-  text: Open on Kiali
+  text: Kiali
   namespaceDashboard:
     namespaces:
     - {{ namespace }}
