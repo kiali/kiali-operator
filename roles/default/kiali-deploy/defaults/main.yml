@@ -9,7 +9,6 @@
 
 kiali_defaults:
   installation_tag: ""
-  istio_component_namespaces: {}
   istio_namespace: ""
   version: "default"
 

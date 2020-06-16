@@ -183,57 +183,27 @@
   when:
   - kiali_vars.istio_namespace == ""
 
-- name: "Set default istio component namespace: grafana"
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'grafana': kiali_vars.istio_namespace}}, recursive=True) }}"
-  when:
-  - kiali_vars.istio_component_namespaces.grafana is not defined or kiali_vars.istio_component_namespaces.grafana == ""
-
-- name: "Set default istio component namespace: tracing"
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'tracing': kiali_vars.istio_namespace}}, recursive=True) }}"
-  when:
-  - kiali_vars.istio_component_namespaces.tracing is not defined or kiali_vars.istio_component_namespaces.tracing == ""
-
-- name: "Set default istio component namespace: pilot - needed for Istio 1.5 and earlier"
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'pilot': kiali_vars.istio_namespace}}, recursive=True) }}"
-  when:
-  - kiali_vars.istio_component_namespaces.pilot is not defined or kiali_vars.istio_component_namespaces.pilot == ""
-
-- name: "Set default istio component namespace: istiod - needed for Istio 1.6 and later"
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'istiod': kiali_vars.istio_namespace}}, recursive=True) }}"
-  when:
-  - kiali_vars.istio_component_namespaces.istiod is not defined or kiali_vars.istio_component_namespaces.istiod == ""
-
-- name: "Set default istio component namespace: prometheus"
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'istio_component_namespaces': {'prometheus': kiali_vars.istio_namespace}}, recursive=True) }}"
-  when:
-  - kiali_vars.istio_component_namespaces.prometheus is not defined or kiali_vars.istio_component_namespaces.prometheus == ""
-
 - name: Set default Grafana in_cluster_url
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kiali_vars.istio_component_namespaces.grafana + ':3000'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kiali_vars.istio_namespace + ':3000'}}}, recursive=True) }}"
   when:
     kiali_vars.external_services.grafana.in_cluster_url == ""
 
 - name: Set default Tracing in_cluster_url for Maistra
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_component_namespaces.tracing + ':16686'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + ':16686'}}}, recursive=True) }}"
   when:
     kiali_vars.external_services.tracing.in_cluster_url == "" and is_maistra
 
 - name: Set default Tracing in_cluster_url
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_component_namespaces.tracing + '/jaeger'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + '/jaeger'}}}, recursive=True) }}"
   when:
     kiali_vars.external_services.tracing.in_cluster_url == "" and is_maistra == False
 
 - name: Check for the existence of istiod version endpoint
   uri:
-    url: "http://istiod.{{ kiali_vars.istio_component_namespaces.istiod }}:15014/version"
+    url: "http://istiod.{{ kiali_vars.istio_namespace }}:15014/version"
   register: istiod_version_url_results_raw
   until: istiod_version_url_results_raw.status == 200
   retries: 5
@@ -244,20 +214,20 @@
 
 - name: Set default Istio service that provides version info (istiod for Istio 1.6 and later)
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istiod.' + kiali_vars.istio_component_namespaces.istiod + ':15014/version'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istiod.' + kiali_vars.istio_namespace + ':15014/version'}}}, recursive=True) }}"
   when:
   - kiali_vars.external_services.istio.url_service_version == ""
   - istiod_version_url_results_raw.status == 200
 
 - name: Fallback to Istio pilot service that provides version info (for Istio 1.5 and earlier)
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istio-pilot.' + kiali_vars.istio_component_namespaces.pilot + ':8080/version'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istio-pilot.' + kiali_vars.istio_namespace + ':8080/version'}}}, recursive=True) }}"
   when:
   - kiali_vars.external_services.istio.url_service_version == ""
 
 - name: Set default Prometheus URL
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kiali_vars.istio_component_namespaces.prometheus + ':9090'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kiali_vars.istio_namespace + ':9090'}}}, recursive=True) }}"
   when:
   - kiali_vars.external_services.prometheus.url == ""
 
