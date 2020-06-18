@@ -120,8 +120,15 @@
 #    Default: "false"
 #
 # OPERATOR_WATCH_NAMESPACE
-#    The namespace in which the operator looks for the Kiali CR.
-#    Default: The configured OPERATOR_NAMESPACE
+#    The namespace in which the operator looks for a Kiali CR. When a Kiali CR is touched (i.e. created,
+#    modified, or deleted) in a watched namespace, the operator will perform all necessary tasks in order
+#    to deploy Kiali with the configuration specified in the Kiali CR (this is called "reconciling").
+#    If specified as "**" (or, alternatively, literally two double-quotes "") then the operator will
+#    watch all namespaces. Note that if you specify a specific watch namespace, and a user changes
+#    some of the Kiali resources that exist outside of that watched namespace (e.g. deletes or modifies
+#    the Kiali Deployment) the operator will be unable to reconcile those changes (e.g. it will not
+#    be able to redeploy the Deployment resource) unless and until the Kiali CR is touched again.
+#    Default: ""
 #
 # -----------
 # Environment variables that affect Kiali installation:
@@ -428,8 +435,15 @@ Valid options for the operator installation:
       operator will be unable to do so.
       Default: "false"
   -own|--operator-watch-namespace
-      The namespace in which the operator looks for the Kiali CR.
-      Default: The configured operator namespace (-on)
+      The namespace in which the operator looks for a Kiali CR. When a Kiali CR is touched (i.e. created,
+      modified, or deleted) in a watched namespace, the operator will perform all necessary tasks in order
+      to deploy Kiali with the configuration specified in the Kiali CR (this is called "reconciling").
+      If specified as "**" (or, alternatively, literally two double-quotes "") then the operator will
+      watch all namespaces. Note that if you specify a specific watch namespace, and a user changes
+      some of the Kiali resources that exist outside of that watched namespace (e.g. deletes or modifies
+      the Kiali Deployment) the operator will be unable to reconcile those changes (e.g. it will not
+      be able to redeploy the Deployment resource) unless and until the Kiali CR is touched again.
+      Default: ""
 
 Valid options for Kiali installation (if Kiali is to be installed):
   -an|--accessible-namespaces
@@ -569,7 +583,7 @@ export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
 export OPERATOR_SKIP_WAIT="${OPERATOR_SKIP_WAIT:-false}"
 export OPERATOR_VERSION_LABEL="${OPERATOR_VERSION_LABEL:-$OPERATOR_IMAGE_VERSION}"
 export OPERATOR_VIEW_ONLY_MODE="${OPERATOR_VIEW_ONLY_MODE:-false}"
-export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-$OPERATOR_NAMESPACE}"
+export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-\"\"}"
 export OPERATOR_ROLE_CLUSTERROLEBINDINGS="# The operator does not have permission to manage cluster role bindings"
 export OPERATOR_ROLE_CLUSTERROLES="# The operator does not have permission to manage cluster roles"
 export OPERATOR_ROLE_CREATE="# The operator does not have permission to create"
