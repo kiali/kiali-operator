@@ -497,17 +497,27 @@
   # this regex is not 100% accurate, but we want to at least catch obvious errors
   - kiali_vars.api.namespaces.label_selector is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
 
-# Prepare a random signing key if one needs to be generated
+# If the signing key is empty string, we need to ensure a signing key secret exists - if it does not generate one.
 
-- name: Create secret to store a random signing key
+- name: Get information about any existing signing key secret if we need to know if it exists or not
+  k8s_facts:
+    api_version: v1
+    kind: Secret
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: kiali-signing-key
+  register: signing_key_secret_raw
+  when:
+  - kiali_vars.login_token.signing_key == ""
+
+- name: Create secret to store a random signing key if a secret does not already exist and we need one
   k8s:
     state: present
     definition:
       apiVersion: v1
       kind: Secret
       metadata:
-        name: kiali-signing-key
         namespace: "{{ kiali_vars.deployment.namespace }}"
+        name: kiali-signing-key
         labels:
           app: kiali
           version: "{{ kiali_vars.deployment.version_label }}"
@@ -516,6 +526,10 @@
         key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') | b64encode }}"
   when:
   - kiali_vars.login_token.signing_key == ""
+  - signing_key_secret_raw is defined
+  - signing_key_secret_raw.resources is defined
+  - signing_key_secret_raw.resources | length == 0
+
 - name: Point signing key to the generated secret
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'login_token': {'signing_key': 'secret:kiali-signing-key:key'}}, recursive=True) }}"
