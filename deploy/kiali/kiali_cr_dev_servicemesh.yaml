@@ -21,7 +21,6 @@ spec:
   external_services:
     grafana:
       auth:
-        ca_file: /kiali-configuration/service-ca.crt
         password: ${KIALI_EXTERNAL_SERVICES_PASSWORD}
         type: basic
         use_kiali_token: false
@@ -31,7 +30,6 @@ spec:
       url: https://grafana-${NAMESPACE}.${ROUTER_HOSTNAME}
     prometheus:
       auth:
-        ca_file: /kiali-configuration/service-ca.crt
         password: ${KIALI_EXTERNAL_SERVICES_PASSWORD}
         type: basic
         use_kiali_token: false
@@ -39,7 +37,6 @@ spec:
       url: https://prometheus.${NAMESPACE}.svc:9090
     tracing:
       auth:
-        ca_file: /kiali-configuration/service-ca.crt
         password: ${KIALI_EXTERNAL_SERVICES_PASSWORD}
         type: basic
         use_kiali_token: false
