@@ -12,6 +12,7 @@
       namespace: "{{ cr_namespace }}"
       name: "{{ custom_resource.metadata.name }}"
       wait: yes
+      wait_timeout: 600
 
   - name: Produce Files with Correct Parameters
     shell: " {{ item }}"

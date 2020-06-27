@@ -38,6 +38,14 @@
     msg: "{{ msg.split('\n') }}"
   tags: test
 
+- name: Set default deployment namespace to the same namespace where the CR lives
+  vars:
+    current_cr: "{{ _kiali_io_kiali }}"
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.namespace is not defined or kiali_vars.deployment.namespace == ""
+
 # When the Operator installed Kiali, the configmap has accessible_namespaces set.
 # There are no regexes in the configmap; they are all full namespace names.
 # NOTE: there is a special value of accessible_namespaces of two asterisks ("**")

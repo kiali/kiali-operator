@@ -6,3 +6,39 @@
   tasks:
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Get some Kiali resources that we know should have been created
+    set_fact:
+      doomed_cm: "{{ query('k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
+      doomed_rb: "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+      doomed_role: "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+
+  - assert:
+      that:
+      - doomed_cm | length == 1
+      - doomed_rb | length == 1
+      - doomed_role | length == 1
+
+  # Remove the CR and make sure Kiali gets cleaned up
+  # This shows that when the CR does not have deployment.namespace that the remove role still works
+  - name: Remove the Kiali CR so we can see the operator purge the doomed resources
+    k8s:
+      state: absent
+      api_version: kiali.io/v1alpha1
+      kind: Kiali
+      namespace: "{{ cr_namespace }}"
+      name: "{{ custom_resource.metadata.name }}"
+      wait: yes
+      wait_timeout: 600
+
+  - name: Get some Kiali resources that we know were created but should now be deleted
+    set_fact:
+      doomed_cm: "{{ query('k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
+      doomed_rb: "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+      doomed_role: "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+
+  - assert:
+      that:
+      - doomed_cm | length == 0
+      - doomed_rb | length == 0
+      - doomed_role | length == 0
