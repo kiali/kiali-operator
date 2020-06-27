@@ -325,8 +325,6 @@
   - no_longer_accessible_namespaces is defined
 
 - name: Delete Kiali cluster roles if no longer given special access to all namespaces
-  vars:
-    role_namespace: "{{ kiali_vars.deployment.namespace }}"
   include_tasks: remove-clusterroles.yml
   when:
   - current_accessible_namespaces is defined
@@ -345,8 +343,6 @@
   - '"**" not in current_accessible_namespaces'
 
 - name: Delete Kiali cluster roles if view_only_mode is changing since role bindings are immutable
-  vars:
-    role_namespace: "{{ kiali_vars.deployment.namespace }}"
   include_tasks: remove-clusterroles.yml
   when:
   - current_view_only_mode is defined

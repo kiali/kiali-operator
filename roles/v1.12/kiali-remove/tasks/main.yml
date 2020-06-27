@@ -98,8 +98,6 @@
 
 - name: Delete Kiali cluster roles
   ignore_errors: yes
-  vars:
-    role_namespace: "{{ kiali_vars.deployment.namespace }}"
   include_tasks: remove-clusterroles.yml
   when:
   - is_openshift == True or is_k8s == True
