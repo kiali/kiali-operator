@@ -10,18 +10,18 @@
     vars:
       namespace_list: [ '**' ]
 
-  # Test that console links are correct for accessible namespaces of **
-  - name: Get app link
+  # Test that there are no main masthead console links (we used to create these, but no longer)
+  - name: Get app links if exist
     k8s_facts:
       api_version: console.openshift.io/v1
       kind: ConsoleLink
       name: "kiali-app-{{ kiali.install_namespace }}"
     register: applink
 
-  - name: Assert that console links are correct
+  - name: Assert that there are no app console links
     assert:
       that:
-      - "{{ applink.resources[0].metadata.name == 'kiali-app-'+kiali.install_namespace }}"
+      - "{{ applink.resources | length == 0 }}"
 
   # Create some test namespaces
   - k8s:
@@ -53,12 +53,6 @@
       namespace_list: [ 'istio-system', 'consolelinks1', 'consolelinks2' ]
 
   # Test that console links are correct across namespaces
-  - name: Get app link
-    k8s_facts:
-      api_version: console.openshift.io/v1
-      kind: ConsoleLink
-      name: "kiali-app-{{ kiali.install_namespace }}"
-    register: applink
   - name: Get links from consolelinks1
     k8s_facts:
       api_version: console.openshift.io/v1
@@ -81,7 +75,6 @@
   - name: Assert that console links are correct
     assert:
       that:
-      - "{{ applink.resources[0].metadata.name == 'kiali-app-'+kiali.install_namespace }}"
       - "{{ consolelinks1.resources[0].metadata.name == 'kiali-namespace-consolelinks1' }}"
       - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
       - "{{ consolelinks1.resources[0].spec.href is not search('///') }}"
@@ -105,12 +98,6 @@
       namespace_list: [ 'istio-system', 'consolelinks1' ]
 
   # Test that console links are correct - note we removed a namespace from accessible_namespaces so the link should be gone
-  - name: Get app link
-    k8s_facts:
-      api_version: console.openshift.io/v1
-      kind: ConsoleLink
-      name: "kiali-app-{{ kiali.install_namespace }}"
-    register: applink
   - name: Get links from consolelinks1
     k8s_facts:
       api_version: console.openshift.io/v1
@@ -133,7 +120,6 @@
   - name: Assert that console links are correct
     assert:
       that:
-      - "{{ applink.resources[0].metadata.name == 'kiali-app-'+kiali.install_namespace }}"
       - "{{ consolelinks1.resources[0].metadata.name == 'kiali-namespace-consolelinks1' }}"
       - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
       - "{{ consolelinks2.resources | length == 0 }}"
@@ -152,12 +138,6 @@
       namespace_list: [ 'istio-system', 'consolelinks1', 'consolelinks2' ]
 
   # Test that console links are correct across namespaces
-  - name: Get app link
-    k8s_facts:
-      api_version: console.openshift.io/v1
-      kind: ConsoleLink
-      name: "kiali-app-{{ kiali.install_namespace }}"
-    register: applink
   - name: Get links from consolelinks1
     k8s_facts:
       api_version: console.openshift.io/v1
@@ -180,7 +160,6 @@
   - name: Assert that console links are correct
     assert:
       that:
-      - "{{ applink.resources[0].metadata.name == 'kiali-app-'+kiali.install_namespace }}"
       - "{{ consolelinks1.resources[0].metadata.name == 'kiali-namespace-consolelinks1' }}"
       - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
       - "{{ consolelinks2.resources[0].metadata.name == 'kiali-namespace-consolelinks2' }}"
