@@ -10,12 +10,15 @@
   - name: Get some Kiali resources that we know should have been created
     set_fact:
       doomed_cm: "{{ query('k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
+      doomed_cm_cabundle: "{{ query('k8s', kind='ConfigMap', resource_name='kiali-cabundle', namespace=cr_namespace, api_version='v1') }}"
       doomed_rb: "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
       doomed_role: "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
 
+  # note: the cabundle configmap is only ever created on openshift and not on any other kubernetes type
   - assert:
       that:
       - doomed_cm | length == 1
+      - is_k8s or (doomed_cm_cabundle | length == 1)
       - doomed_rb | length == 1
       - doomed_role | length == 1
 
@@ -34,11 +37,13 @@
   - name: Get some Kiali resources that we know were created but should now be deleted
     set_fact:
       doomed_cm: "{{ query('k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
+      doomed_cm_cabundle: "{{ query('k8s', kind='ConfigMap', resource_name='kiali-cabundle', namespace=cr_namespace, api_version='v1') }}"
       doomed_rb: "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
       doomed_role: "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
 
   - assert:
       that:
       - doomed_cm | length == 0
+      - doomed_cm_cabundle | length == 0
       - doomed_rb | length == 0
       - doomed_role | length == 0
