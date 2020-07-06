@@ -18,14 +18,14 @@
 
   - name: Override the supported images if found in the environment
     set_fact:
-      supported_kiali_images: "{{ supported_kiali_images | default({}) | combine({item.key: {'image_name': lookup('env', 'KIALI_IMAGE_' + (item.key | replace('.','_'))) | regex_replace('(.+):.+', '\\1'), 'image_version': lookup('env', 'KIALI_IMAGE_' + (item.key | replace('.','_'))) | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
+      supported_kiali_images: "{{ supported_kiali_images | default({}) | combine({item.key: {'image_name': lookup('env', 'RELATED_IMAGE_kiali_' + (item.key | replace('.','_'))) | regex_replace('(.+):.+', '\\1'), 'image_version': lookup('env', 'RELATED_IMAGE_kiali_' + (item.key | replace('.','_'))) | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
     loop: "{{ supported_kiali_images | default({}) | dict2items }}"
     when:
-    - lookup('env', 'KIALI_IMAGE_' + (item.key | replace('.','_')))
+    - lookup('env', 'RELATED_IMAGE_kiali_' + (item.key | replace('.','_')))
 
   - name: Examine environment and determine if supported image for the requested version is overridden even if no default is known
     vars:
-      supported_image_env: "{{ lookup('env', 'KIALI_IMAGE_' + (version | replace('.','_'))) }}"
+      supported_image_env: "{{ lookup('env', 'RELATED_IMAGE_kiali_' + (version | replace('.','_'))) }}"
     set_fact:
       supported_kiali_images: "{{ supported_kiali_images | default({}) | combine({version: {'image_name': supported_image_env | regex_replace('(.+):.+', '\\1'), 'image_version': supported_image_env | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
     when:
