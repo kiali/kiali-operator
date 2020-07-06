@@ -124,6 +124,27 @@
   when:
   - kiali_vars.auth.strategy == ""
 
+- name: Use OpenShift service CA file for Grafana
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'grafana': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.external_services.grafana.auth.ca_file is not defined or kiali_vars.external_services.grafana.auth.ca_file == ''
+
+- name: Use OpenShift service CA file for Prometheus
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'prometheus': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.external_services.prometheus.auth.ca_file is not defined or kiali_vars.external_services.prometheus.auth.ca_file == ''
+
+- name: Use OpenShift service CA file for Tracing
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.external_services.tracing.auth.ca_file is not defined or kiali_vars.external_services.tracing.auth.ca_file == ''
+
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
     msg: "AUTH STRATEGY={{ kiali_vars.auth.strategy }}"

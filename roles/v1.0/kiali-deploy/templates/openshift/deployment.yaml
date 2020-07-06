@@ -74,6 +74,8 @@ spec:
           mountPath: "/kiali-cert"
         - name: kiali-secret
           mountPath: "/kiali-secret"
+        - name: kiali-cabundle
+          mountPath: "/kiali-cabundle"
       volumes:
       - name: kiali-configuration
         configMap:
@@ -85,3 +87,6 @@ spec:
         secret:
           secretName: {{ kiali_vars.deployment.secret_name }}
           optional: true
+      - name: kiali-cabundle
+        configMap:
+          name: kiali-cabundle
