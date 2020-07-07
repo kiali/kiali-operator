@@ -33,7 +33,7 @@
       url: "{{ kiali_base_url }}/api/authenticate"
       user: invalid
       password: invalid
-      status_code: 401
+      status_code: 400
       return_content: yes
       validate_certs: false
     register: kiali_output
@@ -43,7 +43,7 @@
       url: "{{ kiali_base_url }}/api/authenticate"
       user: "{{ openid.username }}"
       password: "{{ openid.password }}"
-      status_code: 401
+      status_code: 400
       return_content: yes
       validate_certs: false
     register: kiali_output
@@ -138,6 +138,7 @@
       expires_in: "{{ kiali_output.location | regex_replace('.*expires_in=([^&]+).*', '\\1') }}"
       id_token: "{{ kiali_output.location | regex_replace('.*id_token=([^&]+).*', '\\1') }}"
       token_type: "{{ kiali_output.location | regex_replace('.*token_type=([^&]+).*', '\\1') }}"
+      state: "{{ kiali_output.location | regex_replace('.*state=([^&]+).*', '\\1') }}"
 
   - name: Send request to final Kiali endpoint with a valid session
     uri:
@@ -160,6 +161,7 @@
         expires_in: "{{ expires_in }}"
         id_token: "{{ id_token }}"
         token_type: "{{ token_type }}"
+        state: "{{ state }}"
       return_content: yes
       validate_certs: false
     register: kiali_output
