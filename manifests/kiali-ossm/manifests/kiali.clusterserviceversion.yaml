@@ -6,7 +6,7 @@ metadata:
   annotations:
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: registry.redhat.io/openshift-service-mesh/kiali-rhel7-operator:${KIALI_OPERATOR_VERSION}
+    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7-operator:${KIALI_OPERATOR_VERSION}
     capabilities: Deep Insights
     support: Red Hat
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
@@ -256,14 +256,14 @@ spec:
                 - /usr/local/bin/ao-logs
                 - /tmp/ansible-operator/runner
                 - stdout
-                image: registry.redhat.io/openshift-service-mesh/kiali-rhel7-operator${KIALI_OPERATOR_TAG}
+                image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7-operator${KIALI_OPERATOR_TAG}
                 imagePullPolicy: "IfNotPresent"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
                   readOnly: true
               - name: operator
-                image: registry.redhat.io/openshift-service-mesh/kiali-rhel7-operator${KIALI_OPERATOR_TAG}
+                image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7-operator${KIALI_OPERATOR_TAG}
                 imagePullPolicy: "IfNotPresent"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
@@ -284,11 +284,11 @@ spec:
                 - name: OPERATOR_NAME
                   value: "kiali-operator"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7${KIALI_1_0_TAG}"
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_0
-                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7${KIALI_1_0_TAG}"
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_12
-                  value: "registry.redhat.io/openshift-service-mesh/kiali-rhel7${KIALI_1_12_TAG}"
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_12_TAG}"
                 ports:
                 - name: http-metrics
                   containerPort: 8383
