@@ -7,6 +7,10 @@
       msg: REMOVING KIALI
 
   - ignore_errors: yes
+    debug:
+      msg: "CR: name={{ meta.name }}, namespace={{ meta.namespace }}"
+
+  - ignore_errors: yes
     name: Playbook start time
     set_fact:
       playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
