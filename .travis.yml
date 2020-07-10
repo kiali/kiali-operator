@@ -4,6 +4,7 @@ os: linux
 arch:
   - amd64
   - arm64
+  - ppc64le
 
 # python is for operator-courier. In the near future we won't need courier to validate the metadata
 # so we will be able to remove the python packages and simply use operator-sdk for all validation.
@@ -23,9 +24,11 @@ jobs:
   fast_finish: true
   allow_failures:
   - arch: arm64
+  - arch: ppc64le
   include:
     - arch: amd64
     - arch: arm64
+    - arch: ppc64le
 
 # The channel name "chat.freenode.net#kiali" is encrypted to prevent IRC spam from forks
 notifications:
