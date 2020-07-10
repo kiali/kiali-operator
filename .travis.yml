@@ -23,9 +23,11 @@ jobs:
   fast_finish: true
   allow_failures:
   - arch: arm64
+  - arch: ppc64le
   include:
     - arch: amd64
     - arch: arm64
+    - arch: ppc64le
 
 # The channel name "chat.freenode.net#kiali" is encrypted to prevent IRC spam from forks
 notifications:
