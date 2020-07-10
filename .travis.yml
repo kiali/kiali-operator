@@ -4,6 +4,7 @@ os: linux
 arch:
   - amd64
   - arm64
+  - ppc64le
 
 # This is for operator-courier. In the near future we won't need courier to validate the metadata
 # so we will be able to remove this and simply use operator-sdk for all validation.
