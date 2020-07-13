@@ -40,7 +40,7 @@ notifications:
 
 before_install:
   - pip3 install --upgrade pip
-  - pip3 install --upgrade operator-courier
+  - pip3 install --upgrade operator-courier==2.1.7
   - uname -a
 
 script:
