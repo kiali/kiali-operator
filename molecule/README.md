@@ -4,7 +4,12 @@ Molecule is the default way to [test ansible operators](https://sdk.operatorfram
 
 ## Dependencies 
 
-If you want to run the tests on bare metal (not via the docker image), then deploy the depencencies by running the following command: `pip install -r requirements.txt` (assuming you are in the molecule directory).
+If you want to run the tests on bare metal (not via the docker image), then deploy the depencencies by running the following commands (assuming you are in the `molecule` directory):
+
+```
+pip install -r requirements.txt
+ansible-galaxy collection install community.kubernetes
+```
 
 ## Running Test Scenarios
 

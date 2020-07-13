@@ -15,6 +15,7 @@ provisioner:
   playbooks:
     destroy: ../default/destroy.yml
     prepare: ../default/prepare.yml
+    cleanup: ../default/cleanup.yml
   inventory:
     group_vars:
       all:

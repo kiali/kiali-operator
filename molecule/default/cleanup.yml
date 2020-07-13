@@ -1,0 +1,30 @@
+- name: Cleanup
+  hosts: localhost
+  connection: local
+  tasks:
+
+  # Cleanup should only ever execute when a molecule test fails - this will dump logs
+
+  - name: Get Kiali Operator Pod logs
+    community.kubernetes.k8s_log:
+      namespace: "{{ kiali.operator_namespace }}"
+      label_selectors:
+      - app=kiali-operator
+    register: kiali_operator_logs
+    ignore_errors: yes
+  - name: Dump Kiali Operator Pod logs
+    debug:
+      msg: "{{ kiali_operator_logs.log_lines }}"
+    when: kiali_operator_logs is defined and kiali_operator_logs.log_lines is defined
+
+  - name: Get Kiali Server Pod logs
+    community.kubernetes.k8s_log:
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - app=kiali
+    register: kiali_logs
+    ignore_errors: yes
+  - name: Dump Kiali Server Pod logs
+    debug:
+      msg: "{{ kiali_logs.log_lines }}"
+    when: kiali_logs is defined and kiali_logs.log_lines is defined
