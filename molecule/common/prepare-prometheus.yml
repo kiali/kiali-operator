@@ -1,5 +1,5 @@
 - name: Get Prometheus HTTP endpoint route (this test requires a HTTP route to the Prometheus endpoint)
-  k8s_facts:
+  k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
     name: prometheus
