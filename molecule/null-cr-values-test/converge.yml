@@ -15,6 +15,10 @@
       - kiali_configmap.installation_tag == ""
       - kiali_configmap.additional_display_details | length == 1
       - kiali_configmap.auth.ldap.ldap_group_filter == "(cn=%s)"
+      - kiali_configmap.deployment.custom_dashboards.includes | length == 1
+      - kiali_configmap.deployment.custom_dashboards.includes[0] == '*'
+      - kiali_configmap.deployment.custom_dashboards.excludes | length == 1
+      - kiali_configmap.deployment.custom_dashboards.excludes[0] == ''
       - kiali_configmap.deployment.ingress_enabled == True
       - kiali_configmap.deployment.replicas == 1
       - kiali_configmap.deployment.secret_name == "kiali"
@@ -38,3 +42,4 @@
       - kiali_configmap.kubernetes_config.excluded_workloads | length > 0
       - kiali_configmap.login_token.signing_key | length > 0
       - kiali_configmap.server.metrics_port == 9090
+

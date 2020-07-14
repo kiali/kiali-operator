@@ -27,6 +27,7 @@ spec:
       node: null
       pod: null
       pod_anti: null
+    custom_dashboards: null
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_pull_secrets: null

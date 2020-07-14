@@ -21,3 +21,10 @@ all:
     # can run with this empty (but it has to be defined).
 
     _kiali_io_kiali: {}
+
+    # The Operator SDK creates a "meta" variable that contains the
+    # name and namespace of the CR. Most times you can just
+    # run with these defaults
+    meta:
+      name: kiali
+      namespace: kiali-operator

@@ -237,6 +237,19 @@ spec:
 #      pod: {}
 #      pod_anti: {}
 #
+# Names of the out-of-box custom monitoring dashboards that are to be installed.
+# The custom monitoring dashboards are defined in yaml files located within the operator.
+# Consult the operator templates for the custom monitoring dashboard yaml files available.
+# For example, see this for the current list of yaml files available:
+# https://github.com/kiali/kiali-operator/tree/master/roles/default/kiali-deploy/templates/dashboards
+# These settings will determine the additional metric graphs that you will see within the Kiali UI.
+# You can specify an includes and excludes list, the excludes list takes precedence.
+# Each list can have fileglob wildcard characters '*' and '?' for file matching.
+#    ---
+#    custom_dashboards:
+#      excludes: ['']
+#      includes: ['*']
+#
 # Determines which Kiali image to download and install.
 # If you set this to a specific name (i.e. you do not leave it as the default empty string),
 # you must make sure that image is supported by the operator.

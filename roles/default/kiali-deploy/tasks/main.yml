@@ -755,7 +755,7 @@
   when:
   - is_k8s == True
 
-# The next couple tasks wait for the Monitoring Dashboard CRD to be established, and
+# The next few tasks wait for the Monitoring Dashboard CRD to be established, and
 # then adds the monitoring dashboard resources. If there are any errors here, they
 # are ignored - since the monitoring dashboards are optional, we allow the install to
 # continue even though it means the monitoring dashboards feature will be disabled.
@@ -778,17 +778,58 @@
     msg: "It does not appear you have the Monitoring Dashboard CRD created. Monitoring Dashboards will not be created."
   when:
   - monitoringdashboards_crd | default({}) | json_query('resources[*].status.conditions[?type==`Established`].status') | flatten | join != 'True'
+  ignore_errors: yes
+
+- name: Find all Monitoring Dashboards packaged with the operator
+  find:
+    paths: "{{ role_path }}/templates/dashboards"
+  register: monitoring_dashboard_yamls_all_raw
+  ignore_errors: yes
+- set_fact:
+    monitoring_dashboard_yamls_all: "{{ (monitoring_dashboard_yamls_all | default([])) + [ item.path ] }}"
+  loop: "{{ monitoring_dashboard_yamls_all_raw.files }}"
+  when:
+  - monitoring_dashboard_yamls_all_raw is defined
+  - monitoring_dashboard_yamls_all_raw.files is defined
+  ignore_errors: yes
+
+- name: Determine which Monitoring Dashboards are to be created
+  find:
+    paths: "{{ role_path }}/templates/dashboards"
+    patterns: "{{ kiali_vars.deployment.custom_dashboards.includes }}"
+    excludes: "{{ kiali_vars.deployment.custom_dashboards.excludes }}"
+  register: monitoring_dashboard_yamls_to_deploy_raw
+  ignore_errors: yes
+- set_fact:
+    monitoring_dashboard_yamls_to_deploy: "{{ (monitoring_dashboard_yamls_to_deploy | default([])) + [ item.path ] }}"
+  loop: "{{ monitoring_dashboard_yamls_to_deploy_raw.files }}"
+  when:
+  - monitoring_dashboard_yamls_to_deploy_raw is defined
+  - monitoring_dashboard_yamls_to_deploy_raw.files is defined
+  ignore_errors: yes
+
+- name: Remove Monitoring Dashboards that should no longer be deployed
+  k8s:
+    state: "absent"
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    definition: "{{ lookup('template', item) }}"
+  loop: "{{ (monitoring_dashboard_yamls_all | default([])) | difference(monitoring_dashboard_yamls_to_deploy | default([])) }}"
+  when:
+  - monitoringdashboards_crd | default({}) | json_query('resources[*].status.conditions[?type==`Established`].status') | flatten | join == 'True'
+  ignore_errors: yes
 
 - name: Create the Monitoring Dashboards
   k8s:
     state: "present"
     namespace: "{{ kiali_vars.deployment.namespace }}"
     definition: "{{ lookup('template', item) }}"
-  with_fileglob:
-  - "templates/dashboards/*.yaml"
-  ignore_errors: yes
+  loop: "{{ monitoring_dashboard_yamls_to_deploy | default([]) }}"
   when:
+  - monitoring_dashboard_yamls_to_deploy is defined
   - monitoringdashboards_crd | default({}) | json_query('resources[*].status.conditions[?type==`Established`].status') | flatten | join == 'True'
+  ignore_errors: yes
+
+# If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
 
 - name: Force the Kiali pod to restart if necessary
   vars:

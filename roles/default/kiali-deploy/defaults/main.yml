@@ -60,6 +60,9 @@ kiali_defaults:
       node: {}
       pod: {}
       pod_anti: {}
+    custom_dashboards:
+      excludes: ['']
+      includes: ['*']
     image_name: ""
     image_pull_policy: "IfNotPresent"
     image_pull_secrets: []
