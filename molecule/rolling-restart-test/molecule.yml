@@ -36,7 +36,8 @@ provisioner:
           operator_clusterroles: "- clusterroles"
           image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')|default('quay.io/kiali/kiali', True)) }}"
           image_version: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION')|default('latest', True) }}"
-          image_pull_policy: Always
+          image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_PULL_POLICY')|default('Always', True) }}"
+          operator_image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_PULL_POLICY')|default('Always', True) }}"
 scenario:
   name: rolling-restart-test
   test_sequence:
