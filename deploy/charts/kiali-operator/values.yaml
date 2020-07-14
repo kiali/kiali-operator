@@ -1,0 +1,59 @@
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repo: ${$OPERATOR_QUAY_NAME}
+  tag: ${$OPERATOR_QUAY_TAG}
+  pullPolicy: Always
+  pullSecrets: []
+  # - name: xyz
+
+nodeSelector: {}
+podAnnotations: {}
+tolerations: []
+resources:
+  ansible: {}
+  operator: {}
+affinity: {}
+
+replicaCount: 1
+
+service:
+  annotations: {}
+  type: ClusterIP
+
+prometheus:
+  enabled: true
+
+istio:
+  ingress:
+    enabled: false
+    http:
+      enabled: true
+      tls:  # https://istio.io/latest/docs/reference/config/networking/gateway/#ServerTLSSettings
+        httpsRedirect: false
+    https:
+      enabled: false
+      tls: {}  # https://istio.io/latest/docs/reference/config/networking/gateway/#ServerTLSSettings
+    selector:
+      istio: ingressgateway
+    hosts: []
+  injectSidecar: false
+
+debug: false
+
+priorityClassName: ""
+
+# See https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml
+# for what a Kiali CR spec can look like.
+cr:
+  create: true
+  spec:
+    auth:
+      strategy: anonymous
+    deployment:
+      accessible_namespaces:
+        - '**'
+      namespace: istio-system  # required for Istio based ingress
+    version: default
+
