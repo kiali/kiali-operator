@@ -3,18 +3,12 @@ kind: Kiali
 metadata:
   name: kiali
 spec:
+  # this test will try to use as many defaults as we can
   version: default
   istio_namespace: {{ istio.control_plane_namespace }}
-  auth:
-    strategy: {{ kiali.auth_strategy }}
   deployment:
-    custom_dashboards:
-      includes: []
     namespace: {{ kiali.install_namespace }}
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: {{ kiali.image_version }}
-    accessible_namespaces: {{ kiali.accessible_namespaces }}
     service_type: NodePort
-    # the operator is only given permission to deploy Kiali in view_only_mode
-    view_only_mode: true

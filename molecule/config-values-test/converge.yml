@@ -9,17 +9,68 @@
 
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
+  # We load in the current kiali CR and then alter it with new config.
+
+  - set_fact:
+      current_kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: The current Kiali CR to be used as the base of the test
+    debug:
+      msg: "{{ current_kiali_cr }}"
+
+  # Some sanity checks - check some default values
+
+  - name: Make sure the expected dashboards are installed - by default, all of them are deployed
+    vars:
+      custom_dashboards: "{{ query('k8s', namespace=kiali.install_namespace, kind='MonitoringDashboard', api_version='monitoring.kiali.io/v1alpha1') }}"
+    assert:
+      that:
+      - custom_dashboards | length == 20
+      fail_msg: "Must have 20 custom_dashboards: {{ custom_dashboards }}"
 
   # Make sure version label is truncated to the k8s maximum 63 chars and must start/end with alphanum char
-  - import_tasks: set-version-label.yml
+  - name: Set new deployment.version_label in current Kiali CR
     vars:
       new_version_label: "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeee12345678901234"
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'version_label': new_version_label }}}, recursive=True) }}"
+
+  - name: Define includes and excludes for dashboards to install, ultimately only installing the kiali.yaml dashboard
+    vars:
+      custom_dashboards:
+        includes: [ 'kiali*', 'go.yaml' ]
+        excludes: [ 'go.yaml' ]
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'custom_dashboards': custom_dashboards }}}, recursive=True) }}"
+
+  - name: The new Kiali CR to be tested
+    debug:
+      msg: "{{ current_kiali_cr }}"
+
+  # Deploy the new CR and wait for the CR change to take effect
+
+  - import_tasks: ../common/set-kiali-cr.yml
+    vars:
+      new_kiali_cr: "{{ current_kiali_cr }}"
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+
+  # Assert the new config
+
   - name: Make sure version_label was truncated properly
     assert:
       that:
       - kiali_configmap.deployment.version_label == "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeee1234567890XXX"
       - "{{ kiali_deployment.resources[0].metadata.labels.version | length == 63 }}"
+
+  - name: Make sure only the expected dashboards are installed
+    vars:
+      custom_dashboards: "{{ query('k8s', namespace=kiali.install_namespace, kind='MonitoringDashboard', api_version='monitoring.kiali.io/v1alpha1') }}"
+    assert:
+      that:
+      - custom_dashboards | length == 1
+      - custom_dashboards[0].metadata.name == 'kiali'
+      fail_msg: "Must have 1 custom_dashboard: {{ custom_dashboards }}"
+
