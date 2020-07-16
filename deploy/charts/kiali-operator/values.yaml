@@ -2,29 +2,26 @@ nameOverride: ""
 fullnameOverride: ""
 
 image:
-  repo: ${$OPERATOR_QUAY_NAME}
-  tag: ${$OPERATOR_QUAY_TAG}
+  repo: ${HELM_IMAGE_REPO}
+  tag: ${HELM_IMAGE_TAG}
   pullPolicy: Always
   pullSecrets: []
-  # - name: xyz
 
+# Deployment options for the operator pod.
 nodeSelector: {}
 podAnnotations: {}
 tolerations: []
-resources:
-  ansible: {}
-  operator: {}
+resources: {}
 affinity: {}
-
 replicaCount: 1
+priorityClassName: ""
 
-service:
-  annotations: {}
-  type: ClusterIP
-
-prometheus:
+# metrics.enabled: set to true if you want Prometheus to collect metrics from the operator
+metrics:
   enabled: true
 
+# istio.ingress.enabled: set to true if you want to expose Kiali using Istio Gateway
+# The rest of the settings here configure the Gateway/Virtual Service/Destination Rule.
 istio:
   ingress:
     enabled: false
@@ -38,22 +35,40 @@ istio:
     selector:
       istio: ingressgateway
     hosts: []
-  injectSidecar: false
 
-debug: false
+# debug.enabled: when true the full ansible logs are dumped after each reconciliation run
+# debug.verbosity: defines the amount of details the operator will log (higher numbers are more noisy)
+debug:
+  enabled: true
+  verbosity: "1"
 
-priorityClassName: ""
+# Defines where the operator will look for Kial CR resources. "" means "all namespaces".
+watchNamespace: ""
 
-# See https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml
-# for what a Kiali CR spec can look like.
+# Set to true if you want the operator to be able to create cluster roles. This is necessary
+# if you want to support Kiali CRs with spec.deployment.accessible_namespaces of '**'.
+# Note that this will be overriden to "true" if cr.create is true and cr.spec.deployment.accessible_namespaces is ['**'].
+clusterRoleCreator: true
+
+# Set to true if you want to allow the operator to only be able to install Kiali in view-only-mode.
+# The purpose for this setting is to allow you to restrict the permissions given to the operator itself.
+onlyViewOnlyMode: false
+
+# For what a Kiali CR spec can look like, see:
+# https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml
 cr:
-  create: true
+  create: false
+  name: kiali
+  # If you elect to create a Kiali CR (--set cr.create=true)
+  # and the operator is watching all namespaces (--set watchNamespace="")
+  # then this is the namespace where the CR will be created (the default will be the operator namespace).
+  namespace: ""
+
   spec:
     auth:
       strategy: anonymous
     deployment:
       accessible_namespaces:
-        - '**'
-      namespace: istio-system  # required for Istio based ingress
+      - '**'
+      namespace: istio-system  # required for Istio-based ingress (istio.ingress.enabled=true)
     version: default
-

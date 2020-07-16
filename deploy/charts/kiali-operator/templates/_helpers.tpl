@@ -36,8 +36,10 @@ Common labels
 */}}
 {{- define "kiali-operator.labels" -}}
 helm.sh/chart: {{ include "kiali-operator.chart" . }}
+app: {{ include "kiali-operator.name" . }}
 {{ include "kiali-operator.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
+version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}

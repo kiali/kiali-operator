@@ -19,7 +19,6 @@ provisioner:
   inventory:
     group_vars:
       all:
-        kiali_operator_assets_path : "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
         cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/default-namespace-test/kiali-cr.yaml"
         cr_namespace: anothernamespace
         wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
@@ -37,8 +36,7 @@ provisioner:
           # The default namespace should be where the CR is deployed,
           # and thus will determine where to install Kiali.
           operator_watch_namespace: anothernamespace
-          operator_clusterrolebindings: "- clusterrolebindings"
-          operator_clusterroles: "- clusterroles"
+          operator_cluster_role_creator: "true"
           image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')|default('quay.io/kiali/kiali', True)) }}"
           image_version: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION')|default('latest', True) }}"
           image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_PULL_POLICY')|default('Always', True) }}"

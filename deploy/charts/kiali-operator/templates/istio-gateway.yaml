@@ -1,4 +1,4 @@
-{{ if eq .Values.istio.ingress.enabled true }}
+{{ if .Values.istio.ingress.enabled }}
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -9,24 +9,28 @@ metadata:
   {{- include "kiali-operator.labels" . | nindent 4 }}
 spec:
   selector:
-    {{- toYaml .Values.istio.ingress.selector | nindent 4 }}
+  {{- toYaml .Values.istio.ingress.selector | nindent 4 }}
   servers:
-    {{- if or (eq .Values.istio.ingress.http.enabled true) (eq .Values.istio.ingress.https.enabled true) }}
-    {{- if eq .Values.istio.ingress.http.enabled true }}
-    - port:
-        number: 80
-        name: http-kiali
-        protocol: HTTP
-      tls: {{- toYaml .Values.istio.ingress.http.tls | nindent 8 }}
-      hosts: {{- toYaml .Values.istio.ingress.hosts | nindent 8 }}
-    {{- end -}}
-    {{- if eq .Values.istio.ingress.https.enabled true }}
-    - port:
-        number: 443
-        name: https-kiali
-        protocol: HTTPS
-      tls: {{- toYaml .Values.istio.ingress.https.tls | nindent 8 }}
-      hosts: {{- toYaml .Values.istio.ingress.hosts | nindent 8 }}
+  {{- if or (eq .Values.istio.ingress.http.enabled true) (eq .Values.istio.ingress.https.enabled true) }}
+  {{- if eq .Values.istio.ingress.http.enabled true }}
+  - port:
+      number: 80
+      name: http-kiali
+      protocol: HTTP
+    tls:
+    {{- toYaml .Values.istio.ingress.http.tls | nindent 6 }}
+    hosts:
+    {{- toYaml .Values.istio.ingress.hosts | nindent 6 }}
+  {{- end -}}
+  {{- if .Values.istio.ingress.https.enabled }}
+  - port:
+      number: 443
+      name: https-kiali
+      protocol: HTTPS
+    tls:
+    {{- toYaml .Values.istio.ingress.https.tls | nindent 6 }}
+    hosts:
+    {{- toYaml .Values.istio.ingress.hosts | nindent 6 }}
   {{- end -}}
   {{- else }}
   []

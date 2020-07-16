@@ -1,9 +1,9 @@
-{{ if eq .Values.istio.ingress.enabled true }}
+{{ if .Values.istio.ingress.enabled }}
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: {{ include "kiali-operator.fullname" . }}-destination-rule
+  name: {{ include "kiali-operator.fullname" . }}-destinationrule
   namespace: {{ .Values.cr.spec.deployment.namespace }}
   labels:
   {{- include "kiali-operator.labels" . | nindent 4 }}
@@ -13,4 +13,4 @@ spec:
     tls:
       mode: DISABLE
 ...
-{{- end }}
+{{ end }}
