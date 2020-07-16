@@ -15,7 +15,7 @@ provisioner:
   playbooks:
     destroy: ../default/destroy.yml
     prepare: ../default/prepare.yml
-    prepare: ../default/cleanup.yml
+    cleanup: ../default/cleanup.yml
   inventory:
     group_vars:
       all:
@@ -26,8 +26,7 @@ provisioner:
           control_plane_namespace: istio-system
         kiali:
           install_namespace: istio-system
-          accessible_namespaces:
-          - "**"
+          accessible_namespaces: ["**"]
           operator_namespace: kiali-operator
           operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
           operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
