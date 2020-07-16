@@ -7,6 +7,9 @@
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
 
+  # we need to fully wait to ensure all custom dashboards are installed
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config.
