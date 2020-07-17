@@ -63,5 +63,5 @@
       - app = kiali
     register: kiali_deployment
     until: kiali_deployment.resources |length == 1 and kiali_deployment.resources[0].status.availableReplicas is defined and kiali_deployment.resources[0].status.availableReplicas == 1
-    retries: 60
+    retries: 120
     delay: 5
