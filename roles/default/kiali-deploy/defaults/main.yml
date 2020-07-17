@@ -217,6 +217,9 @@ kiali_defaults:
     web_root: ""
     web_schema: ""
 
+  health_config:
+    rate: []
+
 # These variables are outside of the kiali_defaults. Their values will be
 # auto-detected by the role and are not meant to be set by the user.
 # However, for debugging purposes you can change these.

@@ -779,3 +779,43 @@ spec:
 # When empty, Kiali will try to guess this value from HTTP headers.
 #    ---
 #    web_schema: ""
+
+##########
+#  ---
+#  health_config:
+#
+#
+# rate: A list of configurations health that Kiali apply. Each item contains:
+#   namespace: The name of the namespace to apply. Kiali match the value like a regular expression
+#   kind: The type of the resource to apply. Kiali match the value like a regular expression
+#   name: Tha name of the resource to apply. Kiali match the value like a regular expression
+#   tolerance: A list of tolerances for this configuration. Each item contains:
+#     protocol: The protocol to apply the tolerance (grpc | http | ...) Kiali match the value like a regular expression
+#     direction: The direction to apply the tolerance (inbound | outbound | ...).Kiali match the value like a regular expression
+#     code: The status code to apply the tolerance. Kiali match the value like a regular expression
+#     degraded: The value in % to show a degraded status
+#     failure: The value in % to show a failure status,
+#    ---
+#    rate:
+#      - namespace: "default"
+#        tolerance:
+#          - request_protocol: "http"
+#            direction: "inbound"
+#            code: "400"
+#            degraded: 5
+#            failure: 10
+#      - namespace: default
+#        tolerance:
+#          - request_protocol: "grpc"
+#            code: "1"
+#            degraded: 10
+#            failure: 15
+#      - namespace: bookinfo
+#        kind: app
+#        name: reviews
+#        tolerance:
+#          - request_protocol: "http"
+#            code: "400"
+#            degraded: 0
+#            failure: 5
+#
