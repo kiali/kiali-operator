@@ -12,8 +12,8 @@
   - prometheus_route_raw['resources'][0]['status']['ingress'] is defined
   - prometheus_route_raw['resources'][0]['status']['ingress'][0] is defined
   - prometheus_route_raw['resources'][0]['status']['ingress'][0]['host'] is defined
-  retries: 10
-  delay: 6
+  retries: 60
+  delay: 5
   when:
   - is_openshift == True
 
@@ -56,8 +56,8 @@
 - name: Wait for Prometheus Ingress to start on the k8s cluster
   uri:
     url: "{{ prometheus_url }}//query?query=up"
-  retries: 20
-  delay: 6
+  retries: 60
+  delay: 5
   when:
   - is_k8s == True
 
