@@ -157,8 +157,6 @@
       method: POST
       body_format: form-urlencoded
       body:
-        access_token: "{{ access_token }}"
-        expires_in: "{{ expires_in }}"
         id_token: "{{ id_token }}"
         token_type: "{{ token_type }}"
         state: "{{ state }}"
