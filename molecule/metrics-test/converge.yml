@@ -15,8 +15,6 @@
     pause:
       seconds: 30
 
-  - import_tasks: ../common/prepare-prometheus.yml
-
   - set_fact:
       test_start_time: "{{ ansible_date_time.iso8601 }}"
 
@@ -25,7 +23,9 @@
   # an operator http-metric
   - import_tasks: ../common/query-prometheus.yml
     vars:
-      prometheus_query: "workqueue_work_duration_seconds_count{app=\"kiali-operator\",namespace=\"{{ kiali.operator_namespace }}\"}&time={{ test_start_time}}"
+      prometheus_request:
+        query: "workqueue_work_duration_seconds_count{app=\\\"kiali-operator\\\",namespace=\\\"{{ kiali.operator_namespace }}\\\"}"
+        time: "{{ test_start_time}}"
   - assert:
       that:
       - prometheus_query_results.json.data.result | length > 0
@@ -33,7 +33,9 @@
   # an operator cr-metric
   - import_tasks: ../common/query-prometheus.yml
     vars:
-      prometheus_query: "kiali_info{app=\"kiali-operator\",namespace=\"{{ kiali.operator_namespace }}\"}&time={{ test_start_time}}"
+      prometheus_request:
+        query: "kiali_info{app=\\\"kiali-operator\\\",namespace=\\\"{{ kiali.operator_namespace }}\\\"}"
+        time: "{{ test_start_time}}"
   - assert:
       that:
       - prometheus_query_results.json.data.result | length > 0
@@ -41,7 +43,9 @@
   # The test is initialized with Kiali metrics turned off so there should not be any yet
   - import_tasks: ../common/query-prometheus.yml
     vars:
-      prometheus_query: "kiali_api_processing_duration_seconds_count{app=\"kiali\",namespace=\"{{ kiali.install_namespace }}\"}&time={{ test_start_time}}"
+      prometheus_request:
+        query: "kiali_api_processing_duration_seconds_count{app=\\\"kiali\\\",namespace=\\\"{{ kiali.install_namespace }}\\\"}"
+        time: "{{ test_start_time}}"
   - assert:
       that:
       - prometheus_query_results.json.data.result | length == 0
@@ -64,10 +68,9 @@
   # A Kiali metric
   - import_tasks: ../common/query-prometheus.yml
     vars:
-      prometheus_query: "kiali_api_processing_duration_seconds_count{app=\"kiali\",namespace=\"{{ kiali.install_namespace }}\"}"
+      prometheus_request:
+        query: "kiali_api_processing_duration_seconds_count{app=\\\"kiali\\\",namespace=\\\"{{ kiali.install_namespace }}\\\"}"
+        time: ""
   - assert:
       that:
       - prometheus_query_results.json.data.result | length > 0
-
-  # Clean up anything we had to create to prepare prometheus for the test
-  - import_tasks: ../common/unprepare-prometheus.yml

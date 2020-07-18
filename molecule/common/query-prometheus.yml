@@ -1,19 +1,29 @@
-# To use this, import the task passing in the variable "prometheus_query" which must be URL encoded correctly.
-# If you already imported "prepare-prometheus.yml" you will already have the other var "prometheus_url".
-# If successful, the query results are in JSON format in "prometheus_query_results.json".
+- name: Tell user to ensure minikube has the correct time otherwise the metric tests will fail
+  debug:
+    msg: "If a metric test fails, run this to ensure the clock is reset: minikube ssh -- sudo date -u $(date -u +%m%d%H%M%Y.%S)"
+  when:
+  - is_k8s == True
 
-- debug:
-    msg: "Prometheus query to be run: {{ prometheus_query }}"
-- name: Query Prometheus
-  uri:
-    url: "{{ prometheus_url }}/query?query={{ prometheus_query }}"
-    method: GET
-    return_content: yes
-    body_format: json
-  register: prometheus_query_results
-  until: prometheus_query_results.json.status == "success"
-  retries: 3
-  delay: 1
+- name: Query Prometheus from Kiali Pod
+  community.kubernetes.k8s_exec:
+    namespace: "{{ kiali_pod.resources[0].metadata.namespace }}"
+    pod: "{{ kiali_pod.resources[0].metadata.name}}"
+    command: "curl -skL {{ credentials_arg }} -d query={{ prometheus_request.query}} -d time={{ prometheus_request.time }} {{ url }}"
+  register: prometheus_query_results_raw
+  vars:
+    credentials_arg: "{{ ('-u ' + kiali_configmap.external_services.prometheus.auth.username + ':' + kiali_configmap.external_services.prometheus.auth.password) if kiali_configmap.external_services.prometheus.auth.username != '' else '' }}"
+    url: "{{ kiali_configmap.external_services.prometheus.url }}/api/v1/query }}"
 
-- debug:
-    msg: "Prometheus query [{{ prometheus_query }}] results: {{ prometheus_query_results.json }}"
+- name: Raw Prometheus query results
+  debug:
+    msg: "Request: {{ prometheus_request }}; Results: {{ prometheus_query_results_raw }}"
+
+- set_fact:
+    prometheus_query_results:
+      json: "{{ prometheus_query_results_raw.stdout | from_json }}"
+
+- fail:
+    msg: "Prometheus query failed: {{ prometheus_request }}; Error results: {{ prometheus_query_results }}"
+  when:
+  - prometheus_query_results.json.status is not defined or prometheus_query_results.json.status != 'success'
+
