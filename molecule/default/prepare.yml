@@ -2,6 +2,28 @@
   hosts: localhost
   connection: local
   tasks:
+  - name: See if we have Service Mesh htpasswd secret for accessing external services like Prometheus
+    k8s_info:
+      api_version: v1
+      kind: Secret
+      namespace: "{{ istio.control_plane_namespace }}"
+      name: htpasswd
+    register: ossm_secret_htpasswd_raw
+
+  - name: Define url and auth for Prometheus for Service Mesh
+    set_fact:
+      prometheus_config:
+        url: "https://prometheus.{{ istio.control_plane_namespace }}.svc:9090"
+        auth:
+          username: internal
+          type: basic
+          use_kiali_token: false
+          password: "{{ ossm_secret_htpasswd_raw.resources[0].data.rawPassword | b64decode }}"
+    when:
+    - ossm_secret_htpasswd_raw is defined
+    - ossm_secret_htpasswd_raw.resources is defined
+    - ossm_secret_htpasswd_raw.resources | length == 1
+
   - name: Produce Files with Correct Parameters
     shell: " {{ item }}"
     with_items:
@@ -49,10 +71,19 @@
       kind: Namespace
       name: "{{ cr_namespace }}"
 
-  - name: Create Kiali CR
+  - name: Create Kiali CR based solely on the template
     k8s:
       namespace: "{{ cr_namespace }}"
       definition: "{{ lookup('template', cr_file_path) }}"
+    when:
+    - prometheus_config is not defined
+
+  - name: Create Kiali CR with specific prometheus config added
+    k8s:
+      namespace: "{{ cr_namespace }}"
+      definition: "{{ lookup('template', cr_file_path) | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config }}}, recursive=True) | to_yaml }}"
+    when:
+    - prometheus_config is defined
 
   - name: Asserting that Kiali is Deployed
     k8s_info:

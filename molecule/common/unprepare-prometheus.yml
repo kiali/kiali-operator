@@ -1,9 +1,0 @@
-- name: Delete Prometheus Ingress since test does not need it anymore
-  k8s:
-    state: absent
-    api_version: extensions/v1beta1
-    kind: Ingress
-    namespace: "{{ istio.control_plane_namespace }}"
-    name: prometheus
-  when:
-  - is_k8s == True
