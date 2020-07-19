@@ -19,6 +19,7 @@
       test_start_time: "{{ ansible_date_time.iso8601 }}"
 
   # Operator metrics are always enabled - make sure we have them
+  # NOTE: Service Mesh/Maistra does NOT collect these metrics, so ignore test failures for those tests
 
   # an operator http-metric
   - import_tasks: ../common/query-prometheus.yml
@@ -29,6 +30,7 @@
   - assert:
       that:
       - prometheus_query_results.json.data.result | length > 0
+    ignore_errors: "{{ 'yes' if is_maistra == True else 'no' }}"
 
   # an operator cr-metric
   - import_tasks: ../common/query-prometheus.yml
@@ -39,6 +41,7 @@
   - assert:
       that:
       - prometheus_query_results.json.data.result | length > 0
+    ignore_errors: "{{ 'yes' if is_maistra == True else 'no' }}"
 
   # The test is initialized with Kiali metrics turned off so there should not be any yet
   - import_tasks: ../common/query-prometheus.yml
