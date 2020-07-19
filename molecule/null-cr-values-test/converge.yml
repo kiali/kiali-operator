@@ -28,8 +28,6 @@
       - kiali_configmap.external_services.grafana.url == ""
       - kiali_configmap.external_services.istio.istio_identity_domain == "svc.cluster.local"
       - kiali_configmap.external_services.istio.istio_sidecar_annotation == "sidecar.istio.io/status"
-      - kiali_configmap.external_services.prometheus.auth.password == ""
-      - kiali_configmap.external_services.prometheus.auth.type == "none"
       - kiali_configmap.external_services.prometheus.url != ""
       - kiali_configmap.external_services.tracing.auth.password == ""
       - kiali_configmap.external_services.tracing.auth.type == "none"
