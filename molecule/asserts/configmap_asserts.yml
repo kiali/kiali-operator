@@ -23,10 +23,12 @@
     that:
     - kiali_configmap.external_services.prometheus.custom_metrics_url == "http://prometheus.{{ istio.control_plane_namespace }}:9090"
 
-- name: Assert Kiali Configmap has the correct Prometheus Url
+- name: Assert Kiali Configmap has the correct Prometheus Url for Upstream Istio installs
   assert:
     that:
     - kiali_configmap.external_services.prometheus.url == "http://prometheus.{{ istio.control_plane_namespace }}:9090"
+  when:
+    is_maistra == False
 
 - name: Assert Kiali Configmap has the correct Grafana Url
   assert:
