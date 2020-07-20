@@ -52,7 +52,7 @@
     register: doomed_list
     until:
     - doomed_list | default({}) | json_query("resources[*]") | length == 0
-    retries: 60
+    retries: "{{ wait_retries }}"
     delay: 5
 
   - name: Wait for Kiali MonitoringDashboards to be uninstalled
@@ -63,7 +63,7 @@
     register: doomed_list
     until:
     - doomed_list | default({}) | json_query("resources[*]") | length == 0
-    retries: 60
+    retries: "{{ wait_retries }}"
     delay: 5
 
   - name: Removing First Custom Resource Definition

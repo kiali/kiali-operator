@@ -7,7 +7,7 @@
     - app = kiali
   register: kiali_pod
   until: kiali_pod.resources | length == 1 and kiali_pod.resources[0].status.phase is defined and kiali_pod.resources[0].status.phase == "Running"
-  retries: 120
+  retries: "{{ wait_retries }}"
   delay: 5
 
 - name: Wait for Kiali to be running and accepting requests
@@ -21,5 +21,5 @@
   - _kiali_output.json is defined
   - _kiali_output.json.status is defined
   - _kiali_output.json.status['Kiali state'] == "running"
-  retries: 120
+  retries: "{{ wait_retries }}"
   delay: 5
