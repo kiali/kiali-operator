@@ -842,3 +842,8 @@
   - processed_resources.configmap is defined
   - processed_resources.configmap.changed == True
   - processed_resources.configmap.method == "patch"
+
+- include_tasks: update-status.yml
+  vars:
+    status_vars:
+      accessibleNamespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"

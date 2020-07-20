@@ -90,8 +90,8 @@ $0 [option...]
       The value of this label is determined by this setting.
       Default: The value given for the operator image version
   -own|--operator-watch-namespace
-      The namespace in which the operator looks for the Kiali CR.
-      Default: The configured operator namespace (-on)
+      The namespace in which the operator looks for the Kiali CR. If '""' then watch all namespaces.
+      Default: ""
 
 HELPMSG
       exit 1
@@ -109,7 +109,7 @@ export OPERATOR_IMAGE_NAME="${OPERATOR_IMAGE_NAME:-quay.io/kiali/kiali-operator}
 export OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION:-latest}"
 export OPERATOR_IMAGE_PULL_POLICY="${OPERATOR_IMAGE_PULL_POLICY:-IfNotPresent}"
 export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
-export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-${OPERATOR_NAMESPACE}}"
+export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-\"\"}"
 
 # If version label is not specified, set it to image version; but if
 # image version is "latest" the version label will be set to "master".

@@ -1,0 +1,7 @@
+- operator_sdk.util.k8s_status:
+    api_version: "{{ current_cr.apiVersion }}"
+    kind: "{{ current_cr.kind }}"
+    name: "{{ current_cr.metadata.name }}"
+    namespace: "{{ current_cr.metadata.namespace }}"
+    status: "{{ status_vars }}"
+  ignore_errors: yes
