@@ -22,6 +22,7 @@ provisioner:
         kiali_operator_assets_path : "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/deploy"
         cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/accessible-namespaces-test/kiali-cr.yaml"
         cr_namespace: kiali-operator
+        wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
         istio:
           control_plane_namespace: istio-system
         kiali:

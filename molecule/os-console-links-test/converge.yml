@@ -185,7 +185,7 @@
       - "kiali.io/home = {{ kiali.install_namespace }}"
     register: all_console_links
     until: all_console_links.resources | length == 0
-    retries: 60
+    retries: "{{ wait_retries }}"
     delay: 5
 
   # Remove the test namespaces we created earlier
