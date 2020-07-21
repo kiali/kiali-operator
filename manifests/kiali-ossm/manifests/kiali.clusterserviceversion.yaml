@@ -158,9 +158,9 @@ spec:
     url: https://github.com/kiali/kiali-ui
   installModes:
   - type: OwnNamespace
-    supported: true
+    supported: false
   - type: SingleNamespace
-    supported: true
+    supported: false
   - type: MultiNamespace
     supported: false
   - type: AllNamespaces
@@ -188,6 +188,8 @@ spec:
         version: route.openshift.io/v1
       - kind: Ingress
         version: extensions/v1beta1
+      - kind: ConsoleLink
+        version: consolelinks.console.openshift.io/v1
       specDescriptors:
       - displayName: Authentication Strategy
         description: "Determines how a user is to log into Kiali. Supported strategies include 'openshift', 'openid', 'token', and 'anonymous'."
@@ -251,20 +253,11 @@ spec:
             spec:
               serviceAccountName: kiali-operator
               containers:
-              - name: ansible
-                command:
-                - /usr/local/bin/ao-logs
-                - /tmp/ansible-operator/runner
-                - stdout
-                image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7-operator${KIALI_OPERATOR_TAG}
-                imagePullPolicy: "IfNotPresent"
-                volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
-                  readOnly: true
               - name: operator
                 image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7-operator${KIALI_OPERATOR_TAG}
                 imagePullPolicy: "IfNotPresent"
+                args:
+                - "--zap-level=info"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
@@ -283,6 +276,10 @@ spec:
                       fieldPath: metadata.namespace
                 - name: OPERATOR_NAME
                   value: "kiali-operator"
+                - name: ANSIBLE_DEBUG_LOGS
+                  value: "True"
+                - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
+                  value: "1"
                 - name: RELATED_IMAGE_kiali_default
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_0
