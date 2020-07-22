@@ -21,6 +21,7 @@ rules:
   - get
   - list
   - watch
+  - patch
 - apiGroups: ["extensions", "apps"]
   resources:
   - deployments
@@ -30,6 +31,7 @@ rules:
   - get
   - list
   - watch
+  - patch
 - apiGroups: ["autoscaling"]
   resources:
   - horizontalpodautoscalers
@@ -45,6 +47,7 @@ rules:
   - get
   - list
   - watch
+  - patch
 - apiGroups:
   - config.istio.io
   - networking.istio.io

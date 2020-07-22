@@ -89,6 +89,7 @@ kiali_defaults:
       adapter_port: "3333"
       adapter_service: "threescale-istio-adapter"
       enabled: false
+      template_name: "threescale-authorization"
     iter_8:
       enabled: false
 
