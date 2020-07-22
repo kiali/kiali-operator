@@ -128,7 +128,7 @@
 #    some of the Kiali resources that exist outside of that watched namespace (e.g. deletes or modifies
 #    the Kiali Deployment) the operator will be unable to reconcile those changes (e.g. it will not
 #    be able to redeploy the Deployment resource) unless and until the Kiali CR is touched again.
-#    Default: ""
+#    Default: "" (literally two double-quotes)
 #
 # -----------
 # Environment variables that affect Kiali installation:
@@ -187,6 +187,11 @@
 #    to this script that you want to control the Kiali configuration through this file
 #    and not through the command line options or environment variables.
 #    Default: ""
+#
+# KIALI_CR_NAMESPACE
+#    Determines the namespace where the Kiali CR will be created. If not specified,
+#    the OPERATOR_WATCH_NAMESPACE is used. If OPERATOR_WATCH_NAMESPACE is "" (two double-quotes)
+#    then the fallback default is NAMESPACE.
 #
 # KIALI_IMAGE_NAME
 #    Determines which image of Kiali to download and install.
@@ -283,6 +288,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     -gu|--grafana-url)
       GRAFANA_URL="$2"
+      shift;shift
+      ;;
+    -kcn|--kiali-cr-namespace)
+      KIALI_CR_NAMESPACE="$2"
       shift;shift
       ;;
     -kcr|--kiali-cr)
@@ -443,7 +452,7 @@ Valid options for the operator installation:
       some of the Kiali resources that exist outside of that watched namespace (e.g. deletes or modifies
       the Kiali Deployment) the operator will be unable to reconcile those changes (e.g. it will not
       be able to redeploy the Deployment resource) unless and until the Kiali CR is touched again.
-      Default: ""
+      Default: "" (two double-quotes)
 
 Valid options for Kiali installation (if Kiali is to be installed):
   -an|--accessible-namespaces
@@ -473,6 +482,11 @@ Valid options for Kiali installation (if Kiali is to be installed):
       The Grafana URL that Kiali will use when integrating with Grafana.
       This URL must be accessible to clients external to the cluster.
       If not set, Kiali will attempt to auto-detect it.
+  -kcn|--kiali-cr-namespace
+      Determines the namespace where the Kiali CR will be created. If not specified,
+      the operator watch namespace (-own) is used. If operator watch namespace
+      is "" (two double-quotes) then the fallback default is namespace (-n).
+      Default: the operator watch namespace or namespace
   -kcr|--kiali-cr
       A local file containing a customized Kiali CR that you want to install once the operator
       is deployed. This will override most all other settings because you are declaring
@@ -545,7 +559,7 @@ fi
 
 # Determine what cluster client tool we are using.
 # While we have this knowledge here, determine some information about auth_strategy we might need later.
-CLIENT_EXE=$(which istiooc 2>/dev/null || which oc 2>/dev/null)
+CLIENT_EXE=$(which oc 2>/dev/null)
 if [ "$?" == "0" ]; then
   echo "Using 'oc' located here: ${CLIENT_EXE}"
   _AUTH_STRATEGY_DEFAULT="openshift"
@@ -663,7 +677,7 @@ delete_kiali_resources() {
   echo "Deleting resources for any existing Kiali installation"
 
   if [ "${DRY_RUN}" == "" ]; then
-    ${CLIENT_EXE} delete --ignore-not-found=true all,sa,templates,configmaps,deployments,roles,rolebindings,clusterroles,clusterrolebindings,ingresses --selector="app=kiali" -n "${NAMESPACE}"
+    ${CLIENT_EXE} delete --ignore-not-found=true all,sa,configmaps,deployments,roles,rolebindings,clusterroles,clusterrolebindings,ingresses --selector="app=kiali" -n "${NAMESPACE}"
 
     # Note we do not delete any existing secrets unless this script was told the user wants his own secret
     if [ "${CREDENTIALS_CREATE_SECRET}" == "true" ]; then
@@ -672,6 +686,7 @@ delete_kiali_resources() {
 
     # purge OpenShift specific resources
     ${CLIENT_EXE} delete --ignore-not-found=true routes --selector="app=kiali" -n "${NAMESPACE}" 2>/dev/null
+    ${CLIENT_EXE} delete --ignore-not-found=true consolelinks --selector="app=kiali" -n "${NAMESPACE}" 2>/dev/null
     ${CLIENT_EXE} delete --ignore-not-found=true oauthclients.oauth.openshift.io "kiali-${NAMESPACE}" 2>/dev/null
   fi
 }
@@ -827,7 +842,7 @@ if [ "${KIALI_CR}" != "" ]; then
   AUTH_STRATEGY=$(parse_yaml "${KIALI_CR}" | grep -E 'auth[_]+strategy' | sed -e 's/^.*strategy=("\(.*\)")/\1/' | tr -d "\\\'\"")
   if [ "${AUTH_STRATEGY}" == "" ]; then
     # If auth strategy isn't in the yaml, then we need to fallback to the known default the operator will use
-    # which is based on cluster type. If the client is "oc" (anything ending with "oc" such as "istiooc" for example)
+    # which is based on cluster type. If the client is "oc"
     # then assume the cluster is OpenShift and the default auth strategy is "openshift"; otherwise assume the
     # cluster is Kubernetes which means the default auth strategy is "token".
     if [[ "$CLIENT_EXE" = *"oc" ]]; then
@@ -1023,6 +1038,16 @@ fi
 
 # Now deploy Kiali if we were asked to do so.
 
+# If the user did not specify where to put the Kiali CR, the default is the operator watch namespace.
+# If the operator watch namespace is "all namespaces" then use the Kiali namespace.
+if [ -z "${KIALI_CR_NAMESPACE}" ]; then
+  if [ "${OPERATOR_WATCH_NAMESPACE}" != '""' ]; then
+    KIALI_CR_NAMESPACE="${OPERATOR_WATCH_NAMESPACE}"
+  else
+    KIALI_CR_NAMESPACE="${NAMESPACE}"
+  fi
+fi
+
 print_skip_kiali_create_msg() {
   local _branch="$1"
   local _ns="${OPERATOR_WATCH_NAMESPACE}"
@@ -1051,17 +1076,7 @@ if [ "${OPERATOR_INSTALL_KIALI}" != "true" ]; then
   echo "Done."
   exit 0
 else
-  if [ "${OPERATOR_WATCH_NAMESPACE}" == '""' ]; then
-    if [ "${OPERATOR_VERSION_LABEL}" == "dev" ]; then
-      print_skip_kiali_create_msg "master"
-    else
-      print_skip_kiali_create_msg "${OPERATOR_VERSION_LABEL}"
-    fi
-    echo "Done."
-    exit 0
-  else
-    echo "Kiali will now be installed."
-  fi
+  echo "Kiali will now be installed."
 fi
 
 # Check the login strategy. If using "openshift" there is no other checks to perform,
@@ -1109,6 +1124,7 @@ echo AUTH_STRATEGY=$AUTH_STRATEGY
 echo CREDENTIALS_CREATE_SECRET=$CREDENTIALS_CREATE_SECRET
 echo GRAFANA_URL=$GRAFANA_URL
 echo KIALI_CR=$KIALI_CR
+echo KIALI_CR_NAMESPACE=$KIALI_CR_NAMESPACE
 echo KIALI_IMAGE_NAME=$KIALI_IMAGE_NAME
 echo KIALI_IMAGE_PULL_POLICY=$KIALI_IMAGE_PULL_POLICY
 echo KIALI_IMAGE_VERSION=$KIALI_IMAGE_VERSION
@@ -1167,7 +1183,7 @@ fi
 
 # Now deploy Kiali
 
-echo "Deploying Kiali CR to namespace [${OPERATOR_WATCH_NAMESPACE}]"
+echo "Deploying Kiali CR to namespace [${KIALI_CR_NAMESPACE}]"
 
 build_spec_value() {
   local var_name=${1}
@@ -1214,7 +1230,7 @@ if [ "${KIALI_CR}" != "" ]; then
     echo "---" >> ${DRY_RUN}
     cat "${KIALI_CR}" >> ${DRY_RUN}
   fi
-  ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${OPERATOR_NAMESPACE} -f "${KIALI_CR}"
+  ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${KIALI_CR_NAMESPACE} -f "${KIALI_CR}"
   if [ "$?" != "0" ]; then
     echo "ERROR: Failed to deploy Kiali from custom Kiali CR [${KIALI_CR}]. Aborting."
     exit 1
@@ -1253,7 +1269,7 @@ EOF
     echo "${_KIALI_CR_YAML}" >> ${DRY_RUN}
   fi
 
-  echo "${_KIALI_CR_YAML}" | ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${OPERATOR_WATCH_NAMESPACE} -f -
+  echo "${_KIALI_CR_YAML}" | ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${KIALI_CR_NAMESPACE} -f -
   if [ "$?" != "0" ]; then
     echo "ERROR: Failed to deploy Kiali. Aborting."
     exit 1
