@@ -20,8 +20,8 @@ rules:
   verbs:
   - get
   - list
-  - watch
   - patch
+  - watch
 - apiGroups: ["extensions", "apps"]
   resources:
   - deployments
@@ -30,8 +30,8 @@ rules:
   verbs:
   - get
   - list
-  - watch
   - patch
+  - watch
 - apiGroups: ["autoscaling"]
   resources:
   - horizontalpodautoscalers
@@ -46,8 +46,8 @@ rules:
   verbs:
   - get
   - list
-  - watch
   - patch
+  - watch
 - apiGroups:
   - config.istio.io
   - networking.istio.io
