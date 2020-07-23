@@ -20,6 +20,7 @@ rules:
   verbs:
   - get
   - list
+  - patch
   - watch
 - apiGroups: ["extensions", "apps"]
   resources:
@@ -29,6 +30,7 @@ rules:
   verbs:
   - get
   - list
+  - patch
   - watch
 - apiGroups: ["autoscaling"]
   resources:
@@ -44,6 +46,7 @@ rules:
   verbs:
   - get
   - list
+  - patch
   - watch
 - apiGroups:
   - config.istio.io
@@ -85,6 +88,7 @@ rules:
   verbs:
   - get
   - list
+  - patch
   - watch
 - apiGroups: ["project.openshift.io"]
   resources:

@@ -191,6 +191,7 @@ rules:
   verbs:
   - get
   - list
+  ${OPERATOR_ROLE_PATCH}
   - watch
 - apiGroups: ["extensions", "apps"]
   resources:
@@ -200,6 +201,7 @@ rules:
   verbs:
   - get
   - list
+  ${OPERATOR_ROLE_PATCH}
   - watch
 - apiGroups: ["autoscaling"]
   resources:
@@ -215,6 +217,7 @@ rules:
   verbs:
   - get
   - list
+  ${OPERATOR_ROLE_PATCH}
   - watch
 - apiGroups:
   - config.istio.io
@@ -256,6 +259,7 @@ rules:
   verbs:
   - get
   - list
+  ${OPERATOR_ROLE_PATCH}
   - watch
 - apiGroups: ["project.openshift.io"]
   resources:
