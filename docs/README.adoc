@@ -1,0 +1,5 @@
+# Kiali Operator
+
+For getting started with Kiali, see the link:https://kiali.io/documentation/latest/getting-started/[Getting Started page] and the link:https://kiali.io/documentation/latest/installation-guide/[Installation Guide].
+
+This site provides link:./charts[Helm Charts] to install Kiali Operator on Kubernetes environments that do not have OperatorHub installed.
