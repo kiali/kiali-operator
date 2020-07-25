@@ -3,10 +3,10 @@ entries:
   kiali-operator:
   - apiVersion: v2
     appVersion: v1.22.0-SNAPSHOT
-    created: "2020-07-24T15:31:20.638098016-04:00"
+    created: "2020-07-25T09:47:23.979176141-04:00"
     description: Kiali is an open source project for service mesh observability, refer
       to https://www.kiali.io for details.
-    digest: d4774879f2b13d68c5d02a35b90dc2550cc5c6ff529db79b2667fb24e316f98e
+    digest: f54c6d175d2421e7b46397104290d67e668b1e6008899fd09b2ef33a48e78ae8
     home: https://github.com/kiali/kiali-operator
     icon: https://raw.githubusercontent.com/kiali/kiali.io/master/themes/kiali/static/img/kiali_logo_masthead.png
     keywords:
@@ -23,4 +23,4 @@ entries:
     urls:
     - https://kiali.org/kiali-operator/charts/kiali-operator-v1.22.0-SNAPSHOT.tgz
     version: v1.22.0-SNAPSHOT
-generated: "2020-07-24T15:31:20.637318083-04:00"
+generated: "2020-07-25T09:47:23.978177461-04:00"
