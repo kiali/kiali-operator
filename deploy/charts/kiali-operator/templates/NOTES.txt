@@ -5,10 +5,11 @@ The Kiali Operator [{{ .Chart.AppVersion }}] has been installed in namespace [{{
 {{- if .Values.cr.create }}
   {{- if or (and (not .Values.watchNamespace) (not .Values.cr.namespace)) (and (.Values.watchNamespace) (eq .Values.watchNamespace .Release.Namespace)) (and (.Values.cr.namespace) (eq .Values.cr.namespace .Release.Namespace)) }}
 You have elected to install a Kiali CR in the same namespace as the operator [{{ .Release.Namespace }}]. You should be able to access Kiali soon.
-==========================
-WARNING! WARNING! WARNING!
-==========================
+
+================================
+PLEASE READ THIS WARNING NOTICE:
 Because the Kiali CR lives in the same namespace as the operator, DO NOT uninstall the operator or delete the operator namespace without first removing the Kiali CR. If you do not follow this advice then the Kiali Operator deletion will hang indefinitely until you remove the finalizer from the Kiali CR, and then you may find your Kubernetes environment still has Kiali Server remnants left behind.
+================================
   {{- else if .Values.watchNamespace }}
 You have elected to install a Kiali CR in the operator watch namespace [{{ .Values.watchNamespace }}]. You should be able to access Kiali soon.
   {{- else if .Values.cr.namespace }}

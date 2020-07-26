@@ -20,22 +20,6 @@ priorityClassName: ""
 metrics:
   enabled: true
 
-# istio.ingress.enabled: set to true if you want to expose Kiali using Istio Gateway
-# The rest of the settings here configure the Gateway/Virtual Service/Destination Rule.
-istio:
-  ingress:
-    enabled: false
-    http:
-      enabled: true
-      tls:  # https://istio.io/latest/docs/reference/config/networking/gateway/#ServerTLSSettings
-        httpsRedirect: false
-    https:
-      enabled: false
-      tls: {}  # https://istio.io/latest/docs/reference/config/networking/gateway/#ServerTLSSettings
-    selector:
-      istio: ingressgateway
-    hosts: []
-
 # debug.enabled: when true the full ansible logs are dumped after each reconciliation run
 # debug.verbosity: defines the amount of details the operator will log (higher numbers are more noisy)
 debug:
@@ -65,10 +49,6 @@ cr:
   namespace: ""
 
   spec:
-    auth:
-      strategy: anonymous
     deployment:
       accessible_namespaces:
       - '**'
-      namespace: istio-system  # required for Istio-based ingress (istio.ingress.enabled=true)
-    version: default
