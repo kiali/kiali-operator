@@ -218,7 +218,22 @@ kiali_defaults:
     web_schema: ""
 
   health_config:
-    rate: []
+    rate:
+      - namespace: ".*",
+        kind: ".*",
+        name: ".*",
+        tolerance:
+          - code: "/^[4-5]\\d\\d$/"
+            protocol: "http"
+            direction: ".*"
+            degraded: 0.1
+            failure: 20
+          - code: "/^[1-9]$|^1[0-6]$/"
+            protocol: "grpc"
+            direction: ".*"
+            degraded: 0.1
+            failure: 20
+
 
 # These variables are outside of the kiali_defaults. Their values will be
 # auto-detected by the role and are not meant to be set by the user.
