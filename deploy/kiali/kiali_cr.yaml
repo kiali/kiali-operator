@@ -126,42 +126,18 @@ spec:
 #  auth:
 #
 # Determines what authentication strategy to use when users log into Kiali.
-# Options are "login", "anonymous", "token", "openshift", "ldap", "openid".
-# Choose "login" to use a username and password that will be stored in a secret.
+# Options are "anonymous", "token", "openshift", "openid".
 # Choose "anonymous" to allow full access to Kiali without requiring any credentials.
 # Choose "token" to allow access to Kiali using service account tokens, which controls
 #  access based on RBAC roles assigned to the service account.
 # Choose "openshift" to use the OpenShift OAuth login which controls access based on
 #  the individual's  RBAC roles in OpenShift. Not valid for non-OpenShift environments.
-# Choose "ldap" to enable LDAP based authentication. There are additional configurations for
-#  LDAP auth strategy that are required. See below for the additional LDAP configuration section.
 # Choose "openid" to enable OpenID connect based authentication. Your cluster is required to
 #  be configured to accept the tokens issued by your IdP. There are additional required
 #  configurations for this strategy. See below for the additional OpenID configuration section.
 # When empty, its value will default to "openshift" on OpenShift and "token" on Kubernetes.
 #    ---
 #    strategy: ""
-#    ---
-#    ldap:
-#      ldap_base: ""
-#
-# The binding that determines a user. For example, "CN={USERID},OU=xyz,OU=Users,OU=Accounts,DC=example,DC=com".
-#      ---
-#      ldap_bind_dn: ""
-#      ldap_group_filter: "(cn=%s)"
-#      ldap_host: ""
-#      ldap_insecure_skip_verify: false
-#      ldap_mail_id_key: "mail"
-#      ldap_member_of_key: "memberOf"
-#      ldap_port: 0
-#
-# The role filter can be used to filter the user roles using regular expressions. For example, ".*xyz.*".
-#      ---
-#      ldap_role_filter: ""
-#      ldap_search_filter: "(&(name={USERID}))"
-#      ldap_use_ssl: false
-#      ldap_user_filter: "(cn=%s)"
-#      ldap_user_id_key: "cn"
 #
 # When "openid" strategy is chosen for authentication, you will need to fill some
 # required configurations in the following openid section. The "openid" authentication strategy
@@ -350,9 +326,7 @@ spec:
 #    ---
 #    resources: {}
 #
-# The name of the secret where the Kiali credentials are found.
-# These credentials will be required when logging into Kiali.
-# Only used when auth_strategy is "login".
+# The name of a secret used by the Kiali. Reserved for future use - not currently used.
 #    ---
 #    secret_name: "kiali"
 #

@@ -14,7 +14,6 @@
       that:
       - kiali_configmap.installation_tag == ""
       - kiali_configmap.additional_display_details | length == 1
-      - kiali_configmap.auth.ldap.ldap_group_filter == "(cn=%s)"
       - kiali_configmap.deployment.custom_dashboards.includes | length == 1
       - kiali_configmap.deployment.custom_dashboards.includes[0] == '*'
       - kiali_configmap.deployment.custom_dashboards.excludes | length == 1

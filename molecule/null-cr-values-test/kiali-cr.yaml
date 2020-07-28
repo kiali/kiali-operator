@@ -18,7 +18,7 @@ spec:
 
   auth:
     strategy: {{ kiali.auth_strategy }}
-    ldap: null
+    openid: null
 
   deployment:
     accessible_namespaces: {{ kiali.accessible_namespaces }}
