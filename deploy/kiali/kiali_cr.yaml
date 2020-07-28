@@ -448,7 +448,7 @@ spec:
 #   ca_file: The certificate authority file to use when accessing Grafana using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
 #   component_status: Grafana info for the Istio Component Status masthead indicator. Only if it is enabled.
-#       name: Grafana deployment name. It defaults to grafana.
+#       app_label: APP label value of the Grafana pod(s). It defaults to grafana.
 #       is_core: Whether the component is core for your deployment. It defaults to false.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Grafana over https.
 #   password: Password to be used when making requests to Grafana, for basic authentication. User only requires viewer permissions. May refer to a secret - see note above.
@@ -498,7 +498,7 @@ spec:
 # component_status:
 #   enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
 #   components: A list of components that Kiali will check its statuses.
-#     name: Istio component deployment name.
+#     app_label: Istio component pod app label.
 #     is_core: Whether the component is core for your deployment.
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
@@ -508,11 +508,11 @@ spec:
 #      component_status:
 #        enabled: true
 #        components:
-#          - name: istiod
+#          - app_label: istiod
 #            is_core: true
-#          - name: istio-ingressgateway
+#          - app_label: istio-ingressgateway
 #            is_core: true
-#          - name: istio-egressgateway
+#          - app_label: istio-egressgateway
 #            is_core: false
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
@@ -524,7 +524,7 @@ spec:
 #   ca_file: The certificate authority file to use when accessing Prometheus using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
 #   component_status: Prometheus info for the Istio Component Status masthead indicator. Only if it is enabled.
-#       name: Prometheus deployment name. It defaults to prometheus.
+#       app_label: APP label value of the Prometheus pod(s). It defaults to prometheus.
 #       is_core: Whether the component is core for your deployment. It defaults to true.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Prometheus over https.
 #   password: Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret - see note above.
@@ -551,7 +551,7 @@ spec:
 #        use_kiali_token: false
 #        username: ""
 #      component_status:
-#        name: ""
+#        app_label: ""
 #        is_core: false
 #      custom_metrics_url: ""
 #      url: ""
@@ -560,7 +560,7 @@ spec:
 #  - Right now we only support Jaeger
 # auth: authentication settings to connect to Jaeger:
 #   component_status: Jaeger info for the Istio Component Status masthead indicator. Only if it is enabled.
-#       name: Jaeger deployment name. It defaults to jaeger.
+#       app_label: APP label value of the Jaeger pod(s). It defaults to jaeger.
 #       is_core: Whether the component is core for your deployment. It defaults to false.
 #   ca_file: The certificate authority file to use when accessing Jaeger using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
@@ -593,7 +593,7 @@ spec:
 #        use_kiali_token: false
 #        username: ""
 #      component_status:
-#        name: ""
+#        app_label: ""
 #        is_core: false
 #      enabled: true
 #      in_cluster_url: ""
