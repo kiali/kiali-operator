@@ -511,12 +511,12 @@ spec:
 #      component_status:
 #        enabled: true
 #        components:
-#          - app_label: istiod
-#            is_core: true
-#          - app_label: istio-ingressgateway
-#            is_core: true
-#          - app_label: istio-egressgateway
-#            is_core: false
+#        - app_label: istiod
+#          is_core: true
+#        - app_label: istio-ingressgateway
+#          is_core: true
+#        - app_label: istio-egressgateway
+#          is_core: false
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
 #      url_service_version: ""
