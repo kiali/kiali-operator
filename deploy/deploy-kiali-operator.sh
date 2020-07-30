@@ -450,7 +450,7 @@ export OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION:-lastrelease}"
 export OPERATOR_INSTALL_KIALI=${OPERATOR_INSTALL_KIALI:-true}
 export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
 export OPERATOR_VIEW_ONLY_MODE="${OPERATOR_VIEW_ONLY_MODE:-false}"
-export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-$OPERATOR_NAMESPACE}"
+export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-\"\"}"
 
 # Determine what tool to use to download files. This supports environments that have either wget or curl.
 # After return, $downloader will be a command to stream a URL's content to stdout.
@@ -565,6 +565,8 @@ get_helm_chart() {
       if ! ${HELM} repo list -o yaml | grep -q "name: kiali-operator"; then
         echo "Adding kiali-operator repo to Helm"
         ${HELM} repo add kiali-operator https://kiali.org/kiali-operator/charts
+      else
+        ${HELM} repo update
       fi
       HELM_CHART="--version ${HELM_REPO_CHART_VERSION} kiali-operator/kiali-operator"
     else
