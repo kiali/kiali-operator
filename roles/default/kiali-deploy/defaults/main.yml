@@ -96,6 +96,18 @@ kiali_defaults:
       enabled: false
 
   external_services:
+    custom_dashboards:
+      namespace_label: ""
+      prometheus:
+        auth:
+          ca_file: ""
+          insecure_skip_verify: false
+          password: ""
+          token: ""
+          type: "none"
+          use_kiali_token: false
+          username: ""
+        url: ""
     grafana:
       auth:
         ca_file: ""
@@ -145,7 +157,6 @@ kiali_defaults:
       component_status:
         app_label: "prometheus"
         is_core: true
-      custom_metrics_url: ""
       url: ""
     tracing:
       auth:

@@ -449,6 +449,26 @@ spec:
 # password, you can store that password in a secret named "myGrafanaCredentials" in a key named "myGrafanaPw".
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
+# **Custom-dashboards settings:
+# namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
+#   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
+# prometheus: please check the section below about Prometheus-specific settings: they are identical. The Prometheus
+#   configuration defined here is dedicated to fetching custom dashboards, hence allowing to use a different instance
+#   of Prometheus. If omitted, the same Prometheus as for Istio metrics will be reused for custom dashboards.
+#    ---
+#    custom_dashboards:
+#      namespace_label: "kubernetes_namespace"
+#      prometheus:
+#        auth:
+#          ca_file: ""
+#          insecure_skip_verify: false
+#          password: ""
+#          token: ""
+#          type: "none"
+#          use_kiali_token: false
+#          username: ""
+#        url: ""
+#
 # **Grafana-specific settings:
 # auth: authentication settings to connect to Grafana:
 #   ca_file: The certificate authority file to use when accessing Grafana using https. An empty string means no extra
@@ -544,9 +564,6 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", Kiali Service Account token will be used for the API calls to Prometheus,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Prometheus, for basic authentication.
-# custom_metrics_url: The URL used to query the Prometheus Server for building the runtime metrics dashboards.
-#                     This URL must be accessible from the Kiali pod.
-#                     If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
 #      If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 #    ---
@@ -562,7 +579,6 @@ spec:
 #      component_status:
 #        app_label: "prometheus"
 #        is_core: true
-#      custom_metrics_url: ""
 #      url: ""
 #
 # **Tracing-specific settings:
