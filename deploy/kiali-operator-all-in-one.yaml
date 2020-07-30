@@ -1,5 +1,5 @@
 ---
-# Kiali Operator 'v1.22.0' All-in-One YAML
+# Kiali Operator 'latest' All-in-One YAML
 # This operator will not be able to support deployment.accessible_namespaces=['**'].
 ---
 # Source: crds/crds.yaml
