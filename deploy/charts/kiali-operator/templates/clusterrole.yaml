@@ -1,12 +1,10 @@
 ---
-# NOTE: Changes to this file must be reflected in the OperatorHub.io CSV file
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kiali-operator
+  name: {{ include "kiali-operator.fullname" . }}
   labels:
-    app: kiali-operator
-    version: ${OPERATOR_VERSION_LABEL}
+  {{- include "kiali-operator.labels" . | nindent 4 }}
 rules:
 - apiGroups: [""]
   resources:
@@ -90,8 +88,10 @@ rules:
   - watch
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources:
-  ${OPERATOR_ROLE_CLUSTERROLEBINDINGS}
-  ${OPERATOR_ROLE_CLUSTERROLES}
+  {{- if or (and (.Values.cr.create) (has "**" .Values.cr.spec.deployment.accessible_namespaces)) (.Values.clusterRoleCreator) }}
+  - clusterrolebindings
+  - clusterroles
+  {{- end }}
   - rolebindings
   - roles
   verbs:
@@ -191,8 +191,10 @@ rules:
   verbs:
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - patch
+  {{- end }}
 - apiGroups: ["extensions", "apps"]
   resources:
   - deployments
@@ -201,8 +203,10 @@ rules:
   verbs:
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - patch
+  {{- end }}
 - apiGroups: ["autoscaling"]
   resources:
   - horizontalpodautoscalers
@@ -217,8 +221,10 @@ rules:
   verbs:
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - patch
+  {{- end }}
 - apiGroups:
   - config.istio.io
   - networking.istio.io
@@ -227,40 +233,48 @@ rules:
   - security.istio.io
   resources: ["*"]
   verbs:
-  ${OPERATOR_ROLE_CREATE}
-  ${OPERATOR_ROLE_DELETE}
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - create
+  - delete
+  - patch
+  {{- end }}
 - apiGroups: ["authentication.maistra.io"]
   resources:
   - servicemeshpolicies
   verbs:
-  ${OPERATOR_ROLE_CREATE}
-  ${OPERATOR_ROLE_DELETE}
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - create
+  - delete
+  - patch
+  {{- end }}
 - apiGroups: ["rbac.maistra.io"]
   resources:
   - servicemeshrbacconfigs
   verbs:
-  ${OPERATOR_ROLE_CREATE}
-  ${OPERATOR_ROLE_DELETE}
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - create
+  - delete
+  - patch
+  {{- end }}
 - apiGroups: ["apps.openshift.io"]
   resources:
   - deploymentconfigs
   verbs:
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - patch
+  {{- end }}
 - apiGroups: ["project.openshift.io"]
   resources:
   - projects
@@ -281,9 +295,12 @@ rules:
   resources:
   - experiments
   verbs:
-  ${OPERATOR_ROLE_CREATE}
-  ${OPERATOR_ROLE_DELETE}
   - get
   - list
-  ${OPERATOR_ROLE_PATCH}
   - watch
+  {{- if eq .Values.onlyViewOnlyMode false }}
+  - create
+  - delete
+  - patch
+  {{- end }}
+...

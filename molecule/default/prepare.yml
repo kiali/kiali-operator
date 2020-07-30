@@ -24,45 +24,48 @@
     - ossm_secret_htpasswd_raw.resources is defined
     - ossm_secret_htpasswd_raw.resources | length == 1
 
-  - name: Produce Files with Correct Parameters
-    shell: " {{ item }}"
-    with_items:
-    - cat {{ kiali_operator_assets_path }}/namespace.yaml | OPERATOR_VERSION_LABEL={{ kiali.operator_version }} OPERATOR_NAMESPACE={{ kiali.operator_namespace }}  envsubst
-    - cat {{ kiali_operator_assets_path }}/crd.yaml | OPERATOR_VERSION_LABEL={{ kiali.operator_version }} envsubst
-    - cat {{ kiali_operator_assets_path }}/role_binding.yaml | OPERATOR_VERSION_LABEL={{ kiali.operator_version }} OPERATOR_NAMESPACE={{ kiali.operator_namespace }} envsubst
-    - cat {{ kiali_operator_assets_path }}/service_account.yaml | OPERATOR_VERSION_LABEL={{ kiali.operator_version }} envsubst
-    - cat {{ kiali_operator_assets_path }}/operator.yaml | OPERATOR_VERSION_LABEL={{ kiali.operator_version }} OPERATOR_IMAGE_NAME={{ kiali.operator_image_name}} OPERATOR_IMAGE_VERSION={{ kiali.operator_version }} OPERATOR_IMAGE_PULL_POLICY={{ kiali.operator_image_pull_policy}} OPERATOR_WATCH_NAMESPACE={{ kiali.operator_watch_namespace }} envsubst
-    - cat {{ kiali_operator_assets_path }}/role.yaml | OPERATOR_VERSION_LABEL={{ kiali.operator_version }} OPERATOR_ROLE_CLUSTERROLEBINDINGS="{{ kiali.operator_clusterrolebindings}}" OPERATOR_ROLE_CLUSTERROLES="{{ kiali.operator_clusterroles }}" OPERATOR_ROLE_CREATE="{{ kiali.operator_role_create | default('- create') }}" OPERATOR_ROLE_DELETE="{{ kiali.operator_role_delete | default('- delete') }}" OPERATOR_ROLE_PATCH="{{ kiali.operator_role_patch | default('- patch') }}" envsubst
-    register: template
-
-  - name: Parse Template Yaml Files
-    set_fact:
-      namespace: "{{ (template.results[0].stdout | from_yaml_all | list)[0] }}"
-      crd0: "{{ (template.results[1].stdout | from_yaml_all | list)[0] }}"
-      crd1: "{{ (template.results[1].stdout | from_yaml_all | list)[1] }}"
-      role_binding: "{{ (template.results[2].stdout | from_yaml_all | list)[0] }}"
-      service_account: "{{ (template.results[3].stdout | from_yaml_all | list)[0] }}"
-      operator: "{{ (template.results[4].stdout | from_yaml_all | list)[0] }}"
-      role: "{{ (template.results[5].stdout | from_yaml_all | list)[0] }}"
-
-  - name: Combine Namespace on the Files that need it
-    set_fact:
-      service_account: "{{ service_account | combine({'metadata':{'namespace': kiali.operator_namespace }}, recursive=True)   }}"
-      role_binding: "{{ role_binding | combine({'metadata':{'namespace': kiali.operator_namespace }}, recursive=True)   }}"
-      role: "{{ role | combine({'metadata':{'namespace': kiali.operator_namespace }}, recursive=True)   }}"
-      operator: "{{ operator | combine({'metadata':{'namespace': kiali.operator_namespace }}, recursive=True)   }}"
-
-  - name: Deploying Templates on Kubernetes
+  - name: Make sure the operator namespace exists
     k8s:
-      definition: "{{ item }}"
-    with_items:
-    -  "{{ namespace }}"
-    -  "{{ crd0 }}"
-    -  "{{ crd1 }}"
-    -  "{{ role }}"
-    -  "{{ role_binding }}"
-    -  "{{ service_account }}"
-    -  "{{ operator }}"
+      state: present
+      api_version: v1
+      kind: Namespace
+      name: "{{ kiali.operator_namespace }}"
+
+  - name: Find the Helm Chart
+    set_fact:
+      helm_chart_location: "{{ lookup('fileglob', lookup('env', 'MOLECULE_PROJECT_DIRECTORY') + '/_output/charts/kiali-operator*.tgz') }}"
+
+  - fail:
+      msg: "The helm chart does not appear to be built. Run 'make build-helm-chart'."
+    when:
+    - helm_chart_location | length == 0
+
+  - name: Install Operator via Helm
+    command:
+      argv:
+      - "helm"
+      - "upgrade"
+      - "--install"
+      - "--atomic"
+      - "--cleanup-on-fail"
+      - "--namespace={{ kiali.operator_namespace }}"
+      - "--set"
+      - "cr.create=false"
+      - "--set"
+      - "image.repo={{ kiali.operator_image_name }}"
+      - "--set"
+      - "image.tag={{ kiali.operator_version }}"
+      - "--set"
+      - "image.pullPolicy={{ kiali.operator_image_pull_policy }}"
+      - "--set"
+      - "watchNamespace={{ kiali.operator_watch_namespace }}"
+      - "--set"
+      - "clusterRoleCreator={{ kiali.operator_cluster_role_creator | default('true') }}"
+      - "--set"
+      - "onlyViewOnlyMode={{ kiali.operator_only_view_only_mode | default('false') }}"
+      - "--debug"
+      - "kiali-operator"
+      - "{{ helm_chart_location }}"
 
   - name: Make sure the CR namespace exists
     k8s:

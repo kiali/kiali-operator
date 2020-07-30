@@ -4,18 +4,12 @@
 # deploy-kiali-operator.sh
 #
 # This script can be used to deploy the Kiali operator into an OpenShift
-# or Kubernetes cluster.
-#
-# This script can also optionally install Kiali after it installs the operator.
-# See OPERATOR_INSTALL_KIALI below.
+# or Kubernetes cluster. It is merely a convienence wrapper around the
+# Kiali operator Helm Chart. It is recommended you use 'helm' directly
+# rather than use this script - this script does not provide all
+# the functionality that the helm CLI provides.
 #
 # To use this script, either "oc" or "kubectl" must be in your PATH.
-# This script utilizes "envsubst" - make sure that command line tool
-# is installed and in your PATH.
-#
-# This script assumes all the operator yaml files exist in the same
-# directory where this script is found. If an expected yaml file is missing,
-# an attempt will be made to download it.
 #
 # To customize the behavior of this script, you can set one or more of the
 # following environment variables or pass in their associated command
@@ -25,47 +19,39 @@
 # -----------
 # Environment variables that affect the overall behavior of this script:
 #
-# ALLOW_UPDATES
-#    This script's purpose is to be an installer for the operator. It may not be able to
-#    update existing operator or Kiali instances. This is why the default behavior of this
-#    script is to uninstall existing installations before attempting to install new ones.
-#    However, you can force this script to attempt to update existing installations by setting
-#    this to true. When true, any existing operator or Kiali instances will remain and this
-#    script will invoke the "oc" or "kubectl" apply commands with the hope that the updates
-#    will succeed (though they are not guaranteed to succeed).
-#    Default: "false"
-#
 # DRY_RUN
-#    If set to a file path, the script will not create any objects in the cluster but will instead
-#    write to that file all the YAML for the resources that would have been created.
-#    Dry run will be disabled when set to an empty string.
-#    Default: ""
-#
-# UNINSTALL_EXISTING_KIALI
-#    If true, this script first will attempt to uninstall any currently existing Kiali resources.
-#    Note that if Kiali is already installed and you opt not to uninstall it, this script
-#    will abort and the operator will not be installed unless you explicitly allow updates.
-#    This will only remove resources from Kiali itself, not a previously installed
-#    Kiali Operator. If you have a previously installed Kiali that was installed by
-#    a Kiali Operator, you can use that operator to uninstall that Kiali by deleting the Kiali CR.
-#    If UNINSTALL_EXISTING_OPERATOR is true, this value is ignored since Kiali will be uninstalled
-#    when the operator is uninstalled.
-#    If UNINSTALL_MODE is true, this value is ignored.
-#    Default: If not explicitly defined, an interactive prompt will ask for confirmation.
-#
-# UNINSTALL_EXISTING_OPERATOR
-#    If true, this script will attempt to uninstall any currently existing operator resources.
-#    If the operator is already installed and you opt not to uninstall it, this script will abort
-#    unless you explicitly allow updates.
-#    Uninstalling the operator will also uninstall any existing Kiali installation as well.
-#    If UNINSTALL_MODE is true, this value is ignored.
-#    Default: If not explicitly defined, an interactive prompt will ask for confirmation.
-#
-# UNINSTALL_MODE
-#    When set to true, this script will uninstall the operator and Kiali, and it will not install anything.
+#    If true, helm will be instructed to perform a dry run and thus
+#    will not create any objects in the cluster.
 #    Default: "false"
+#
+# HELM_CHART
+#    The Helm Chart to be used when installing the operator.
+#    If specified, this must be a Helm Chart tarball whose filename
+#    ends with .tgz or tar.gz. When specified, it will be
+#    installed and the HELM_REPO_CHART_VERSION is ignored.
+#    If set to "source" this will download the Kiali Operator source
+#    and build the latest Helm Chart and use that.
+#    If not specified, HELM_REPO_CHART_VERSION is used.
+#
+# HELM_REPO_CHART_VERSION
+#    Use the Kiali Operator Helm Chart repo to obtain the Helm Chart.
+#    When specified, this must be the version of the Chart to install.
+#    If "lastrelease" is specified, the same version as the last
+#    Kiali Operator release will be assumed.
+#    The chart repo is: https://kiali.org/kiali-operator/charts
+#    Default: "lastrelease" if HELM_CHART is not specified; ignored otherwise
 #
 # Environment variables that affect the Kiali operator installation:
+#
+# OPERATOR_CLUSTER_ROLE_CREATOR
+#    When true, the operator will be given permission to create cluster roles and
+#    cluster role bindings so it can, in turn, assign Kiali a cluster role and
+#    cluster role binding to access all namespaces. This is to support the Kiali CR
+#    setting deployment.accessible_namespaces=['**'] (see the Kiali documentation for
+#    more details on this setting).
+#    This is overridden to "true" if you are installing Kiali with accessible namespaces
+#    set to ** (i.e. -an '**' -oik true).
+#    Default: "false"
 #
 # OPERATOR_IMAGE_NAME
 #    Determines which image of the operator to download and install.
@@ -95,23 +81,6 @@
 #    The namespace into which Kiali operator is to be installed.
 #    Default: "kiali-operator"
 #
-# OPERATOR_SKIP_WAIT
-#    If you do not want this script to wait for the operator to start in order to confirm
-#    it successfully installed, set this to "true".
-#    Default: "false"
-#
-# OPERATOR_VERSION_LABEL
-#    Kiali operator resources will be assigned a "version" label when they are deployed.
-#    To control what version label to use for Kiali resources, see VERSION_LABEL.
-#    This env var determines what value those "version" labels will be.
-#    If the OPERATOR_IMAGE_VERSION env var is "latest", this OPERATOR_VERSION_LABEL will be fixed to "master".
-#    If the OPERATOR_IMAGE_VERSION env var is "lastrelease", this OPERATOR_VERSION_LABEL will be fixed to
-#    the last Kiali release version string.
-#    If the OPERATOR_IMAGE_VERSION env var is anything else, you can assign OPERATOR_VERSION_LABEL to anything
-#    and it will be used for the value of Kiali's "version" labels, otherwise it will default
-#    to the value of OPERATOR_IMAGE_VERSION env var value.
-#    Default: See above for how the default value is determined
-#
 # OPERATOR_VIEW_ONLY_MODE
 #    Setting this to true will ensure the operator only has the necessary permissions to deploy Kiali with
 #    view_only_mode=true. If Kiali is also to be deployed via this deploy script, Kiali will be put into
@@ -139,7 +108,7 @@
 #   The format of the value of this environment variable is a space-separated list (no commas).
 #   The namespaces can be regular expressions or explicit namespace names.
 #   NOTE! If this is the special value of "**" (two asterisks), that will denote you want Kiali to be
-#   given access to all namespaces as a cluster admin. When given this value, the operator will
+#   given access to all namespaces. When given this value, the operator will
 #   be given permission to create cluster roles and cluster role bindings so it can in turn
 #   assign Kiali a cluster role and cluster role binding to access all namespaces. Therefore,
 #   be very careful when setting this value to "**" because of the superpowers this will grant
@@ -148,38 +117,7 @@
 #
 # AUTH_STRATEGY
 #    Determines what authentication strategy to use.
-#    Choose "login" to use a username and password.
-#    Choose "anonymous" to allow full access to Kiali without requiring any credentials.
-#    Choose "token" to allow access to Kiali using service account tokens, which controls
-#     access based on RBAC roles assigned to the service account.
-#    Choose "openshift" to use the OpenShift OAuth login which controls access
-#     based on the individual's RBAC roles in OpenShift.
-#    Choose "ldap" to enable LDAP based authentication. There are additional configurations for
-#     LDAP auth strategy that are required. See below for the additional LDAP configuration section.
-#    Choose "openid" to enable openid based authentication. There are additional configurations for
-#     openid strategy that are required. See below for the additional configuration section.
 #    Default: "openshift" (when using OpenShift), "token" (when using Kubernetes)
-#
-# CREDENTIALS_CREATE_SECRET
-#    When "true" a secret will be created with the credentials provided to this script.
-#    Secrets are only created when AUTH_STRATEGY is "login".
-#    If Kiali is to be uninstalled and this value is "true", then any Kiali secret found will be deleted.
-#    Default: "true"
-#
-# CREDENTIALS_USERNAME
-# CREDENTIALS_PASSPHRASE
-#    The credentials that will be required when logging into Kiali.
-#    Only used when AUTH_STRATEGY is "login".
-#    If you want to create the secret yourself, set CREDENTIALS_CREATE_SECRET to "false".
-#    When not set (and when AUTH_STRATEGY="login" and CREDENTIALS_CREATE_SECRET is "true")
-#    you will be prompted for a username and passphrase.
-#
-# GRAFANA_URL
-#    The Grafana URL that Kiali will use when integrating with Grafana.
-#    This URL must be accessible to clients external to the cluster
-#    in order for the integration to work properly.
-#    If empty, Kiali will attempt to auto-detect it.
-#    Default: ""
 #
 # KIALI_CR
 #    A local file containing a customized Kiali CR that you want to install once the operator
@@ -190,7 +128,8 @@
 #
 # KIALI_CR_NAMESPACE
 #    Determines the namespace where the Kiali CR will be created. If not specified,
-#    the OPERATOR_WATCH_NAMESPACE is used. If OPERATOR_WATCH_NAMESPACE is "" (two double-quotes)
+#    the OPERATOR_WATCH_NAMESPACE is used. If the operator is to watch all namespaces
+#    (i.e. OPERATOR_WATCH_NAMESPACE is "" (two double-quotes) or "**")
 #    then the fallback default is NAMESPACE.
 #
 # KIALI_IMAGE_NAME
@@ -222,27 +161,9 @@
 #    The namespace where Istio is installed. If empty, assumes the value of NAMESPACE.
 #    Default: ""
 #
-# JAEGER_URL
-#    The Jaeger URL that Kiali will use when integrating with Jaeger.
-#    This URL must be accessible to clients external to the cluster
-#    in order for the integration to work properly.
-#    If empty, Kiali will attempt to auto-detect it.
-#    Default: ""
-#
 # NAMESPACE
 #    The namespace into which Kiali is to be installed.
-#    If a secret is to be created, it will be created in this namespace.
 #    Default: "istio-system"
-#
-# SECRET_NAME
-#    The name of the secret that contains the credentials that will be required
-#    when logging into Kiali. This is only needed when auth_strategy is "login".
-#    If the CREDENTIALS_USERNAME/PASSPHRASE environment variables
-#    are specified, this secret will be created for you, unless
-#    CREDENTIALS_CREATE_SECRET is "false". If CREDENTIALS_CREATE_SECRET is "false",
-#    this SECRET_NAME setting is still needed - it is the name of the secret that
-#    already (or will) contain the credentials (i.e. the secret you must create manually).
-#    Default: kiali
 #
 # VERSION
 #    This is the value that will be passed directly to the Kiali CR's "version"
@@ -253,15 +174,13 @@
 #
 ##############################################################################
 
+set -eu
+
 # process command line args to override environment
 _CMD=""
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-    -au|--allow-updates)
-      ALLOW_UPDATES="$2"
-      shift;shift
-      ;;
     -an|--accessible-namespaces)
       ACCESSIBLE_NAMESPACES="$2"
       shift;shift
@@ -270,24 +189,17 @@ while [[ $# -gt 0 ]]; do
       AUTH_STRATEGY="$2"
       shift;shift
       ;;
-    -ccs|--credentials-create-secret)
-      CREDENTIALS_CREATE_SECRET="$2"
-      shift;shift
-      ;;
-    -cp|--credentials-passphrase)
-      CREDENTIALS_PASSPHRASE="$2"
-      shift;shift
-      ;;
-    -cu|--credentials-username)
-      CREDENTIALS_USERNAME="$2"
-      shift;shift
-      ;;
     -dr|--dry-run)
+      if [ "${2:-}" != "true" -a "${2:-}" != "false" ]; then echo "--dry-run must be true or false"; exit 1; fi
       DRY_RUN="$2"
       shift;shift
       ;;
-    -gu|--grafana-url)
-      GRAFANA_URL="$2"
+    -hc|--helm-chart)
+      HELM_CHART="$2"
+      shift;shift
+      ;;
+    -hrcv|--helm-repo-chart-version)
+      HELM_REPO_CHART_VERSION="$2"
       shift;shift
       ;;
     -kcn|--kiali-cr-namespace)
@@ -314,12 +226,13 @@ while [[ $# -gt 0 ]]; do
       ISTIO_NAMESPACE="$2"
       shift;shift
       ;;
-    -ju|--jaeger-url)
-      JAEGER_URL="$2"
-      shift;shift
-      ;;
     -n|--namespace)
       NAMESPACE="$2"
+      shift;shift
+      ;;
+    -ocrc|--operator-cluster-role-creator)
+      if [ "${2:-}" != "true" -a "${2:-}" != "false" ]; then echo "--operator-cluster-role-creator must be true or false"; exit 1; fi
+      OPERATOR_CLUSTER_ROLE_CREATOR="$2"
       shift;shift
       ;;
     -oin|--operator-image-name)
@@ -342,36 +255,13 @@ while [[ $# -gt 0 ]]; do
       OPERATOR_NAMESPACE="$2"
       shift;shift
       ;;
-    -osw|--operator-skip-wait)
-      OPERATOR_SKIP_WAIT="$2"
-      shift;shift
-      ;;
-    -ovl|--operator-version-label)
-      OPERATOR_VERSION_LABEL="$2"
-      shift;shift
-      ;;
     -ovom|--operator-view-only-mode)
+      if [ "${2:-}" != "true" -a "${2:-}" != "false" ]; then echo "--operator-view-only-mode must be true or false"; exit 1; fi
       OPERATOR_VIEW_ONLY_MODE="$2"
       shift;shift
       ;;
     -own|--operator-watch-namespace)
       OPERATOR_WATCH_NAMESPACE="$2"
-      shift;shift
-      ;;
-    -sn|--secret-name)
-      SECRET_NAME="$2"
-      shift;shift
-      ;;
-    -uek|--uninstall-existing-kiali)
-      UNINSTALL_EXISTING_KIALI="$2"
-      shift;shift
-      ;;
-    -ueo|--uninstall-existing-operator)
-      UNINSTALL_EXISTING_OPERATOR="$2"
-      shift;shift
-      ;;
-    -um|--uninstall-mode)
-      UNINSTALL_MODE="$2"
       shift;shift
       ;;
     -v|--version)
@@ -384,36 +274,38 @@ while [[ $# -gt 0 ]]; do
 $0 [option...]
 
 Valid options for overall script behavior:
-  -au|--allow-updates
-      This script's purpose is to be an installer for the operator, thus the default
-      behavior is to uninstall existing installations before attempting to install new ones.
-      However, you can force this script to attempt to update existing installations by setting
-      this to true. When true, any existing operator or Kiali instances will remain and this
-      script will invoke the "oc" or "kubectl" apply commands with the hope that the updates
-      will succeed (though they are not guaranteed to succeed).
-      Default: "false"
   -dr|--dry-run
-      If set to a file path, the script will not create any objects in the cluster but will instead
-      write to that file all the YAML for the resources that would have been created.
-      Default: ""
-  -uek|--uninstall-existing-kiali
-      If true, this script will attempt to uninstall any currently existing Kiali resources.
-      Note that if Kiali is already installed and you opt not to uninstall it, this script
-      will abort and the operator will not be installed.
-      If -ueo=true, this option is ignored since Kiali will be uninstalled along with the operator.
-      If -um=true, this option is ignored.
-      Default: "false"
-  -ueo|--uninstall-existing-operator
-      If true, this script will attempt to uninstall any currently existing operator resources.
-      If the operator is already installed and you opt not to uninstall it, this script will abort.
-      Uninstalling the operator will uninstall any existing Kiali installation as well.
-      If -um=true, this option is ignored.
-      Default: "false"
-  -um|--uninstall-mode
-      When set to true, this script will uninstall the operator and Kiali, and it will not install anything.
+      If true, helm will be instructed to perform a dry run and thus
+      will not create any objects in the cluster.
       Default: "false"
 
+  -hc|--helm-chart
+      The Helm Chart to be used when installing the operator.
+      If specified, this must be a Helm Chart tarball whose filename
+      ends with .tgz or tar.gz. When specified, it will be
+      installed and the HELM_REPO_CHART_VERSION is ignored.
+      If set to "source" this will download the Kiali Operator source
+      and build the latest Helm Chart and use that.
+      If not specified, HELM_REPO_CHART_VERSION is used.
+
+  -hrcv|--helm-repo-chart-version
+      Use the Kiali Operator Helm Chart repo to obtain the Helm Chart.
+      When specified, this must be the version of the Chart to install.
+      If "lastrelease" is specified, the same version as the last
+      Kiali Operator release will be assumed.
+      The chart repo is: https://kiali.org/kiali-operator/charts
+      Default: "lastrelease" if --helm-chart is not specified; ignored otherwise
+
 Valid options for the operator installation:
+  -ocrc|--operator-cluster-role-creator
+      When true, the operator will be given permission to create cluster roles and
+      cluster role bindings so it can, in turn, assign Kiali a cluster role and
+      cluster role binding to access all namespaces. This is to support the Kiali CR
+      setting deployment.accessible_namespaces=['**'] (see the Kiali documentation for
+      more details on this setting).
+      This is overridden to "true" if you are installing Kiali with accessible namespaces
+      set to ** (i.e. -an '**' -oik true).
+      Default: "false"
   -oin|--operator-image-name
       Image of the Kiali operator to download and install.
       Default: "quay.io/kiali/kiali-operator"
@@ -430,13 +322,6 @@ Valid options for the operator installation:
   -on|--operator-namespace
       The namespace into which the Kiali operator is to be installed.
       Default: "kiali-operator"
-  -osw|--operator-skip-wait
-      Indicates if this script should not wait for the Kiali operator to be fully started.
-      Default: "false"
-  -ovl|--operator-version-label
-      A Kubernetes label named "version" will be set on the Kiali operator resources.
-      The value of this label is determined by this setting.
-      Default: Determined by the operator image version being installed
   -ovom|--operator-view-only-mode
       Setting this to true will ensure the operator only has the necessary permissions to deploy Kiali with
       view_only_mode=true. If Kiali is also to be deployed via this deploy script, Kiali will be put into
@@ -468,25 +353,12 @@ Valid options for Kiali installation (if Kiali is to be installed):
       Default: "^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"
   -as|--auth-strategy
       Determines what authentication strategy to use.
-      Valid values are "login", "anonymous", "token", "ldap", "openshift" and "openid"
       Default: "openshift" (when using OpenShift), "token" (when using Kubernetes)
-  -ccs|--credentials-create-secret
-      When "true" a secret will be created with the credentials provided to this script.
-      Only used when the authentication strategy is set to "login".
-      Default: "true"
-  -cp|--credentials-passphrase
-      When this script creates a secret, this will be the passphrase stored in the secret.
-  -cu|--credentials-username
-      When this script creates a secret, this will be the username stored in the secret.
-  -gu|--grafana-url
-      The Grafana URL that Kiali will use when integrating with Grafana.
-      This URL must be accessible to clients external to the cluster.
-      If not set, Kiali will attempt to auto-detect it.
   -kcn|--kiali-cr-namespace
       Determines the namespace where the Kiali CR will be created. If not specified,
-      the operator watch namespace (-own) is used. If operator watch namespace
-      is "" (two double-quotes) then the fallback default is namespace (-n).
-      Default: the operator watch namespace or namespace
+      the operator watch namespace (-own) is used. If the operator is to watch all namespaces
+      (i.e. -own is "" (two double-quotes) or "**") then the fallback default is the
+      value for --namespace.
   -kcr|--kiali-cr
       A local file containing a customized Kiali CR that you want to install once the operator
       is deployed. This will override most all other settings because you are declaring
@@ -508,18 +380,9 @@ Valid options for Kiali installation (if Kiali is to be installed):
   -in|--istio-namespace
       The namespace where Istio is installed.
       If empty, assumes the value of the namespace option.
-  -ju|--jaeger-url
-      The Jaeger URL that Kiali will use when integrating with Jaeger.
-      This URL must be accessible to clients external to the cluster.
-      If not set, Kiali will attempt to auto-detect it.
   -n|--namespace
       The namespace into which Kiali is to be installed.
       Default: "istio-system"
-  -sn|--secret-name
-      The name of the secret that contains the credentials that will be
-      required when logging into Kiali. This is only needed when the
-      authentication strategy is "login".
-      Default: "kiali"
   -v|--version
       The version of Kiali to install. This is a named version or product name.
       If not specified, a default version of Kiali will be installed which will be
@@ -542,34 +405,19 @@ HELPMSG
   esac
 done
 
-# Make sure the dry run file does not exist
-if [ "${DRY_RUN}" != "" ]; then
-  if [ -f ${DRY_RUN} ]; then
-    echo "ERROR: The dry run output file exists. Delete it or move it out of the way: ${DRY_RUN}"
-    exit 1
-  fi
-  touch ${DRY_RUN}
-  if [ ! -f ${DRY_RUN} ]; then
-    echo "ERROR: The dry run output file could not be created. Make sure this filepath is valid: ${DRY_RUN}"
-    exit 1
-  fi
-  DRY_RUN_ARG="--dry-run"
-  OPERATOR_SKIP_WAIT="true"
-fi
-
 # Determine what cluster client tool we are using.
 # While we have this knowledge here, determine some information about auth_strategy we might need later.
 CLIENT_EXE=$(which oc 2>/dev/null)
 if [ "$?" == "0" ]; then
   echo "Using 'oc' located here: ${CLIENT_EXE}"
   _AUTH_STRATEGY_DEFAULT="openshift"
-  _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'login', 'openshift', 'token', 'ldap' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
+  _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'openshift', 'token', or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
 else
   CLIENT_EXE=$(which kubectl 2>/dev/null)
   if [ "$?" == "0" ]; then
     echo "Using 'kubectl' located here: ${CLIENT_EXE}"
     _AUTH_STRATEGY_DEFAULT="token"
-    _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'login', 'token', 'ldap', 'openid' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
+    _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'token', 'openid' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
   else
     echo "ERROR: You do not have 'oc' or 'kubectl' in your PATH. Please install it and retry."
     exit 1
@@ -577,37 +425,37 @@ else
 fi
 
 # Some environment variables we need set to their defaults if not set already
-CREDENTIALS_CREATE_SECRET=${CREDENTIALS_CREATE_SECRET:-true}
 NAMESPACE="${NAMESPACE:-istio-system}"
-SECRET_NAME="${SECRET_NAME:-kiali}"
 VERSION="${VERSION:-default}"
+HELM_CHART="${HELM_CHART:-}"
+HELM_REPO_CHART_VERSION="${HELM_REPO_CHART_VERSION:-lastrelease}"
+
+if [ "${DRY_RUN:-}" == "true" ]; then
+  DRY_RUN_ARG="--dry-run"
+else
+  DRY_RUN_ARG=""
+fi
 
 # The YAML really needs an empty string denoted with two double-quote characters.
 # We just support "**" because its easier to specify on the command line.
-if [ "${OPERATOR_WATCH_NAMESPACE}" == "**" ]; then
+if [ "${OPERATOR_WATCH_NAMESPACE:-}" == "**" ]; then
   OPERATOR_WATCH_NAMESPACE='""'
 fi
 
 # Export all possible variables for envsubst to be able to process operator resources
+export OPERATOR_CLUSTER_ROLE_CREATOR="${OPERATOR_CLUSTER_ROLE_CREATOR:-false}"
 export OPERATOR_IMAGE_NAME="${OPERATOR_IMAGE_NAME:-quay.io/kiali/kiali-operator}"
 export OPERATOR_IMAGE_PULL_POLICY="${OPERATOR_IMAGE_PULL_POLICY:-IfNotPresent}"
 export OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION:-lastrelease}"
 export OPERATOR_INSTALL_KIALI=${OPERATOR_INSTALL_KIALI:-true}
 export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
-export OPERATOR_SKIP_WAIT="${OPERATOR_SKIP_WAIT:-false}"
-export OPERATOR_VERSION_LABEL="${OPERATOR_VERSION_LABEL:-$OPERATOR_IMAGE_VERSION}"
 export OPERATOR_VIEW_ONLY_MODE="${OPERATOR_VIEW_ONLY_MODE:-false}"
-export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-\"\"}"
-export OPERATOR_ROLE_CLUSTERROLEBINDINGS="# The operator does not have permission to manage cluster role bindings"
-export OPERATOR_ROLE_CLUSTERROLES="# The operator does not have permission to manage cluster roles"
-export OPERATOR_ROLE_CREATE="# The operator does not have permission to create"
-export OPERATOR_ROLE_DELETE="# The operator does not have permission to delete"
-export OPERATOR_ROLE_PATCH="# The operator does not have permission to patch"
+export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-$OPERATOR_NAMESPACE}"
 
 # Determine what tool to use to download files. This supports environments that have either wget or curl.
 # After return, $downloader will be a command to stream a URL's content to stdout.
 get_downloader() {
-  if [ ! "$downloader" ] ; then
+  if [ ! "${downloader:-}" ] ; then
     # Use wget command if available, otherwise try curl
     if which wget > /dev/null 2>&1 ; then
       downloader="wget -q -O -"
@@ -627,133 +475,107 @@ get_downloader() {
 }
 
 resolve_latest_kiali_release() {
-  get_downloader
-  github_api_url="https://api.github.com/repos/kiali/kiali/releases"
-  kiali_version_we_want=$(${downloader} ${github_api_url} 2> /dev/null |\
-    grep  "tag_name" | \
-    sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | \
-    grep -v "snapshot" | \
-    sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | \
-    tail -n 1)
-  if [ -z "${kiali_version_we_want}" ]; then
-    echo "ERROR: Failed to determine latest Kiali release."
-    echo "Make sure this URL is accessible and returning valid results:"
-    echo ${github_api_url}
-    exit 1
+  if [ -z "${kiali_version_we_want:-}" ]; then
+    get_downloader
+    github_api_url="https://api.github.com/repos/kiali/kiali/releases"
+    kiali_version_we_want=$(${downloader} ${github_api_url} 2> /dev/null |\
+      grep  "tag_name" | \
+      sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | \
+      grep -v "snapshot" | \
+      sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | \
+      tail -n 1)
+    if [ -z "${kiali_version_we_want}" ]; then
+      echo "ERROR: Failed to determine latest Kiali release."
+      echo "Make sure this URL is accessible and returning valid results:"
+      echo ${github_api_url}
+      exit 1
+    fi
   fi
 }
 
 resolve_latest_kiali_operator_release() {
-  get_downloader
-  github_api_url="https://api.github.com/repos/kiali/kiali-operator/releases"
-  kiali_operator_version_we_want=$(${downloader} ${github_api_url} 2> /dev/null |\
-    grep  "tag_name" | \
-    sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | \
-    grep -v "snapshot" | \
-    sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | \
-    tail -n 1)
-  if [ -z "${kiali_operator_version_we_want}" ]; then
-    echo "ERROR: Failed to determine latest Kiali Operator release."
-    echo "Make sure this URL is accessible and returning valid results:"
-    echo ${github_api_url}
-    exit 1
-  fi
-}
-
-delete_kiali_cr() {
-  local _name="$1"
-  local _ns="$2"
-  echo "Deleting Kiali CR [${_name}] in namespace [${_ns}]"
-
-  # Clear finalizer list to avoid k8s possibly hanging (there was a bug in older versions of k8s where this happens).
-  # We know we are going to delete all Kiali resources later, so this is OK.
-  if [ "${DRY_RUN}" == "" ]; then
-    ${CLIENT_EXE} patch kiali ${_name} -n "${_ns}" -p '{"metadata":{"finalizers": []}}' --type=merge
-    ${CLIENT_EXE} delete kiali ${_name} -n "${_ns}"
-  fi
-}
-
-delete_kiali_resources() {
-  echo "Deleting resources for any existing Kiali installation"
-
-  if [ "${DRY_RUN}" == "" ]; then
-    ${CLIENT_EXE} delete --ignore-not-found=true all,sa,configmaps,deployments,roles,rolebindings,clusterroles,clusterrolebindings,ingresses --selector="app=kiali" -n "${NAMESPACE}"
-
-    # Note we do not delete any existing secrets unless this script was told the user wants his own secret
-    if [ "${CREDENTIALS_CREATE_SECRET}" == "true" ]; then
-      ${CLIENT_EXE} delete --ignore-not-found=true secrets --selector="app=kiali" -n "${NAMESPACE}"
+  if [ -z "${kiali_operator_version_we_want:-}" ]; then
+    get_downloader
+    github_api_url="https://api.github.com/repos/kiali/kiali-operator/releases"
+    kiali_operator_version_we_want=$(${downloader} ${github_api_url} 2> /dev/null |\
+      grep  "tag_name" | \
+      sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | \
+      grep -v "snapshot" | \
+      sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | \
+      tail -n 1)
+    if [ -z "${kiali_operator_version_we_want}" ]; then
+      echo "ERROR: Failed to determine latest Kiali Operator release."
+      echo "Make sure this URL is accessible and returning valid results:"
+      echo ${github_api_url}
+      exit 1
     fi
-
-    # purge OpenShift specific resources
-    ${CLIENT_EXE} delete --ignore-not-found=true routes --selector="app=kiali" -n "${NAMESPACE}" 2>/dev/null
-    ${CLIENT_EXE} delete --ignore-not-found=true consolelinks --selector="app=kiali" -n "${NAMESPACE}" 2>/dev/null
-    ${CLIENT_EXE} delete --ignore-not-found=true oauthclients.oauth.openshift.io "kiali-${NAMESPACE}" 2>/dev/null
   fi
 }
 
-delete_operator_resources() {
-  echo "Deleting resources for any existing Kiali operator installation"
-
-  # delete CRDs with app=kiali (e.g. monitoring dashboard CRD)
-  if [ "${DRY_RUN}" == "" ]; then
-    ${CLIENT_EXE} delete --ignore-not-found=true customresourcedefinitions --selector="app=kiali"
-  fi
-
-  # explicitly delete the Kiali CRs
-  local ns_arg="-n ${OPERATOR_WATCH_NAMESPACE}"
-  if [ "${OPERATOR_WATCH_NAMESPACE}" == '""' ]; then
-    ns_arg="--all-namespaces"
-  fi
-  local all_crs=($(${CLIENT_EXE} get kiali ${ns_arg} -o custom-columns=N:.metadata.name,NS:.metadata.namespace --no-headers))
-  while [ "${#all_crs[@]}" -gt 0 ]; do
-    delete_kiali_cr "${all_crs[0]}" "${all_crs[1]}"
-    all_crs=(${all_crs[@]:2})
-  done
-
-  # delete the operator CRD which should trigger an uninstall of any existing Kiali
-  if [ "${DRY_RUN}" == "" ]; then
-    ${CLIENT_EXE} delete --ignore-not-found=true customresourcedefinitions --selector="app=kiali-operator"
-
-    # now purge all operator resources
-    ${CLIENT_EXE} delete --ignore-not-found=true all,sa,deployments,roles,rolebindings,clusterroles,clusterrolebindings --selector="app=kiali-operator" -n "${OPERATOR_NAMESPACE}"
-  fi
-
-  # Clean up the operator namespace entirely but only if there are no pods running in it.
-  # This avoids removing a namespace in use for other things.
-  local _pod_count=$(${CLIENT_EXE} get pods --no-headers -n ${OPERATOR_NAMESPACE} 2>/dev/null | wc -l)
-  if [ "${_pod_count}" -eq "0" ]; then
-    if [ "${DRY_RUN}" == "" ]; then
-      ${CLIENT_EXE} delete --ignore-not-found=true namespace "${OPERATOR_NAMESPACE}"
+get_operator_source_from_github() {
+  if [ -z "${KIALI_OP_SRC:-}" ]; then
+    local script_dir="$(cd "$(dirname "$0")" && pwd -P)"
+    if [ -f "${script_dir}/../watches.yaml" -a -f "${script_dir}/../playbooks/kiali-deploy.yml" ]; then
+      # we are already in github source - use our location
+      KIALI_OP_SRC="$(cd "${script_dir}/.." && pwd -P)"
+    else
+      KIALI_OP_SRC=$(mktemp -d)
+      resolve_latest_kiali_operator_release
+      ${downloader} https://github.com/kiali/kiali-operator/archive/${kiali_operator_version_we_want}.tar.gz | tar xz --directory ${KIALI_OP_SRC}
+      KIALI_OP_SRC="${KIALI_OP_SRC}/$(ls -1 ${KIALI_OP_SRC})"
     fi
+  fi
+}
+
+get_helm() {
+  if [ -z "${HELM:-}" ]; then
+    if which helm > /dev/null 2>&1; then
+      HELM="$(which helm)"
+    else
+      echo "You do not have helm in your PATH. Will attempt to download it now..."
+      get_operator_source_from_github
+      make -C "${KIALI_OP_SRC}" .download-helm-if-needed
+      if [ -x "${KIALI_OP_SRC}/_output/helm-install/helm" ]; then
+        HELM="${KIALI_OP_SRC}/_output/helm-install/helm"
+      else
+        echo "You do not have helm in PATH and it could not be downloaded. Install helm manually and try again."
+        exit 1
+      fi
+    fi
+    echo "Using helm found here: ${HELM}"
+  fi
+}
+
+get_helm_chart() {
+  if [ "${HELM_CHART}" == "source" ]; then
+    get_operator_source_from_github
+    if ! ls ${KIALI_OP_SRC}/_output/charts/kiali-operator*.tgz > /dev/null 2>&1; then
+      echo "There is no Helm Chart from source - will build it now"
+      make -C "${KIALI_OP_SRC}" build-helm-chart
+    fi
+    HELM_CHART="$(ls -1 ${KIALI_OP_SRC}/_output/charts/kiali-operator*.tgz)"
+    echo "Using the Helm Chart from source found here: ${HELM_CHART}"
   else
-    echo "There appears to be pods running in the operator namespace [${OPERATOR_NAMESPACE}]; namespace will not be deleted."
+    if [ -z "${HELM_CHART}" ]; then
+      if [ "${HELM_REPO_CHART_VERSION}" == "lastrelease" ]; then
+        resolve_latest_kiali_operator_release
+        HELM_REPO_CHART_VERSION="${kiali_operator_version_we_want}"
+      fi
+      echo "Will obtain the Helm Chart version [${HELM_REPO_CHART_VERSION}] from the Kiali Operator Helm Repo"
+      if ! ${HELM} repo list -o yaml | grep -q "name: kiali-operator"; then
+        echo "Adding kiali-operator repo to Helm"
+        ${HELM} repo add kiali-operator https://kiali.org/kiali-operator/charts
+      fi
+      HELM_CHART="--version ${HELM_REPO_CHART_VERSION} kiali-operator/kiali-operator"
+    else
+      if [[ "${HELM_CHART}" != *".tgz" && "${HELM_CHART}" != *".tar.gz" ]]; then
+        echo "The Helm Chart must be specified with an extension of either .tgz or .tar.gz [You specified: ${HELM_CHART}]"
+        exit 1
+      fi
+      echo "Using the Helm Chart found here: ${HELM_CHART}"
+    fi
   fi
 }
-
-echo "=== UNINSTALL SETTINGS ==="
-echo ALLOW_UPDATES=$ALLOW_UPDATES
-echo UNINSTALL_EXISTING_KIALI=$UNINSTALL_EXISTING_KIALI
-echo UNINSTALL_EXISTING_OPERATOR=$UNINSTALL_EXISTING_OPERATOR
-echo UNINSTALL_MODE=$UNINSTALL_MODE
-echo "=== UNINSTALL SETTINGS ==="
-
-if [ "${UNINSTALL_MODE}" == "true" ]; then
-  echo "Uninstalling Kiali and the Kiali operator..."
-  delete_operator_resources
-  delete_kiali_resources
-  echo "Kiali and the Kiali operator have been uninstalled. Nothing will be installed. Exiting."
-  exit 0
-fi
-
-# Make sure we have access to all required tools
-
-if which 'envsubst' > /dev/null 2>&1 ; then
-  echo "envsubst is here: $(which envsubst)"
-else
-  echo "ERROR: You do not have 'envsubst' in your PATH. Please install it and retry."
-  echo "If you are on MacOS, you can get this by installing the gettext package"
-  exit 1
-fi
 
 # If asking for the last release of operator (which is the default), then pick up the latest release.
 # Note that you could ask for "latest" - that would pick up the current image built from master.
@@ -761,13 +583,9 @@ if [ "${OPERATOR_IMAGE_VERSION}" == "lastrelease" ]; then
   resolve_latest_kiali_operator_release
   echo "Will use the last Kiali operator release: ${kiali_operator_version_we_want}"
   OPERATOR_IMAGE_VERSION=${kiali_operator_version_we_want}
-  if [ "${OPERATOR_VERSION_LABEL}" == "lastrelease" ]; then
-    OPERATOR_VERSION_LABEL=${kiali_operator_version_we_want}
-  fi
 else
   if [ "${OPERATOR_IMAGE_VERSION}" == "latest" ]; then
-    echo "Will use the latest Kiali operator image from master branch"
-    OPERATOR_VERSION_LABEL="master"
+    echo "Will use the latest Kiali operator image from master branch - pull policy will be Always"
     OPERATOR_IMAGE_PULL_POLICY="Always"
   fi
 fi
@@ -775,13 +593,13 @@ fi
 # If asking for the last release of Kiali (which is the default), then pick up the latest release.
 # Note that you could ask for "latest" - that would pick up the current image built from master.
 if [ "${OPERATOR_INSTALL_KIALI}" == "true" ]; then
-  if [ "${KIALI_IMAGE_VERSION}" == "lastrelease" ]; then
+  if [ "${KIALI_IMAGE_VERSION:-}" == "lastrelease" ]; then
     resolve_latest_kiali_release
     echo "Will use the last Kiali release: ${kiali_version_we_want}"
     KIALI_IMAGE_VERSION=${kiali_version_we_want}
   else
-    if [ "${KIALI_IMAGE_VERSION}" == "latest" ]; then
-      echo "Will use the latest Kiali image from master branch"
+    if [ "${KIALI_IMAGE_VERSION:-}" == "latest" ]; then
+      echo "Will use the latest Kiali image from master branch - pull policy will be Always"
       KIALI_IMAGE_PULL_POLICY="Always"
     fi
   fi
@@ -832,7 +650,7 @@ parse_yaml() {
 }
 
 # If the user provided a customized CR, make sure it exists and parse the yaml to determine some settings.
-if [ "${KIALI_CR}" != "" ]; then
+if [ "${KIALI_CR:-}" != "" ]; then
   if [ ! -f "${KIALI_CR}" ]; then
     echo "The given Kiali CR file does not exist [${KIALI_CR}]. Aborting."
     exit 1
@@ -842,10 +660,8 @@ if [ "${KIALI_CR}" != "" ]; then
   AUTH_STRATEGY=$(parse_yaml "${KIALI_CR}" | grep -E 'auth[_]+strategy' | sed -e 's/^.*strategy=("\(.*\)")/\1/' | tr -d "\\\'\"")
   if [ "${AUTH_STRATEGY}" == "" ]; then
     # If auth strategy isn't in the yaml, then we need to fallback to the known default the operator will use
-    # which is based on cluster type. If the client is "oc"
-    # then assume the cluster is OpenShift and the default auth strategy is "openshift"; otherwise assume the
-    # cluster is Kubernetes which means the default auth strategy is "token".
-    if [[ "$CLIENT_EXE" = *"oc" ]]; then
+    # which is based on cluster type.
+    if [[ "${CLIENT_EXE}" = *"oc" ]]; then
       AUTH_STRATEGY="openshift"
     else
       AUTH_STRATEGY="token"
@@ -861,186 +677,74 @@ if [ "${KIALI_CR}" != "" ]; then
   fi
 fi
 
-# If Kiali is to be given access to all namespaces, give the operator the ability to create cluster roles/bindings.
-if [ "${ACCESSIBLE_NAMESPACES}" == "**" ]; then
-  echo "IMPORTANT! The Kiali operator will be given permission to create cluster roles and"
-  echo "cluster role bindings in order to grant Kiali access to all namespaces in the cluster."
-  OPERATOR_ROLE_CLUSTERROLEBINDINGS="- clusterrolebindings"
-  OPERATOR_ROLE_CLUSTERROLES="- clusterroles"
+# Determine if the operator needs to create cluster roles for Kiali to be installed
+if [ "${ACCESSIBLE_NAMESPACES:-}" == "**" -a "${OPERATOR_INSTALL_KIALI}" == "true" -a "${OPERATOR_CLUSTER_ROLE_CREATOR}" != "true" ]; then
+  echo "NOTE! The operator will be granted cluster role creator rights because you are installing Kiali with accessible namespaces of '**'"
+  OPERATOR_CLUSTER_ROLE_CREATOR="true"
 fi
 
-# If Kiali operator is allowed to disable view_only_mode then give it the proper permissions
-if [ "${OPERATOR_VIEW_ONLY_MODE}" == "false" ]; then
-  OPERATOR_ROLE_CREATE="- create"
-  OPERATOR_ROLE_DELETE="- delete"
-  OPERATOR_ROLE_PATCH="- patch"
-fi
+# Get all things helm
+get_helm
+get_helm_chart
 
 echo "=== OPERATOR SETTINGS ==="
+echo DRY_RUN_ARG=$DRY_RUN_ARG
+echo HELM=$HELM
+echo HELM_CHART=$HELM_CHART
+echo HELM_REPO_CHART_VERSION=$HELM_REPO_CHART_VERSION
+echo OPERATOR_CLUSTER_ROLE_CREATOR=$OPERATOR_CLUSTER_ROLE_CREATOR
 echo OPERATOR_IMAGE_NAME=$OPERATOR_IMAGE_NAME
 echo OPERATOR_IMAGE_PULL_POLICY=$OPERATOR_IMAGE_PULL_POLICY
 echo OPERATOR_IMAGE_VERSION=$OPERATOR_IMAGE_VERSION
 echo OPERATOR_INSTALL_KIALI=$OPERATOR_INSTALL_KIALI
 echo OPERATOR_NAMESPACE=$OPERATOR_NAMESPACE
-echo OPERATOR_SKIP_WAIT=$OPERATOR_SKIP_WAIT
-echo OPERATOR_VERSION_LABEL=$OPERATOR_VERSION_LABEL
 echo OPERATOR_WATCH_NAMESPACE=$OPERATOR_WATCH_NAMESPACE
-echo OPERATOR_ROLE_CLUSTERROLES=$OPERATOR_ROLE_CLUSTERROLES
-echo OPERATOR_ROLE_CLUSTERROLEBINDINGS=$OPERATOR_ROLE_CLUSTERROLEBINDINGS
-echo OPERATOR_ROLE_CREATE=$OPERATOR_ROLE_CREATE
-echo OPERATOR_ROLE_DELETE=$OPERATOR_ROLE_DELETE
-echo OPERATOR_ROLE_PATCH=$OPERATOR_ROLE_PATCH
 echo "=== OPERATOR SETTINGS ==="
-
-# Give the user an opportunity to tell us if they want to uninstall the operator if they did not set the envar yet.
-# The default to the prompt is "yes" because the user will normally want to uninstall an already existing Operator.
-# Note: to allow for non-interactive installations, the user can set UNINSTALL_EXISTING_OPERATOR=true to ensure
-# the operator will always be removed if it exists. If the user does not want the operator removed if it exists,
-# that setting can be set to false which will cause this script to abort if the operator exists unless ALLOW_UPDATES
-# is true.
-if [ "${UNINSTALL_EXISTING_OPERATOR}" != "true" ]; then
-  if [ "${ALLOW_UPDATES}" != "true" ]; then
-    if ${CLIENT_EXE} get deployment kiali-operator -n "${OPERATOR_NAMESPACE}" > /dev/null 2>&1 ; then
-      if [ -z "${UNINSTALL_EXISTING_OPERATOR}" ]; then
-        read -p 'It appears the operator has already been installed. Do you want to uninstall it? This will uninstall Kiali, too. [Y/n]: ' _yn
-        case "${_yn}" in
-          [yY][eE][sS]|[yY]|"")
-            echo "The existing operator will be uninstalled, along with any existing Kiali installation."
-            UNINSTALL_EXISTING_OPERATOR="true"
-            ;;
-          *)
-            echo "The existing operator will NOT be uninstalled. Aborting the operator installation."
-            exit 1
-            ;;
-        esac
-      else
-        echo "It appears the operator has already been installed. It will NOT be uninstalled. Aborting the operator installation."
-        exit 1
-      fi
-    else
-      UNINSTALL_EXISTING_OPERATOR="false"
-    fi
-  else
-    echo "If an operator is already installed, an attempt to update it will be made. If the update fails, you must rerun this script with --allow-updates=false to force an uninstall and re-install of the operator."
-    UNINSTALL_EXISTING_OPERATOR="false"
-  fi
-fi
-
-# Uninstall any operator that already exists if we were asked to do so
-if [ "${UNINSTALL_EXISTING_OPERATOR}" == "true" ]; then
-  # This cleans up the CRDs as well as any deployed operator resources
-  delete_operator_resources
-
-  # Since the operator CRD has now been removed, the side-effect is any Kiali CR that exists is also removed.
-  # This in turn uninstalls Kiali. But let's clean up any remnants of an old Kiali that might still be around.
-  UNINSTALL_EXISTING_KIALI="true"
-fi
-
-# Give the user an opportunity to tell us if they want to uninstall if they did not set the envar yet.
-# The default to the prompt is "yes" because the user will normally want to uninstall an already existing Kiali.
-# Note: to allow for non-interactive installations, the user can set UNINSTALL_EXISTING_KIALI=true to ensure
-# Kiali will always be removed if it exists. If the user does not want Kiali removed if it exists, that setting
-# can be set to false which will cause this script to abort if Kiali exists unless ALLOW_UPDATES is true.
-if [ "${UNINSTALL_EXISTING_KIALI}" != "true" ]; then
-  if [ "${ALLOW_UPDATES}" != "true" ]; then
-    if ${CLIENT_EXE} get deployment kiali -n "${NAMESPACE}" > /dev/null 2>&1 ; then
-      if [ -z "${UNINSTALL_EXISTING_KIALI}" ]; then
-        read -p 'It appears Kiali has already been installed. Do you want to uninstall it? [Y/n]: ' _yn
-        case "${_yn}" in
-          [yY][eE][sS]|[yY]|"")
-            echo "The existing Kiali will be uninstalled."
-            UNINSTALL_EXISTING_KIALI="true"
-            ;;
-          *)
-            echo "The existing Kiali will NOT be uninstalled. Aborting the Kiali operator installation."
-            exit 1
-            ;;
-        esac
-      else
-        echo "It appears Kiali has already been installed. It will NOT be uninstalled. Aborting the Kiali operator installation."
-        exit 1
-      fi
-    else
-      UNINSTALL_EXISTING_KIALI="false"
-    fi
-  else
-    echo "If a Kiali server is already installed, an attempt to update the Kiali CR will be made. If the update fails, you must rerun this script with --allow-updates=false to force an uninstall and re-install of the Kiali CR."
-    UNINSTALL_EXISTING_KIALI="false"
-  fi
-fi
-
-# It is assumed the yaml files are in the same location as this script.
-# Figure out where that is using a method that is valid for bash and sh.
-
-_OP_YAML_DIR="$(cd "$(dirname "$0")" && pwd -P)"
-
-apply_yaml() {
-  local yaml_path="${1}"
-  local yaml_url="${2}"
-  local yaml_namespace="${3}"
-
-  if [ -f "${yaml_path}" ]; then
-    echo "Applying yaml file [${yaml_path}] to namespace [${yaml_namespace}]"
-    cat ${yaml_path} | envsubst | ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${yaml_namespace} -f -
-    if [ "$?" == "0" -a "${DRY_RUN}" != "" ]; then
-      cat ${yaml_path} | envsubst >> ${DRY_RUN}
-    fi
-  else
-    get_downloader
-    echo "Applying yaml from URL via: [${downloader} ${yaml_url}] to namespace [${yaml_namespace}]"
-    ${downloader} ${yaml_url} | envsubst | ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${yaml_namespace} -f -
-    if [ "$?" == "0" -a "${DRY_RUN}" != "" ]; then
-      ${downloader} ${yaml_url} | envsubst >> ${DRY_RUN}
-    fi
-  fi
-}
-
-apply_operator_resource() {
-  local yaml_file="${1}.yaml"
-  local yaml_path="${_OP_YAML_DIR}/${yaml_file}"
-  local yaml_url="https://raw.githubusercontent.com/kiali/kiali-operator/${OPERATOR_VERSION_LABEL}/deploy/${yaml_file}"
-  apply_yaml ${yaml_path} ${yaml_url} ${OPERATOR_NAMESPACE}
-}
 
 # Now deploy all the Kiali operator components.
 echo "Deploying Kiali operator to namespace [${OPERATOR_NAMESPACE}]"
 
-for yaml in namespace crd service_account role role_binding operator
-do
-  apply_operator_resource ${yaml}
+${HELM} upgrade \
+  --install \
+  --create-namespace \
+  --atomic \
+  --cleanup-on-fail \
+  --namespace ${OPERATOR_NAMESPACE} \
+  --set cr.create=false \
+  --set image.repo=${OPERATOR_IMAGE_NAME} \
+  --set image.pullPolicy=${OPERATOR_IMAGE_PULL_POLICY} \
+  --set image.tag=${OPERATOR_IMAGE_VERSION} \
+  --set watchNamespace=${OPERATOR_WATCH_NAMESPACE} \
+  --set clusterRoleCreator=${OPERATOR_CLUSTER_ROLE_CREATOR} \
+  --set onlyViewOnlyMode=${OPERATOR_VIEW_ONLY_MODE} \
+  --debug \
+  ${DRY_RUN_ARG} \
+  kiali-operator \
+  ${HELM_CHART}
 
-  if [ "$?" != "0" ]; then
-    echo "ERROR: Failed to deploy Kiali operator. Aborting."
-    exit 1
-  fi
-done
+if [ "$?" != "0" ]; then
+  echo "ERROR: Failed to deploy Kiali operator. Aborting."
+  exit 1
+fi
 
-if [ "${OPERATOR_SKIP_WAIT}" != "true" ]; then
-  # Wait for the operator to start up so we can confirm it is OK.
-  echo -n "Waiting for the operator to start."
-  for run in {1..60}
-  do
-    ${CLIENT_EXE} get pods -l app=kiali-operator -n ${OPERATOR_NAMESPACE} 2>/dev/null | grep "^kiali-operator.*Running" > /dev/null && _OPERATOR_STARTED=true && break
-    echo -n "."
-    sleep 5
-  done
-  echo
+# Wait for the operator to start up so we can confirm it is OK.
+if [ "${DRY_RUN:-}" != "true" ]; then
+  echo "Waiting for the operator to start..."
+  ${CLIENT_EXE} wait --timeout=120s --for=condition=Ready -n ${OPERATOR_NAMESPACE} $(${CLIENT_EXE} get pods -l 'app.kubernetes.io/name=kiali-operator' -n ${OPERATOR_NAMESPACE} -o name) && _OPERATOR_STARTED="true"
 
-  if [ -z ${_OPERATOR_STARTED} ]; then
+  if [ -z ${_OPERATOR_STARTED:-} ]; then
     echo "ERROR: The Kiali operator is not running yet. Please make sure it was deployed successfully."
     exit 1
   else
     echo "The Kiali operator is installed!"
   fi
-else
-  echo "The Kiali operator has been created but you have opted not to wait for it to start. It will take some time for the image to be pulled and start."
 fi
 
 # Now deploy Kiali if we were asked to do so.
 
 # If the user did not specify where to put the Kiali CR, the default is the operator watch namespace.
 # If the operator watch namespace is "all namespaces" then use the Kiali namespace.
-if [ -z "${KIALI_CR_NAMESPACE}" ]; then
+if [ -z "${KIALI_CR_NAMESPACE:-}" ]; then
   if [ "${OPERATOR_WATCH_NAMESPACE}" != '""' ]; then
     KIALI_CR_NAMESPACE="${OPERATOR_WATCH_NAMESPACE}"
   else
@@ -1049,7 +753,6 @@ if [ -z "${KIALI_CR_NAMESPACE}" ]; then
 fi
 
 print_skip_kiali_create_msg() {
-  local _branch="$1"
   local _ns="${OPERATOR_WATCH_NAMESPACE}"
   if [ "${_ns}" == '""' ]; then
     _ns="<any namespace you choose>"
@@ -1058,128 +761,45 @@ print_skip_kiali_create_msg() {
   echo "Skipping the automatic Kiali installation."
   echo "To install Kiali, create a Kiali custom resource in the namespace [$_ns]."
   echo "An example Kiali CR with all settings documented can be found here:"
-  echo "  https://raw.githubusercontent.com/kiali/kiali-operator/${_branch}/deploy/kiali/kiali_cr.yaml"
-  echo "To install Kiali with all default settings, you can run:"
-  echo "  ${CLIENT_EXE} apply -n ${_ns} -f https://raw.githubusercontent.com/kiali/kiali-operator/${_branch}/deploy/kiali/kiali_cr.yaml"
-  echo "Do not forget to create a secret if you wish to use an auth strategy of 'login'"
-  echo "An example would be:"
-  echo "  ${CLIENT_EXE} create secret generic ${SECRET_NAME} -n ${NAMESPACE} --from-literal 'username=admin' --from-literal 'passphrase=admin'"
+  echo "  https://raw.githubusercontent.com/kiali/kiali-operator/master/deploy/kiali/kiali_cr.yaml"
+  echo "To install Kiali with all default settings, an example command would be:"
+  echo "  ${CLIENT_EXE} apply -n ${_ns} -f https://raw.githubusercontent.com/kiali/kiali-operator/master/deploy/kiali/kiali_cr.yaml"
   echo "=========================================="
 }
 
 if [ "${OPERATOR_INSTALL_KIALI}" != "true" ]; then
-  if [ "${OPERATOR_VERSION_LABEL}" == "dev" ]; then
-    print_skip_kiali_create_msg "master"
-  else
-    print_skip_kiali_create_msg "${OPERATOR_VERSION_LABEL}"
-  fi
+  print_skip_kiali_create_msg
   echo "Done."
   exit 0
 else
   echo "Kiali will now be installed."
 fi
 
-# Check the login strategy. If using "openshift" there is no other checks to perform,
-# but if we are using "login" then we need to make sure there is a username and password set
-if [ "${AUTH_STRATEGY}" == "" ]; then
+# Ensure we are told which auth strategy to use.
+if [ "${AUTH_STRATEGY:-}" == "" ]; then
   AUTH_STRATEGY=$(read -p "${_AUTH_STRATEGY_PROMPT}" val && echo -n $val)
   AUTH_STRATEGY=${AUTH_STRATEGY:-${_AUTH_STRATEGY_DEFAULT}}
 fi
 
 # Verify the AUTH_STRATEGY is a proper known value
-if [ "${AUTH_STRATEGY}" != "login" ] && [ "${AUTH_STRATEGY}" != "openshift" ] && [ "${AUTH_STRATEGY}" != "anonymous" ] && [ "${AUTH_STRATEGY}" != "token" ] && [ "${AUTH_STRATEGY}" != "ldap" ] && [ "${AUTH_STRATEGY}" != "openid" ]; then
-  echo "ERROR: unknown AUTH_STRATEGY [$AUTH_STRATEGY] must be either 'login', 'openshift', 'token', 'ldap', 'openid' or 'anonymous'"
+if [ "${AUTH_STRATEGY}" != "openshift" ] && [ "${AUTH_STRATEGY}" != "anonymous" ] && [ "${AUTH_STRATEGY}" != "token" ] && [ "${AUTH_STRATEGY}" != "openid" ]; then
+  echo "ERROR: unknown AUTH_STRATEGY [$AUTH_STRATEGY] must be either 'openshift', 'token', 'openid' or 'anonymous'"
   exit 1
-fi
-
-if [ "${AUTH_STRATEGY}" == "login" ]; then
-  # If the secret already exists, we will not create another one
-  ${CLIENT_EXE} get secret ${SECRET_NAME} -n ${NAMESPACE} > /dev/null 2>&1
-  if [ "$?" == "0" ]; then
-    _SECRET_EXISTS="true"
-    CREDENTIALS_CREATE_SECRET="false"
-  fi
-
-  if [ "${CREDENTIALS_CREATE_SECRET}" == "true" ]; then
-    # If the username or passphrase is set but empty, the user will be asked for a value.
-    CREDENTIALS_USERNAME="${CREDENTIALS_USERNAME=}" # note: the "=" inside ${} is on purpose
-    if [ "$CREDENTIALS_USERNAME" == "" ]; then
-      CREDENTIALS_USERNAME=$(read -p 'What do you want to use for the Kiali Username: ' val && echo -n $val)
-    fi
-
-    CREDENTIALS_PASSPHRASE="${CREDENTIALS_PASSPHRASE=}" # note: the "=" inside ${} is on purpose
-    if [ "$CREDENTIALS_PASSPHRASE" == "" ]; then
-      CREDENTIALS_PASSPHRASE=$(read -sp 'What do you want to use for the Kiali Passphrase: ' val && echo -n $val)
-      echo
-    fi
-  fi
-else
-  echo "Using auth strategy [${AUTH_STRATEGY}] - a secret is not needed so none will be created."
-  CREDENTIALS_CREATE_SECRET="false"
 fi
 
 echo "=== KIALI SETTINGS ==="
 echo ACCESSIBLE_NAMESPACES=$ACCESSIBLE_NAMESPACES
 echo AUTH_STRATEGY=$AUTH_STRATEGY
-echo CREDENTIALS_CREATE_SECRET=$CREDENTIALS_CREATE_SECRET
-echo GRAFANA_URL=$GRAFANA_URL
-echo KIALI_CR=$KIALI_CR
+echo DRY_RUN_ARG=$DRY_RUN_ARG
+echo KIALI_CR=${KIALI_CR:-}
 echo KIALI_CR_NAMESPACE=$KIALI_CR_NAMESPACE
-echo KIALI_IMAGE_NAME=$KIALI_IMAGE_NAME
-echo KIALI_IMAGE_PULL_POLICY=$KIALI_IMAGE_PULL_POLICY
-echo KIALI_IMAGE_VERSION=$KIALI_IMAGE_VERSION
-echo ISTIO_NAMESPACE=$ISTIO_NAMESPACE
-echo JAEGER_URL=$JAEGER_URL
+echo KIALI_IMAGE_NAME=${KIALI_IMAGE_NAME:-}
+echo KIALI_IMAGE_PULL_POLICY=${KIALI_IMAGE_PULL_POLICY:-}
+echo KIALI_IMAGE_VERSION=${KIALI_IMAGE_VERSION:-}
+echo ISTIO_NAMESPACE=${ISTIO_NAMESPACE:-}
 echo NAMESPACE=$NAMESPACE
-echo SECRET_NAME=$SECRET_NAME
-echo _SECRET_EXISTS=$_SECRET_EXISTS
 echo VERSION=$VERSION
 echo "=== KIALI SETTINGS ==="
-
-# Uninstall any Kiali that already exists if we were asked to do so
-if [ "${UNINSTALL_EXISTING_KIALI}" == "true" ]; then
-  delete_kiali_resources
-fi
-
-# Create the secret when required
-
-if [ "${CREDENTIALS_CREATE_SECRET}" == "true" ]; then
-  if [ "${CREDENTIALS_USERNAME}" == "" ]; then
-    echo "ERROR: In order to create a secret, you must provide a non-empty username. Aborting Kiali installation."
-    exit 1
-  fi
-  if [ "${CREDENTIALS_PASSPHRASE}" == "" ]; then
-    echo "ERROR: In order to create a secret, you must provide a non-empty passphrase. Aborting Kiali installation."
-    exit 1
-  fi
-
-  ${CLIENT_EXE} create secret generic ${DRY_RUN_ARG} ${SECRET_NAME} -n ${NAMESPACE} --from-literal "username=${CREDENTIALS_USERNAME}" --from-literal "passphrase=${CREDENTIALS_PASSPHRASE}"
-  if [ "$?" != "0" ]; then
-    echo "ERROR: Failed to create a secret named [${SECRET_NAME}] in namespace [${NAMESPACE}]. Aborting Kiali installation."
-    exit 1
-  else
-    echo "A secret named [${SECRET_NAME}] in namespace [${NAMESPACE}] was created."
-  fi
-  if [ "${DRY_RUN}" != "" ]; then
-    echo "---" >> ${DRY_RUN}
-    ${CLIENT_EXE} create secret generic ${DRY_RUN_ARG} ${SECRET_NAME} -n ${NAMESPACE} --from-literal "username=${CREDENTIALS_USERNAME}" --from-literal "passphrase=${CREDENTIALS_PASSPHRASE}" -o yaml >> ${DRY_RUN}
-  fi
-
-  ${CLIENT_EXE} label secret ${DRY_RUN_ARG} ${SECRET_NAME} -n ${NAMESPACE} app=kiali
-  if [ "$?" != "0" ]; then
-    echo "WARNING: Failed to label the created secret [${SECRET_NAME}] in namespace [${NAMESPACE}]."
-  fi
-  # TODO: Note when doing a dry run we don't actually create the secret so we can't get the secret yaml
-  #       with the label using "label secret". So the dry run file will have the secret yaml without the label.
-else
-  if [ "${AUTH_STRATEGY}" == "login" ]; then
-    if [ "${_SECRET_EXISTS}" == "true" ]; then
-      echo "NOTE! A secret already exists. To log into Kiali, you must use the credentials found in that secret."
-    else
-      echo "NOTE! A secret will not be created. You will need to create one yourself before you can log into Kiali."
-    fi
-  fi
-fi
 
 # Now deploy Kiali
 
@@ -1225,11 +845,7 @@ build_spec_list_value() {
   fi
 }
 
-if [ "${KIALI_CR}" != "" ]; then
-  if [ "${DRY_RUN}" != "" ]; then
-    echo "---" >> ${DRY_RUN}
-    cat "${KIALI_CR}" >> ${DRY_RUN}
-  fi
+if [ "${KIALI_CR:-}" != "" ]; then
   ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${KIALI_CR_NAMESPACE} -f "${KIALI_CR}"
   if [ "$?" != "0" ]; then
     echo "ERROR: Failed to deploy Kiali from custom Kiali CR [${KIALI_CR}]. Aborting."
@@ -1255,19 +871,9 @@ spec:
     $(build_spec_value image_pull_policy KIALI_IMAGE_PULL_POLICY)
     $(build_spec_value image_version KIALI_IMAGE_VERSION)
     $(build_spec_value namespace NAMESPACE)
-    $(build_spec_value secret_name SECRET_NAME)
     $(build_spec_value view_only_mode OPERATOR_VIEW_ONLY_MODE)
-  external_services:
-    grafana:
-      $(build_spec_value url GRAFANA_URL true)
-    tracing:
-      $(build_spec_value url JAEGER_URL true)
 EOF
 )
-
-  if [ "${DRY_RUN}" != "" ]; then
-    echo "${_KIALI_CR_YAML}" >> ${DRY_RUN}
-  fi
 
   echo "${_KIALI_CR_YAML}" | ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${KIALI_CR_NAMESPACE} -f -
   if [ "$?" != "0" ]; then
@@ -1277,4 +883,3 @@ EOF
 fi
 
 echo "Done."
-
