@@ -11,6 +11,10 @@
 #
 # To use this script, either "oc" or "kubectl" must be in your PATH.
 #
+# If you have helm (version 3) in your PATH, it will be used; otherwise
+# a version will be downloaded in a temporary directory and used. Or,
+# you may use the --helm-exe command line option.
+#
 # To customize the behavior of this script, you can set one or more of the
 # following environment variables or pass in their associated command
 # line arguments (run the script with "--help" for details on the command
@@ -23,6 +27,10 @@
 #    If true, helm will be instructed to perform a dry run and thus
 #    will not create any objects in the cluster.
 #    Default: "false"
+#
+# HELM
+#    Path to the 'helm' binary to be used. Will be autodetected or downloaded
+#    if not defined.
 #
 # HELM_CHART
 #    The Helm Chart to be used when installing the operator.
@@ -198,6 +206,10 @@ while [[ $# -gt 0 ]]; do
       HELM_CHART="$2"
       shift;shift
       ;;
+    -he|--helm-exe)
+      HELM="$2"
+      shift;shift
+      ;;
     -hrcv|--helm-repo-chart-version)
       HELM_REPO_CHART_VERSION="$2"
       shift;shift
@@ -287,6 +299,11 @@ Valid options for overall script behavior:
       If set to "source" this will download the Kiali Operator source
       and build the latest Helm Chart and use that.
       If not specified, HELM_REPO_CHART_VERSION is used.
+
+  -he|--helm-exe
+      Path to the 'helm' binary to be used. Must be helm version 3.
+      If not defined, a helm binary will be autodetected in PATH
+      or downloaded.
 
   -hrcv|--helm-repo-chart-version
       Use the Kiali Operator Helm Chart repo to obtain the Helm Chart.
@@ -529,10 +546,10 @@ get_operator_source_from_github() {
 
 get_helm() {
   if [ -z "${HELM:-}" ]; then
-    if which helm > /dev/null 2>&1; then
+    if (which helm 2>/dev/null 1>&2 && helm version --short 2>/dev/null | grep -q "v3"); then
       HELM="$(which helm)"
     else
-      echo "You do not have helm in your PATH. Will attempt to download it now..."
+      echo "You do not have 'helm' (v3) in your PATH. Will attempt to download it now..."
       get_operator_source_from_github
       make -C "${KIALI_OP_SRC}" .download-helm-if-needed
       if [ -x "${KIALI_OP_SRC}/_output/helm-install/helm" ]; then
@@ -543,6 +560,10 @@ get_helm() {
       fi
     fi
     echo "Using helm found here: ${HELM}"
+  else
+    if (! (which helm 2>/dev/null 1>&2 && helm version --short 2>/dev/null | grep -q "v3")); then
+      echo "You specified an invalid helm binary. This must be helm version 3: ${HELM}"
+    fi
   fi
 }
 
