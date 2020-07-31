@@ -80,20 +80,37 @@ build: .ensure-operator-sdk-exists
 	@echo Building container image for Kiali operator using operator-sdk
 	cd "${ROOTDIR}" && "${OP_SDK}" build --image-builder ${DORP} --image-build-args "--pull" "${OPERATOR_QUAY_TAG}"
 
-## build-helm-chart: Build Kiali operator Helm Chart
-build-helm-chart: .download-helm-if-needed
+.build-helm-chart-server: .download-helm-if-needed
+	@echo Building Helm Chart for Kiali server
+	@rm -rf "${OUTDIR}/charts/kiali-server*"
+	@mkdir -p "${OUTDIR}/charts"
+	@cp -R "${ROOTDIR}/deploy/charts/kiali-server" "${OUTDIR}/charts/"
+	@HELM_IMAGE_REPO="${OPERATOR_QUAY_NAME}" HELM_IMAGE_TAG="${OPERATOR_CONTAINER_VERSION}" envsubst < "${ROOTDIR}/deploy/charts/kiali-server/values.yaml" > "${OUTDIR}/charts/kiali-server/values.yaml"
+	@"${HELM}" lint "${OUTDIR}/charts/kiali-server"
+	@"${HELM}" package "${OUTDIR}/charts/kiali-server" -d "${OUTDIR}/charts" --version ${OPERATOR_CONTAINER_VERSION} --app-version ${OPERATOR_CONTAINER_VERSION}
+
+.build-helm-chart-operator: .download-helm-if-needed
 	@echo Building Helm Chart for Kiali operator
-	@rm -rf "${OUTDIR}/charts"
+	@rm -rf "${OUTDIR}/charts/kiali-operator*"
 	@mkdir -p "${OUTDIR}/charts"
 	@cp -R "${ROOTDIR}/deploy/charts/kiali-operator" "${OUTDIR}/charts/"
 	@HELM_IMAGE_REPO="${OPERATOR_QUAY_NAME}" HELM_IMAGE_TAG="${OPERATOR_CONTAINER_VERSION}" envsubst < "${ROOTDIR}/deploy/charts/kiali-operator/values.yaml" > "${OUTDIR}/charts/kiali-operator/values.yaml"
 	@"${HELM}" lint "${OUTDIR}/charts/kiali-operator"
 	@"${HELM}" package "${OUTDIR}/charts/kiali-operator" -d "${OUTDIR}/charts" --version ${OPERATOR_CONTAINER_VERSION} --app-version ${OPERATOR_CONTAINER_VERSION}
 
-## update-helm-repo: Build the latest Kiali operator Helm Chart and adds it to the local Helm repo directory.
-update-helm-repo: build-helm-chart
+## build-helm-chart: Build Kiali operator and server Helm Charts
+build-helm-chart: .build-helm-chart-operator .build-helm-chart-server
+
+.update-helm-repo-server: .build-helm-chart-server
+	cp "${OUTDIR}/charts/kiali-server-${OPERATOR_CONTAINER_VERSION}.tgz" "${ROOTDIR}/docs/charts"
+	"${HELM}" repo index "${ROOTDIR}/docs/charts" --url https://kiali.org/kiali-operator/charts
+
+.update-helm-repo-operator: .build-helm-chart-operator
 	cp "${OUTDIR}/charts/kiali-operator-${OPERATOR_CONTAINER_VERSION}.tgz" "${ROOTDIR}/docs/charts"
 	"${HELM}" repo index "${ROOTDIR}/docs/charts" --url https://kiali.org/kiali-operator/charts
+
+## update-helm-repo: Build the latest Kiali operator and server Helm Charts and adds them to the local Helm repo directory.
+update-helm-repo: .update-helm-repo-operator .update-helm-repo-server
 
 ## push: Pushes the operator image to quay.
 push:
