@@ -1,0 +1,19 @@
+{{- if .Capabilities.APIVersions.Has "route.openshift.io/v1" }}
+{{- if .Values.kiali_route_url }}
+---
+apiVersion: oauth.openshift.io/v1
+kind: OAuthClient
+metadata:
+  # Cannot use any name prefix here other than "kiali" due to https://github.com/kiali/kiali/issues/3069
+  #name: {{ include "kiali-server.fullname" . }}-{{ .Release.Namespace }}
+  name: kiali-{{ .Release.Namespace }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kiali-server.labels" . | nindent 4 }}
+redirectURIs:
+- {{ .Values.kiali_route_url }}
+grantMethod: auto
+allowAnyScope: true
+...
+{{- end }}
+{{- end }}
