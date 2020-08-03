@@ -204,6 +204,12 @@ spec:
 #      issuer_uri: ""
 #      scopes: ["openid", "profile", "email"]
 #      username_claim: "sub"
+#
+# The Route resource name and OAuthClient resource name will have this value as its prefix.
+# This value normally should never change. The installer will ensure this value is set correctly.
+#    ---
+#    openshift:
+#      client_id_prefix: kiali
 
 ##########
 #  ---
