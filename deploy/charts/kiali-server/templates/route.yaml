@@ -5,9 +5,7 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  # Cannot use any name here other than "kiali" due to https://github.com/kiali/kiali/issues/3069
-  #name: {{ include "kiali-server.fullname" . }}
-  name: kiali
+  name: {{ include "kiali-server.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kiali-server.labels" . | nindent 4 }}

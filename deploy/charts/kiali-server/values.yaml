@@ -40,6 +40,8 @@ auth:
     issuer_uri: ""
     scopes: ["openid", "profile", "email"]
     username_claim: "sub"
+  openshift:
+    client_id_prefix: "kiali-server"
   strategy: ""
 
 deployment:

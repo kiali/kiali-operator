@@ -51,6 +51,8 @@ kiali_defaults:
       issuer_uri: ""
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
+    openshift:
+      client_id_prefix: "kiali"
     strategy: ""
 
   deployment:
