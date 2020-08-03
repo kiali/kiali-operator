@@ -99,6 +99,9 @@ kiali_defaults:
     grafana:
       auth:
         ca_file: ""
+        component_status:
+          app_label: "grafana"
+          is_core: false
         insecure_skip_verify: false
         password: ""
         token: ""
@@ -118,9 +121,17 @@ kiali_defaults:
       in_cluster_url: ""
       url: ""
     istio:
+      component_status:
+        enabled: true
+        components:
+        - app_label: "istiod"
+          is_core: true
+        - app_label: "istio-ingressgateway"
+          is_core: true
+        - app_label: "istio-egressgateway"
+          is_core: false
       istio_identity_domain: "svc.cluster.local"
       istio_sidecar_annotation: "sidecar.istio.io/status"
-      istio_status_enabled: true
       url_service_version: ""
     prometheus:
       auth:
@@ -131,6 +142,9 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
+      component_status:
+        app_label: "prometheus"
+        is_core: true
       custom_metrics_url: ""
       url: ""
     tracing:
@@ -142,6 +156,9 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
+      component_status:
+        app_label: "jaeger"
+        is_core: false
       enabled: true
       in_cluster_url: ""
       namespace_selector: true

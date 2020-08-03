@@ -453,6 +453,9 @@ spec:
 # auth: authentication settings to connect to Grafana:
 #   ca_file: The certificate authority file to use when accessing Grafana using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
+#   component_status: Grafana info for the Istio Component Status masthead indicator. Only if it is enabled.
+#       app_label: The value of the Grafana pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to grafana.
+#       is_core: Whether the component is core for your deployment. It defaults to false.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Grafana over https.
 #   password: Password to be used when making requests to Grafana, for basic authentication. User only requires viewer permissions. May refer to a secret - see note above.
 #   token: Token / API key to access Grafana, for token-based authentication. It only requires viewer permissions. May refer to a secret - see note above.
@@ -478,6 +481,9 @@ spec:
 #    grafana:
 #      auth:
 #        ca_file: ""
+#        component_status:
+#          app_label: "grafana"
+#          is_core: false
 #        insecure_skip_verify: false
 #        password: ""
 #        token: ""
@@ -498,15 +504,27 @@ spec:
 #      url: ""
 #
 # **Istio-specific settings:
+# component_status:
+#   enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
+#   components: A list of components that Kiali will check its statuses.
+#     app_label: Istio component pod app label.
+#     is_core: Whether the component is core for your deployment.
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
-# istio_status_enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
+#      component_status:
+#        enabled: true
+#        components:
+#        - app_label: istiod
+#          is_core: true
+#        - app_label: istio-ingressgateway
+#          is_core: true
+#        - app_label: istio-egressgateway
+#          is_core: false
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
-#      istio_status_enabled: true
 #      url_service_version: ""
 #
 #
@@ -514,6 +532,9 @@ spec:
 # auth: authentication settings to connect to Prometheus:
 #   ca_file: The certificate authority file to use when accessing Prometheus using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
+#   component_status: Prometheus info for the Istio Component Status masthead indicator. Only if it is enabled.
+#       app_label: The value of the Prometheus pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to prometheus.
+#       is_core: Whether the component is core for your deployment. It defaults to true.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Prometheus over https.
 #   password: Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret - see note above.
 #   token: Token / API key to access Prometheus, for token-based authentication. May refer to a secret - see note above.
@@ -538,12 +559,18 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
+#      component_status:
+#        app_label: "prometheus"
+#        is_core: true
 #      custom_metrics_url: ""
 #      url: ""
 #
 # **Tracing-specific settings:
 #  - Right now we only support Jaeger
 # auth: authentication settings to connect to Jaeger:
+#   component_status: Jaeger info for the Istio Component Status masthead indicator. Only if it is enabled.
+#       app_label: The value of the Jaeger pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to jaeger.
+#       is_core: Whether the component is core for your deployment. It defaults to false.
 #   ca_file: The certificate authority file to use when accessing Jaeger using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Jaeger over https.
@@ -574,6 +601,9 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
+#      component_status:
+#        app_label: "jaeger"
+#        is_core: false
 #      enabled: true
 #      in_cluster_url: ""
 #      namespace_selector: true
