@@ -121,9 +121,3 @@ else
 	@echo Pushing Kiali operator image using podman
 	podman push ${OPERATOR_QUAY_TAG}
 endif
-
-## generate-all-in-one: Creates the all-in-one yaml file that can be used to deploy the operator via kubectl apply.
-generate-all-in-one: build-helm-chart
-	@mkdir -p ${OUTDIR}
-	@OPERATOR_IMAGE_VERSION=$${OPERATOR_IMAGE_VERSION:-${VERSION}} \
-	  ${ROOTDIR}/deploy/merge-operator-yaml.sh --file ${OUTDIR}/kiali-operator-all-in-one.yaml
