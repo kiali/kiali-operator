@@ -65,13 +65,13 @@ The `operator` directory in the Kiali git repository is no longer used - it thus
 
 If you need to alter Kubernetes resources for either the Kiali Server or Operator, or if you need to add, remove, or modify a configuration setting, here are the places you need to check and possibly edit. You must make changes to all of these in order to support the different install mechanisms.
 
-The Operator's own resources are deployed either via OLM or the Operator Helm Chart. You must make changes to support them all. Today there are three sets of OLM metadata maintained in the kiali-operator repository - we call them the "golden copies" because they are the source of truth for the link:https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators/kiali[OperatorHub.io upstream operator], link:https://github.com/operator-framework/community-operators/tree/master/community-operators/kiali[community operator], and the Red Hat OSSM Operator. The Operator Helm Chart templates are link:deploy/charts/kiali-operator/templates[here.]
+The Operator's own resources are deployed either via OLM or the Operator Helm Chart. You must make changes to support them all. Today there are three sets of OLM metadata maintained in the kiali-operator repository - we call them the "golden copies" because they are the source of truth for the link:https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators/kiali[OperatorHub.io upstream operator], link:https://github.com/operator-framework/community-operators/tree/master/community-operators/kiali[community operator], and the Red Hat OSSM Operator. The Operator Helm Chart templates are link:https://github.com/kiali/helm-charts/tree/master/kiali-operator[here.]
 
-The Kiali server resources are deployed by the link:./roles[Kiali Operator Ansible roles] or by the link:./deploy/charts/kiali-server[Kiali Server Helm Chart]. There are link:./roles/default/kiali-deploy/templates/kubernetes[generic Kubernetes templates] as well as link:./roles/default/kiali-deploy/templates/openshift[OpenShift templates] for the link:./roles/default[default] (i.e. current) release as well as link:./roles[select previous releases]. The custom dashboards templates are cluster-type-agnostic and are link:./roles/default/kiali-deploy/templates/dashboards[here].
+The Kiali server resources are deployed by the link:./roles[Kiali Operator Ansible roles] or by the link:https://github.com/kiali/helm-charts/tree/master/kiali-server[Kiali Server Helm Chart]. There are link:./roles/default/kiali-deploy/templates/kubernetes[generic Kubernetes templates] as well as link:./roles/default/kiali-deploy/templates/openshift[OpenShift templates] for the link:./roles/default[default] (i.e. current) release as well as link:./roles[select previous releases]. The custom dashboards templates are cluster-type-agnostic and are link:./roles/default/kiali-deploy/templates/dashboards[here].
 
 The configuration settings for the Kiali CR and Kiali ConfigMap are documented in the link:./deploy/kiali/kiali_cr.yaml[kiali_cr.yaml example file] and are defined in the Kiali Operator Ansible roles and in the Helm Charts, described below in more detail.
 
-The default values for all configuration settings are found in the Kiali Operator link:./roles/default/kiali-deploy/defaults/main.yml[defaults/main.yml file] (there are analogous `defaults/main.yml` files for the select previous releases) and in the link:./deploy/charts/kiali-operator/values.yaml[Kiali Operator Helm Chart] and link:./deploy/charts/kiali-server/values.yaml[Kiali Server Helm Chart].
+The default values for all configuration settings are found in the Kiali Operator link:./roles/default/kiali-deploy/defaults/main.yml[defaults/main.yml file] (there are analogous `defaults/main.yml` files for the select previous releases) and in the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/values.yaml[Kiali Operator Helm Chart] and link:https://github.com/kiali/helm-charts/tree/master/kiali-server/values.yaml[Kiali Server Helm Chart].
 
 If new Kiali Server resources are added or removed, you must make appropriate changes to the link:./roles/default/kiali-remove[Kiali Operator Remove Role] as well.
 
@@ -84,14 +84,14 @@ Below are checklists that developers should consult when making various kinds of
 - [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata]
 - [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata]
 - [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata]
-- [ ] Update the link:./deploy/charts/kiali-operator/templates[Operator Helm Chart templates]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates[Operator Helm Chart templates]
 
 ### Are You Altering a Kiali Server Resource?
 
 - [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes[Operator Kubernetes templates]
 - [ ] Update the link:./roles/default/kiali-deploy/templates/openshift[Operator OpenShift templates]
 - [ ] Check if you need to modify the link:./roles/default/kiali-remove[Operator remove role]
-- [ ] Update the link:./deploy/charts/kiali-server/templates[Server Helm Chart templates]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates[Server Helm Chart templates]
 
 ### Are You Altering a Kiali Server Role Permission?
 
@@ -102,16 +102,16 @@ Below are checklists that developers should consult when making various kinds of
 - [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes/role-viewer.yaml[Operator Kubernetes role-viewer.yaml]
 - [ ] Update the link:./roles/default/kiali-deploy/templates/openshift/role.yaml[Operator OpenShift role.yaml]
 - [ ] Update the link:./roles/default/kiali-deploy/templates/openshift/role-viewer.yaml[Operator OpenShift role-viewer.yaml]
-- [ ] Update the link:./deploy/charts/kiali-operator/templates/clusterrole.yaml[Operator Helm Chart clusterrole.yaml]
-- [ ] Update the link:./deploy/charts/kiali-server/templates/role.yaml[Server Helm Chart role.yaml]
-- [ ] Update the link:./deploy/charts/kiali-server/templates/role-viewer.yaml[Server Helm Chart role-viewer.yaml]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates/clusterrole.yaml[Operator Helm Chart clusterrole.yaml]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/role.yaml[Server Helm Chart role.yaml]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/role-viewer.yaml[Server Helm Chart role-viewer.yaml]
 
 ### Are You Altering a Kiali Server Configuration Setting?
 
 - [ ] Set the default value in link:./roles/default/kiali-deploy/defaults/main.yml[Operator default/main.yaml]
 - [ ] If adding a new top-level group or setting, add it to link:./roles/default/kiali-deploy/vars/main.yml[Operator vars/main.yaml]
 - [ ] Document the new value in the link:./deploy/kiali/kiali_cr.yaml[example kiali_cr.yaml] (put the default values in the comments)
-- [ ] Only if appropriate (usually it is not) set the value in the `cr.spec` section of link:./deploy/charts/kiali-operator/values.yaml[Operator Helm Chart values.yaml]
-- [ ] Set the default value in the link:./deploy/charts/kiali-server/values.yaml[Server Helm Chart values.yaml]
+- [ ] Only if appropriate (usually it is not) set the value in the `cr.spec` section of link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/values.yaml[Operator Helm Chart values.yaml]
+- [ ] Set the default value in the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/values.yaml[Server Helm Chart values.yaml]
 - [ ] Ensure each group of settings are alphabetically sorted in all the files where the new setting was added.
 - [ ] If appropriate, add some tests to the link:./molecule/config-values-test/converge.yml[Molecule config-values-test]
