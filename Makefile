@@ -19,9 +19,6 @@ OPERATOR_QUAY_TAG = ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 # Determine if we should use Docker OR Podman - value must be one of "docker" or "podman"
 DORP ?= docker
 
-# When building the helm chart, this is the helm version to use
-HELM_VERSION ?= v3.2.4
-
 .PHONY: help
 help: Makefile
 	@echo
@@ -32,32 +29,6 @@ help: Makefile
 ## clean: Cleans _output
 clean:
 	@rm -rf ${OUTDIR}
-
-.download-helm-if-needed:
-	@$(eval HELM ?= $(shell if (which helm 2>/dev/null 1>&2 && helm version --short 2>/dev/null | grep -q "v3"); then echo "helm"; else echo "${OUTDIR}/helm-install/helm"; fi))
-	@if ! which ${HELM} 2>/dev/null 1>&2; then \
-	  mkdir -p "${OUTDIR}/helm-install" ;\
-	  if [ -x "${OUTDIR}/helm-install/helm" ]; then \
-	    echo "You do not have helm installed in your PATH. Will use the one found here: ${OUTDIR}/helm-install/helm" ;\
-	  else \
-	    echo "You do not have helm installed in your PATH. The binary will be downloaded to ${OUTDIR}/helm-install/helm" ;\
-	    os=$$(uname -s | tr '[:upper:]' '[:lower:]') ;\
-	    arch="" ;\
-	    case $$(uname -m) in \
-	        i386)   arch="386" ;; \
-	        i686)   arch="386" ;; \
-	        x86_64) arch="amd64" ;; \
-	        arm)    dpkg --print-architecture | grep -q "arm64" && arch="arm64" || arch="arm" ;; \
-	    esac ;\
-	    cd "${OUTDIR}/helm-install" ;\
-	    curl -L "https://get.helm.sh/helm-${HELM_VERSION}-$${os}-$${arch}.tar.gz" > "${OUTDIR}/helm-install/helm.tar.gz" ;\
-	    tar xzf "${OUTDIR}/helm-install/helm.tar.gz" ;\
-	    mv "${OUTDIR}/helm-install/$${os}-$${arch}/helm" "${OUTDIR}/helm-install/helm" ;\
-	    chmod +x "${OUTDIR}/helm-install/helm" ;\
-	    rm -rf "${OUTDIR}/helm-install/$${os}-$${arch}" "${OUTDIR}/helm-install/helm.tar.gz" ;\
-	  fi ;\
-	fi
-	@echo Will use this helm executable: ${HELM}
 
 .download-operator-sdk-if-needed:
 	@if [ "$(shell which operator-sdk 2>/dev/null || echo -n "")" == "" ]; then \
@@ -79,38 +50,6 @@ clean:
 build: .ensure-operator-sdk-exists
 	@echo Building container image for Kiali operator using operator-sdk
 	cd "${ROOTDIR}" && "${OP_SDK}" build --image-builder ${DORP} --image-build-args "--pull" "${OPERATOR_QUAY_TAG}"
-
-.build-helm-chart-server: .download-helm-if-needed
-	@echo Building Helm Chart for Kiali server
-	@rm -rf "${OUTDIR}/charts/kiali-server*"
-	@mkdir -p "${OUTDIR}/charts"
-	@cp -R "${ROOTDIR}/deploy/charts/kiali-server" "${OUTDIR}/charts/"
-	@HELM_IMAGE_REPO="${OPERATOR_QUAY_NAME}" HELM_IMAGE_TAG="${OPERATOR_CONTAINER_VERSION}" envsubst < "${ROOTDIR}/deploy/charts/kiali-server/values.yaml" > "${OUTDIR}/charts/kiali-server/values.yaml"
-	@"${HELM}" lint "${OUTDIR}/charts/kiali-server"
-	@"${HELM}" package "${OUTDIR}/charts/kiali-server" -d "${OUTDIR}/charts" --version ${OPERATOR_CONTAINER_VERSION} --app-version ${OPERATOR_CONTAINER_VERSION}
-
-.build-helm-chart-operator: .download-helm-if-needed
-	@echo Building Helm Chart for Kiali operator
-	@rm -rf "${OUTDIR}/charts/kiali-operator*"
-	@mkdir -p "${OUTDIR}/charts"
-	@cp -R "${ROOTDIR}/deploy/charts/kiali-operator" "${OUTDIR}/charts/"
-	@HELM_IMAGE_REPO="${OPERATOR_QUAY_NAME}" HELM_IMAGE_TAG="${OPERATOR_CONTAINER_VERSION}" envsubst < "${ROOTDIR}/deploy/charts/kiali-operator/values.yaml" > "${OUTDIR}/charts/kiali-operator/values.yaml"
-	@"${HELM}" lint "${OUTDIR}/charts/kiali-operator"
-	@"${HELM}" package "${OUTDIR}/charts/kiali-operator" -d "${OUTDIR}/charts" --version ${OPERATOR_CONTAINER_VERSION} --app-version ${OPERATOR_CONTAINER_VERSION}
-
-## build-helm-chart: Build Kiali operator and server Helm Charts
-build-helm-chart: .build-helm-chart-operator .build-helm-chart-server
-
-.update-helm-repo-server: .build-helm-chart-server
-	cp "${OUTDIR}/charts/kiali-server-${OPERATOR_CONTAINER_VERSION}.tgz" "${ROOTDIR}/docs/charts"
-	"${HELM}" repo index "${ROOTDIR}/docs/charts" --url https://kiali.org/kiali-operator/charts
-
-.update-helm-repo-operator: .build-helm-chart-operator
-	cp "${OUTDIR}/charts/kiali-operator-${OPERATOR_CONTAINER_VERSION}.tgz" "${ROOTDIR}/docs/charts"
-	"${HELM}" repo index "${ROOTDIR}/docs/charts" --url https://kiali.org/kiali-operator/charts
-
-## update-helm-repo: Build the latest Kiali operator and server Helm Charts and adds them to the local Helm repo directory.
-update-helm-repo: .update-helm-repo-operator .update-helm-repo-server
 
 ## push: Pushes the operator image to quay.
 push:
