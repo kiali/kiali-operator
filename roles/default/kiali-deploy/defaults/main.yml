@@ -165,6 +165,23 @@ kiali_defaults:
       url: ""
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
+  health_config:
+    rate:
+      - kind: ".*"
+        name: ".*"
+        namespace: ".*"
+        tolerance:
+          - code: "/^[4-5]\\d\\d$/"
+            degraded: 0.1
+            direction: ".*"
+            failure: 20
+            protocol: "http"
+          - code: "/^[1-9]$|^1[0-6]$/"
+            degraded: 0.1
+            direction: ".*"
+            failure: 20
+            protocol: "grpc"
+
   identity: {}
     #cert_file:
     #private_key_file:
@@ -216,24 +233,6 @@ kiali_defaults:
     web_fqdn: ""
     web_root: ""
     web_schema: ""
-
-  health_config:
-    rate:
-      - namespace: ".*",
-        kind: ".*",
-        name: ".*",
-        tolerance:
-          - code: "/^[4-5]\\d\\d$/"
-            protocol: "http"
-            direction: ".*"
-            degraded: 0.1
-            failure: 20
-          - code: "/^[1-9]$|^1[0-6]$/"
-            protocol: "grpc"
-            direction: ".*"
-            degraded: 0.1
-            failure: 20
-
 
 # These variables are outside of the kiali_defaults. Their values will be
 # auto-detected by the role and are not meant to be set by the user.
