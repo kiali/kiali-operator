@@ -74,6 +74,13 @@ kiali_vars:
     {{ kiali_defaults.istio_labels }}
     {%- endif -%}
 
+  kiali_feature_flags: |
+    {%- if kiali_feature_flags is defined and kiali_feature_flags is iterable -%}
+    {{ kiali_defaults.kiali_feature_flags | combine((kiali_feature_flags | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ kiali_defaults.kiali_feature_flags }}
+    {%- endif -%}
+
   kubernetes_config: |
     {%- if kubernetes_config is defined and kubernetes_config is iterable -%}
     {{ kiali_defaults.kubernetes_config | combine((kubernetes_config | stripnone), recursive=True) }}
