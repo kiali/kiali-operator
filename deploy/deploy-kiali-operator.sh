@@ -561,8 +561,8 @@ get_helm() {
     fi
     echo "Using helm found here: ${HELM}"
   else
-    if (! (which helm 2>/dev/null 1>&2 && helm version --short 2>/dev/null | grep -q "v3")); then
-      echo "You specified an invalid helm binary. This must be helm version 3: ${HELM}"
+    if (! (which ${HELM} 2>/dev/null 1>&2 && ${HELM} version --short 2>/dev/null | grep -q "v3.[^01]")); then
+      echo "You specified an invalid helm binary. This must be helm version 3.2+: ${HELM}"
     fi
   fi
 }
