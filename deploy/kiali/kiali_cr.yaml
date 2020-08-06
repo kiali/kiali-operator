@@ -644,12 +644,6 @@ spec:
 #    #private_key_file:
 
 ##########
-# Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
-#  ---
-#  istio_injection_action: true
-#
-
-##########
 #  ---
 #  istio_labels:
 #
@@ -661,6 +655,16 @@ spec:
 #    app_label_name: "app"
 #    injection_label_name: "istio-injection"
 #    version_label_name: "version"
+
+##########
+# Kiali features that can be enabled/disabled via configuration
+#  ---
+#  kiali_feature_flags:
+#
+# Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
+#    ---
+#    istio_injection_action: true
+#
 
 ##########
 #  ---
