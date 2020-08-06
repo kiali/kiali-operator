@@ -180,8 +180,11 @@ kiali_defaults:
     #cert_file:
     #private_key_file:
 
+  istio_injection_action: true
+
   istio_labels:
     app_label_name: "app"
+    injection_label_name: "istio-injection"
     version_label_name: "version"
 
   kubernetes_config:

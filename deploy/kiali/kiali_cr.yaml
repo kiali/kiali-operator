@@ -644,14 +644,22 @@ spec:
 #    #private_key_file:
 
 ##########
+# Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
+#  ---
+#  istio_injection_action: true
+#
+
+##########
 #  ---
 #  istio_labels:
 #
 # This section defines what labels Istio is using to indicate apps and versions.
 # Typical values are: ("app" and "version") or ("app.kubernetes.io/name" and "app.kubernetes.io/version").
 # Kiali needs to know what labels Istio is using to be in sync with what Istio considers applications.
+# It adds the label used to instruct Istio to automatically inject sidecar proxies when applications are deployed.
 #    ---
 #    app_label_name: "app"
+#    injection_label_name: "istio-injection"
 #    version_label_name: "version"
 
 ##########

@@ -67,6 +67,8 @@ kiali_vars:
     {{ kiali_defaults.identity }}
     {%- endif -%}
 
+  istio_injection_action: "{{ istio_injection_action | default(kiali_defaults.istio_injection_action) }}"
+
   istio_labels: |
     {%- if istio_labels is defined and istio_labels is iterable -%}
     {{ kiali_defaults.istio_labels | combine((istio_labels | stripnone), recursive=True) }}
