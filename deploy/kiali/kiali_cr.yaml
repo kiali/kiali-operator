@@ -204,6 +204,12 @@ spec:
 #      issuer_uri: ""
 #      scopes: ["openid", "profile", "email"]
 #      username_claim: "sub"
+#
+# The Route resource name and OAuthClient resource name will have this value as its prefix.
+# This value normally should never change. The installer will ensure this value is set correctly.
+#    ---
+#    openshift:
+#      client_id_prefix: kiali
 
 ##########
 #  ---
@@ -443,10 +449,33 @@ spec:
 # password, you can store that password in a secret named "myGrafanaCredentials" in a key named "myGrafanaPw".
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
+# **Custom-dashboards settings:
+# namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
+#   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
+# prometheus: please check the section below about Prometheus-specific settings: they are identical. The Prometheus
+#   configuration defined here is dedicated to fetching custom dashboards, hence allowing to use a different instance
+#   of Prometheus. If omitted, the same Prometheus as for Istio metrics will be reused for custom dashboards.
+#    ---
+#    custom_dashboards:
+#      namespace_label: "kubernetes_namespace"
+#      prometheus:
+#        auth:
+#          ca_file: ""
+#          insecure_skip_verify: false
+#          password: ""
+#          token: ""
+#          type: "none"
+#          use_kiali_token: false
+#          username: ""
+#        url: ""
+#
 # **Grafana-specific settings:
 # auth: authentication settings to connect to Grafana:
 #   ca_file: The certificate authority file to use when accessing Grafana using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
+#   component_status: Grafana info for the Istio Component Status masthead indicator. Only if it is enabled.
+#       app_label: The value of the Grafana pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to grafana.
+#       is_core: Whether the component is core for your deployment. It defaults to false.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Grafana over https.
 #   password: Password to be used when making requests to Grafana, for basic authentication. User only requires viewer permissions. May refer to a secret - see note above.
 #   token: Token / API key to access Grafana, for token-based authentication. It only requires viewer permissions. May refer to a secret - see note above.
@@ -472,6 +501,9 @@ spec:
 #    grafana:
 #      auth:
 #        ca_file: ""
+#        component_status:
+#          app_label: "grafana"
+#          is_core: false
 #        insecure_skip_verify: false
 #        password: ""
 #        token: ""
@@ -492,15 +524,27 @@ spec:
 #      url: ""
 #
 # **Istio-specific settings:
+# component_status:
+#   enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
+#   components: A list of components that Kiali will check its statuses.
+#     app_label: Istio component pod app label.
+#     is_core: Whether the component is core for your deployment.
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
-# istio_status_enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
+#      component_status:
+#        enabled: true
+#        components:
+#        - app_label: istiod
+#          is_core: true
+#        - app_label: istio-ingressgateway
+#          is_core: true
+#        - app_label: istio-egressgateway
+#          is_core: false
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
-#      istio_status_enabled: true
 #      url_service_version: ""
 #
 #
@@ -508,6 +552,9 @@ spec:
 # auth: authentication settings to connect to Prometheus:
 #   ca_file: The certificate authority file to use when accessing Prometheus using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
+#   component_status: Prometheus info for the Istio Component Status masthead indicator. Only if it is enabled.
+#       app_label: The value of the Prometheus pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to prometheus.
+#       is_core: Whether the component is core for your deployment. It defaults to true.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Prometheus over https.
 #   password: Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret - see note above.
 #   token: Token / API key to access Prometheus, for token-based authentication. May refer to a secret - see note above.
@@ -517,9 +564,6 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", Kiali Service Account token will be used for the API calls to Prometheus,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Prometheus, for basic authentication.
-# custom_metrics_url: The URL used to query the Prometheus Server for building the runtime metrics dashboards.
-#                     This URL must be accessible from the Kiali pod.
-#                     If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
 #      If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 #    ---
@@ -532,12 +576,17 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
-#      custom_metrics_url: ""
+#      component_status:
+#        app_label: "prometheus"
+#        is_core: true
 #      url: ""
 #
 # **Tracing-specific settings:
 #  - Right now we only support Jaeger
 # auth: authentication settings to connect to Jaeger:
+#   component_status: Jaeger info for the Istio Component Status masthead indicator. Only if it is enabled.
+#       app_label: The value of the Jaeger pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to jaeger.
+#       is_core: Whether the component is core for your deployment. It defaults to false.
 #   ca_file: The certificate authority file to use when accessing Jaeger using https. An empty string means no extra
 #       certificate authority file is used. Default is an empty string.
 #   insecure_skip_verify: Set true to skip verifying certificate validity when Kiali contacts Jaeger over https.
@@ -568,6 +617,9 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
+#      component_status:
+#        app_label: "jaeger"
+#        is_core: false
 #      enabled: true
 #      in_cluster_url: ""
 #      namespace_selector: true
@@ -598,9 +650,21 @@ spec:
 # This section defines what labels Istio is using to indicate apps and versions.
 # Typical values are: ("app" and "version") or ("app.kubernetes.io/name" and "app.kubernetes.io/version").
 # Kiali needs to know what labels Istio is using to be in sync with what Istio considers applications.
+# It adds the label used to instruct Istio to automatically inject sidecar proxies when applications are deployed.
 #    ---
 #    app_label_name: "app"
+#    injection_label_name: "istio-injection"
 #    version_label_name: "version"
+
+##########
+# Kiali features that can be enabled/disabled via configuration
+#  ---
+#  kiali_feature_flags:
+#
+# Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
+#    ---
+#    istio_injection_action: true
+#
 
 ##########
 #  ---

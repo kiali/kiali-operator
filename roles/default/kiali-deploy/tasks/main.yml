@@ -261,12 +261,6 @@
   when:
   - kiali_vars.external_services.prometheus.url == ""
 
-- name: Set default Prometheus Custom Metrics URL
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'prometheus': {'custom_metrics_url': kiali_vars.external_services.prometheus.url}}}, recursive=True) }}"
-  when:
-  - kiali_vars.external_services.prometheus.custom_metrics_url == ""
-
 # Determine some more defaults.
 
 - name: Set default web root based on cluster type

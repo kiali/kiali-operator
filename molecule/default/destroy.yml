@@ -52,7 +52,7 @@
   # Helm does not uninstall CRDs, we need to do it here
   - name: Remove CRDs
     vars:
-      crds_yaml: "{{ lookup('fileglob', lookup('env', 'MOLECULE_PROJECT_DIRECTORY') + '/deploy/charts/kiali-operator/crds/crds.yaml') }}"
+      crds_yaml: "{{ lookup('env', 'MOLECULE_HELM_CHARTS_REPO') + '/kiali-operator/crds/crds.yaml' }}"
     k8s:
       state: absent
       src: "{{ crds_yaml }}"

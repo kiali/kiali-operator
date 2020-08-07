@@ -11,6 +11,10 @@
 #
 # To use this script, either "oc" or "kubectl" must be in your PATH.
 #
+# If you have helm (version 3.2+) in your PATH, it will be used; otherwise
+# a version will be downloaded in a temporary directory and used. Or,
+# you may use the --helm-exe command line option.
+#
 # To customize the behavior of this script, you can set one or more of the
 # following environment variables or pass in their associated command
 # line arguments (run the script with "--help" for details on the command
@@ -23,6 +27,10 @@
 #    If true, helm will be instructed to perform a dry run and thus
 #    will not create any objects in the cluster.
 #    Default: "false"
+#
+# HELM
+#    Path to the 'helm' binary to be used. Will be autodetected or downloaded
+#    if not defined.
 #
 # HELM_CHART
 #    The Helm Chart to be used when installing the operator.
@@ -38,7 +46,7 @@
 #    When specified, this must be the version of the Chart to install.
 #    If "lastrelease" is specified, the same version as the last
 #    Kiali Operator release will be assumed.
-#    The chart repo is: https://kiali.org/kiali-operator/charts
+#    The chart repo is: https://kiali.org/helm-charts
 #    Default: "lastrelease" if HELM_CHART is not specified; ignored otherwise
 #
 # Environment variables that affect the Kiali operator installation:
@@ -198,6 +206,10 @@ while [[ $# -gt 0 ]]; do
       HELM_CHART="$2"
       shift;shift
       ;;
+    -he|--helm-exe)
+      HELM="$2"
+      shift;shift
+      ;;
     -hrcv|--helm-repo-chart-version)
       HELM_REPO_CHART_VERSION="$2"
       shift;shift
@@ -288,12 +300,17 @@ Valid options for overall script behavior:
       and build the latest Helm Chart and use that.
       If not specified, HELM_REPO_CHART_VERSION is used.
 
+  -he|--helm-exe
+      Path to the 'helm' binary to be used. Must be helm version 3.
+      If not defined, a helm binary will be autodetected in PATH
+      or downloaded.
+
   -hrcv|--helm-repo-chart-version
       Use the Kiali Operator Helm Chart repo to obtain the Helm Chart.
       When specified, this must be the version of the Chart to install.
       If "lastrelease" is specified, the same version as the last
       Kiali Operator release will be assumed.
-      The chart repo is: https://kiali.org/kiali-operator/charts
+      The chart repo is: https://kiali.org/helm-charts
       Default: "lastrelease" if --helm-chart is not specified; ignored otherwise
 
 Valid options for the operator installation:
@@ -407,14 +424,14 @@ done
 
 # Determine what cluster client tool we are using.
 # While we have this knowledge here, determine some information about auth_strategy we might need later.
-CLIENT_EXE=$(which oc 2>/dev/null)
-if [ "$?" == "0" ]; then
+if which oc 2>/dev/null; then
+  CLIENT_EXE="$(which oc)"
   echo "Using 'oc' located here: ${CLIENT_EXE}"
   _AUTH_STRATEGY_DEFAULT="openshift"
   _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'openshift', 'token', or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
 else
-  CLIENT_EXE=$(which kubectl 2>/dev/null)
-  if [ "$?" == "0" ]; then
+  if which kubectl 2>/dev/null; then
+    CLIENT_EXE="$(which kubectl)"
     echo "Using 'kubectl' located here: ${CLIENT_EXE}"
     _AUTH_STRATEGY_DEFAULT="token"
     _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'token', 'openid' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
@@ -429,6 +446,7 @@ NAMESPACE="${NAMESPACE:-istio-system}"
 VERSION="${VERSION:-default}"
 HELM_CHART="${HELM_CHART:-}"
 HELM_REPO_CHART_VERSION="${HELM_REPO_CHART_VERSION:-lastrelease}"
+ACCESSIBLE_NAMESPACES="${ACCESSIBLE_NAMESPACES:-**}"
 
 if [ "${DRY_RUN:-}" == "true" ]; then
   DRY_RUN_ARG="--dry-run"
@@ -450,7 +468,7 @@ export OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION:-lastrelease}"
 export OPERATOR_INSTALL_KIALI=${OPERATOR_INSTALL_KIALI:-true}
 export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
 export OPERATOR_VIEW_ONLY_MODE="${OPERATOR_VIEW_ONLY_MODE:-false}"
-export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-$OPERATOR_NAMESPACE}"
+export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-\"\"}"
 
 # Determine what tool to use to download files. This supports environments that have either wget or curl.
 # After return, $downloader will be a command to stream a URL's content to stdout.
@@ -512,48 +530,51 @@ resolve_latest_kiali_operator_release() {
   fi
 }
 
-get_operator_source_from_github() {
-  if [ -z "${KIALI_OP_SRC:-}" ]; then
+get_operator_helm_source_from_github() {
+  if [ -z "${KIALI_OP_HELM_SRC:-}" ]; then
     local script_dir="$(cd "$(dirname "$0")" && pwd -P)"
-    if [ -f "${script_dir}/../watches.yaml" -a -f "${script_dir}/../playbooks/kiali-deploy.yml" ]; then
-      # we are already in github source - use our location
-      KIALI_OP_SRC="$(cd "${script_dir}/.." && pwd -P)"
+    if [ -d "${script_dir}/../../helm-charts/docs" -a -d "${script_dir}/../../helm-charts/kiali-operator" ]; then
+      # we already have github source - use that location
+      KIALI_OP_HELM_SRC="$(cd "${script_dir}/../../helm-charts" && pwd -P)"
     else
-      KIALI_OP_SRC=$(mktemp -d)
-      resolve_latest_kiali_operator_release
-      ${downloader} https://github.com/kiali/kiali-operator/archive/${kiali_operator_version_we_want}.tar.gz | tar xz --directory ${KIALI_OP_SRC}
-      KIALI_OP_SRC="${KIALI_OP_SRC}/$(ls -1 ${KIALI_OP_SRC})"
+      # git clone the master branch which contains the helm chart source
+      KIALI_OP_HELM_SRC=$(mktemp -d)
+      git clone --single-branch --branch master https://github.com/kiali/helm-charts "${KIALI_OP_HELM_SRC}"
     fi
   fi
 }
 
 get_helm() {
   if [ -z "${HELM:-}" ]; then
-    if which helm > /dev/null 2>&1; then
+    if (which helm 2>/dev/null 1>&2 && helm version --short 2>/dev/null | grep -q "v3.[^01]"); then
       HELM="$(which helm)"
     else
-      echo "You do not have helm in your PATH. Will attempt to download it now..."
-      get_operator_source_from_github
-      make -C "${KIALI_OP_SRC}" .download-helm-if-needed
-      if [ -x "${KIALI_OP_SRC}/_output/helm-install/helm" ]; then
-        HELM="${KIALI_OP_SRC}/_output/helm-install/helm"
+      echo "You do not have 'helm' (v3.2+) in your PATH. Will attempt to download it now..."
+      get_operator_helm_source_from_github
+      make -C "${KIALI_OP_HELM_SRC}" .download-helm-if-needed
+      if [ -x "${KIALI_OP_HELM_SRC}/_output/helm-install/helm" ]; then
+        HELM="${KIALI_OP_HELM_SRC}/_output/helm-install/helm"
       else
         echo "You do not have helm in PATH and it could not be downloaded. Install helm manually and try again."
         exit 1
       fi
     fi
     echo "Using helm found here: ${HELM}"
+  else
+    if (! (which ${HELM} 2>/dev/null 1>&2 && ${HELM} version --short 2>/dev/null | grep -q "v3.[^01]")); then
+      echo "You specified an invalid helm binary. This must be helm version 3.2+: ${HELM}"
+    fi
   fi
 }
 
 get_helm_chart() {
   if [ "${HELM_CHART}" == "source" ]; then
-    get_operator_source_from_github
-    if ! ls ${KIALI_OP_SRC}/_output/charts/kiali-operator*.tgz > /dev/null 2>&1; then
+    get_operator_helm_source_from_github
+    if ! ls ${KIALI_OP_HELM_SRC}/_output/charts/kiali-operator*.tgz > /dev/null 2>&1; then
       echo "There is no Helm Chart from source - will build it now"
-      make -C "${KIALI_OP_SRC}" build-helm-chart
+      make -C "${KIALI_OP_HELM_SRC}" build-helm-charts
     fi
-    HELM_CHART="$(ls -1 ${KIALI_OP_SRC}/_output/charts/kiali-operator*.tgz)"
+    HELM_CHART="$(ls -dt1 ${KIALI_OP_HELM_SRC}/_output/charts/kiali-operator*.tgz | head -n 1)"
     echo "Using the Helm Chart from source found here: ${HELM_CHART}"
   else
     if [ -z "${HELM_CHART}" ]; then
@@ -561,12 +582,14 @@ get_helm_chart() {
         resolve_latest_kiali_operator_release
         HELM_REPO_CHART_VERSION="${kiali_operator_version_we_want}"
       fi
-      echo "Will obtain the Helm Chart version [${HELM_REPO_CHART_VERSION}] from the Kiali Operator Helm Repo"
-      if ! ${HELM} repo list -o yaml | grep -q "name: kiali-operator"; then
-        echo "Adding kiali-operator repo to Helm"
-        ${HELM} repo add kiali-operator https://kiali.org/kiali-operator/charts
+      echo "Will obtain the Operator Helm Chart version [${HELM_REPO_CHART_VERSION}] from the Kiali Helm Chart Repo"
+      if ! ${HELM} repo list -o yaml | grep -q "name: kiali$"; then
+        echo "Adding kiali repo to Helm"
+        ${HELM} repo add kiali https://kiali.org/helm-charts
+      else
+        ${HELM} repo update
       fi
-      HELM_CHART="--version ${HELM_REPO_CHART_VERSION} kiali-operator/kiali-operator"
+      HELM_CHART="--version ${HELM_REPO_CHART_VERSION} kiali/kiali-operator"
     else
       if [[ "${HELM_CHART}" != *".tgz" && "${HELM_CHART}" != *".tar.gz" ]]; then
         echo "The Helm Chart must be specified with an extension of either .tgz or .tar.gz [You specified: ${HELM_CHART}]"
