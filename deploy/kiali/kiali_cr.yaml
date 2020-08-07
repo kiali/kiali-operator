@@ -526,12 +526,12 @@ spec:
 #      name: ".*"
 #      namespace: ".*"
 #      tolerance:
-#      - code: "/^[4-5]\\d\\d$/"
+#      - code: "^[4-5]\\d\\d$"
 #        degraded: 0.1
 #        direction: ".*"
 #        failure: 20
 #        protocol: "http"
-#      - code: "/^[1-9]$|^1[0-6]$/"
+#      - code: "^[1-9]$|^1[0-6]$"
 #        degraded: 0.1
 #        direction: ".*"
 #        failure: 20
