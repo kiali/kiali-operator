@@ -424,14 +424,14 @@ done
 
 # Determine what cluster client tool we are using.
 # While we have this knowledge here, determine some information about auth_strategy we might need later.
-CLIENT_EXE=$(which oc 2>/dev/null)
-if [ "$?" == "0" ]; then
+if which oc 2>/dev/null; then
+  CLIENT_EXE="$(which oc)"
   echo "Using 'oc' located here: ${CLIENT_EXE}"
   _AUTH_STRATEGY_DEFAULT="openshift"
   _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'openshift', 'token', or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
 else
-  CLIENT_EXE=$(which kubectl 2>/dev/null)
-  if [ "$?" == "0" ]; then
+  if which kubectl 2>/dev/null; then
+    CLIENT_EXE="$(which kubectl)"
     echo "Using 'kubectl' located here: ${CLIENT_EXE}"
     _AUTH_STRATEGY_DEFAULT="token"
     _AUTH_STRATEGY_PROMPT="Choose a login strategy of either 'token', 'openid' or 'anonymous'. Use 'anonymous' at your own risk. [${_AUTH_STRATEGY_DEFAULT}]: "
