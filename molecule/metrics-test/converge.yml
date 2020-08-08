@@ -25,7 +25,7 @@
   - import_tasks: ../common/query-prometheus.yml
     vars:
       prometheus_request:
-        query: "workqueue_work_duration_seconds_count{app=\\\"kiali-operator\\\",namespace=\\\"{{ kiali.operator_namespace }}\\\"}"
+        query: "workqueue_work_duration_seconds_count{app=\\\"kiali-operator\\\",kubernetes_namespace=\\\"{{ kiali.operator_namespace }}\\\"}"
         time: "{{ test_start_time}}"
   - assert:
       that:
@@ -36,7 +36,7 @@
   - import_tasks: ../common/query-prometheus.yml
     vars:
       prometheus_request:
-        query: "kiali_info{app=\\\"kiali-operator\\\",namespace=\\\"{{ kiali.operator_namespace }}\\\"}"
+        query: "kiali_info{app=\\\"kiali-operator\\\",kubernetes_namespace=\\\"{{ kiali.operator_namespace }}\\\"}"
         time: "{{ test_start_time}}"
   - assert:
       that:
@@ -47,7 +47,7 @@
   - import_tasks: ../common/query-prometheus.yml
     vars:
       prometheus_request:
-        query: "kiali_api_processing_duration_seconds_count{app=\\\"kiali\\\",namespace=\\\"{{ kiali.install_namespace }}\\\"}"
+        query: "kiali_api_processing_duration_seconds_count{app=\\\"kiali\\\",kubernetes_namespace=\\\"{{ kiali.install_namespace }}\\\"}"
         time: "{{ test_start_time}}"
   - assert:
       that:
@@ -72,7 +72,7 @@
   - import_tasks: ../common/query-prometheus.yml
     vars:
       prometheus_request:
-        query: "kiali_api_processing_duration_seconds_count{app=\\\"kiali\\\",namespace=\\\"{{ kiali.install_namespace }}\\\"}"
+        query: "kiali_api_processing_duration_seconds_count{app=\\\"kiali\\\",kubernetes_namespace=\\\"{{ kiali.install_namespace }}\\\"}"
         time: ""
   - assert:
       that:
