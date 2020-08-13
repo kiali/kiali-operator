@@ -249,7 +249,7 @@ spec:
                 image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8-operator${KIALI_OPERATOR_TAG}
                 imagePullPolicy: "IfNotPresent"
                 args:
-                - "--zap-level=info"
+                - "--zap-log-level=info"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
@@ -284,9 +284,7 @@ spec:
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_24_TAG}"
                 ports:
                 - name: http-metrics
-                  containerPort: 8383
-                - name: cr-metrics
-                  containerPort: 8686
+                  containerPort: 8080
               volumes:
               - name: runner
                 emptyDir: {}

@@ -22,6 +22,9 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 # Determine if we should use Docker OR Podman - value must be one of "docker" or "podman"
 DORP ?= docker
 
+# The version of the SDK this Makefile will download if needed
+OPERATOR_SDK_VERSION ?= 1.0.0
+
 .PHONY: help
 help: Makefile
 	@echo
@@ -40,7 +43,7 @@ clean:
 	    echo "You do not have operator-sdk installed in your PATH. Will use the one found here: ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	  else \
 	    echo "You do not have operator-sdk installed in your PATH. The binary will be downloaded to ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
-	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v0.17.2/operator-sdk-v0.17.2-$$(uname -m)-linux-gnu > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
+	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk-v${OPERATOR_SDK_VERSION}-$$(uname -m)-linux-gnu > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	    chmod +x "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	  fi ;\
 	fi
