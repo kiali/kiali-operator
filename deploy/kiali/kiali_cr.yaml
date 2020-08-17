@@ -504,6 +504,7 @@ spec:
 #     app_label: Istio component pod app label.
 #     is_core: Whether the component is core for your deployment.
 # istio_identity_domain: The annotation used by Istio to identify domains.
+# istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
@@ -518,6 +519,7 @@ spec:
 #        - app_label: istio-egressgateway
 #          is_core: false
 #      istio_identity_domain: "svc.cluster.local"
+#      istio_injection_annotation: "sidecar.istio.io/inject"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
 #      url_service_version: ""
 #
