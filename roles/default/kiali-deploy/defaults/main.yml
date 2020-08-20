@@ -166,21 +166,7 @@ kiali_defaults:
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
   health_config:
-    rate:
-      - kind: ".*"
-        name: ".*"
-        namespace: ".*"
-        tolerance:
-          - code: "^[4-5]\\d\\d$"
-            degraded: 0.1
-            direction: ".*"
-            failure: 20
-            protocol: "http"
-          - code: "^[1-9]$|^1[0-6]$"
-            degraded: 0.1
-            direction: ".*"
-            failure: 20
-            protocol: "grpc"
+    rate: []
 
   identity: {}
     #cert_file:
