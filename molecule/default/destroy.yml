@@ -24,6 +24,7 @@
       name: kiali
     register: doomed_list
     until:
+    - doomed_list is success
     - doomed_list | default({}) | json_query("resources[*]") | length == 0
     retries: "{{ wait_retries }}"
     delay: 5
@@ -35,6 +36,7 @@
       namespace: "{{ kiali.install_namespace }}"
     register: doomed_list
     until:
+    - doomed_list is success
     - doomed_list | default({}) | json_query("resources[*]") | length == 0
     retries: "{{ wait_retries }}"
     delay: 5
