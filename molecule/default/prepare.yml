@@ -99,6 +99,10 @@
       label_selectors:
       - app = kiali
     register: kiali_deployment
-    until: kiali_deployment.resources |length == 1 and kiali_deployment.resources[0].status.availableReplicas is defined and kiali_deployment.resources[0].status.availableReplicas == 1
+    until:
+    - kiali_deployment is success
+    - kiali_deployment.resources | length == 1
+    - kiali_deployment.resources[0].status.availableReplicas is defined
+    - kiali_deployment.resources[0].status.availableReplicas == 1
     retries: "{{ wait_retries }}"
     delay: 5
