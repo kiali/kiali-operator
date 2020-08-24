@@ -30,6 +30,8 @@ kiali_defaults:
 
   auth:
     openid:
+      api_proxy: ""
+      api_proxy_ca_data: ""
       authentication_timeout: 300
       authorization_endpoint: ""
       client_id: ""
