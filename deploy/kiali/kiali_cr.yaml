@@ -667,6 +667,10 @@ spec:
 #    - "Gateway"
 #    - "ServiceEntry"
 #    - "VirtualService"
+#    - "Sidecar"
+#    - "PeerAuthentication"
+#    - "RequestAuthentication"
+#    - "AuthorizationPolicy"
 #
 # List of namespaces or regex defining namespaces to include in a cache.
 #    ---

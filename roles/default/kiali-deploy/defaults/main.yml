@@ -184,6 +184,11 @@ kiali_defaults:
     - "Gateway"
     - "ServiceEntry"
     - "VirtualService"
+    - "Sidecar"
+    - "PeerAuthentication"
+    - "RequestAuthentication"
+    - "AuthorizationPolicy"
+
     cache_namespaces:
     - ".*"
     cache_token_namespace_duration: 10
