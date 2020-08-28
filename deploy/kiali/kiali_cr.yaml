@@ -145,6 +145,12 @@ spec:
 # tokens and delegates token validation to the cluster's API Server. Thus, "openid" strategy
 # won't work without the proper configuration on your Kubernetes cluster
 # (see https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
+# In case you are using a managed Kubernetes and your provider does not support configuring OpenID
+# integration, a workaround is to use API proxies (like kube-oidc-proxy).
+#
+# If you are using an API proxy for the cluster API, you will need to specify the URI of the proxy
+# in the `api_proxy` attribute, and provide the certificate authority file in the
+# `api_proxy_ca_data` attribute as a base64 encoded string.
 #
 # The "openid" strategy should NOT be used when installing Kiali in OpenShift. In this case, you
 # still should use "openshift" strategy and, in turn, setup OpenShift to use your IdP. For
@@ -173,6 +179,8 @@ spec:
 #
 #    ---
 #    openid:
+#      api_proxy: ""
+#      api_proxy_ca_data: ""
 #      authentication_timeout: 300
 #      authorization_endpoint: ""
 #      client_id: ""
