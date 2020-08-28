@@ -7,7 +7,6 @@
     - app = kiali
   register: kiali_pod
   until:
-  - kiali_pod is defined
   - kiali_pod is success
   - kiali_pod.resources | length == 1
   - kiali_pod.resources[0].status is defined
