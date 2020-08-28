@@ -6,6 +6,9 @@
     namespace: "{{ cr_namespace }}"
   register: kiali_cr_list
   until:
-  - kiali_cr_list | default({}) | json_query('resources[*].status.conditions[?reason==`Successful`].status') | flatten | join == 'True'
+  - kiali_cr_list is success
+  - kiali_cr_list.resources is defined
+  - kiali_cr_list.resources | length > 0
+  - kiali_cr_list | json_query('resources[*].status.conditions[?reason==`Successful`].status') | flatten | join == 'True'
   retries: "{{ wait_retries }}"
   delay: 5

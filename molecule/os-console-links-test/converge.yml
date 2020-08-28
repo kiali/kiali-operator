@@ -184,7 +184,9 @@
       label_selectors:
       - "kiali.io/home = {{ kiali.install_namespace }}"
     register: all_console_links
-    until: all_console_links.resources | length == 0
+    until:
+    - all_console_links is success
+    - all_console_links.resources | length == 0
     retries: "{{ wait_retries }}"
     delay: 5
 
