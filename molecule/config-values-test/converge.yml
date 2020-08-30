@@ -52,7 +52,7 @@
 
   # Deploy the new CR and wait for the CR change to take effect
 
-  - import_tasks: ../common/set-kiali-cr.yml
+  - import_tasks: ../common/set_kiali_cr.yml
     vars:
       new_kiali_cr: "{{ current_kiali_cr }}"
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
