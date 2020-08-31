@@ -1,7 +1,15 @@
-- name: Enable metrics in current Kiali CR
+- name: Enable metrics in current Kiali CR that is not undergoing reconciliation
   vars:
     current_kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
   set_fact:
     new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'server': {'metrics_enabled': true }}}, recursive=True) }}"
+  until:
+  - new_kiali_cr is defined
+  - new_kiali_cr.status is defined
+  - new_kiali_cr.status.conditions | length > 0
+  - new_kiali_cr.status.conditions[0].ansibleResult is defined
+  retries: "{{ wait_retries }}"
+  delay: 5
 
-- import_tasks: ../common/set-kiali-cr.yml
+
+- import_tasks: ../common/set_kiali_cr.yml
