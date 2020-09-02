@@ -1,15 +1,10 @@
-- name: Set view_only_mode to true in current Kiali CR that is not undergoing reconciliation
+# Wait for the operator to finish any reconciliation currently ongoing
+- import_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+- name: "Set view_only_mode to true in current Kiali CR"
   vars:
-    current_kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+    current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
   set_fact:
     new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'view_only_mode': true }}}, recursive=True) }}"
-  until:
-  - new_kiali_cr is defined
-  - new_kiali_cr.status is defined
-  - new_kiali_cr.status.conditions | length > 0
-  - new_kiali_cr.status.conditions[0].ansibleResult is defined
-  retries: "{{ wait_retries }}"
-  delay: 5
 
-- name: Change Kiali CR with view_only_mode set to true
-  import_tasks: ../common/set_kiali_cr.yml
+- import_tasks: ../common/set_kiali_cr.yml
