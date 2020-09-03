@@ -505,24 +505,6 @@ spec:
 #      in_cluster_url: "http://grafana.istio-system:3000"
 #      url: ""
 #
-# **Health Configuration**
-#  ---
-#  health_config:
-#
-#
-# rate: A list of configurations health that Kiali apply. Each item contains:
-#   namespace: The name of the namespace to apply. Kiali match the value like a regular expression
-#   kind: The type of the resource to apply. Kiali match the value like a regular expression
-#   name: Tha name of the resource to apply. Kiali match the value like a regular expression
-#   tolerance: A list of tolerances for this configuration. Each item contains:
-#     protocol: The protocol to apply the tolerance (grpc | http | ...) Kiali match the value like a regular expression
-#     direction: The direction to apply the tolerance (inbound | outbound | ...).Kiali match the value like a regular expression
-#     code: The status code to apply the tolerance. Kiali match the value like a regular expression
-#     degraded: The value in % to show a degraded status
-#     failure: The value in % to show a failure status,
-#    ---
-#    rate: []
-#
 # **Istio-specific settings:
 # component_status:
 #   enabled: Enable/Disable of istio component status into masthead indicator. It defaults to true.
@@ -627,6 +609,24 @@ spec:
 #      namespace_selector: true
 #      url: ""
 #      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
+#
+##########
+#  ---
+#  health_config:
+#
+#
+# rate: A list of configurations health that Kiali apply. Each item contains:
+#   namespace: The name of the namespace to apply. Kiali match the value like a regular expression
+#   kind: The type of the resource to apply. Kiali match the value like a regular expression
+#   name: Tha name of the resource to apply. Kiali match the value like a regular expression
+#   tolerance: A list of tolerances for this configuration. Each item contains:
+#     protocol: The protocol to apply the tolerance (grpc | http | ...) Kiali match the value like a regular expression
+#     direction: The direction to apply the tolerance (inbound | outbound | ...).Kiali match the value like a regular expression
+#     code: The status code to apply the tolerance. Kiali match the value like a regular expression
+#     degraded: The value in % to show a degraded status
+#     failure: The value in % to show a failure status,
+#    ---
+#    rate: []
 
 ##########
 #  ---
