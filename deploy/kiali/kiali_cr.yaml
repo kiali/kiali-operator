@@ -609,7 +609,6 @@ spec:
 #      namespace_selector: true
 #      url: ""
 #      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
-#
 ##########
 #  ---
 #  health_config:
