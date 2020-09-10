@@ -609,6 +609,22 @@ spec:
 #      namespace_selector: true
 #      url: ""
 #      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
+##########
+#  ---
+#  health_config:
+#
+# rate: A list of health configurations that Kiali uses to determine what is (and is not) healthy nodes. Each item contains:
+#   namespace: The name of the namespace that this configuration applies to. This is a regular expression.
+#   kind: The type of resource that this configuration applies to. This is a regular expression.
+#   name: The name of a resource that this configuration applies to. This is a regular expression.
+#   tolerance: A list of tolerances for this configuration. Each item contains:
+#     protocol: The protocol that applies for this tolerance (e.g. grpc or http). This is a regular expression.
+#     direction: The direction that applies for this tolerance (e.g. inbound or outbound). This is a regular expression.
+#     code: The status code that applies for this tolerance. This is a regular expression.
+#     degraded: Health will be considered degraded when the telemetry reaches this value (specified as a %).
+#     failure: A failure status will be shown when the telemetry reaches this value (specified as a %).
+#    ---
+#    rate: []
 
 ##########
 #  ---
@@ -779,3 +795,4 @@ spec:
 # When empty, Kiali will try to guess this value from HTTP headers.
 #    ---
 #    web_schema: ""
+#
