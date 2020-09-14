@@ -511,10 +511,10 @@ spec:
 #   components: A list of components that Kiali will check its statuses.
 #     app_label: Istio component pod app label.
 #     is_core: Whether the component is core for your deployment.
+# config_map_name: The name of the istio control plane config map. It defaults to `istio`.
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
-# revision: The revision name of the current istio installation. It defaults to an empty string.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
@@ -527,10 +527,10 @@ spec:
 #          is_core: true
 #        - app_label: istio-egressgateway
 #          is_core: false
+#      config_map_name: "istio"
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_injection_annotation: "sidecar.istio.io/inject"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
-#      revision: ""
 #      url_service_version: ""
 #
 #
