@@ -436,7 +436,7 @@
     query_cr: "rules[?apiGroups.contains(@, 'rbac.authorization.k8s.io')].resources.contains(@, 'clusterroles')"
     query_crb: "rules[?apiGroups.contains(@, 'rbac.authorization.k8s.io')].resources.contains(@, 'clusterrolebindings')"
   fail:
-    msg: "The operator cannot support deployment.accessible_namespaces set to '**' because it does not have permissions to create clusterroles or clusterrolebindings"
+    msg: "The operator cannot support deployment.accessible_namespaces set to '**' because either ClusterRole kiali-operator does not exist or it does not have permissions to create clusterroles or clusterrolebindings"
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
   - (role_json | json_query(query_cr) != [true]) or (role_json | json_query(query_crb) != [true])
