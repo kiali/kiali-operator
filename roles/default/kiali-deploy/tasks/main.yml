@@ -430,16 +430,70 @@
     role_kind: "{{ 'ClusterRole' if '**' in kiali_vars.deployment.accessible_namespaces else 'Role' }}"
     role_binding_kind: "{{ 'ClusterRoleBinding' if '**' in kiali_vars.deployment.accessible_namespaces else 'RoleBinding' }}"
 
-- name: Determine if the operator can support accessible_namespaces=**
-  vars:
-    role_json: "{{ lookup('k8s', api_version='rbac.authorization.k8s.io/v1', kind='ClusterRole', resource_name='kiali-operator') | default({}) }}"
-    query_cr: "rules[?apiGroups.contains(@, 'rbac.authorization.k8s.io')].resources.contains(@, 'clusterroles')"
-    query_crb: "rules[?apiGroups.contains(@, 'rbac.authorization.k8s.io')].resources.contains(@, 'clusterrolebindings')"
-  fail:
+# The kubernetes collections task k8s has a bug that forbids us from using the true "can_i" API.
+# For now, we need to create and delete dummy objects to see if we are allowed.
+# See: https://github.com/ansible-collections/community.kubernetes/issues/234
+- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterroles
+  register: can_i_create_clusterroles
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: kiali-dummy
+        labels:
+          app: kiali
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterrolebindings
+  register: can_i_create_clusterrolebindings
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: kiali-dummy
+        labels:
+          app: kiali
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: kiali-dummy
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterroles is defined
+  - can_i_create_clusterroles is success
+- name: Remove dummy cluster role binding
+  ignore_errors: yes
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: kiali-dummy
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterrolebindings is defined
+  - can_i_create_clusterrolebindings is success
+- name: Remove dummy cluster role
+  ignore_errors: yes
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    name: kiali-dummy
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterroles is defined
+  - can_i_create_clusterroles is success
+- fail:
     msg: "The operator cannot support deployment.accessible_namespaces set to '**' because it does not have permissions to create clusterroles or clusterrolebindings"
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
-  - (role_json | json_query(query_cr) != [true]) or (role_json | json_query(query_crb) != [true])
+  - (can_i_create_clusterroles is defined and can_i_create_clusterroles is not success) or (can_i_create_clusterrolebindings is defined and can_i_create_clusterrolebindings is not success)
 
 - name: Find all namespaces (this is limited to what the operator has permission to see)
   set_fact:
