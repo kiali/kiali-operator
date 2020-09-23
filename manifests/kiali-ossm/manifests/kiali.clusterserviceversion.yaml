@@ -481,6 +481,7 @@ spec:
           verbs:
           - get
           - list
+          - patch
           - watch
         - apiGroups: ["extensions", "apps"]
           resources:
@@ -490,6 +491,7 @@ spec:
           verbs:
           - get
           - list
+          - patch
           - watch
         - apiGroups: ["autoscaling"]
           resources:
@@ -505,6 +507,7 @@ spec:
           verbs:
           - get
           - list
+          - patch
           - watch
         - apiGroups:
           - config.istio.io
@@ -546,6 +549,7 @@ spec:
           verbs:
           - get
           - list
+          - patch
           - watch
         - apiGroups: ["project.openshift.io"]
           resources:
@@ -563,4 +567,14 @@ spec:
           verbs:
           - get
           - list
+        - apiGroups: ["iter8.tools"]
+          resources:
+          - experiments
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - watch
         serviceAccountName: kiali-operator
