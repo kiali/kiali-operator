@@ -481,7 +481,7 @@
 
 - name: Set deployment.accessible_namespaces to a list of full namespace names
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'accessible_namespaces': all_accessible_namespaces}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'accessible_namespaces': all_accessible_namespaces | sort }}, recursive=True) }}"
 
 - name: Listing of all accessible namespaces (includes regex matches)
   debug:
