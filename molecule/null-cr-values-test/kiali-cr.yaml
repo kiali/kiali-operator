@@ -19,6 +19,7 @@ spec:
   auth:
     strategy: {{ kiali.auth_strategy }}
     openid: null
+    openshift: null
 
   deployment:
     accessible_namespaces: {{ kiali.accessible_namespaces }}
@@ -34,18 +35,27 @@ spec:
     image_version: {{ kiali.image_version }}
     ingress_enabled: null
     namespace: {{ kiali.install_namespace }}
+    node_selector: null
+    override_ingress_yaml: null
     pod_annotations: null
     priority_class_name: null
     replicas: null
     resources: null
     secret_name: null
+    service_annotations: null
     service_type: null
     tolerations: null
     verbose_mode: null
     version_label: null
     view_only_mode: null
 
+  extensions:
+    threescale: null
+    iter8: null
+
   external_services:
+    custom_dashboards: null
+
     grafana:
       auth:
         ca_file: null
@@ -55,12 +65,14 @@ spec:
         type: null
         use_kiali_token: null
         username: null
+      component_status: null
       dashboards: null
       enabled: null
       in_cluster_url: null
       url: null
 
     istio:
+      component_status: null
       istio_identity_domain: null
       istio_sidecar_annotation: null
       url_service_version: null
@@ -74,7 +86,7 @@ spec:
         type: null
         use_kiali_token: null
         username: null
-      custom_metrics_url: null
+      component_status: null
       url: null
 
     tracing:
@@ -86,16 +98,22 @@ spec:
         type: null
         use_kiali_token: null
         username: null
+      component_status: null
       enabled: null
       in_cluster_url: null
       namespace_selector: null
       url: null
+      whitelist_istio_system: null
+
+  health_config: null
 
   identity:
     cert_file: null
     private_key_file: null
 
   istio_labels: null
+
+  kiali_feature_flags: null
 
   kubernetes_config:
     burst: null
@@ -119,5 +137,6 @@ spec:
     metrics_enabled: null
     metrics_port: null
     port: null
+    web_fqdn: null
     web_root: null
-
+    web_schema: null
