@@ -432,6 +432,7 @@ spec:
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
 # **Custom-dashboards settings:
+# enabled: enable or disable custom dashboards, including the dashboards discovery process. Default: true.
 # namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
 #   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
 # prometheus: please check the section below about Prometheus-specific settings: they are identical. The Prometheus
@@ -439,6 +440,7 @@ spec:
 #   of Prometheus. If omitted, the same Prometheus as for Istio metrics will be reused for custom dashboards.
 #    ---
 #    custom_dashboards:
+#      enabled: true
 #      namespace_label: "kubernetes_namespace"
 #      prometheus:
 #        auth:
