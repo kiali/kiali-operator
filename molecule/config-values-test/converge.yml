@@ -13,6 +13,7 @@
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config.
+  # We do this TWO times to check changing different settings.
 
   - set_fact:
       current_kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
@@ -21,7 +22,7 @@
     debug:
       msg: "{{ current_kiali_cr }}"
 
-  # Some sanity checks - check some default values
+  # First perform some sanity checks making sure some default values are as expected
 
   - name: Make sure the expected dashboards are installed - by default, all of them are deployed
     vars:
@@ -31,8 +32,9 @@
       - custom_dashboards | length == 20
       fail_msg: "Must have 20 custom_dashboards: {{ custom_dashboards }}"
 
-  # Make sure version label is truncated to the k8s maximum 63 chars and must start/end with alphanum char
-  - name: Set new deployment.version_label in current Kiali CR
+  # NEW CONFIG TEST #1
+
+  - name: Set new deployment.version_label to something longer than k8s maximum of 63 chars
     vars:
       new_version_label: "aaaaaaaaaabbbbbbbbbbccccccccccddddddddddeeeeeeeeee12345678901234"
     set_fact:
@@ -77,3 +79,35 @@
       - custom_dashboards[0].metadata.name == 'kiali'
       fail_msg: "Must have 1 custom_dashboard: {{ custom_dashboards }}"
 
+  # NEW CONFIG TEST #2
+
+  - set_fact:
+      current_kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: Disable custom dashboards entirely
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'custom_dashboards': {'enabled': false }}}}, recursive=True) }}"
+
+  - name: "The new Kiali CR (2) to be tested"
+    debug:
+      msg: "{{ current_kiali_cr }}"
+
+  # Deploy the new CR and wait for the CR change to take effect
+
+  - import_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ current_kiali_cr }}"
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  # Assert the new config
+
+  - name: Make sure only the expected dashboards are installed
+    vars:
+      custom_dashboards: "{{ query('k8s', namespace=kiali.install_namespace, kind='MonitoringDashboard', api_version='monitoring.kiali.io/v1alpha1') }}"
+    assert:
+      that:
+      - custom_dashboards | length == 0
+      fail_msg: "Must have 0 custom_dashboards (they were disabled): {{ custom_dashboards }}"
