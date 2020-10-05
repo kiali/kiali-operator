@@ -1,0 +1,145 @@
+- name: Create simple-mesh namespace with Istio auto-injection enabled
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ simple_mesh_namespace }}"
+        labels:
+          istio-injection: enabled
+
+- name: Create NAD so CNI works, only if on OpenShift
+  k8s:
+    state: present
+    definition:
+      apiVersion: k8s.cni.cncf.io/v1
+      kind: NetworkAttachmentDefinition
+      metadata:
+        namespace: "{{ simple_mesh_namespace }}"
+        name: istio-cni
+  when:
+  - is_openshift == True
+
+- name: Create simple-server deployment
+  k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: simple-server
+        namespace: "{{ simple_mesh_namespace }}"
+        labels:
+          app: simple-server
+          version: v99
+      spec:
+        selector:
+          matchLabels:
+            app: simple-server
+        template:
+          metadata:
+            labels:
+              app: simple-server
+              version: v99
+          spec:
+            containers:
+            - name: simple-server
+              image: docker.io/alpine:latest
+              command:
+              - "/bin/sh"
+              args:
+              - "-c"
+              - 'while true; do printf "HTTP/1.1 200 OK\n\n" | nc -l -p 8000 -s 0.0.0.0 -n -v ; done'
+              ports:
+              - containerPort: 8000
+
+- name: Create simple-server service
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: simple-server-svc
+        namespace: "{{ simple_mesh_namespace }}"
+        labels:
+          app: simple-server
+          version: v99
+      spec:
+        ports:
+        - name: http
+          protocol: TCP
+          port: 8000
+        selector:
+          app: simple-server
+          version: v99
+
+- name: Create simple-client deployment
+  k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: simple-client
+        namespace: "{{ simple_mesh_namespace }}"
+        labels:
+          app: simple-client
+          version: v99
+      spec:
+        selector:
+          matchLabels:
+            app: simple-client
+        template:
+          metadata:
+            labels:
+              app: simple-client
+              version: v99
+          spec:
+            containers:
+            - name: simple-client
+              image: docker.io/alpine:latest
+              command:
+              - "/bin/sh"
+              args:
+              - "-c"
+              - "watch -n 1 wget -q -O /dev/null http://simple-server-svc:8000"
+
+- name: Asserting that the Simple Server Pod exists and there is only one
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ simple_mesh_namespace }}"
+    label_selectors:
+    - app = simple-server
+  register: simple_server_pod
+  until:
+  - simple_server_pod is success
+  - simple_server_pod.resources | length == 1
+  - simple_server_pod.resources[0].status is defined
+  - simple_server_pod.resources[0].status.phase is defined
+  - simple_server_pod.resources[0].status.phase == "Running"
+  retries: "{{ wait_retries }}"
+  delay: 5
+
+- name: Asserting that the Simple Client Pod exists and there is only one
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ simple_mesh_namespace }}"
+    label_selectors:
+    - app = simple-client
+  register: simple_client_pod
+  until:
+  - simple_client_pod is success
+  - simple_client_pod.resources | length == 1
+  - simple_client_pod.resources[0].status is defined
+  - simple_client_pod.resources[0].status.phase is defined
+  - simple_client_pod.resources[0].status.phase == "Running"
+  retries: "{{ wait_retries }}"
+  delay: 5
+
+- name: Pause for a few seconds so we generate telemetry data
+  pause:
+    seconds: 45

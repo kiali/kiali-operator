@@ -1,0 +1,25 @@
+- name: "/status"
+  uri:
+    url: "{{ kiali_base_url }}/api/status"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_status_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /status"
+  debug:
+    msg: "{{ api_status_json }}"
+
+- name: Assert that we were able to get the status info
+  assert:
+    that:
+    - api_status_json is defined
+    - api_status_json.externalServices is defined
+    - api_status_json.status is defined
+    - api_status_json.status['Kiali console version'] is defined
+    - api_status_json.status['Kiali container version'] is defined
+    - api_status_json.status['Kiali core commit hash'] is defined
+    - api_status_json.status['Kiali core version'] is defined
+    - api_status_json.status['Kiali state'] == 'running'

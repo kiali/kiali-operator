@@ -1,0 +1,21 @@
+- name: "/namespaces/{namespace}/tls"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/tls"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_namespaces_tls_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/tls"
+  debug:
+    msg: "{{ api_namespaces_tls_json }}"
+
+- name: Assert that we were able to get the tls info
+  assert:
+    that:
+    - api_namespaces_tls_json is defined
+    - api_namespaces_tls_json.status is defined

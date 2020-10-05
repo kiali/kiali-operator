@@ -1,0 +1,10 @@
+- name: Cleanup
+  hosts: localhost
+  connection: local
+  tasks:
+
+  # Cleanup should only ever execute when a molecule test fails
+  # api-test has its own cleanup because we need to ensure the simple-mesh namespace is deleted
+
+  - import_tasks: ../default/dump-logs.yml
+  - import_tasks: delete-simple-mesh.yml

@@ -1,0 +1,25 @@
+- name: "/namespaces/{namespace}/services"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/services"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_namespaces_services_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/services"
+  debug:
+    msg: "{{ api_namespaces_services_json }}"
+
+- name: Assert that we were able to get the services info
+  assert:
+    that:
+    - api_namespaces_services_json is defined
+    - api_namespaces_services_json.namespace.name == simple_mesh_namespace
+    - api_namespaces_services_json.services | length == 1
+    - api_namespaces_services_json | json_query('services[?name==`simple-server-svc`].istioSidecar') | join == "True"
+    - api_namespaces_services_json | json_query('services[?name==`simple-server-svc`].labels.app') | join == "simple-server"
+    - api_namespaces_services_json | json_query('services[?name==`simple-server-svc`].labels.version') | join == "v99"

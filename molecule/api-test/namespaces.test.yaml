@@ -1,0 +1,18 @@
+- name: "/namespaces"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_namespaces_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces"
+  debug:
+    msg: "{{ api_namespaces_json }}"
+
+- name: Assert that we were able to get the list of namespaces
+  assert:
+    that:
+    - api_namespaces_json | length > 0
