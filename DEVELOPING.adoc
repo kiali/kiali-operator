@@ -79,11 +79,15 @@ If new Kiali Server resources are added or removed, you must make appropriate ch
 
 Below are checklists that developers should consult when making various kinds of changes.
 
+#### Maintain Backward Compatibility
+
+NOTE: Remember to maintain backward compatiblity for all supported versions. Do **not** make any changes if those changes would break the older supported versions. For example, if you are removing permissions from the operator roles/rolebindings within the golden copies, and if those permissions are required by the older supported versions such as link:./roles/v1.24[`v1.24`], then you must not make those changes. Only when those older versions are no longer supported can you make those changes. In this case, create a github issue as a reminder to make the changes at the appropriate time in the future when those versions are no longer supported.
+
 ### Are You Altering a Kiali Operator Resource?
 
-- [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata]
-- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata]
-- [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata]
+- [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates[Operator Helm Chart templates]
 
 ### Are You Altering a Kiali Server Resource?
@@ -95,9 +99,9 @@ Below are checklists that developers should consult when making various kinds of
 
 ### Are You Altering a Kiali Server Role Permission?
 
-- [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata]
-- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata]
-- [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata]
+- [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes/role.yaml[Operator Kubernetes role.yaml]
 - [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes/role-viewer.yaml[Operator Kubernetes role-viewer.yaml]
 - [ ] Update the link:./roles/default/kiali-deploy/templates/openshift/role.yaml[Operator OpenShift role.yaml]
@@ -115,3 +119,8 @@ Below are checklists that developers should consult when making various kinds of
 - [ ] Set the default value in the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/values.yaml[Server Helm Chart values.yaml]
 - [ ] Ensure each group of settings are alphabetically sorted in all the files where the new setting was added.
 - [ ] If appropriate, add some tests to the link:./molecule/config-values-test/converge.yml[Molecule config-values-test]
+
+### Do You Need To Backport Changes To Support Older Versions?
+
+- [ ] Changes made to the link:./roles/default[`default`] Ansible role should be duplicated to the versioned Ansible role (e.g. link:./roles/v1.24[`v1.24`])
+- [ ] Cherry-pick changes you made in the link:./roles/default[`default`] Ansible role and versioned Ansible roles (e.g. link:./roles/v1.24[`v1.24`]) to the appropriate git branch.
