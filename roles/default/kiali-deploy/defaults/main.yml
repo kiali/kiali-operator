@@ -35,6 +35,7 @@ kiali_defaults:
       authentication_timeout: 300
       authorization_endpoint: ""
       client_id: ""
+      disable_rbac: false
       insecure_skip_verify_tls: false
       issuer_uri: ""
       scopes: ["openid", "profile", "email"]

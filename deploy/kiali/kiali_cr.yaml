@@ -139,43 +139,8 @@ spec:
 #    ---
 #    strategy: ""
 #
-# When "openid" strategy is chosen for authentication, you will need to fill some
-# required configurations in the following openid section. The "openid" authentication strategy
-# assumes that your Kubernetes cluster is properly configured to accept OpenID connect
-# tokens and delegates token validation to the cluster's API Server. Thus, "openid" strategy
-# won't work without the proper configuration on your Kubernetes cluster
-# (see https://kubernetes.io/docs/reference/access-authn-authz/authentication/#configuring-the-api-server).
-# In case you are using a managed Kubernetes and your provider does not support configuring OpenID
-# integration, a workaround is to use API proxies (like kube-oidc-proxy).
-#
-# If you are using an API proxy for the cluster API, you will need to specify the URI of the proxy
-# in the `api_proxy` attribute, and provide the certificate authority file in the
-# `api_proxy_ca_data` attribute as a base64 encoded string.
-#
-# The "openid" strategy should NOT be used when installing Kiali in OpenShift. In this case, you
-# still should use "openshift" strategy and, in turn, setup OpenShift to use your IdP. For
-# OpenShift 4.4, you can find related docs here: https://docs.openshift.com/container-platform/4.4/authentication/identity_providers/configuring-oidc-identity-provider.html
-#
-# Kiali requires that your IdP allows the Implicit Flow grant. The 'issuer_uri' and 'client_id' attributes
-# are required values and must match your OpenId-Connect Kubernetes configuration. The 'username_claim'
-# is optional, but must match the value configured in your cluster (default value is "sub").
-#
-# You can, optionally, specify an 'authorization_endpoint' which is the URI where users will
-# be redirected to login and authorize access to Kiali. If you don't specify it, Kiali will try
-# to discover it using the 'issuer_uri'.
-#
-# By default, Kiali will ask for "openid" (forced), "profile" and "email" scopes when asking
-# for authentication to the OpenID provider. These are standard OpenID scopes. If this doesn't
-# suit your needs, you can change the 'scopes' setting as long as your cluster will accept
-# the issued token.
-#
-# When users are logging in, Kiali will wait at most 5 minutes after the "Login" button is pressed
-# in Kiali and redirected to the OpenID provider. If users don't login within 5 minutes, Kiali will
-# reject login even if the user authenticates successfully. You can change this time by adjusting
-# the 'authentication_timeout' option.
-#
-# If your OpenID provider is using a certificate signed by an unknown CA, adjust the 'insecure_skip_verify_tls'
-# to disable the certificate verification. Remember this should be for testing purposes only.
+# To learn how to configure the OpenId authentication strategy, read the documentation
+# at the website on https://kiali.io/documentation/latest/configuration/authentication/openid/
 #
 #    ---
 #    openid:
@@ -184,6 +149,7 @@ spec:
 #      authentication_timeout: 300
 #      authorization_endpoint: ""
 #      client_id: ""
+#      disable_rbac: false
 #      insecure_skip_verify_tls: false
 #      issuer_uri: ""
 #      scopes: ["openid", "profile", "email"]
