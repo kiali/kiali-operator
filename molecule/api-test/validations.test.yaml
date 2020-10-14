@@ -1,0 +1,23 @@
+- name: "/namespaces/{namespace}/validations"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/validations"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_namespaces_validations_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/validations"
+  debug:
+    msg: "{{ api_namespaces_validations_json }}"
+
+- name: Assert that we were able to get the validations info
+  assert:
+    that:
+    - api_namespaces_validations_json is defined
+    - api_namespaces_validations_json.errors is defined
+    - api_namespaces_validations_json.warnings is defined
+    - api_namespaces_validations_json.objectCount is defined

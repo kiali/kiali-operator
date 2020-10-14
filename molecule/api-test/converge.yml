@@ -1,0 +1,35 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  - name: Make sure the test set the strategy to anonymous so we don't need to log in
+    assert:
+      that:
+      - kiali_configmap.auth.strategy == "anonymous"
+
+  - import_tasks: create-simple-mesh.yml
+
+  - name: Find all API tests
+    vars:
+      # if you want to test a particular one, just change test_file_pattern to what you want to test
+      test_file_pattern: "*.test.yaml"
+    find:
+      paths: "{{ test_dir_path }}"
+      patterns: "{{ test_file_pattern }}"
+    register: all_api_tests_raw
+
+  - name: Get a sorted list of all API test files
+    set_fact:
+      all_api_tests: "{{ all_api_tests_raw.files | sort(attribute='path') | map(attribute='path') | list }}"
+
+  - name: Execute each test
+    include_tasks: "{{ item }}"
+    loop: "{{ all_api_tests }}"
+
+  - import_tasks: delete-simple-mesh.yml
