@@ -552,6 +552,8 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", Kiali Service Account token will be used for the API calls to Prometheus,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Prometheus, for basic authentication.
+# cache_duration: Prometheus caching duration expressed in seconds
+# cache_enabled: Enable/disable Prometheus caching used for Health services
 # component_status: Prometheus info for the Istio Component Status masthead indicator. Only if it is enabled.
 #   app_label: The value of the Prometheus pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to prometheus.
 #   is_core: Whether the component is core for your deployment. It defaults to true.
@@ -568,6 +570,8 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
+#      cache_duration: 10
+#      cache_enabled: true
 #      component_status:
 #        app_label: "prometheus"
 #        is_core: true
