@@ -51,6 +51,8 @@
   - name: Run the version-specific deploy role
     include_role:
       name: "{{ version }}/kiali-deploy"
+    when:
+    - skip_reconciliation is not defined or skip_reconciliation == False
 
   - name: Playbook end time
     set_fact:

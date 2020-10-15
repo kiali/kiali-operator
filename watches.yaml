@@ -4,8 +4,8 @@
   kind: Kiali
   playbook: /opt/ansible/playbooks/kiali-deploy.yml
   reconcilePeriod: 0
-  watchDependentResources: False
-  watchClusterScopedResources: False
+  watchDependentResources: True
+  watchClusterScopedResources: True
   finalizer:
     name: finalizer.kiali
     playbook: /opt/ansible/playbooks/kiali-remove.yml
