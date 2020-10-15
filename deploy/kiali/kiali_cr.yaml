@@ -554,6 +554,7 @@ spec:
 #   username: Username to be used when making requests to Prometheus, for basic authentication.
 # cache_duration: Prometheus caching duration expressed in seconds
 # cache_enabled: Enable/disable Prometheus caching used for Health services
+# cache_expiration: Prometheus caching expiration expressed in seconds
 # component_status: Prometheus info for the Istio Component Status masthead indicator. Only if it is enabled.
 #   app_label: The value of the Prometheus pod(s)'s app label. The name of the app label is defined in the setting 'istio_labels.app_label_name'. It defaults to prometheus.
 #   is_core: Whether the component is core for your deployment. It defaults to true.
@@ -572,6 +573,7 @@ spec:
 #        username: ""
 #      cache_duration: 10
 #      cache_enabled: true
+#      cache_expiration: 300
 #      component_status:
 #        app_label: "prometheus"
 #        is_core: true
