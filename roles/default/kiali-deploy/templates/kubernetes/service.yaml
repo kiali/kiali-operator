@@ -20,7 +20,7 @@ spec:
   - name: {{ 'http' if kiali_vars.identity.cert_file == "" else 'tcp' }}
     protocol: TCP
     port: {{ kiali_vars.server.port }}
-{% if kiali_vars.server.metrics_enabled == True %}
+{% if kiali_vars.server.metrics_enabled|bool == True %}
   - name: http-metrics
     protocol: TCP
     port: {{ kiali_vars.server.metrics_port }}
