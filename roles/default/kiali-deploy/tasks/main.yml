@@ -370,7 +370,7 @@
     msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress_enabled is false. Aborting."
   when:
   - kiali_vars.auth.strategy == "openshift"
-  - kiali_vars.deployment.ingress_enabled == False
+  - kiali_vars.deployment.ingress_enabled|bool == False
 
 - name: Confirm the cluster can access github.com when it needs to determine the last release of Kiali
   uri:
