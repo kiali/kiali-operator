@@ -27,7 +27,7 @@
     loop_var: process_resource_item
   when:
   - is_openshift == True
-  - kiali_vars.deployment.ingress_enabled == True
+  - kiali_vars.deployment.ingress_enabled|bool == True
 
 - name: Delete Route on OpenShift if disabled
   k8s:
@@ -38,7 +38,7 @@
     name: "kiali"
   when:
   - is_openshift == True
-  - kiali_vars.deployment.ingress_enabled == False
+  - kiali_vars.deployment.ingress_enabled|bool == False
 
 - name: Create additional Kiali roles on OpenShift
   include_tasks: process-additional-roles.yml
