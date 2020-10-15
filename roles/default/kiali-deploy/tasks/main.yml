@@ -651,7 +651,7 @@
     loop_var: role_namespace
   when:
   - current_view_only_mode is defined
-  - current_view_only_mode != kiali_vars.deployment.view_only_mode
+  - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
 
@@ -659,7 +659,7 @@
   include_tasks: remove-clusterroles.yml
   when:
   - current_view_only_mode is defined
-  - current_view_only_mode != kiali_vars.deployment.view_only_mode
+  - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
   - current_accessible_namespaces is defined
   - '"**" in current_accessible_namespaces'
 
