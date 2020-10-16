@@ -370,7 +370,7 @@
     msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress_enabled is false. Aborting."
   when:
   - kiali_vars.auth.strategy == "openshift"
-  - kiali_vars.deployment.ingress_enabled == False
+  - kiali_vars.deployment.ingress_enabled|bool == False
 
 - name: Confirm the cluster can access github.com when it needs to determine the last release of Kiali
   uri:
@@ -640,7 +640,7 @@
     loop_var: role_namespace
   when:
   - current_view_only_mode is defined
-  - current_view_only_mode != kiali_vars.deployment.view_only_mode
+  - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
 
@@ -648,7 +648,7 @@
   include_tasks: remove-clusterroles.yml
   when:
   - current_view_only_mode is defined
-  - current_view_only_mode != kiali_vars.deployment.view_only_mode
+  - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
   - current_accessible_namespaces is defined
   - '"**" in current_accessible_namespaces'
 
