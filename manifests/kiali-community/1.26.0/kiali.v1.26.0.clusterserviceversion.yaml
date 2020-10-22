@@ -190,7 +190,7 @@ spec:
       - kind: Route
         version: route.openshift.io/v1
       - kind: Ingress
-        version: extensions/v1beta1
+        version: networking.k8s.io/v1beta1
       specDescriptors:
       - displayName: Authentication Strategy
         description: "Determines how a user is to log into Kiali. Default: openshift (when deployed in OpenShift); token (when deployed in other Kubernetes clusters)"
@@ -392,7 +392,7 @@ spec:
           - get
           - list
           - watch
-        - apiGroups: ["extensions"]
+        - apiGroups: ["networking.k8s.io"]
           resources:
           - ingresses
           verbs:
