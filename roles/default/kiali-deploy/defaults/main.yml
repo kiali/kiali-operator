@@ -149,6 +149,9 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
+      cache_duration: 7
+      cache_enabled: true
+      cache_expiration: 300
       component_status:
         app_label: "prometheus"
         is_core: true
