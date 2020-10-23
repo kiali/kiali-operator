@@ -185,7 +185,7 @@ spec:
       - kind: Route
         version: route.openshift.io/v1
       - kind: Ingress
-        version: extensions/v1beta1
+        version: networking.k8s.io/v1beta1
       - kind: ConsoleLink
         version: consolelinks.console.openshift.io/v1
       specDescriptors:
@@ -397,7 +397,7 @@ spec:
           - get
           - list
           - watch
-        - apiGroups: ["extensions"]
+        - apiGroups: ["networking.k8s.io"]
           resources:
           - ingresses
           verbs:

@@ -128,7 +128,7 @@
   - k8s_item.metadata is defined
   - k8s_item.metadata.name is defined
   with_items:
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Ingress', resource_name='kiali', api_version='extensions/v1beta1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Ingress', resource_name='kiali', api_version='networking.k8s.io/v1beta1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Deployment', resource_name='kiali', api_version='apps/v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ReplicaSet', resource_name='kiali', api_version='v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Pod', resource_name='kiali', api_version='v1') }}"
