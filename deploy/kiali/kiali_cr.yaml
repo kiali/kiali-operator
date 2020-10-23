@@ -22,16 +22,16 @@ spec:
 ##########
 #  ---
 #  additional_display_details:
-#    - title: "API Documentation"
-#      annotation: "kiali.io/api-spec"
-#      icon_annotation: "kiali.io/api-type"
+#  - title: "API Documentation"
+#    annotation: "kiali.io/api-spec"
+#    icon_annotation: "kiali.io/api-type"
 #
-# A list of additional details that Kiali will look for in annotations and display, for every workloads and services, in their respective details pages.
-# It can typically be used to inject some CI meta-data or documentation links into Kiali views.
+# A list of additional details that Kiali will look for in annotations and display, for every workload and service, in their respective details pages.
+# It can typically be used to inject some CI metadata or documentation links into Kiali views.
 # Each item in the list is an object with "annotation", "title" and "icon_annotation" fields to indicate which annotation Kiali needs to look for, and how it should be displayed.
 # "icon_annotation" is optional and would display an icon next to the text.
-# At the moment, the value of the icon annotation can only be one of "rest", "grpc" or "graphql", or be ignored.
-# By default, this settings recognizes API Documention links via annotation "kiali.io/api-spec" and icon-annotation "kiali.io/api-type".
+# At the moment, the value of the icon annotation can only be one of "rest", "grpc" or "graphql"; otherwise, it is ignored.
+# By default, these settings recognize API Documentation links via annotation "kiali.io/api-spec" and icon-annotation "kiali.io/api-type".
 # For example, it would make Kiali recognize these annotations in a service or a workload definition (Deployment, StatefulSet, etc.) to display the appropriate link and text:
 #    annotations:
 #      kiali.io/api-spec: http://link/to/my/doc
@@ -65,9 +65,11 @@ spec:
 #  istio_namespace: ""
 
 ##########
-# The version of Kiali to install. This is a named version or product name.
-# If not specified, a default version of Kiali will be installed which will be
-# the same version as that of the Kiali operator.
+# The version of the Ansible playbook to execute in order to install that version of Kiali.
+# If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
+# The currently allowed values for this setting are: "default", "v1.0", "v1.12", "v1.24"
+# Refer to this file to see where these values are defined in the master branch:
+# https://github.com/kiali/kiali-operator/tree/master/playbooks/default-supported-images.yml
 #
 # This version setting affects the defaults of the deployment.image_name and
 # deployment.image_version settings. See the comments for those settings
@@ -77,12 +79,6 @@ spec:
 # deployment.image_version you are responsible for ensuring those settings
 # are compatible with this setting (i.e. the Kiali image must be compatible
 # with the rest of the configuration and resources the operator will install).
-#
-# The currently allowed values for this setting are:
-#   "default", "v1.0", "v1.12"
-#
-# Refer to this file to see where these values are defined in the master branch:
-# https://github.com/kiali/kiali-operator/tree/master/playbooks/default-supported-images.yml
 #
 # See the Kiali documentation to determine which of these versions support
 # the version of Istio you are installing Kiali with.
@@ -96,7 +92,7 @@ spec:
 #
 # Allows for controlling what namespaces/projects are returned by Kiali.
 #
-# 'exclude' is optional takes an list of namespace/projects to be excluded from the list
+# 'exclude' is optional and takes a list of namespaces to be excluded from the list
 # of namespaces provided by the API and UI. Regex is supported. This does not affect
 # explicit namespace access.
 #
@@ -263,6 +259,7 @@ spec:
 # Determines which version of Kiali to install.
 # Choose "lastrelease" to use the last Kiali release.
 # Choose "latest" to use the latest image (which may or may not be a released version of Kiali).
+# Choose "operator_version" to use the image whose version is the same as the operator version.
 # Otherwise, you can set this to any valid Kiali version (such as "v1.0").
 # Note that if this is set to "latest" then the image_pull_policy will be "Always".
 # If you set this to a specific version (i.e. you do not leave it as the default empty string),
@@ -386,7 +383,6 @@ spec:
 # Flag to indicate if iter8 extension is enabled in Kiali
 #      ---
 #      enabled: false
-#
 
 ##########
 #  ---
@@ -655,7 +651,6 @@ spec:
 # Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
 #    ---
 #    istio_injection_action: true
-#
 
 ##########
 #  ---
@@ -712,7 +707,6 @@ spec:
 # The QPS value of the Kubernetes client.
 #    ---
 #    qps: 175
-#
 
 ##########
 #  ---
@@ -786,4 +780,3 @@ spec:
 # When empty, Kiali will try to guess this value from HTTP headers.
 #    ---
 #    web_schema: ""
-#
