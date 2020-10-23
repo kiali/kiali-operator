@@ -74,12 +74,6 @@ kiali_defaults:
     view_only_mode: false
 
   extensions:
-    threescale:
-      adapter_name: "threescale"
-      adapter_port: "3333"
-      adapter_service: "threescale-istio-adapter"
-      enabled: false
-      template_name: "threescale-authorization"
     iter_8:
       enabled: false
 

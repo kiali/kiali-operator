@@ -47,10 +47,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - config.istio.io
   - networking.istio.io
-  - authentication.istio.io
-  - rbac.istio.io
   - security.istio.io
   resources: ["*"]
   verbs:
