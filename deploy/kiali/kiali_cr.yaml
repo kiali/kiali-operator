@@ -31,7 +31,7 @@ spec:
 # Each item in the list is an object with "annotation", "title" and "icon_annotation" fields to indicate which annotation Kiali needs to look for, and how it should be displayed.
 # "icon_annotation" is optional and would display an icon next to the text.
 # At the moment, the value of the icon annotation can only be one of "rest", "grpc" or "graphql"; otherwise, it is ignored.
-# By default, these settings recognize API Documention links via annotation "kiali.io/api-spec" and icon-annotation "kiali.io/api-type".
+# By default, these settings recognize API Documentation links via annotation "kiali.io/api-spec" and icon-annotation "kiali.io/api-type".
 # For example, it would make Kiali recognize these annotations in a service or a workload definition (Deployment, StatefulSet, etc.) to display the appropriate link and text:
 #    annotations:
 #      kiali.io/api-spec: http://link/to/my/doc
