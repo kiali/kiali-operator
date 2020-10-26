@@ -50,7 +50,6 @@ spec:
     view_only_mode: null
 
   extensions:
-    threescale: null
     iter8: null
 
   external_services:

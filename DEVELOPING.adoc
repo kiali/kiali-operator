@@ -78,6 +78,7 @@ If new Kiali Server resources are added or removed, you must make appropriate ch
 ## Developer Checklists When Changing Resources or Configuration
 
 Below are checklists that developers should consult when making various kinds of changes.
+When making any kind of changes, you should also make the necessary changes to the link:./molecule/[molecule tests] to ensure they still pass.
 
 #### Maintain Backward Compatibility
 
