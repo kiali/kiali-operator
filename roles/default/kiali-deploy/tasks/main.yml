@@ -147,6 +147,15 @@
   - kiali_vars.deployment.pod_annotations is defined
   - kiali_vars.deployment.pod_annotations | length > 0
 
+- name: Replace snake_case with camelCase in deployment.pod_labels
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['deployment'].pop('pod_labels') %}
+      {{ kiali_vars | combine({'deployment': {'pod_labels': current_cr.spec.deployment.pod_labels }}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.pod_labels is defined
+  - kiali_vars.deployment.pod_labels | length > 0
+
 - name: Replace snake_case with camelCase in deployment.service_annotations
   set_fact:
     kiali_vars: |
