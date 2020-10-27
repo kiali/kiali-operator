@@ -78,11 +78,14 @@ If new Kiali Server resources are added or removed, you must make appropriate ch
 ## Developer Checklists When Changing Resources or Configuration
 
 Below are checklists that developers should consult when making various kinds of changes.
-When making any kind of changes, you should also make the necessary changes to the link:./molecule/[molecule tests] to ensure they still pass.
 
 #### Maintain Backward Compatibility
 
 NOTE: Remember to maintain backward compatiblity for all supported versions. Do **not** make any changes if those changes would break the older supported versions. For example, if you are removing permissions from the operator roles/rolebindings within the golden copies, and if those permissions are required by the older supported versions such as link:./roles/v1.24[`v1.24`], then you must not make those changes. Only when those older versions are no longer supported can you make those changes. In this case, create a github issue as a reminder to make the changes at the appropriate time in the future when those versions are no longer supported.
+
+### Run Molecule Tests
+
+When making any kind of change, you should also make the necessary changes to the link:./molecule/[molecule tests] to ensure they still pass. You can easily run the molecule tests on your local box via Minikube by running the link:https://github.com/kiali/kiali/blob/master/hack/ci-minikube-molecule-tests.sh[ci-minikube-molecule-tests.sh] hack script.
 
 ### Are You Altering a Kiali Operator Resource?
 

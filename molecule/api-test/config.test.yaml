@@ -28,7 +28,6 @@
     - api_config_json.istioLabels.versionLabelName is defined
     - api_config_json.istioNamespace == istio.control_plane_namespace
     - api_config_json.istioStatusEnabled is defined
-    - api_config_json.istioTelemetryV2 is defined
     - api_config_json.kialiFeatureFlags is defined
     - api_config_json.kialiFeatureFlags.istioInjectionAction is defined
     - api_config_json.prometheus is defined
