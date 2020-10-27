@@ -85,7 +85,13 @@ NOTE: Remember to maintain backward compatiblity for all supported versions. Do 
 
 ### Run Molecule Tests
 
-When making any kind of change, you should also make the necessary changes to the link:./molecule/[molecule tests] to ensure they still pass. You can easily run the molecule tests on your local box via Minikube by running the link:https://github.com/kiali/kiali/blob/master/hack/ci-minikube-molecule-tests.sh[ci-minikube-molecule-tests.sh] hack script.
+When making any kind of change, you should also make the necessary changes to the link:./molecule/[Molecule tests] to ensure they still pass. You can easily run the Molecule tests on your local box using Minikube by running the link:https://github.com/kiali/kiali/blob/master/hack/ci-minikube-molecule-tests.sh[ci-minikube-molecule-tests.sh] hack script. If you want to run just a few or one Molecule test rather than the whole suite, you can run something like this (omit `CLUSTER_TYPE` if running the test on OpenShift; you can omit `MINIKUBE_PROFILE` if your profile is the default of `minikube`).
+
+```
+CLUSTER_TYPE=minikube MINIKUBE_PROFILE=ci MOLECULE_USE_DEV_IMAGES=true MOLECULE_SCENARIO="api-test" make clean build test cluster-push molecule-test
+```
+
+where `api-test` is the Molecule test(s) you want to run. The value of link:https://github.com/kiali/kiali/blob/v1.25.0/make/Makefile.molecule.mk#L5-L8[`MOLECULE_SCENARIO`] is a space-separated list of Molecule tests - the full list of Molecule tests are link:./molecule[found here]. There are other environment variables you can set (such as `MOLECULE_DEBUG` for turning on debug messages) - see the link:https://github.com/kiali/kiali/blob/master/make/Makefile.molecule.mk[make/Makefile.molecule.mk] file in the kiali/kiali repo.
 
 ### Are You Altering a Kiali Operator Resource?
 
