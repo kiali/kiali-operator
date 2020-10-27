@@ -6,7 +6,7 @@
   tasks:
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
-  # set affinity and tolerations and resources and pod_annotations and service_annotations
+  # set affinity and tolerations and resources and pod_annotations and service_annotations and pod_labels
   - import_tasks: set-affinity-tolerations-resources.yml
     vars:
       new_affinity:
@@ -61,6 +61,8 @@
         some.test.io/keepCamelCaseFOO: camelCaseValueFOO
       new_service_annotations:
         another.test.io/keepCamelCaseBAR: camelCaseValueBAR
+      new_pod_labels:
+        some.test.label/labelKeepCamelCaseFOO: labelCamelCaseValueFOO
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
@@ -103,6 +105,12 @@
       - "{{ kiali_service.resources[0].metadata.annotations | length > 0 }}"
       - "{{ kiali_service.resources[0].metadata.annotations['another.test.io/keepCamelCaseBAR'] is defined and kiali_service.resources[0].metadata.annotations['another.test.io/keepCamelCaseBAR'] == 'camelCaseValueBAR' }}"
       fail_msg: "Service annotations was not applied successfully: {{ kiali_service.resources[0].metadata.annotations }}"
+  - name: Assert that pod_labels was applied
+    assert:
+      that:
+      - "{{ kiali_deployment.resources[0].spec.template.metadata.labels | length > 0 }}"
+      - "{{ kiali_deployment.resources[0].spec.template.metadata.labels['some.test.label/labelKeepCamelCaseFOO'] is defined and kiali_deployment.resources[0].spec.template.metadata.labels['some.test.label/labelKeepCamelCaseFOO'] == 'labelCamelCaseValueFOO' }}"
+      fail_msg: "Pod labels was not applied successfully: {{ kiali_deployment.resources[0].spec.template.metadata.labels }}"
   - name: Assert that camelCase is retained in additional service yaml
     assert:
       that:
@@ -121,6 +129,7 @@
       new_resources: null
       new_pod_annotations: null
       new_service_annotations: null
+      new_pod_labels: null
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml

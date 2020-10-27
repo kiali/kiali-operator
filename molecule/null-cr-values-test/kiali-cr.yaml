@@ -38,6 +38,7 @@ spec:
     node_selector: null
     override_ingress_yaml: null
     pod_annotations: null
+    pod_labels: null
     priority_class_name: null
     replicas: null
     resources: null

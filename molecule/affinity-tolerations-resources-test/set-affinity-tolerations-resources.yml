@@ -1,10 +1,10 @@
 # Wait for the operator to finish any reconciliation currently ongoing
 - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
-- name: Set affinity and tolerations and resources and pod_annotations and service_annotations in current Kiali CR
+- name: Set affinity and tolerations and resources and pod_annotations and service_annotations and pod_labels in current Kiali CR
   vars:
     current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
   set_fact:
-    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'affinity': new_affinity, 'tolerations': new_tolerations, 'resources': new_resources, 'pod_annotations': new_pod_annotations, 'service_annotations': new_service_annotations }}}, recursive=True) }}"
+    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'affinity': new_affinity, 'tolerations': new_tolerations, 'resources': new_resources, 'pod_annotations': new_pod_annotations, 'service_annotations': new_service_annotations, 'pod_labels': new_pod_labels }}}, recursive=True) }}"
 
 - import_tasks: ../common/set_kiali_cr.yml

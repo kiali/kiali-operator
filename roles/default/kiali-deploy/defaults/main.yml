@@ -62,6 +62,7 @@ kiali_defaults:
     node_selector: {}
     #override_ingress_yaml:
     pod_annotations: {}
+    pod_labels: {}
     priority_class_name: ""
     replicas: 1
     resources: {}
