@@ -23,7 +23,7 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 DORP ?= docker
 
 # The version of the SDK this Makefile will download if needed
-OPERATOR_SDK_VERSION ?= 1.0.0
+OPERATOR_SDK_VERSION ?= 1.1.0
 
 .PHONY: help
 help: Makefile
@@ -36,6 +36,7 @@ help: Makefile
 clean:
 	@rm -rf ${OUTDIR}
 
+# This is no longer used, but leaving it here in case we need it in the future
 .download-operator-sdk-if-needed:
 	@if [ "$(shell which operator-sdk 2>/dev/null || echo -n "")" == "" ]; then \
 	  mkdir -p "${OUTDIR}/operator-sdk-install" ;\
@@ -48,14 +49,23 @@ clean:
 	  fi ;\
 	fi
 
+# This is no longer used, but leaving it here in case we need it in the future
 .ensure-operator-sdk-exists: .download-operator-sdk-if-needed
 	@$(eval OP_SDK ?= $(shell which operator-sdk 2>/dev/null || echo "${OUTDIR}/operator-sdk-install/operator-sdk"))
 	@"${OP_SDK}" version
 
 ## build: Build Kiali operator container image.
-build: .ensure-operator-sdk-exists
-	@echo Building container image for Kiali operator using operator-sdk
-	cd "${ROOTDIR}" && "${OP_SDK}" build --image-builder ${DORP} --image-build-args "--pull" "${OPERATOR_QUAY_TAG}"
+.PHONY: build
+build:
+	mkdir -p ${OUTDIR}/docker
+	cat ${ROOTDIR}/build/Dockerfile | OPERATOR_SDK_VERSION="${OPERATOR_SDK_VERSION}" envsubst '$${OPERATOR_SDK_VERSION}' > ${OUTDIR}/docker/Dockerfile
+ifeq ($(DORP),docker)
+	@echo Building container image for Kiali operator using docker
+	docker build --pull -t ${OPERATOR_QUAY_TAG} -f ${OUTDIR}/docker/Dockerfile ${ROOTDIR}
+else
+	@echo Building container image for Kiali operator using podman
+	podman build --pull -t ${OPERATOR_QUAY_TAG} -f ${OUTDIR}/docker/Dockerfile ${ROOTDIR}
+endif
 
 ## push: Pushes the operator image to quay.
 push:
