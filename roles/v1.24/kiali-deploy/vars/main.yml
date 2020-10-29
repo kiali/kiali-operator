@@ -60,6 +60,13 @@ kiali_vars:
     {{ kiali_defaults.external_services }}
     {%- endif -%}
 
+  health_config: |
+    {%- if health_config is defined and health_config is iterable -%}
+    {{ kiali_defaults.health_config | combine((health_config | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ kiali_defaults.health_config }}
+    {%- endif -%}
+    
   identity: |
     {%- if identity is defined and identity is iterable -%}
     {{ kiali_defaults.identity | combine((identity | stripnone), recursive=True) }}
