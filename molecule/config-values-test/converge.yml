@@ -104,16 +104,16 @@
   - name: Make sure the custom health config made it to the config map
       assert:
         that:
-          - kiali_configmap.health_config.rates | length == 2
-          - kiali_configmap.health_config.rates[0].namespace == "bookinfo"
-          - kiali_configmap.health_config.rates[0].tolerance | length == 2
-          - kiali_configmap.health_config.rates[0].tolerance[1].failure == 10
-          - kiali_configmap.health_config.rates[0].tolerance[1].code == "[45]\\d[^\\D4]"
-          - kiali_configmap.health_config.rates[1].namespace == ".*"
-          - kiali_configmap.health_config.rates[1].tolerance | length == 2
-          - kiali_configmap.health_config.rates[1].tolerance[0].degraded == 30
-          - kiali_configmap.health_config.rates[1].tolerance[1].code == "[5]\\d\\d"
-        
+        - kiali_configmap.health_config.rates | length == 2
+        - kiali_configmap.health_config.rates[0].namespace == "bookinfo"
+        - kiali_configmap.health_config.rates[0].tolerance | length == 2
+        - kiali_configmap.health_config.rates[0].tolerance[1].failure == 10
+        - kiali_configmap.health_config.rates[0].tolerance[1].code == "[45]\\d[^\\D4]"
+        - kiali_configmap.health_config.rates[1].namespace == ".*"
+        - kiali_configmap.health_config.rates[1].tolerance | length == 2
+        - kiali_configmap.health_config.rates[1].tolerance[0].degraded == 30
+        - kiali_configmap.health_config.rates[1].tolerance[1].code == "[5]\\d\\d"
+
   # NEW CONFIG TEST #2
 
   - set_fact:
