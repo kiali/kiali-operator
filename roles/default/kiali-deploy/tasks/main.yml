@@ -292,6 +292,14 @@
   - kiali_vars.server.web_schema != 'https'
   - kiali_vars.server.web_schema != 'http'
 
+- name: Validate web_history_mode configuration
+  fail:
+    msg: "Invalid server.web_history_mode [{{ kiali_vars.server.web_history_mode }}]! Must be empty, or one of either 'browser' or 'hash'"
+  when:
+  - kiali_vars.server.web_history_mode != ''
+  - kiali_vars.server.web_history_mode != 'browser'
+  - kiali_vars.server.web_history_mode != 'hash'
+
 - name: Set default identity cert_file based on cluster type
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'identity': {'cert_file': '/kiali-cert/tls.crt' if is_openshift else ''}}, recursive=True) }}"
