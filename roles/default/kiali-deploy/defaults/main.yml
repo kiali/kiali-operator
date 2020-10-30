@@ -58,6 +58,9 @@ kiali_defaults:
     image_pull_secrets: []
     image_version: ""
     ingress_enabled: true
+    logger:
+      log_level: info
+      log_format: text
     namespace: ""
     node_selector: {}
     #override_ingress_yaml:
@@ -70,7 +73,6 @@ kiali_defaults:
     service_annotations: {}
     #service_type: "NodePort"
     tolerations: []
-    verbose_mode: "3"
     version_label: ""
     view_only_mode: false
 

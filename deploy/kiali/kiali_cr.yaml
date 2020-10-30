@@ -277,6 +277,13 @@ spec:
 #    ---
 #    ingress_enabled: true
 #
+# Determines the logger configuration.
+# log_format supports text and json.
+# log_level supports trace, debug, info, warn, error, fatal.
+#    logger:
+#      log_level: info
+#      log_format: text
+#
 # The namespace into which Kiali is to be installed. If this is empty or not defined,
 # the default will be the namespace where the Kiali CR is located.
 #    ---
@@ -353,7 +360,7 @@ spec:
 #    ---
 #    tolerations: []
 #
-# Determines which priority levels of log messages Kiali will output.
+# DEPRECATED - Determines which priority levels of log messages Kiali will output.
 # Typical values are "3" for INFO and higher priority, "4" for DEBUG and higher priority.
 #    ---
 #    verbose_mode: "3"
