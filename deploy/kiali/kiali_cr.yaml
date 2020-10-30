@@ -280,6 +280,7 @@ spec:
 # Determines the logger configuration.
 # log_format supports text and json.
 # log_level supports trace, debug, info, warn, error, fatal.
+#    ---
 #    logger:
 #      log_level: info
 #      log_format: text
@@ -360,7 +361,8 @@ spec:
 #    ---
 #    tolerations: []
 #
-# DEPRECATED - Determines which priority levels of log messages Kiali will output.
+# DEPRECATED - use the logger.log_level setting.
+# Determines which priority levels of log messages Kiali will output.
 # Typical values are "3" for INFO and higher priority, "4" for DEBUG and higher priority.
 #    ---
 #    verbose_mode: "3"

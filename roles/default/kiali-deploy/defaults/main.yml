@@ -59,8 +59,8 @@ kiali_defaults:
     image_version: ""
     ingress_enabled: true
     logger:
-      log_level: info
-      log_format: text
+      log_format: "text"
+      log_level: "info"
     namespace: ""
     node_selector: {}
     #override_ingress_yaml:
