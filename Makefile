@@ -6,7 +6,7 @@ ROOTDIR=$(CURDIR)
 OUTDIR=${ROOTDIR}/_output
 
 # Identifies the current build.
-VERSION ?= v1.26.0-SNAPSHOT
+VERSION ?= v1.27.0-SNAPSHOT
 COMMIT_HASH ?= $(shell git rev-parse HEAD)
 
 # Identifies the Kiali operator container image that will be built
