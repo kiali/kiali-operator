@@ -738,6 +738,14 @@ spec:
 #    ---
 #    web_fqdn: ""
 #
+# Defines the ingress port where the connections come from. This is usually
+# necessary when the application responds through a proxy/ingress, and it does
+# not forward the correct headers so Kiali can guess the port.
+#
+# When empty, Kiali will try to guess this value from HTTP headers.
+#    ---
+#    web_port: 20001
+#
 # Define the history mode of kiali UI. This can only take
 # two possible values: either "browser" or "hash".
 # When empty, it will always be considered as browser
