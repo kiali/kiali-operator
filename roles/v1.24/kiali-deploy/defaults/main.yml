@@ -170,7 +170,7 @@ kiali_defaults:
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
   health_config:
-    rate: [ ]
+    rate: []
     
   identity: {}
     #cert_file:
