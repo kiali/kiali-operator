@@ -48,6 +48,28 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'custom_dashboards': custom_dashboards }}}, recursive=True) }}"
 
+  - name: Make sure health_config rates are defined
+    vars:
+      custom_health_config:
+        rates:
+          - namespace: "bookinfo"
+            tolerance:
+              - code: "404"
+                failure: 10
+                protocol: "http"
+              - code: "[45]\\d[^\\D4]"
+                protocol: "http"
+          - namespace: ".*"
+            tolerance:
+              - code: "[4]\\d\\d"
+                degraded: 30
+                failure: 40
+                protocol: "http"
+              - code: "[5]\\d\\d"
+                protocol: "http"
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'health_config': custom_health_config}}, recursive=True) }}"
+
   - name: The new Kiali CR to be tested
     debug:
       msg: "{{ current_kiali_cr }}"
@@ -78,6 +100,19 @@
       - custom_dashboards | length == 1
       - custom_dashboards[0].metadata.name == 'kiali'
       fail_msg: "Must have 1 custom_dashboard: {{ custom_dashboards }}"
+
+  - name: Make sure the custom health config made it to the config map
+      assert:
+        that:
+        - kiali_configmap.health_config.rates | length == 2
+        - kiali_configmap.health_config.rates[0].namespace == "bookinfo"
+        - kiali_configmap.health_config.rates[0].tolerance | length == 2
+        - kiali_configmap.health_config.rates[0].tolerance[1].failure == 10
+        - kiali_configmap.health_config.rates[0].tolerance[1].code == "[45]\\d[^\\D4]"
+        - kiali_configmap.health_config.rates[1].namespace == ".*"
+        - kiali_configmap.health_config.rates[1].tolerance | length == 2
+        - kiali_configmap.health_config.rates[1].tolerance[0].degraded == 30
+        - kiali_configmap.health_config.rates[1].tolerance[1].code == "[5]\\d\\d"
 
   # NEW CONFIG TEST #2
 
