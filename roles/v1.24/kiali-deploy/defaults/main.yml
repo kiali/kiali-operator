@@ -169,6 +169,9 @@ kiali_defaults:
       url: ""
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
+  health_config:
+    rate: [ ]
+    
   identity: {}
     #cert_file:
     #private_key_file:
