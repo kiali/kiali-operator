@@ -93,7 +93,7 @@ CLUSTER_TYPE=minikube MINIKUBE_PROFILE=ci MOLECULE_USE_DEV_IMAGES=true MOLECULE_
 
 where `api-test` is the Molecule test(s) you want to run. The value of link:https://github.com/kiali/kiali/blob/v1.25.0/make/Makefile.molecule.mk#L5-L8[`MOLECULE_SCENARIO`] is a space-separated list of Molecule tests - the full list of Molecule tests are link:./molecule[found here]. There are other environment variables you can set (such as `MOLECULE_DEBUG` for turning on debug messages) - see the link:https://github.com/kiali/kiali/blob/master/make/Makefile.molecule.mk[make/Makefile.molecule.mk] file in the kiali/kiali repo.
 
-NOTE: If you have never run the Molecule tests before, you need to build the Molecule container image via `make molecule-build`. This is a one-time-only step.
+NOTE: If you have never run the Molecule tests before, the Molecule container image will be built for you automatically. If you need to rebuild the image for some reason, run `FORCE_MOLECULE_BUILD=true make molecule-build`.
 
 ### Are You Altering a Kiali Operator Resource?
 
