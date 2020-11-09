@@ -17,7 +17,6 @@ spec:
     ingress_enabled: true
     namespace: "${NAMESPACE}"
     service_type: "${SERVICE_TYPE}"
-    verbose_mode: "${VERBOSE_MODE}"
   external_services:
     grafana:
       auth:

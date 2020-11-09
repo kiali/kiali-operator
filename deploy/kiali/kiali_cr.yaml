@@ -243,6 +243,19 @@ spec:
 #    ---
 #    ingress_enabled: true
 #
+# Determines the logger configuration.
+# log_format supports text and json.
+# log_level supports trace, debug, info, warn, error, fatal.
+# time_field_format supports a golang time format (https://golang.org/pkg/time/)
+# sampler_rate defines a basic log sampler setting as an integer. With this setting every sampler_rate-th 
+#    message will be logged. By default, every message is logged.
+#    ---
+#    logger:
+#      log_level: info
+#      log_format: text
+#      sampler_rate: "1"
+#      time_field_format: "2006-01-02T15:04:05Z07:00"
+#
 # The namespace into which Kiali is to be installed. If this is empty or not defined,
 # the default will be the namespace where the Kiali CR is located.
 #    ---
@@ -319,6 +332,7 @@ spec:
 #    ---
 #    tolerations: []
 #
+# DEPRECATED - use the logger.log_level setting.
 # Determines which priority levels of log messages Kiali will output.
 # Typical values are "3" for INFO and higher priority, "4" for DEBUG and higher priority.
 #    ---

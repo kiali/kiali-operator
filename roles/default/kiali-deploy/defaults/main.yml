@@ -59,6 +59,11 @@ kiali_defaults:
     image_pull_secrets: []
     image_version: ""
     ingress_enabled: true
+    logger:
+      log_format: "text"
+      log_level: "info"
+      sampler_rate: "1"
+      time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: ""
     node_selector: {}
     #override_ingress_yaml:
@@ -71,7 +76,6 @@ kiali_defaults:
     service_annotations: {}
     #service_type: "NodePort"
     tolerations: []
-    verbose_mode: "3"
     version_label: ""
     view_only_mode: false
 

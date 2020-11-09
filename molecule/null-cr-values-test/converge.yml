@@ -21,7 +21,10 @@
       - kiali_configmap.deployment.ingress_enabled == True
       - kiali_configmap.deployment.replicas == 1
       - kiali_configmap.deployment.secret_name == "kiali"
-      - kiali_configmap.deployment.verbose_mode == "3"
+      - kiali_configmap.deployment.logger.log_format == "text"
+      - kiali_configmap.deployment.logger.log_level == "info"
+      - kiali_configmap.deployment.logger.time_field_format == "2006-01-02T15:04:05Z07:00"
+      - kiali_configmap.deployment.logger.sampler_rate == "1"
       - kiali_configmap.external_services.grafana.auth.password == ""
       - kiali_configmap.external_services.grafana.auth.type == "none"
       - kiali_configmap.external_services.grafana.url == ""
