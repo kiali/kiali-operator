@@ -287,8 +287,8 @@ spec:
 #    logger:
 #      log_level: info
 #      log_format: text
-#      time_field_format: "2006-01-02T15:04:05Z07:00"
 #      sampler_rate: "1"
+#      time_field_format: "2006-01-02T15:04:05Z07:00"
 #
 # The namespace into which Kiali is to be installed. If this is empty or not defined,
 # the default will be the namespace where the Kiali CR is located.

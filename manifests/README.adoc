@@ -302,8 +302,9 @@ annotations:
   ansible.operator-sdk/reconcile-period: "0s"
 spec:
   deployment:
+    logger: 
+      log_level: "debug"
     namespace: ${CONTROL_PLANE_NAMESPACE}
-    verbose_mode: "4"
 EOF
 ```
 

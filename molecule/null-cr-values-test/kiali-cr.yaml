@@ -34,6 +34,11 @@ spec:
     image_pull_secrets: null
     image_version: {{ kiali.image_version }}
     ingress_enabled: null
+    logger:
+      log_format: null
+      log_level: null
+      sampler_rate: null
+      time_field_format: null
     namespace: {{ kiali.install_namespace }}
     node_selector: null
     override_ingress_yaml: null
@@ -46,7 +51,6 @@ spec:
     service_annotations: null
     service_type: null
     tolerations: null
-    verbose_mode: null
     version_label: null
     view_only_mode: null
 
