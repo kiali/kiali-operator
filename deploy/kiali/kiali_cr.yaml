@@ -280,10 +280,15 @@ spec:
 # Determines the logger configuration.
 # log_format supports text and json.
 # log_level supports trace, debug, info, warn, error, fatal.
+# time_field_format supports a golang time format (https://golang.org/pkg/time/)
+# sampler_rate defines a basic log sampler setting as an integer. With this setting every sampler_rate-th 
+#    message will be logged. By default, every message is logged.
 #    ---
 #    logger:
 #      log_level: info
 #      log_format: text
+#      time_field_format: "2006-01-02T15:04:05Z07:00"
+#      sampler_rate: "1"
 #
 # The namespace into which Kiali is to be installed. If this is empty or not defined,
 # the default will be the namespace where the Kiali CR is located.
