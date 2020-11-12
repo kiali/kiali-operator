@@ -758,6 +758,14 @@ spec:
 #    ---
 #    web_history_mode: ""
 #
+# Defines the ingress port where the connections come from. This is usually
+# necessary when the application responds through a proxy/ingress, and it does
+# not forward the correct headers so Kiali can guess the port.
+#
+# When empty, Kiali will try to guess this value from HTTP headers.
+#    ---
+#    web_port: ""
+#
 # Defines the context root path for the Kiali console and API endpoints and readiness probes.
 # When providing a context root path that is not "/", do not add a trailing slash.
 # For example, use "/kiali" not "/kiali/".
