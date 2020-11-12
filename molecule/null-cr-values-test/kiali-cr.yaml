@@ -138,7 +138,7 @@ spec:
     metrics_port: null
     port: null
     web_fqdn: null
-    web_port: null
     web_history_mode: null
+    web_port: null
     web_root: null
     web_schema: null

@@ -224,8 +224,8 @@ kiali_defaults:
     metrics_port: 9090
     port: 20001
     web_fqdn: ""
-    web_port: 20001
     web_history_mode: ""
+    web_port: 20001
     web_root: ""
     web_schema: ""
 
