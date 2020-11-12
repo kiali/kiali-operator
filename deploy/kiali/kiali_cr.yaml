@@ -750,7 +750,7 @@ spec:
 #
 # When empty, Kiali will try to guess this value from HTTP headers.
 #    ---
-#    web_port: 20001
+#    web_port: ""
 #
 # Defines the context root path for the Kiali console and API endpoints and readiness probes.
 # When providing a context root path that is not "/", do not add a trailing slash.
