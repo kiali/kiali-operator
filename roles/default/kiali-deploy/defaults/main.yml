@@ -225,7 +225,7 @@ kiali_defaults:
     port: 20001
     web_fqdn: ""
     web_history_mode: ""
-    web_port: 20001
+    web_port: ""
     web_root: ""
     web_schema: ""
 
