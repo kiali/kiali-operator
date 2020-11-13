@@ -86,6 +86,7 @@ kiali_defaults:
   external_services:
     custom_dashboards:
       enabled: true
+      is_core_component: false
       namespace_label: ""
       prometheus:
         auth:
@@ -106,7 +107,7 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      core_component: false
+      is_core_component: false
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -159,7 +160,7 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      core_component: false
+      is_core_component: false
       enabled: true
       in_cluster_url: ""
       namespace_selector: true
