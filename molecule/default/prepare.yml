@@ -2,6 +2,14 @@
   hosts: localhost
   connection: local
   tasks:
+
+  - name: Get information about the cluster
+    set_fact:
+      api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+  - name: Determine the Istio implementation
+    set_fact:
+      is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
+
   - name: See if we have Service Mesh htpasswd secret for accessing external services like Prometheus
     k8s_info:
       api_version: v1
@@ -9,6 +17,8 @@
       namespace: "{{ istio.control_plane_namespace }}"
       name: htpasswd
     register: ossm_secret_htpasswd_raw
+    when:
+    - is_maistra == True
 
   - name: Define url and auth for Prometheus for Service Mesh
     set_fact:
@@ -76,6 +86,12 @@
       api_version: v1
       kind: Namespace
       name: "{{ cr_namespace }}"
+
+  - name: Create any NetworkPolicy needed to access the Kiali UI
+    import_tasks: process-network-policy.yml
+    vars:
+      network_policy_state: "present"
+      network_policy_namespace: "{{ kiali.install_namespace }}"
 
   - name: Create Kiali CR based solely on the template
     k8s:
