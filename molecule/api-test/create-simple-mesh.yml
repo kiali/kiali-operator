@@ -45,7 +45,7 @@
           spec:
             containers:
             - name: simple-server
-              image: docker.io/alpine:latest
+              image: quay.io/jmazzitelli/alpine:latest
               command:
               - "/bin/sh"
               args:
@@ -99,7 +99,7 @@
           spec:
             containers:
             - name: simple-client
-              image: docker.io/alpine:latest
+              image: quay.io/jmazzitelli/alpine:latest
               command:
               - "/bin/sh"
               args:
