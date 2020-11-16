@@ -9,6 +9,23 @@
         labels:
           istio-injection: enabled
 
+- name: Create Maistra SMM to add simple-mesh to the mesh
+  k8s:
+    state: present
+    definition:
+      apiVersion: maistra.io/v1
+      kind: ServiceMeshMember
+      metadata:
+        name: default
+        namespace: "{{ simple_mesh_namespace }}"
+      spec:
+        controlPlaneRef:
+          namespace: "{{ istio.control_plane_namespace }}"
+          name: full
+  when:
+  - is_openshift == True
+  - is_maistra == True
+
 - name: Create NAD so CNI works, only if on OpenShift
   k8s:
     state: present
@@ -39,6 +56,8 @@
             app: simple-server
         template:
           metadata:
+            annotations:
+              sidecar.istio.io/inject: "true"
             labels:
               app: simple-server
               version: v99
@@ -93,6 +112,8 @@
             app: simple-client
         template:
           metadata:
+            annotations:
+              sidecar.istio.io/inject: "true"
             labels:
               app: simple-client
               version: v99
