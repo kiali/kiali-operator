@@ -69,7 +69,7 @@ spec:
         type: null
         use_kiali_token: null
         username: null
-      component_status: null
+      is_core_component: null
       dashboards: null
       enabled: null
       in_cluster_url: null
@@ -90,7 +90,6 @@ spec:
         type: null
         use_kiali_token: null
         username: null
-      component_status: null
       url: null
 
     tracing:
@@ -102,7 +101,7 @@ spec:
         type: null
         use_kiali_token: null
         username: null
-      component_status: null
+      is_core_component: null
       enabled: null
       in_cluster_url: null
       namespace_selector: null
