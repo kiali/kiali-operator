@@ -2,6 +2,14 @@
   hosts: localhost
   connection: local
   tasks:
+
+  - name: Get information about the cluster
+    set_fact:
+      api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+  - name: Determine the Istio implementation
+    set_fact:
+      is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
+
   - name: Remove Kiali CR
     vars:
       custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
@@ -40,6 +48,12 @@
     - doomed_list | json_query("resources[*]") | length == 0
     retries: "{{ wait_retries }}"
     delay: 5
+
+  - name: Delete any NetworkPolicy that was created
+    import_tasks: process-network-policy.yml
+    vars:
+      network_policy_state: "absent"
+      network_policy_namespace: "{{ kiali.install_namespace }}"
 
   - name: Uninstall Operator via Helm
     command:
