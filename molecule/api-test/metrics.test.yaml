@@ -18,5 +18,3 @@
   assert:
     that:
     - api_namespaces_metrics_json is defined
-    - api_namespaces_metrics_json.metrics is defined
-    - api_namespaces_metrics_json.histograms is defined
