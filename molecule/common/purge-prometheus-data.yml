@@ -1,0 +1,28 @@
+- name: Purging all data from Prometheus
+  k8s:
+    state: absent
+    api_version: "{{ k8s_item.apiVersion }}"
+    kind: "{{ k8s_item.kind }}"
+    namespace: "{{ k8s_item.metadata.namespace }}"
+    name: "{{ k8s_item.metadata.name }}"
+  with_items:
+  - "{{ query('k8s', namespace=istio.control_plane_namespace, kind='Pod', label_selector='app=prometheus', api_version='v1') }}"
+  loop_control:
+    loop_var: k8s_item
+
+- name: Wait for the Prometheus pod to be back up running and that there is only one
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ istio.control_plane_namespace }}"
+    label_selectors:
+    - app=prometheus
+  register: restarted_prom_pod
+  until:
+  - restarted_prom_pod is success
+  - restarted_prom_pod.resources | length == 1
+  - restarted_prom_pod.resources[0].status is defined
+  - restarted_prom_pod.resources[0].status.phase is defined
+  - restarted_prom_pod.resources[0].status.phase == "Running"
+  retries: "{{ wait_retries }}"
+  delay: 5

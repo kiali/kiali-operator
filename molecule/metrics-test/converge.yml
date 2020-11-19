@@ -62,6 +62,9 @@
       that:
       - prometheus_query_results.json.data.result | length == 0
 
+  # Clean out any old Prometheus data
+  - import_tasks: ../common/purge-prometheus-data.yml
+
   # Turn on Kiali metrics
   - import_tasks: enable-metrics.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml

@@ -13,6 +13,9 @@
       that:
       - kiali_configmap.auth.strategy == "anonymous"
 
+  # Start with empty Prometheus data
+  - import_tasks: ../common/purge-prometheus-data.yml
+
   - import_tasks: create-simple-mesh.yml
 
   - name: Find all API tests
