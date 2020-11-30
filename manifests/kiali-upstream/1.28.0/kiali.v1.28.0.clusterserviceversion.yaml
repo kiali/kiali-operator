@@ -278,6 +278,8 @@ spec:
                   value: "True"
                 - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
                   value: "1"
+                - name: ANSIBLE_CONFIG
+                  value: "/etc/ansible/ansible.cfg"
                 ports:
                 - name: http-metrics
                   containerPort: 8383
