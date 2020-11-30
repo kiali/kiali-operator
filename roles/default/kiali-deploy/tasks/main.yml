@@ -837,7 +837,11 @@
   - processed_resources.configmap.changed == True
   - processed_resources.configmap.method == "patch"
 
+# Can't just populate with the list of namespaces - see https://github.com/operator-framework/operator-sdk-ansible-util/issues/12
+# So instead - if the list of namespaces is manageable, store them in a comma-separate list.
+# Otherwise, we'll just log the count. The purpose of this accessibleNamespaces status field is
+# just to inform the user how many namespaces the operator processed.
 - include_tasks: update-status.yml
   vars:
     status_vars:
-      accessibleNamespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
+      accessibleNamespaces: "{{ ('Number of accessible namespaces (including control plane namespace): ' + (kiali_vars.deployment.accessible_namespaces | length | string)) if (kiali_vars.deployment.accessible_namespaces | length > 20) else (kiali_vars.deployment.accessible_namespaces | join(',')) }}"
