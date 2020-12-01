@@ -214,6 +214,10 @@ while [[ $# -gt 0 ]]; do
       HELM_REPO_CHART_VERSION="$2"
       shift;shift
       ;;
+    -hs|--helm-set)
+      HELM_SET_ARGS="${HELM_SET_ARGS:-} --set $2"
+      shift;shift
+      ;;
     -kcn|--kiali-cr-namespace)
       KIALI_CR_NAMESPACE="$2"
       shift;shift
@@ -314,6 +318,10 @@ Valid options for overall script behavior:
       Default: "lastrelease" if --helm-chart is not specified; ignored otherwise
 
 Valid options for the operator installation:
+  -hs|--helm-set <name=value>
+      Passes the name=value pair as a --set argument to helm when installing the operator.
+      You can specify this option multiple times to set multiple name=value pairs.
+      This is useful to set values that are supported by the Helm chart but not this script.
   -ocrc|--operator-cluster-role-creator
       When true, the operator will be given permission to create cluster roles and
       cluster role bindings so it can, in turn, assign Kiali a cluster role and
@@ -446,6 +454,7 @@ NAMESPACE="${NAMESPACE:-istio-system}"
 VERSION="${VERSION:-default}"
 HELM_CHART="${HELM_CHART:-}"
 HELM_REPO_CHART_VERSION="${HELM_REPO_CHART_VERSION:-lastrelease}"
+HELM_SET_ARGS="${HELM_SET_ARGS:-}"
 ACCESSIBLE_NAMESPACES="${ACCESSIBLE_NAMESPACES:-**}"
 
 if [ "${DRY_RUN:-}" == "true" ]; then
@@ -715,6 +724,7 @@ echo DRY_RUN_ARG=$DRY_RUN_ARG
 echo HELM=$HELM
 echo HELM_CHART=$HELM_CHART
 echo HELM_REPO_CHART_VERSION=$HELM_REPO_CHART_VERSION
+echo HELM_SET_ARGS=$HELM_SET_ARGS
 echo OPERATOR_CLUSTER_ROLE_CREATOR=$OPERATOR_CLUSTER_ROLE_CREATOR
 echo OPERATOR_IMAGE_NAME=$OPERATOR_IMAGE_NAME
 echo OPERATOR_IMAGE_PULL_POLICY=$OPERATOR_IMAGE_PULL_POLICY
@@ -733,6 +743,7 @@ ${HELM} upgrade \
   --atomic \
   --cleanup-on-fail \
   --namespace ${OPERATOR_NAMESPACE} \
+  ${HELM_SET_ARGS} \
   --set cr.create=false \
   --set image.repo=${OPERATOR_IMAGE_NAME} \
   --set image.pullPolicy=${OPERATOR_IMAGE_PULL_POLICY} \
