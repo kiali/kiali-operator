@@ -19,12 +19,19 @@ rules:
   - pods
   - pods/log
   - pods/proxy
+  - pods/portforward
   - replicationcontrollers
   - services
   verbs:
   - get
   - list
   - watch
+- apiGroups: [""]
+  resources:
+  - pods/portforward
+  verbs:
+  - post
+  - create
 - apiGroups: ["extensions", "apps"]
   resources:
   - deployments

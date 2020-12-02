@@ -334,6 +334,12 @@ spec:
           - patch
           - update
           - watch
+        - apiGroups: [""]
+          resources:
+          - pods/portforward
+          verbs:
+          - post
+          - create
         - apiGroups: ["apps"]
           resources:
           - deployments
