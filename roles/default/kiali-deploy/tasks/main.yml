@@ -832,8 +832,12 @@
   k8s:
     state: "present"
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    definition: "{{ lookup('template', item) }}"
-  loop: "{{ monitoring_dashboard_yamls_to_deploy }}"
+    definition: |
+      {% for mdy in monitoring_dashboard_yamls_to_deploy %}
+      ---
+      {{ lookup("template", mdy) }}
+      ...
+      {% endfor %}
   when:
   - monitoringdashboards_crd_exists == True
   - monitoring_dashboard_yamls_to_deploy is defined
