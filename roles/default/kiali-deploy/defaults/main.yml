@@ -36,6 +36,8 @@ kiali_defaults:
       authorization_endpoint: ""
       client_id: ""
       disable_rbac: false
+      http_proxy: ""
+      https_proxy: ""
       insecure_skip_verify_tls: false
       issuer_uri: ""
       scopes: ["openid", "profile", "email"]
