@@ -134,6 +134,7 @@ kiali_defaults:
           is_core: false
           namespace: ""
       config_map_name: "istio"
+      envoy_admin_local_port: 15000
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
