@@ -765,14 +765,26 @@
   - monitoring_dashboard_yamls_to_deploy_raw.files is defined
   ignore_errors: yes
 
+- name: Determine what monitoring dashboards should be removed
+  set_fact:
+    monitoring_dashboard_yamls_to_remove: "{{ (monitoring_dashboard_yamls_all | default([])) | difference(monitoring_dashboard_yamls_to_deploy | default([])) }}"
+  when:
+  - monitoringdashboards_crd_exists == True
+
 - name: Remove Monitoring Dashboards that should no longer be deployed
   k8s:
     state: "absent"
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    definition: "{{ lookup('template', item) }}"
-  loop: "{{ (monitoring_dashboard_yamls_all | default([])) | difference(monitoring_dashboard_yamls_to_deploy | default([])) }}"
+    definition: |
+      {% for mdy in monitoring_dashboard_yamls_to_remove %}
+      ---
+      {{ lookup("template", mdy) }}
+      ...
+      {% endfor %}
   when:
   - monitoringdashboards_crd_exists == True
+  - monitoring_dashboard_yamls_to_remove is defined
+  - monitoring_dashboard_yamls_to_remove | length > 0
   ignore_errors: yes
 
 - name: Create the Monitoring Dashboards
