@@ -85,6 +85,7 @@ kiali_defaults:
 
   external_services:
     custom_dashboards:
+      enabled: true
       namespace_label: ""
       prometheus:
         auth:
