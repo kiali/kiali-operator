@@ -775,11 +775,16 @@
   k8s:
     state: "present"
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    definition: "{{ lookup('template', item) }}"
-  loop: "{{ monitoring_dashboard_yamls_to_deploy | default([]) }}"
+    definition: |
+      {% for mdy in monitoring_dashboard_yamls_to_deploy %}
+      ---
+      {{ lookup("template", mdy) }}
+      ...
+      {% endfor %}
   when:
+  - monitoringdashboards_crd_exists == True
   - monitoring_dashboard_yamls_to_deploy is defined
-  - monitoringdashboards_crd | default({}) | json_query('resources[*].status.conditions[?type==`Established`].status') | flatten | join == 'True'
+  - monitoring_dashboard_yamls_to_deploy | length > 0
   ignore_errors: yes
 
 # If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
