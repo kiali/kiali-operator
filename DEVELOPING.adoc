@@ -50,6 +50,8 @@ To install the operator that contains your local changes, run `make operator-cre
 
 Sometimes you made simple changes to the operator playbook and roles that can be quickly tested by running the Ansible playbook on your local machine. This saves time because it doesn't require you to install the operator directly in your cluster. To do this, you must have Ansible installed (e.g. `ansible-playbook` must be in your $PATH). You can run the operator playbook via `make run-operator-playbook`. This will run both the kiali-deploy and kiali-remove playbooks so the operator will install and then immediately uninstall a Kiali Server. The operator playbook is configured via the files found in the link:dev-playbook-config[dev-playbook-config directory].
 
+In order to use this `run-operator-playbook` target, you must have Python3 in your PATH (having an alias is not enough). You must also `pip3 install --user -r operator/molecule/requirements.txt` to get the necessary Python3 libraries installed.
+
 ## The Initial Kiali Operator Git Repo Creation
 
 NOTE: This section documents how the Kiali Operator git repo was originally created. This only had to be performed one time and one time only. Developers and consumers of Kiali and Kiali Operator do not need to know any of this, so you can skip this section. This is here just for historical purposes.
