@@ -1,0 +1,3 @@
+---
+- import_playbook: ../playbooks/kiali-deploy.yml
+- import_playbook: ../playbooks/kiali-remove.yml

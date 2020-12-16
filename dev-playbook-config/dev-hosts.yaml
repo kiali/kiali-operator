@@ -1,0 +1,32 @@
+all:
+  vars:
+
+    # Mimic Kiali CR settings found in dev-kiali-cr.yaml
+
+    version: default
+
+    deployment:
+      image_version: dev
+      namespace: istio-system
+
+    # The Operator SDK creates a "_kiali_io_kiali" variable that
+    # mimics the Kiali CR but maintains camelCase in key names.
+    # The operator playbook expects this defined.
+    # Make sure these match those in dev-kiali-cr.yaml.
+
+    _kiali_io_kiali:
+      apiVersion: kiali.io/v1alpha1
+      kind: Kiali
+      metadata:
+        name: kiali
+        namespace: istio-system
+
+
+    # The Operator SDK creates a "meta" variable that contains the
+    # name and namespace of the CR.
+    # Most times you can just run with these defaults.
+    # Make sure these match those in dev-kiali-cr.yaml.
+
+    meta:
+      name: kiali
+      namespace: istio-system
