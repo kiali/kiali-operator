@@ -4,7 +4,7 @@ metadata:
   name: kiali
   namespace: istio-system
   annotations:
-    ansible.operator-sdk/verbosity: "1"
+    ansible.sdk.operatorframework.io/verbosity: "1"
   labels:
     kiali.dev: "run-operator-playbook"
 spec:
