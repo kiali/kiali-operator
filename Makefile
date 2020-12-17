@@ -64,8 +64,6 @@ else
 	podman push ${OPERATOR_QUAY_TAG}
 endif
 
-
-
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:
 #  1. Makes sure docker is in PATH
@@ -121,7 +119,6 @@ endif
 	    echo "Failed to ensure QEMU is set up. This build will be allowed to continue, but it may fail at a later step."; \
 	  fi \
 	fi
-
 
 ## container-multi-arch-push-kiali-operator-quay: Pushes the Kiali Operator multi-arch image to quay.
 container-multi-arch-push-kiali-operator-quay: .ensure-buildx-builder

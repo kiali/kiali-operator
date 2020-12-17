@@ -1,0 +1,18 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+  namespace: istio-system
+  annotations:
+    ansible.operator-sdk/verbosity: "1"
+  labels:
+    kiali.dev: "run-operator-playbook"
+spec:
+
+  # Make sure the values below also match those in dev-hosts.yaml
+
+  version: default
+
+  deployment:
+    image_version: dev
+    namespace: istio-system
