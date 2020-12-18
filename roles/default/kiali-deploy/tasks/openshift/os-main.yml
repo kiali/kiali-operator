@@ -11,10 +11,23 @@
   - rolebinding
   - deployment
   - service
+  - "{{ 'hpa' if kiali_vars.deployment.hpa.spec | length > 0 else '' }}"
   loop_control:
     loop_var: process_resource_item
   when:
   - is_openshift == True
+  - process_resource_item != ''
+
+- name: Remove HPA if disabled on OpenShift
+  k8s:
+    state: absent
+    api_version: "{{ kiali_vars.deployment.hpa.api_version }}"
+    kind: "HorizontalPodAutoscaler"
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "kiali"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.hpa.spec | length == 0
 
 - name: Create Route on OpenShift if enabled
   include_tasks: process-resource.yml
