@@ -344,12 +344,13 @@
   - kiali_vars.auth.strategy != 'token'
 - name: Confirm auth strategy is valid for Kubernetes environments
   fail:
-    msg: "Invalid auth.strategy [{{ kiali_vars.auth.strategy }}]! Must be one of either 'token', 'openid' or 'anonymous'"
+    msg: "Invalid auth.strategy [{{ kiali_vars.auth.strategy }}]! Must be one of either 'token', 'openid', 'anonymous', or 'header'"
   when:
   - is_k8s == True
   - kiali_vars.auth.strategy != 'anonymous'
   - kiali_vars.auth.strategy != 'token'
   - kiali_vars.auth.strategy != 'openid'
+  - kiali_vars.auth.strategy != 'header'
 - name: Confirm OpenID configuration when auth strategy is 'openid'
   fail:
     msg: "Invalid configuration for OpenID connect! The mandatory parameters should be provided: 'issuer_uri', 'client_id'. Also, the 'username_claim' cannot be set to the empty string."
