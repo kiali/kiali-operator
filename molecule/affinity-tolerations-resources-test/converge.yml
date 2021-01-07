@@ -63,6 +63,11 @@
         another.test.io/keepCamelCaseBAR: camelCaseValueBAR
       new_pod_labels:
         some.test.label/labelKeepCamelCaseFOO: labelCamelCaseValueFOO
+      new_hpa:
+        api_version: autoscaling/v1
+        spec:
+          minReplicas: 1
+          maxReplicas: 1
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
@@ -118,6 +123,20 @@
       - "{{ kiali_service.resources[0].spec.externalName == 'my.kiali.example.com' }}"
       fail_msg: "Additional service yaml was not applied successfully: {{ kiali_service.resources[0].spec }}"
 
+  - name: Get the HPA resource that should now exist
+    k8s_info:
+      api_version: autoscaling/v1
+      kind: HorizontalPodAutoscaler
+      namespace: "{{ kiali.install_namespace }}"
+      name: kiali
+    register: hpa_resource_raw
+  - name: Assert the HPA resource has been created
+    assert:
+      that:
+      - hpa_resource_raw.resources is defined
+      - hpa_resource_raw.resources | length == 1
+      fail_msg: "HPA was not created successfully: {{ hpa_resource_raw }}"
+
   # Reset them all to empty dicts
   - import_tasks: set-affinity-tolerations-resources.yml
     vars:
@@ -130,6 +149,7 @@
       new_pod_annotations: null
       new_service_annotations: null
       new_pod_labels: null
+      new_hpa: null
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
@@ -151,6 +171,21 @@
       # I do not know why, but k8s doesn't remove resources entirely; k8s sets it to an empty dict
       - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources | length == 0 }}"
       fail_msg: "Empty resources was not applied successfully: {{ kiali_deployment.resources[0].spec.template.spec.containers[0] }} [kiali CR={{ kiali_cr }}]"
+
+  - name: Try to obtain the HPA which should have been removed
+    k8s_info:
+      api_version: autoscaling/v1
+      kind: HorizontalPodAutoscaler
+      namespace: "{{ kiali.install_namespace }}"
+      name: kiali
+    register: hpa_resource_raw
+  - name: Assert the HPA resource has been removed
+    assert:
+      that:
+      - hpa_resource_raw.resources is defined
+      - hpa_resource_raw.resources | length == 0
+      fail_msg: "HPA was not deleted successfully: {{ hpa_resource_raw }} [kiali CR={{ kiali_cr }}]"
+
 # There is no mechanism in the operator right now that let's you remove an already existing annotation.
 # See: https://github.com/kiali/kiali/issues/2247
 #  - name: Assert that empty pod_annotations was applied

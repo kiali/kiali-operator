@@ -6,6 +6,12 @@ all:
     version: default
 
     deployment:
+      accessible_namespaces:
+      - "**"
+      custom_dashboards:
+        includes:
+        - 'go*'
+        - 'kiali*'
       image_version: dev
       namespace: istio-system
 
@@ -20,7 +26,6 @@ all:
       metadata:
         name: kiali
         namespace: istio-system
-
 
     # The Operator SDK creates a "meta" variable that contains the
     # name and namespace of the CR.

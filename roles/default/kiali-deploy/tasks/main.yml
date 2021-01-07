@@ -165,6 +165,16 @@
   - kiali_vars.deployment.service_annotations is defined
   - kiali_vars.deployment.service_annotations | length > 0
 
+- name: Replace snake_case with camelCase in deployment.hpa.spec
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['deployment']['hpa'].pop('spec') %}
+      {{ kiali_vars | combine({'deployment': {'hpa': {'spec': current_cr.spec.deployment.hpa.spec }}}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.hpa is defined
+  - kiali_vars.deployment.hpa.spec is defined
+  - kiali_vars.deployment.hpa.spec | length > 0
+
 - name: Print some debug information
   vars:
     msg: |
