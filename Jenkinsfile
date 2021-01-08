@@ -169,7 +169,7 @@ node('kiali-build && fedora') {
               git add Makefile
               git commit -m "Prepare for next version"
               git push ${forkGitUri} \$(git rev-parse HEAD):refs/heads/${BUILD_TAG}-main
-              curl -H "Authorization: token $GH_TOKEN" \
+              curl -H "Authorization: token \$GH_TOKEN" \
                 -H "Content-Type: application/json" \
                 -d '{"title": "Prepare for next version", "body": "Please, merge to update version numbers and prepare for release ${nextVersion}.", "head": "${kialiBotUser}:${BUILD_TAG}-main", "base": "${mainBranch}"}' \
                 -X POST ${operatorPullUri}
