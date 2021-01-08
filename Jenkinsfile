@@ -119,8 +119,8 @@ node('kiali-build && fedora') {
           quayOperatorTag = quayOperatorTag + " ${params.QUAY_OPERATOR_NAME}:${versionBranch}"
         }
 
-	echo "Logging in to Quay.io..."
-	sh """
+        echo "Logging in to Quay.io..."
+        sh """
           docker login -u "\$QUAY_USER" -p "\$QUAY_PASSWORD" quay.io
           OPERATOR_QUAY_TAG="${quayOperatorTag}" make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay
         """
@@ -158,7 +158,7 @@ node('kiali-build && fedora') {
           // Create/update a branch that we can use for a patch release, in case it's needed
           if (params.RELEASE_TYPE != 'edge' && !params.RELEASE_TYPE.contains('snapshot')) {
             echo "Creating or updating the version branch."
-	    sh "git push origin \$(git rev-parse HEAD):refs/heads/${versionBranch}"
+            sh "git push origin \$(git rev-parse HEAD):refs/heads/${versionBranch}"
           }
 
           // Create PR to prepare master branch for next version (required only in minor versions)
@@ -168,11 +168,11 @@ node('kiali-build && fedora') {
               sed -i -r "s/^VERSION \\?= (.*)/VERSION \\?= v${nextVersion}-SNAPSHOT/" Makefile
               git add Makefile
               git commit -m "Prepare for next version"
-	      git push ${forkGitUri} \$(git rev-parse HEAD):refs/heads/${BUILD_TAG}-main
-	      curl -H "Authorization: token $GH_TOKEN" \
-	        -H "Content-Type: application/json" \
-	        -d '{"title": "Prepare for next version", "body": "Please, merge to update version numbers and prepare for release ${nextVersion}.", "head": "${kialiBotUser}:${BUILD_TAG}-main", "base": "${mainBranch}"}' \
-	        -X POST ${operatorPullUri}
+              git push ${forkGitUri} \$(git rev-parse HEAD):refs/heads/${BUILD_TAG}-main
+              curl -H "Authorization: token $GH_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d '{"title": "Prepare for next version", "body": "Please, merge to update version numbers and prepare for release ${nextVersion}.", "head": "${kialiBotUser}:${BUILD_TAG}-main", "base": "${mainBranch}"}' \
+                -X POST ${operatorPullUri}
             """
           }
         }
