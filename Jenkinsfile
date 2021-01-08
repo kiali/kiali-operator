@@ -1,6 +1,6 @@
 /*
- * This pipeline supports only `minor` releases. Don't run it on `major`, `patch`,
- * `snapshot`, nor `edge` releases.
+ * This pipeline supports `minor`, `patch`, `snapshot` and `edge` releases. It also SHOULD
+ * support `major` releases, but it's untested.
  *
  * The Jenkins job should be configured with the following properties:
  *
@@ -130,8 +130,6 @@ node('kiali-build && fedora') {
     stage('Create release cut in operator repo') {
       withCredentials([string(credentialsId: 'kiali-bot-gh-token', variable: 'GH_TOKEN')]) {
         sshagent(['kiali-bot-gh-ssh']) {
-          //sh "make -f ${operatorMakefile} -C ${operatorDir} operator-push-version-tag operator-prepare-next-version"
-
           // Create git tags for the released version
           if (params.RELEASE_TYPE != 'edge') {
             echo "Creating git tag ${containerTag}"
