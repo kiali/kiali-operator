@@ -94,7 +94,7 @@ node('kiali-build && fedora') {
       }
 
       if (params.RELEASE_TYPE.contains("snapshot")) {
-        releasingVersion = releasingVersion + params.RELEASE_TYPE
+        releasingVersion = "${releasingVersion}-${params.RELEASE_TYPE}"
         containerTag = "v${releasingVersion}"
       } else if (params.RELEASE_TYPE == "edge") {
         releasingVersion = "latest"
@@ -159,6 +159,7 @@ node('kiali-build && fedora') {
 
           // Create/update a branch that we can use for a patch release, in case it's needed
           if (params.RELEASE_TYPE != 'edge' && !params.RELEASE_TYPE.contains('snapshot')) {
+            echo "Creating or updating the version branch."
 	    sh "git push origin \$(git rev-parse HEAD):refs/heads/${versionBranch}"
           }
 
