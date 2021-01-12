@@ -1,18 +1,17 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: kiali-operator.v${KIALI_OPERATOR_VERSION}
+  name: kiali-operator.v1.29.0
   namespace: placeholder
   annotations:
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8-operator:${KIALI_OPERATOR_VERSION}
+    containerImage: quay.io/kiali/kiali-operator:v1.29.0
     capabilities: Deep Insights
-    support: Red Hat
+    support: Kiali
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: ${CREATED_AT}
-    operators.openshift.io/infrastructure-features: '["Disconnected"]'
+    createdAt: 2021-01-01T00:00:00Z
     alm-examples: |-
       [
         {
@@ -25,9 +24,6 @@ metadata:
             "installation_tag": "My Kiali",
             "istio_namespace": "istio-system",
             "deployment": {
-              "logger": {
-                "log_level": "debug"
-              },
               "namespace": "istio-system",
               "view_only_mode": false
             },
@@ -76,9 +72,9 @@ metadata:
         }
       ]
 spec:
-  version: ${KIALI_OPERATOR_VERSION}
+  version: 1.29.0
   maturity: stable
-  replaces: kiali-operator.v${KIALI_OLD_OPERATOR_VERSION}
+  replaces: kiali-operator.v1.28.0
   displayName: Kiali Operator
   description: |-
     ## About the managed application
@@ -93,7 +89,7 @@ spec:
     the application writers from those tasks. Routing decisions are done at the
     mesh level.
 
-    Kiali works with OpenShift Service Mesh to visualize the service
+    Kiali works with Istio, in OpenShift or Kubernetes, to visualize the service
     mesh topology, to provide visibility into features like circuit breakers,
     request rates and more. It offers insights about the mesh components at
     different levels, from abstract Applications to Services and Workloads.
@@ -102,10 +98,12 @@ spec:
 
     ### Accessing the UI
 
-    By default, the Kiali operator exposes the Kiali UI as an OpenShift Route.
+    By default, the Kiali operator exposes the Kiali UI as a Route on OpenShift
+    or Ingress on Kubernetes.
 
-    The default root context path is '/' though you can change
-    this by configuring the 'web_root' setting in the Kiali CR.
+    On OpenShift, the default root context path is '/' and on Kubernetes it is
+    '/kiali' though you can change this by configuring the 'web_root' setting in
+    the Kiali CR.
 
     ## About this Operator
 
@@ -113,12 +111,24 @@ spec:
 
     For quick descriptions of all the settings you can configure in the Kiali
     Custom Resource (CR), see the file
-    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/v1.24/deploy/kiali/kiali_cr.yaml)
+    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml)
+
+    Note that the Kiali operator can be told to restrict Kiali's access to
+    specific namespaces, or can provide to Kiali cluster-wide access to all
+    namespaces.
 
     ## Prerequisites for enabling this Operator
 
-    Kiali is a companion tool for OpenShift Service Mesh. So before you install Kiali, you must have
-    already installed Service Mesh.
+    Today Kiali works with Istio. So before you install Kiali, you must have
+    already installed Istio.
+    If you already have Kiali in your Istio environment and you want to
+    install Kiali via the Kiali Operator, uninstall the installed Kiali first.
+
+    When you install Kiali in a non-OpenShift Kubernetes environment, the
+    authentication strategy will default to `token`.
+
+    If you wish to use the `openid` authentication strategy, you must have an
+    OpenID Connect available and accessible to Kiali.
   icon:
   - base64data: PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIyLjAuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxMjgwIDEyODAiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDEyODAgMTI4MDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiMwMTMxNDQ7fQoJLnN0MXtmaWxsOiMwMDkzREQ7fQo8L3N0eWxlPgo8Zz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik04MTAuOSwxODAuOWMtMjUzLjYsMC00NTkuMSwyMDUuNS00NTkuMSw0NTkuMXMyMDUuNSw0NTkuMSw0NTkuMSw0NTkuMVMxMjcwLDg5My42LDEyNzAsNjQwCgkJUzEwNjQuNSwxODAuOSw4MTAuOSwxODAuOXogTTgxMC45LDEwMjkuMmMtMjE1LDAtMzg5LjItMTc0LjMtMzg5LjItMzg5LjJjMC0yMTUsMTc0LjMtMzg5LjIsMzg5LjItMzg5LjJTMTIwMC4xLDQyNSwxMjAwLjEsNjQwCgkJUzEwMjUuOSwxMDI5LjIsODEwLjksMTAyOS4yeiIvPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTY1My4zLDI4NGMtMTM2LjQsNjAuNS0yMzEuNiwxOTcuMS0yMzEuNiwzNTZjMCwxNTguOCw5NS4yLDI5NS41LDIzMS42LDM1NmM5OC40LTg3LjEsMTYwLjQtMjE0LjMsMTYwLjQtMzU2CgkJQzgxMy43LDQ5OC4zLDc1MS42LDM3MS4xLDY1My4zLDI4NHoiLz4KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0zNTEuOCw2NDBjMC0xMDkuOCwzOC42LTIxMC41LDEwMi44LTI4OS41Yy0zOS42LTE4LjItODMuNi0yOC4zLTEzMC0yOC4zQzE1MC45LDMyMi4yLDEwLDQ2NC41LDEwLDY0MAoJCXMxNDAuOSwzMTcuOCwzMTQuNiwzMTcuOGM0Ni4zLDAsOTAuNC0xMC4xLDEzMC0yOC4zQzM5MC4zLDg1MC41LDM1MS44LDc0OS44LDM1MS44LDY0MHoiLz4KPC9nPgo8L3N2Zz4K
     mediatype: image/svg+xml
@@ -127,7 +137,7 @@ spec:
   - name: Kiali Developers Google Group
     email: kiali-dev@googlegroups.com
   provider:
-    name: Red Hat
+    name: Kiali
   labels:
     name: kiali-operator
   selector:
@@ -150,9 +160,9 @@ spec:
     url: https://github.com/kiali/kiali-operator
   installModes:
   - type: OwnNamespace
-    supported: false
+    supported: true
   - type: SingleNamespace
-    supported: false
+    supported: true
   - type: MultiNamespace
     supported: false
   - type: AllNamespaces
@@ -180,17 +190,15 @@ spec:
         version: route.openshift.io/v1
       - kind: Ingress
         version: networking.k8s.io/v1beta1
-      - kind: ConsoleLink
-        version: consolelinks.console.openshift.io/v1
       specDescriptors:
+      - displayName: Authentication Strategy
+        description: "Determines how a user is to log into Kiali. Default: openshift (when deployed in OpenShift); token (when deployed in other Kubernetes clusters)"
+        path: auth.strategy
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:label'
       - displayName: Kiali Namespace
         description: "The namespace where Kiali and its associated resources will be created. Default: istio-system"
         path: deployment.namespace
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
-      - displayName: Verbose Mode
-        description: "Determines the priority levels of log messages Kiali will output. Typical values are '3' for INFO and higher priority messages, '4' for DEBUG and higher priority messages (this makes the logs more noisy). Default: 3"
-        path: deployment.verbose_mode
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
       - displayName: View Only Mode
@@ -199,7 +207,7 @@ spec:
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
       - displayName: Web Root
-        description: "Defines the root context path for the Kiali console, API endpoints and readiness/liveness probes. Default: /"
+        description: "Defines the root context path for the Kiali console, API endpoints and readiness/liveness probes. Default: / (when deployed on OpenShift; /kiali (when deployed on Kubernetes)"
         path: server.web_root
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
@@ -234,9 +242,9 @@ spec:
                 app: kiali-operator
                 # required for the operator SDK metric service selector
                 name: kiali-operator
-                version: v${KIALI_OPERATOR_VERSION}
+                version: v1.29.0
                 app.kubernetes.io/name: kiali-operator
-                app.kubernetes.io/version: v${KIALI_OPERATOR_VERSION}
+                app.kubernetes.io/version: v1.29.0
                 app.kubernetes.io/part-of: kiali-operator
               annotations:
                 prometheus.io/scrape: "true"
@@ -244,7 +252,7 @@ spec:
               serviceAccountName: kiali-operator
               containers:
               - name: operator
-                image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8-operator${KIALI_OPERATOR_TAG}
+                image: quay.io/kiali/kiali-operator:v1.29.0
                 imagePullPolicy: "IfNotPresent"
                 args:
                 - "--zap-level=info"
@@ -272,14 +280,6 @@ spec:
                   value: "1"
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
-                - name: RELATED_IMAGE_kiali_default
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
-                - name: RELATED_IMAGE_kiali_v1_0
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
-                - name: RELATED_IMAGE_kiali_v1_12
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_12_TAG}"
-                - name: RELATED_IMAGE_kiali_v1_24
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_24_TAG}"
                 ports:
                 - name: http-metrics
                   containerPort: 8383
@@ -485,8 +485,8 @@ spec:
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups: [""]
           resources:
           - pods/portforward
@@ -501,8 +501,8 @@ spec:
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups: ["autoscaling"]
           resources:
           - horizontalpodautoscalers
@@ -517,27 +517,27 @@ spec:
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups:
           - networking.istio.io
           - security.istio.io
           resources: ["*"]
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["apps.openshift.io"]
           resources:
           - deploymentconfigs
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups: ["project.openshift.io"]
           resources:
           - projects
@@ -558,10 +558,10 @@ spec:
           resources:
           - experiments
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         serviceAccountName: kiali-operator

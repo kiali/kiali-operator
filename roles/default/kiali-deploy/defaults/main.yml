@@ -56,6 +56,9 @@ kiali_defaults:
     custom_dashboards:
       excludes: ['']
       includes: ['*']
+    hpa:
+      api_version: "autoscaling/v2beta2"
+      spec: {}
     image_name: ""
     image_pull_policy: "IfNotPresent"
     image_pull_secrets: []
