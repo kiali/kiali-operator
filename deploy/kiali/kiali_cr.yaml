@@ -122,7 +122,7 @@ spec:
 #  auth:
 #
 # Determines what authentication strategy to use when users log into Kiali.
-# Options are "anonymous", "token", "openshift", "openid".
+# Options are "anonymous", "token", "openshift", "openid", "header".
 # Choose "anonymous" to allow full access to Kiali without requiring any credentials.
 # Choose "token" to allow access to Kiali using service account tokens, which controls
 #  access based on RBAC roles assigned to the service account.
