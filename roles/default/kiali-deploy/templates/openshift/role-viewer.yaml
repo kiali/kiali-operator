@@ -92,3 +92,8 @@ rules:
   verbs:
   - get
   - list
+- apiGroups: ["authentication.k8s.io"]
+  resources:
+  - tokenreviews
+  verbs:
+  - create
