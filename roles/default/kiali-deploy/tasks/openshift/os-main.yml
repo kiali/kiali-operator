@@ -8,7 +8,9 @@
   - configmap
   - cabundle
   - "{{ 'role-viewer' if kiali_vars.deployment.view_only_mode|bool == True else 'role' }}"
+  - role-multi-cluster
   - rolebinding
+  - rolebinding-multi-cluster
   - deployment
   - service
   - "{{ 'hpa' if kiali_vars.deployment.hpa.spec | length > 0 else '' }}"
