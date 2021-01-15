@@ -1,0 +1,48 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: $DORP
+platforms:
+- name: default
+  groups:
+  - k8s
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callback_whitelist: junit
+  playbooks:
+    destroy: ../default/destroy.yml
+    prepare: ../default/prepare.yml
+    cleanup: ../default/cleanup.yml
+  inventory:
+    group_vars:
+      all:
+        cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/header-auth-test/kiali-cr.yaml"
+        cr_namespace: kiali-operator
+        wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
+        istio:
+          control_plane_namespace: istio-system
+        proxy:
+          username: admin@example.com
+          password: password
+          url: "http://kiali-proxy.{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}.nip.io:30805"
+        kiali:
+          install_namespace: istio-system
+          accessible_namespaces: ["**"]
+          operator_namespace: kiali-operator
+          operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
+          operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
+          operator_watch_namespace: kiali-operator
+          operator_cluster_role_creator: "true"
+          image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')|default('quay.io/kiali/kiali', True)) }}"
+          image_version: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION')|default('latest', True) }}"
+          image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_PULL_POLICY')|default('Always', True) }}"
+          operator_image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_PULL_POLICY')|default('Always', True) }}"
+scenario:
+  name: header-auth-test
+  test_sequence:
+  - prepare
+  - converge
+  - destroy
