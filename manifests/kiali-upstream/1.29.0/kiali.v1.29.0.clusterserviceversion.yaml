@@ -564,4 +564,9 @@ spec:
           - create
           - delete
           - patch
+        - apiGroups: ["authentication.k8s.io"]
+          resources:
+          - tokenreviews
+          verbs:
+          - create
         serviceAccountName: kiali-operator
