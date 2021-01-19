@@ -10,6 +10,15 @@ spec:
   title: Kiali Internal Metrics
   items:
   - chart:
+      name: "API hit rate"
+      unit: "ops"
+      spans: 6
+      metricName: "kiali_api_processing_duration_seconds_count"
+      dataType: "rate"
+      aggregations:
+      - label: "route"
+        displayName: "Route"
+  - chart:
       name: "API processing duration"
       unit: "seconds"
       spans: 6
@@ -19,6 +28,19 @@ spec:
       - label: "route"
         displayName: "Route"
   - chart:
+      name: "Functions hit rate"
+      unit: "ops"
+      spans: 6
+      metricName: "kiali_go_function_processing_duration_seconds_count"
+      dataType: "rate"
+      aggregations:
+      - label: "function"
+        displayName: "Function"
+      - label: "type"
+        displayName: "Service"
+      - label: "package"
+        displayName: "Package"
+  - chart:
       name: "Functions processing duration"
       unit: "seconds"
       spans: 6
@@ -27,6 +49,8 @@ spec:
       aggregations:
       - label: "function"
         displayName: "Function"
+      - label: "type"
+        displayName: "Service"
       - label: "package"
         displayName: "Package"
   - chart:
