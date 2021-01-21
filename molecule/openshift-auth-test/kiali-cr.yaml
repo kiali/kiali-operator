@@ -1,0 +1,20 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: default
+  istio_namespace: {{ istio.control_plane_namespace }}
+  auth:
+    strategy: openshift
+  deployment:
+    accessible_namespaces: {{ kiali.accessible_namespaces }}
+    custom_dashboards:
+      includes: []
+    image_name: {{ kiali.image_name }}
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: {{ kiali.image_version }}
+    logger:
+      log_level: "trace"
+    namespace: {{ kiali.install_namespace }}
+    service_type: NodePort
