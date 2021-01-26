@@ -642,6 +642,26 @@ spec:
 # Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
 #    ---
 #    istio_injection_action: true
+#
+# Defines defaults for the UI
+#    ---
+#    ui_defaults:
+#
+# Defines the default namespaces selected when the graph page opens, set it to
+# empty array (or omit key) for no default.
+#        ---
+#        namespaces: []
+#
+# Number of metrics to get on each update. Omit for default.
+# Valid values: 1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 7d, 30d
+#        ---
+#        metrics_per_refresh: "1m"
+#
+# How long should the interval be between each graph refresh. Omit for default,
+# "pause" to disable auto refresh.
+# Valid values: pause, 10s, 15s, 30s, 1m, 5m, 15m
+#        ---
+#        auto_refresh_interval: "15s"
 
 ##########
 #  ---
