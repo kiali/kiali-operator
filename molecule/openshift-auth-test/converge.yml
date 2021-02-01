@@ -48,6 +48,12 @@
       validate_certs: false
     register: kiali_output
 
+  - name: Get the current list of access tokens so we know what sessions already exist before we log in
+    k8s_info:
+      api_version: oauth.openshift.io/v1
+      kind: OAuthAccessToken
+    register: oauthaccesstokens_original_raw
+
   # BEGIN A SUCCESSFUL OPENSHIFT OAUTH LOGIN PROCESS
 
   - name: Get /api/auth/info from Kiali Server
@@ -215,4 +221,47 @@
     assert:
       that:
       - kiali_output.json | length > 0
+
+  - name: Get the new list of access tokens - our login session should be in here now
+    k8s_info:
+      api_version: oauth.openshift.io/v1
+      kind: OAuthAccessToken
+    register: oauthaccesstokens_new_raw
+
+  - name: Obtain our login oauth access token from the list
+    set_fact:
+      login_oauthaccesstoken_list_of_one: "{{ oauthaccesstokens_new_raw.resources | difference(oauthaccesstokens_original_raw.resources) }}"
+
+  - name: Assert that we see a new login access token exists and it is as expected
+    assert:
+      that:
+      - login_oauthaccesstoken_list_of_one | length == 1
+      - login_oauthaccesstoken_list_of_one[0].clientName == 'kiali-' + kiali.install_namespace
+      - login_oauthaccesstoken_list_of_one[0].userName == openshift.username
+  - debug:
+      msg: "OAuthAccessToken name: {{ login_oauthaccesstoken_list_of_one[0].metadata.name }}"
+
+  # PERFORM A LOGOUT
+
+  - name: Now log out
+    uri:
+      url: "{{ kiali_base_url }}/api/logout"
+      headers:
+        Cookie: "{{ kiali_token_from_cookie }}"
+      return_content: no
+      validate_certs: false
+      follow_redirects: none
+      status_code: 204
+
+  - name: Our login session should be gone from the list of OAuthAccessTokens
+    k8s_info:
+      api_version: oauth.openshift.io/v1
+      kind: OAuthAccessToken
+      name: "{{ login_oauthaccesstoken_list_of_one[0].metadata.name }}"
+    register: oauthaccesstokens_logout_raw
+
+  - name: Assert that we no longer see our login access token
+    assert:
+      that:
+      - (oauthaccesstokens_logout_raw.resources | length) == 0
 
