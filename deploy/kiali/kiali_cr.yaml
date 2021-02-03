@@ -408,15 +408,15 @@ spec:
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
 # **Custom-dashboards settings:
-# discovery_auto_threshold: Threshold of pods, for a given Application or Workload, above which dashboards discovery will be skipped
-#   when 'discovery_enabled' is set to 'auto'. Default: 10.
+# discovery_auto_threshold: Threshold of the number of pods, for a given Application or Workload, above which dashboards discovery will be skipped
+#   This setting only takes effect when discovery_enabled is set to 'auto'.
 # discovery_enabled: Enable, disable or set 'auto' mode to the dashboards discovery process. If set to true, Kiali
 #   will always try to discover dashboards based on metrics. Note that it can generate performance penalties while
-#   discovering dashboards for workloads having many pods (thus many metrics), especially with versions of Prometheus < 2.24.
+#   discovering dashboards for workloads having many pods (thus many metrics).
 #   When set to 'auto', Kiali will skip dashboards discovery for workloads with more than a configured threshold of pods
 #   (see 'discovery_auto_threshold'). When discovery is disabled or auto/skipped, it is still possible to tie workloads
 #   with dashboards through annotations on pods (refer to the doc https://kiali.io/documentation/latest/runtimes-monitoring/#pods-annotations)
-#   Allowed values: true, false, auto. Default: auto.
+#   Allowed values: true, false, auto.
 # enabled: Enable or disable custom dashboards, including the dashboards discovery process. Default: true.
 # is_core_component: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
