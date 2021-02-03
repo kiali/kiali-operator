@@ -90,6 +90,8 @@ kiali_defaults:
 
   external_services:
     custom_dashboards:
+      discovery_auto_threshold: 10
+      discovery_enabled: "auto"
       enabled: true
       is_core_component: false
       namespace_label: ""

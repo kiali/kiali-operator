@@ -408,15 +408,26 @@ spec:
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
 # **Custom-dashboards settings:
-# enabled: enable or disable custom dashboards, including the dashboards discovery process. Default: true.
+# discovery_auto_threshold: Threshold of the number of pods, for a given Application or Workload, above which dashboards discovery will be skipped
+#   This setting only takes effect when discovery_enabled is set to 'auto'.
+# discovery_enabled: Enable, disable or set 'auto' mode to the dashboards discovery process. If set to true, Kiali
+#   will always try to discover dashboards based on metrics. Note that it can generate performance penalties while
+#   discovering dashboards for workloads having many pods (thus many metrics).
+#   When set to 'auto', Kiali will skip dashboards discovery for workloads with more than a configured threshold of pods
+#   (see 'discovery_auto_threshold'). When discovery is disabled or auto/skipped, it is still possible to tie workloads
+#   with dashboards through annotations on pods (refer to the doc https://kiali.io/documentation/latest/runtimes-monitoring/#pods-annotations)
+#   Allowed values: true, false, auto.
+# enabled: Enable or disable custom dashboards, including the dashboards discovery process. Default: true.
 # is_core_component: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
 #   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
-# prometheus: please check the section below about Prometheus-specific settings: they are identical. The Prometheus
+# prometheus: Please check the section below about Prometheus-specific settings: they are identical. The Prometheus
 #   configuration defined here is dedicated to fetching custom dashboards, hence allowing to use a different instance
 #   of Prometheus. If omitted, the same Prometheus as for Istio metrics will be reused for custom dashboards.
 #    ---
 #    custom_dashboards:
+#      discovery_auto_threshold: 10
+#      discovery_enabled: auto
 #      enabled: true
 #      is_core_component: false
 #      namespace_label: "kubernetes_namespace"
