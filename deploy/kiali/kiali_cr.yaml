@@ -663,7 +663,7 @@ spec:
 #
 # Valid values: pause, 10s, 15s, 30s, 1m, 5m, 15m
 #        ---
-#        auto_refresh_interval: "15s"
+#        refresh_interval: "15s"
 
 ##########
 #  ---
