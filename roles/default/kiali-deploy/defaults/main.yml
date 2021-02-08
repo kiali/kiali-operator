@@ -14,18 +14,18 @@ kiali_defaults:
   version: "default"
 
   additional_display_details:
-    - title: "API Documentation"
-      annotation: "kiali.io/api-spec"
-      icon_annotation: "kiali.io/api-type"
+  - title: "API Documentation"
+    annotation: "kiali.io/api-spec"
+    icon_annotation: "kiali.io/api-type"
 
   api:
     namespaces:
       exclude:
-        - "istio-operator"
-        - "kube.*"
-        - "openshift.*"
-        - "ibm.*"
-        - "kiali-operator"
+      - "istio-operator"
+      - "kube.*"
+      - "openshift.*"
+      - "ibm.*"
+      - "kiali-operator"
       #label_selector:
 
   auth:
@@ -47,16 +47,15 @@ kiali_defaults:
     strategy: ""
 
   deployment:
-    accessible_namespaces:
-      ["^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    accessible_namespaces: ["^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"]
     #additional_service_yaml:
     affinity:
       node: {}
       pod: {}
       pod_anti: {}
     custom_dashboards:
-      excludes: [""]
-      includes: ["*"]
+      excludes: ['']
+      includes: ['*']
     hpa:
       api_version: "autoscaling/v2beta2"
       spec: {}
@@ -117,14 +116,14 @@ kiali_defaults:
         username: ""
       is_core_component: false
       dashboards:
-        - name: "Istio Service Dashboard"
-          variables:
-            namespace: "var-namespace"
-            service: "var-service"
-        - name: "Istio Workload Dashboard"
-          variables:
-            namespace: "var-namespace"
-            workload: "var-workload"
+      - name: "Istio Service Dashboard"
+        variables:
+          namespace: "var-namespace"
+          service: "var-service"
+      - name: "Istio Workload Dashboard"
+        variables:
+          namespace: "var-namespace"
+          workload: "var-workload"
       enabled: true
       in_cluster_url: ""
       url: ""
@@ -132,15 +131,15 @@ kiali_defaults:
       component_status:
         enabled: true
         components:
-          - app_label: "istiod"
-            is_core: true
-            namespace: ""
-          - app_label: "istio-ingressgateway"
-            is_core: true
-            namespace: ""
-          - app_label: "istio-egressgateway"
-            is_core: false
-            namespace: ""
+        - app_label: "istiod"
+          is_core: true
+          namespace: ""
+        - app_label: "istio-ingressgateway"
+          is_core: true
+          namespace: ""
+        - app_label: "istio-egressgateway"
+          is_core: false
+          namespace: ""
       config_map_name: "istio"
       envoy_admin_local_port: 15000
       istio_identity_domain: "svc.cluster.local"
@@ -179,8 +178,7 @@ kiali_defaults:
   health_config:
     rate: []
 
-  identity:
-    {}
+  identity: {}
     #cert_file:
     #private_key_file:
 
@@ -201,23 +199,23 @@ kiali_defaults:
     cache_duration: 300
     cache_enabled: true
     cache_istio_types:
-      - "DestinationRule"
-      - "Gateway"
-      - "ServiceEntry"
-      - "VirtualService"
-      - "Sidecar"
-      - "PeerAuthentication"
-      - "RequestAuthentication"
-      - "AuthorizationPolicy"
+    - "DestinationRule"
+    - "Gateway"
+    - "ServiceEntry"
+    - "VirtualService"
+    - "Sidecar"
+    - "PeerAuthentication"
+    - "RequestAuthentication"
+    - "AuthorizationPolicy"
 
     cache_namespaces:
-      - ".*"
+    - ".*"
     cache_token_namespace_duration: 10
     excluded_workloads:
-      - "CronJob"
-      - "DeploymentConfig"
-      - "Job"
-      - "ReplicationController"
+    - "CronJob"
+    - "DeploymentConfig"
+    - "Job"
+    - "ReplicationController"
     qps: 175
 
   login_token:
