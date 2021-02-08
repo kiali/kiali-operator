@@ -654,27 +654,26 @@ spec:
 #    ---
 #    istio_injection_action: true
 #
-# Default settings for the UI. These defaults apply to all users.:654
-#
+# Default settings for the UI. These defaults apply to all users.
 #    ---
 #    ui_defaults:
 #
 # Default selections for the namespace selection dropdown. Non-existent or
 # inaccessible namespaces will be ignored. Omit, or set to an empty array for no
 # default namespaces.
-#        ---
-#        namespaces: []
+#      ---
+#      namespaces: []
 #
 # Duration of metrics to fetch on each refresh. Omit for default.
 # Valid values: 1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 7d, 30d
-#        ---
-#        metrics_per_refresh: "1m"
+#      ---
+#      metrics_per_refresh: "1m"
 #
 # The automatic refresh interval for pages offering automatic refresh.
 #
 # Valid values: pause, 10s, 15s, 30s, 1m, 5m, 15m
-#        ---
-#        refresh_interval: "15s"
+#      ---
+#      refresh_interval: "15s"
 
 ##########
 #  ---
