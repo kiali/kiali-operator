@@ -643,22 +643,24 @@ spec:
 #    ---
 #    istio_injection_action: true
 #
-# Defines defaults for the UI
+# Default settings for the UI. These defaults apply to all users.:654
+#
 #    ---
 #    ui_defaults:
 #
-# Defines the default namespaces selected when the graph page opens, set it to
-# empty array (or omit key) for no default.
+# Default selections for the namespace selection dropdown. Non-existent or
+# inaccessible namespaces will be ignored. Omit, or set to an empty array for no
+# default namespaces.
 #        ---
 #        namespaces: []
 #
-# Number of metrics to get on each update. Omit for default.
+# Duration of metrics to fetch on each refresh. Omit for default.
 # Valid values: 1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 7d, 30d
 #        ---
 #        metrics_per_refresh: "1m"
 #
-# How long should the interval be between each graph refresh. Omit for default,
-# "pause" to disable auto refresh.
+# The automatic refresh interval for pages offering automatic refresh.
+#
 # Valid values: pause, 10s, 15s, 30s, 1m, 5m, 15m
 #        ---
 #        auto_refresh_interval: "15s"
