@@ -189,6 +189,10 @@ kiali_defaults:
 
   kiali_feature_flags:
     istio_injection_action: true
+    ui_defaults:
+      metrics_per_refresh: "1m"
+      namespaces: []
+      refresh_interval: "15s"
 
   kubernetes_config:
     burst: 200
