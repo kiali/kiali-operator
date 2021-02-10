@@ -1,0 +1,10 @@
+- set_fact:
+    status_progress_step: "{{ 1 if status_progress_step is not defined else (status_progress_step|int + 1) }}"
+
+- name: Update CR status progress field
+  include_tasks: update-status.yml
+  vars:
+    status_vars:
+      progress:
+        step: "{{ status_progress_step }}"
+        message: "{{ status_progress_message }}"

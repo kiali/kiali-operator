@@ -1,3 +1,7 @@
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Create core resources"
+
 - name: Create Kiali objects on Kubernetes
   include_tasks: process-resource.yml
   vars:
@@ -30,6 +34,10 @@
   - is_k8s == True
   - kiali_vars.deployment.hpa.spec | length == 0
 
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Process ingress"
+
 - name: Create Ingress on Kubernetes if enabled
   include_tasks: process-resource.yml
   vars:
@@ -53,6 +61,10 @@
   when:
   - is_k8s == True
   - kiali_vars.deployment.ingress_enabled|bool == False
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Create additional roles"
 
 - name: Create additional Kiali roles on Kubernetes
   include_tasks: process-additional-roles.yml
