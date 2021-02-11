@@ -1,3 +1,7 @@
+- name: Get the original CR as-is for the camelCase keys and so we can update its status field
+  set_fact:
+    current_cr: "{{ _kiali_io_kiali }}"
+
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Initializing"
@@ -71,10 +75,6 @@
 # Because we are passing through some yaml directly to Kubernetes resources, we have to retain the camelCase keys.
 # All CR parameters are converted to snake_case, but the original yaml is found in the special _kiali_io_kiali param.
 # We need to copy that original yaml into our vars where appropriate to keep the camelCase.
-
-- name: Get the original CR as-is for the camelCase keys
-  set_fact:
-    current_cr: "{{ _kiali_io_kiali }}"
 
 - name: Replace snake_case with camelCase in deployment.affinity.node
   set_fact:
