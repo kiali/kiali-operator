@@ -1,6 +1,6 @@
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Getting information about the cluster"
+    status_progress_message: "Initializing"
 
 - name: Get information about the cluster
   set_fact:
@@ -67,10 +67,6 @@
   - operator_version is not defined
 - debug:
     msg: "OPERATOR VERSION: [{{ operator_version }}]"
-
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Get CR settings"
 
 # Because we are passing through some yaml directly to Kubernetes resources, we have to retain the camelCase keys.
 # All CR parameters are converted to snake_case, but the original yaml is found in the special _kiali_io_kiali param.
@@ -195,7 +191,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Determine defaults"
+    status_progress_message: "Determining defaults"
 
 # We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
 # provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
@@ -433,7 +429,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Determine accessible namespaces"
+    status_progress_message: "Determining accessible namespaces"
 
 # Determine the accessible namespaces. The user may have specified names using regex expressions.
 # We need to get a list of all namespaces and match them to the regex expressions.
@@ -493,7 +489,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Ensure signing key exists"
+    status_progress_message: "Ensuring signing key exists"
 
 # If the signing key is empty string, we need to ensure a signing key secret exists - if it does not generate one.
 
@@ -583,7 +579,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Get config map"
+    status_progress_message: "Loading config map"
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to figure out what
 # namespaces are no longer accessible. Those namespaces will have their Kiali roles removed.
@@ -628,7 +624,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Delete obsolete roles"
+    status_progress_message: "Deleting obsolete roles"
 
 - name: Delete all additional Kiali roles from namespaces that Kiali no longer has access to
   include_tasks: remove-roles.yml
@@ -666,7 +662,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Remove labels from inaccessible namespaces"
+    status_progress_message: "Removing labels from inaccessible namespaces"
 
 - name: Remove Kiali label from namespaces that Kiali no longer has access to
   include_tasks: remove-namespace-label.yml
@@ -681,9 +677,9 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Create labels on accessible namespaces"
+    status_progress_message: "Adding labels on accessible namespaces"
 
-- name: Create namespace labels on all accessible namespaces
+- name: Add namespace labels on all accessible namespaces
   include_tasks: create-namespace-label.yml
   vars:
     # everything to the left of the = is the label name; to the right is the label value
@@ -697,7 +693,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Delete obsolete deployment"
+    status_progress_message: "Deleting obsolete deployment"
 
 - name: Delete Kiali deployment if image is changing - this uninstalled any old version of Kiali that might be running
   k8s:
@@ -761,7 +757,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Prepare to create monitoring dashboards"
+    status_progress_message: "Preparing to create monitoring dashboards"
 
 - name: Wait for Monitoring Dashboards CRD to be ready
   community.kubernetes.k8s_info:
@@ -837,9 +833,9 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Remove monitoring dashboards that are disabled"
+    status_progress_message: "Deleting monitoring dashboards that are disabled"
 
-- name: Remove Monitoring Dashboards that should no longer be deployed
+- name: Delete Monitoring Dashboards that should no longer be deployed
   k8s:
     state: "absent"
     namespace: "{{ kiali_vars.deployment.namespace }}"
@@ -857,7 +853,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Create monitoring dashboards that are enabled"
+    status_progress_message: "Creating monitoring dashboards that are enabled"
 
 - name: Create the Monitoring Dashboards
   k8s:
@@ -879,7 +875,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Restart pod"
+    status_progress_message: "Restarting pod if necessary"
 
 - name: Force the Kiali pod to restart if necessary
   vars:
@@ -905,4 +901,4 @@
 # The final task is to mark our progress as done in the status field
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Done"
+    status_progress_message: "Finished"

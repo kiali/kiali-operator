@@ -1,6 +1,8 @@
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Create core resources"
+    status_progress_message: "Creating core resources"
+  when:
+  - is_openshift == True
 
 - name: Create Kiali objects on OpenShift
   include_tasks: process-resource.yml
@@ -37,7 +39,9 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Process route"
+    status_progress_message: "Processing route"
+  when:
+  - is_openshift == True
 
 - name: Create Route on OpenShift if enabled
   include_tasks: process-resource.yml
@@ -65,7 +69,9 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Create additional roles"
+    status_progress_message: "Creating additional roles"
+  when:
+  - is_openshift == True
 
 - name: Create additional Kiali roles on OpenShift
   include_tasks: process-additional-roles.yml
@@ -80,7 +86,9 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Process OpenShift resources"
+    status_progress_message: "Processing OpenShift resources"
+  when:
+  - is_openshift == True
 
 - name: Get the Kiali Route URL
   include: openshift/os-get-kiali-route-url.yml
