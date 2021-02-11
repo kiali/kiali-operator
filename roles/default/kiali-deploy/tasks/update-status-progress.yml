@@ -8,4 +8,4 @@
     status_vars:
       progress:
         message: "{{ status_progress_step }}. {{ status_progress_message }}"
-        duration: "{{ (('%Y-%m-%d %H:%M:%S' | strftime) | to_datetime - status_progress_start | to_datetime).total_seconds() | int }}"
+        duration: "{{ ('%Y-%m-%d %H:%M:%S' | strftime | to_datetime) - (status_progress_start | to_datetime) }}"
