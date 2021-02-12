@@ -17,6 +17,8 @@ spec:
     ingress_enabled: true
     namespace: "${NAMESPACE}"
     service_type: "${SERVICE_TYPE}"
+    logger:
+      log_level: info
   external_services:
     grafana:
       auth:
