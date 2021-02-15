@@ -1,3 +1,11 @@
+- name: Get the original CR as-is for the camelCase keys and so we can update its status field
+  set_fact:
+    current_cr: "{{ _kiali_io_kiali }}"
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Initializing"
+
 - name: Get information about the cluster
   set_fact:
     api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
@@ -67,10 +75,6 @@
 # Because we are passing through some yaml directly to Kubernetes resources, we have to retain the camelCase keys.
 # All CR parameters are converted to snake_case, but the original yaml is found in the special _kiali_io_kiali param.
 # We need to copy that original yaml into our vars where appropriate to keep the camelCase.
-
-- name: Get the original CR as-is for the camelCase keys
-  set_fact:
-    current_cr: "{{ _kiali_io_kiali }}"
 
 - name: Replace snake_case with camelCase in deployment.affinity.node
   set_fact:
@@ -184,6 +188,10 @@
   debug:
     msg: "{{ msg.split('\n') }}"
   tags: test
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Determining defaults"
 
 # We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
 # provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
@@ -425,6 +433,10 @@
 - debug:
     msg: "IMAGE_NAME={{ kiali_vars.deployment.image_name }}; IMAGE VERSION={{ kiali_vars.deployment.image_version }}; VERSION LABEL={{ kiali_vars.deployment.version_label }}"
 
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Determining accessible namespaces"
+
 # Determine the accessible namespaces. The user may have specified names using regex expressions.
 # We need to get a list of all namespaces and match them to the regex expressions.
 # Note that we replace kiali_vars.deployment.accessible_namespaces with the full list of actual namespace names
@@ -480,6 +492,10 @@
   - kiali_vars.api.namespaces.label_selector is defined
   # this regex is not 100% accurate, but we want to at least catch obvious errors
   - kiali_vars.api.namespaces.label_selector is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Ensuring signing key exists"
 
 # If the signing key is empty string, we need to ensure a signing key secret exists - if it does not generate one.
 
@@ -567,6 +583,10 @@
   when:
   - kiali_vars.login_token.signing_key | regex_search('secret:.+:.+')
 
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Loading config map"
+
 # The following few tasks read the current Kiali configmap (if one exists) in order to figure out what
 # namespaces are no longer accessible. Those namespaces will have their Kiali roles removed.
 # They will also have the Kiali labels removed.
@@ -608,6 +628,10 @@
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
 
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Deleting obsolete roles"
+
 - name: Delete all additional Kiali roles from namespaces that Kiali no longer has access to
   include_tasks: remove-roles.yml
   loop: "{{ no_longer_accessible_namespaces }}"
@@ -642,6 +666,10 @@
   - current_accessible_namespaces is defined
   - '"**" in current_accessible_namespaces'
 
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Removing labels from inaccessible namespaces"
+
 - name: Remove Kiali label from namespaces that Kiali no longer has access to
   include_tasks: remove-namespace-label.yml
   vars:
@@ -653,7 +681,11 @@
   - no_longer_accessible_namespaces is defined
   - current_label_selector is defined
 
-- name: Create namespace labels on all accessible namespaces
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Adding labels on accessible namespaces"
+
+- name: Add namespace labels on all accessible namespaces
   include_tasks: create-namespace-label.yml
   vars:
     # everything to the left of the = is the label name; to the right is the label value
@@ -664,6 +696,10 @@
     loop_var: the_namespace
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Deleting obsolete deployment"
 
 - name: Delete Kiali deployment if image is changing - this uninstalled any old version of Kiali that might be running
   k8s:
@@ -724,6 +760,10 @@
 # continue even though it means the monitoring dashboards feature will be disabled.
 # If the dashboards are disabled, we still quickly check to make sure the CRD exists
 # because we may need to remove dashboards that were created previously.
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Preparing to create monitoring dashboards"
 
 - name: Wait for Monitoring Dashboards CRD to be ready
   community.kubernetes.k8s_info:
@@ -797,7 +837,11 @@
   when:
   - monitoringdashboards_crd_exists == True
 
-- name: Remove Monitoring Dashboards that should no longer be deployed
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Deleting monitoring dashboards that are disabled"
+
+- name: Delete Monitoring Dashboards that should no longer be deployed
   k8s:
     state: "absent"
     namespace: "{{ kiali_vars.deployment.namespace }}"
@@ -812,6 +856,10 @@
   - monitoring_dashboard_yamls_to_remove is defined
   - monitoring_dashboard_yamls_to_remove | length > 0
   ignore_errors: yes
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Creating monitoring dashboards that are enabled"
 
 - name: Create the Monitoring Dashboards
   k8s:
@@ -830,6 +878,10 @@
   ignore_errors: yes
 
 # If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Restarting pod if necessary"
 
 - name: Force the Kiali pod to restart if necessary
   vars:
@@ -851,3 +903,8 @@
   vars:
     status_vars:
       accessibleNamespaces: "{{ ('Number of accessible namespaces (including control plane namespace): ' + (kiali_vars.deployment.accessible_namespaces | length | string)) if (kiali_vars.deployment.accessible_namespaces | length > 20) else (kiali_vars.deployment.accessible_namespaces | join(',')) }}"
+
+# The final task is to mark our progress as done in the status field
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Finished"
