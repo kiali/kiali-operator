@@ -580,6 +580,9 @@ spec:
 # url: External URL that will be used to generate links to Jaeger. It must be accessible to clients external to
 #      the cluster (e.g: browser) in order to generate valid links.
 #      If tracing service is deployed in a QUERY_BASE_PATH set this in the url like https://<hostname>/<QUERY_BASE_PATH> . EX: https://tracing-service:8080/jaeger
+# use_grpc: Set "true" to enable GRPC connection between Kiali and Jaeger, in order to speed up the queries. In some setups you might not be able to use
+#      GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it).
+#      If not specified, it will be false if deployed within a Maistra/OSSM+OpenShift environment, true otherwise.
 # whitelist_istio_system: Set whitelist services in istio-system to check their traces
 #    ---
 #    tracing:
@@ -596,6 +599,7 @@ spec:
 #      in_cluster_url: ""
 #      namespace_selector: true
 #      url: ""
+#      #use_grpc:
 #      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
 ##########

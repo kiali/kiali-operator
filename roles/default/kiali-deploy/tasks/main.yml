@@ -258,6 +258,12 @@
 
 # Determine some more defaults.
 
+- name: Set default tracing use_grpc setting
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': { 'use_grpc': False if is_maistra else True }}}, recursive=True) }}"
+  when:
+  - kiali_vars.external_services.tracing.use_grpc is not defined
+
 - name: Set default web root based on cluster type
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'server': {'web_root': '/' if is_openshift else '/kiali'}}, recursive=True) }}"
