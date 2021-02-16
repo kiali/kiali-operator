@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/part-of: kiali
 spec:
   title: Envoy Metrics
-#  discoverOn: "envoy_server_uptime"
+  discoverOn: "envoy_server_uptime"
   items:
   - chart:
       name: "Pods uptime"
