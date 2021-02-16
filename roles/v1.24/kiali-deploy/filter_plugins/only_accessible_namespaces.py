@@ -16,7 +16,7 @@ def only_accessible_namespaces(value, accessible_namespaces=[]):
   all_accessible_namespaces = []
   for namespace in value:
     for accessible_namespace_regex in accessible_namespaces:
-      if re.match(accessible_namespace_regex, namespace):
+      if re.match('^' + accessible_namespace_regex + '$', namespace):
         all_accessible_namespaces.append(namespace)
         break
   return all_accessible_namespaces

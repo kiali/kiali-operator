@@ -13,31 +13,53 @@
     assert:
       that:
       - kiali_configmap.api.namespaces.label_selector is not defined
+
   # change to accessible_namespaces to a fixed list of namespaces
   - k8s:
       state: present
       api_version: v1
       kind: Namespace
-      name: foo
+      name: kialitestns
+  - k8s:
+      state: present
+      api_version: v1
+      kind: Namespace
+      name: kialitestns2
+  - k8s:
+      state: present
+      api_version: v1
+      kind: Namespace
+      name: kialianothertestns
   - import_tasks: ../common/set_accessible_namespaces_to_list.yml
     vars:
-      namespace_list: [ 'istio-system', 'foo' ]
+      namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianother.*' ]
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../asserts/accessible_namespaces_equals.yml
     vars:
-      namespace_list: [ 'istio-system', 'foo' ]
+      namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianothertestns' ]
   - name: "Make sure label_selector is set properly"
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector == 'kiali.io/member-of=istio-system'
+      - kiali_configmap.api.namespaces.label_selector == "kiali.io/member-of={{ istio.control_plane_namespace }}"
   - k8s:
       state: absent
       api_version: v1
       kind: Namespace
-      name: foo
+      name: kialitestns
+  - k8s:
+      state: absent
+      api_version: v1
+      kind: Namespace
+      name: kialitestns2
+  - k8s:
+      state: absent
+      api_version: v1
+      kind: Namespace
+      name: kialianothertestns
+
   # change to accessible_namespaces back to **
   - import_tasks: ../common/set_accessible_namespaces_to_all.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
