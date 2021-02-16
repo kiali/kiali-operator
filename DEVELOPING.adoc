@@ -146,6 +146,11 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 - [ ] Ensure each group of settings are alphabetically sorted in all the files where the new setting was added.
 - [ ] If appropriate, add some tests to the link:./molecule/config-values-test/converge.yml[Molecule config-values-test]
 
+### Are You Altering a Kiali Monitoring Dashboard Template?
+
+- [ ] Modify the link:https://github.com/kiali/kiali-operator/tree/master/roles/default/kiali-deploy/templates/dashboards[templates used by the Operator]
+- [ ] Modify the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/dashboards[templates used by the Server Helm Chart]
+
 ### Do You Need To Backport Changes To Support Older Versions?
 
 - [ ] Changes made to the link:./roles/default[`default`] Ansible role should be duplicated to the versioned Ansible role (e.g. link:./roles/v1.24[`v1.24`])
