@@ -488,6 +488,10 @@ spec:
 #        variables:
 #          namespace: "var-namespace"
 #          workload: "var-workload"
+#      - name: "Istio Mesh Dashboard"
+#      - name: "Istio Control Plane Dashboard"
+#      - name: "Istio Performance Dashboard"
+#      - name: "Istio Wasm Extension Dashboard"
 #      enabled: true
 #      in_cluster_url: "http://grafana.istio-system:3000"
 #      url: ""
