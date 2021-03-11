@@ -53,7 +53,7 @@ spec:
 #    prometheus: prom-ns
 # means Prometheus is installed in the namespace "prom-ns" but all other
 # Istio components are installed in the namespace defined in istio_namespace.
-# NOTE: You can find Istio Components Status settings under `external_services`. This is only used by the operator.
+# NOTE: You can find Istio Components Status settings under `external_services`.
 #  ---
 #  istio_component_namespaces: {}
 
