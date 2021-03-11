@@ -33,6 +33,7 @@ rules:
   - post
 - apiGroups: ["extensions", "apps"]
   resources:
+  - daemonsets
   - deployments
   - replicasets
   - statefulsets
