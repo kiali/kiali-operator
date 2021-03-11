@@ -53,6 +53,7 @@ spec:
 #    prometheus: prom-ns
 # means Prometheus is installed in the namespace "prom-ns" but all other
 # Istio components are installed in the namespace defined in istio_namespace.
+# NOTE: You can find Istio Components Status settings under `external_services`. This is only used by the operator.
 #  ---
 #  istio_component_namespaces: {}
 
@@ -499,6 +500,12 @@ spec:
 #     app_label: Istio component pod app label.
 #     is_core: Whether the component is core for your deployment.
 #     namespace: The namespace where the component is installed in. It defaults to the 'istio_namespace' setting.
+#                Note that the Istio documentation suggests you install the ingress and egress to different namespaces,
+#                so you most likely will want to explicitly set this namespace value for the ingress and egress components.
+#                For example, something like:
+#                - app_label: istio-ingressgateway
+#                  is_core:   false
+#                  namespace: <the namespace where your ingress is deployed>
 # config_map_name: The name of the istio control plane config map. It defaults to `istio`.
 # envoy_admin_local_port: The port which kiali will open to fetch envoy config data information.
 # istio_identity_domain: The annotation used by Istio to identify domains.
