@@ -23,7 +23,7 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 DORP ?= docker
 
 # The version of the SDK this Makefile will download if needed
-OPERATOR_SDK_VERSION ?= 1.1.0
+OPERATOR_SDK_VERSION ?= 1.3.0
 
 .PHONY: help
 help: Makefile
