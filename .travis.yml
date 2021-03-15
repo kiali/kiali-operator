@@ -39,6 +39,6 @@ script:
   - _output/operator-sdk-install/operator-sdk bundle validate --verbose manifests/kiali-ossm
 
   # test the validity of the community metadata
-  # TODO it is possible we need to comment this out - I don't think the new SDK can validate the old format which we still use right now
-  - _output/operator-sdk-install/operator-sdk bundle validate --verbose manifests/kiali-community
-  - _output/operator-sdk-install/operator-sdk bundle validate --verbose manifests/kiali-upstream
+  # The new SDK can not validate the old format which we still use right now
+  #- _output/operator-sdk-install/operator-sdk bundle validate --verbose manifests/kiali-community
+  #- _output/operator-sdk-install/operator-sdk bundle validate --verbose manifests/kiali-upstream
