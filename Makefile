@@ -36,7 +36,6 @@ help: Makefile
 clean:
 	@rm -rf ${OUTDIR}
 
-# This is no longer used, but leaving it here in case we need it in the future
 .download-operator-sdk-if-needed:
 	@if [ "$(shell which operator-sdk 2>/dev/null || echo -n "")" == "" ]; then \
 	  mkdir -p "${OUTDIR}/operator-sdk-install" ;\
@@ -44,12 +43,11 @@ clean:
 	    echo "You do not have operator-sdk installed in your PATH. Will use the one found here: ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	  else \
 	    echo "You do not have operator-sdk installed in your PATH. The binary will be downloaded to ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
-	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk-v${OPERATOR_SDK_VERSION}-$$(uname -m)-linux-gnu > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
+	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_$$(test "$$(uname -m)" == "x86_64" && echo "amd64" || uname -m) > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	    chmod +x "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
 	  fi ;\
 	fi
 
-# This is no longer used, but leaving it here in case we need it in the future
 .ensure-operator-sdk-exists: .download-operator-sdk-if-needed
 	@$(eval OP_SDK ?= $(shell which operator-sdk 2>/dev/null || echo "${OUTDIR}/operator-sdk-install/operator-sdk"))
 	@"${OP_SDK}" version
