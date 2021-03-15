@@ -250,6 +250,7 @@ spec:
                 imagePullPolicy: "IfNotPresent"
                 args:
                 - "--zap-log-level=info"
+                - "--leader-election-id=kiali-operator"
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
@@ -266,8 +267,6 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                - name: OPERATOR_NAME
-                  value: "kiali-operator"
                 - name: ANSIBLE_DEBUG_LOGS
                   value: "True"
                 - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
