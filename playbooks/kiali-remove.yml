@@ -8,7 +8,7 @@
 
   - ignore_errors: yes
     debug:
-      msg: "CR: name={{ meta.name }}, namespace={{ meta.namespace }}"
+      msg: "CR: name={{ ansible_operator_meta.name }}, namespace={{ ansible_operator_meta.namespace }}"
 
   - ignore_errors: yes
     name: Playbook start time

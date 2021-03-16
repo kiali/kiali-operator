@@ -299,7 +299,7 @@ metadata:
   name: kiali
   namespace: ${KIALI_OPERATOR_NAMESPACE}
 annotations:
-  ansible.operator-sdk/reconcile-period: "0s"
+  ansible.sdk.operatorframework.io/verbosity: "1"
 spec:
   deployment:
     logger: 

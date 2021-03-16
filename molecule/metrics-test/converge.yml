@@ -38,11 +38,11 @@
     when:
     - is_maistra != True
 
-  # an operator cr-metric
+  # an operator build info metric
   - import_tasks: ../common/query-prometheus.yml
     vars:
       prometheus_request:
-        query: "kiali_info{app=\\\"kiali-operator\\\",{{ prom_namespace_label }}=\\\"{{ kiali.operator_namespace }}\\\"}"
+        query: "ansible_operator_build_info"
         time: "{{ test_start_time}}"
     when:
     - is_maistra != True

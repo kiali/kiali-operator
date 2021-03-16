@@ -27,11 +27,11 @@ all:
         name: kiali
         namespace: istio-system
 
-    # The Operator SDK creates a "meta" variable that contains the
-    # name and namespace of the CR.
+    # The Operator SDK creates a "ansible_operator_meta" variable
+    # that contains the name and namespace of the CR.
     # Most times you can just run with these defaults.
     # Make sure these match those in dev-kiali-cr.yaml.
 
-    meta:
+    ansible_operator_meta:
       name: kiali
       namespace: istio-system
