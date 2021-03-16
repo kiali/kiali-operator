@@ -179,6 +179,15 @@
   - kiali_vars.deployment.hpa.spec is defined
   - kiali_vars.deployment.hpa.spec | length > 0
 
+- name: Replace snake_case with camelCase in deployment.node_selector
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['deployment'].pop('node_selector') %}
+      {{ kiali_vars | combine({'deployment': {'node_selector': current_cr.spec.deployment.node_selector }}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.node_selector is defined
+  - kiali_vars.deployment.node_selector | length > 0
+
 - name: Print some debug information
   vars:
     msg: |
