@@ -55,14 +55,12 @@ clean:
 ## build: Build Kiali operator container image.
 .PHONY: build
 build:
-	mkdir -p ${OUTDIR}/docker
-	cat ${ROOTDIR}/build/Dockerfile | OPERATOR_SDK_VERSION="${OPERATOR_SDK_VERSION}" envsubst '$${OPERATOR_SDK_VERSION}' > ${OUTDIR}/docker/Dockerfile
 ifeq ($(DORP),docker)
 	@echo Building container image for Kiali operator using docker
-	docker build --pull -t ${OPERATOR_QUAY_TAG} -f ${OUTDIR}/docker/Dockerfile ${ROOTDIR}
+	docker build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_SDK_VERSION=${OPERATOR_SDK_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
 else
 	@echo Building container image for Kiali operator using podman
-	podman build --pull -t ${OPERATOR_QUAY_TAG} -f ${OUTDIR}/docker/Dockerfile ${ROOTDIR}
+	podman build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_SDK_VERSION=${OPERATOR_SDK_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
 endif
 
 ## push: Pushes the operator image to quay.
@@ -134,4 +132,4 @@ endif
 ## container-multi-arch-push-kiali-operator-quay: Pushes the Kiali Operator multi-arch image to quay.
 container-multi-arch-push-kiali-operator-quay: .ensure-buildx-builder
 	@echo Pushing Kiali Operator multi-arch image to ${OPERATOR_QUAY_TAG} using docker buildx
-	docker buildx build --push --pull --no-cache --builder=kiali-builder $(foreach arch,${TARGET_ARCHS},--platform=linux/${arch}) $(foreach tag,${OPERATOR_QUAY_TAG},--tag=${tag}) -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	docker buildx build --build-arg OPERATOR_SDK_VERSION=${OPERATOR_SDK_VERSION} --push --pull --no-cache --builder=kiali-builder $(foreach arch,${TARGET_ARCHS},--platform=linux/${arch}) $(foreach tag,${OPERATOR_QUAY_TAG},--tag=${tag}) -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}

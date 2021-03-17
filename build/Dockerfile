@@ -1,3 +1,4 @@
+ARG OPERATOR_SDK_VERSION
 FROM quay.io/operator-framework/ansible-operator:v${OPERATOR_SDK_VERSION}
 
 COPY roles/ ${HOME}/roles/
