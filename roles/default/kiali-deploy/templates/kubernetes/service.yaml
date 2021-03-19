@@ -12,6 +12,9 @@ metadata:
   annotations:
     kiali.io/api-spec: https://kiali.io/api
     kiali.io/api-type: rest
+{% if kiali_vars.server.web_fqdn|length != 0 and kiali_vars.server.web_schema|length != 0 %}
+    kiali.io/external-url: {{ kiali_vars.server.web_schema + '://' + kiali_vars.server.web_fqdn + ((':' + kiali_vars.server.web_port | string) if (kiali_vars.server.web_port | string | length != 0) else '') + (kiali_vars.server.web_root | default('')) }}
+{% endif %}
 {% if kiali_vars.deployment.service_annotations|length > 0 %}
     {{ kiali_vars.deployment.service_annotations | to_nice_yaml(indent=0) | trim | indent(4) }}
 {% endif %}
