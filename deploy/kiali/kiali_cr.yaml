@@ -515,6 +515,7 @@ spec:
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
+# istiod_deployment_name: The name of the istiod deployment.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
@@ -532,6 +533,7 @@ spec:
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_injection_annotation: "sidecar.istio.io/inject"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
+#      istiod_deployment_name: "istiod"
 #      url_service_version: ""
 #
 #
