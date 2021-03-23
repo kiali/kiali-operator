@@ -63,6 +63,19 @@
       - "--namespace={{ kiali.operator_namespace }}"
       - "--debug"
       - "kiali-operator"
+    when:
+    - operator_installer == "helm"
+    ignore_errors: yes
+
+  - name: Uninstall Operator via OLM
+    command:
+      argv:
+      - "helm"
+      - "uninstall"
+      - "--debug"
+      - "kiali-olm"
+    when:
+    - operator_installer == "olm"
     ignore_errors: yes
 
   # Helm does not uninstall CRDs, we need to do it here
@@ -73,6 +86,8 @@
       state: absent
       src: "{{ crds_yaml }}"
       wait: yes
+    when:
+    - operator_installer == "helm"
     ignore_errors: yes
 
   - name: Removing Operator namespace
@@ -83,6 +98,7 @@
       name: "{{ kiali.operator_namespace }}"
       wait: yes
     when:
+    - operator_installer == "helm"
     - kiali.operator_namespace != istio.control_plane_namespace
 
   - name: Removing CR namespace if it is different than control plan and operator namespace
