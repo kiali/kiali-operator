@@ -149,6 +149,7 @@ kiali_defaults:
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
+      istiod_deployment_name: "istiod"
       url_service_version: ""
     prometheus:
       auth:
