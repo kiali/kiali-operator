@@ -93,7 +93,9 @@ kiali_defaults:
       discovery_auto_threshold: 10
       discovery_enabled: "auto"
       enabled: true
-      is_core_component: false
+      component_status:
+        is_core: false
+        health_check_url: ""
       namespace_label: ""
       prometheus:
         auth:
@@ -114,7 +116,9 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      is_core_component: false
+      component_status:
+        is_core: false
+        health_check_url: ""
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -163,6 +167,9 @@ kiali_defaults:
       cache_duration: 7
       cache_enabled: true
       cache_expiration: 300
+      component_status:
+        is_core: true
+        health_check_url: ""
       url: ""
     tracing:
       auth:
@@ -173,7 +180,9 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      is_core_component: false
+      component_status:
+        is_core: false
+        health_check_url: ""
       enabled: true
       in_cluster_url: ""
       namespace_selector: true

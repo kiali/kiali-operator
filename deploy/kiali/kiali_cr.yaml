@@ -419,7 +419,9 @@ spec:
 #   with dashboards through annotations on pods (refer to the doc https://kiali.io/documentation/latest/runtimes-monitoring/#pods-annotations)
 #   Allowed values: true, false, auto.
 # enabled: Enable or disable custom dashboards, including the dashboards discovery process. Default: true.
-# is_core_component: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+# component_status: Used in the Components health feature.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `prometheus.url` when not provided.
 # namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
 #   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
 # prometheus: Please check the section below about Prometheus-specific settings: they are identical. The Prometheus
@@ -430,7 +432,9 @@ spec:
 #      discovery_auto_threshold: 10
 #      discovery_enabled: auto
 #      enabled: true
-#      is_core_component: false
+#      component_status:
+#        is_core: false
+#        health_check_url: ""
 #      namespace_label: "kubernetes_namespace"
 #      prometheus:
 #        auth:
@@ -456,7 +460,9 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", the same OAuth token used for authentication in Kiali will be used for the API calls to Grafana,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Grafana, for basic authentication. User only requires viewer permissions.
-# is_core_component: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+# component_status: Used in the Components health feature.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
 # dashboards: A list of Grafana dashboards that Kiali can link to. Each item contains:
 #   name: The name of the dashboard in Grafana
 #   variables:
@@ -479,7 +485,9 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
-#      is_core_component: false
+#      component_status:
+#        is_core: false
+#        health_check_url: ""
 #      dashboards:
 #      - name: "Istio Service Dashboard"
 #        variables:
@@ -553,6 +561,9 @@ spec:
 # cache_duration: Prometheus caching duration expressed in seconds
 # cache_enabled: Enable/disable Prometheus caching used for Health services
 # cache_expiration: Prometheus caching expiration expressed in seconds
+# component_status: Used in the Components health feature.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided.
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
 #      If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 #    ---
@@ -568,6 +579,9 @@ spec:
 #      cache_duration: 10
 #      cache_enabled: true
 #      cache_expiration: 300
+#      component_status:
+#        is_core: true
+#        health_check_url: ""
 #      url: ""
 #
 # **Tracing-specific settings:
@@ -584,7 +598,9 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", the same OAuth token used for authentication in Kiali will be used for the API calls to Jaeger Query,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Jaeger, for basic authentication. User only requires viewer permissions.
-# is_core_component: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+# component_status: Used in the Components health feature.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
 # enabled: When true, connections to Jaeger are enabled. "in_cluster_url" and/or "url" need to be provided.
 # in_cluster_url: Set URL for in-cluster access, which enables further integration between Kiali and Jaeger.
 #      When not provided, Kiali will only show external links using the "url" config.
@@ -607,7 +623,9 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
-#      is_core_component: false
+#      component_status:
+#        is_core: false
+#        health_check_url: ""
 #      enabled: true
 #      in_cluster_url: ""
 #      namespace_selector: true
