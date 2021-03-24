@@ -22,8 +22,9 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 # Determine if we should use Docker OR Podman - value must be one of "docker" or "podman"
 DORP ?= docker
 
-# The version of the SDK this Makefile will download if needed
+# The version of the SDK this Makefile will download if needed, and the corresponding base image
 OPERATOR_SDK_VERSION ?= 1.3.0
+OPERATOR_BASE_IMAGE_VERSION ?= 4.7.0
 
 .PHONY: help
 help: Makefile
@@ -57,10 +58,10 @@ clean:
 build:
 ifeq ($(DORP),docker)
 	@echo Building container image for Kiali operator using docker
-	docker build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_SDK_VERSION=${OPERATOR_SDK_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	docker build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
 else
 	@echo Building container image for Kiali operator using podman
-	podman build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_SDK_VERSION=${OPERATOR_SDK_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	podman build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
 endif
 
 ## push: Pushes the operator image to quay.
@@ -132,4 +133,4 @@ endif
 ## container-multi-arch-push-kiali-operator-quay: Pushes the Kiali Operator multi-arch image to quay.
 container-multi-arch-push-kiali-operator-quay: .ensure-buildx-builder
 	@echo Pushing Kiali Operator multi-arch image to ${OPERATOR_QUAY_TAG} using docker buildx
-	docker buildx build --build-arg OPERATOR_SDK_VERSION=${OPERATOR_SDK_VERSION} --push --pull --no-cache --builder=kiali-builder $(foreach arch,${TARGET_ARCHS},--platform=linux/${arch}) $(foreach tag,${OPERATOR_QUAY_TAG},--tag=${tag}) -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	docker buildx build --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} --push --pull --no-cache --builder=kiali-builder $(foreach arch,${TARGET_ARCHS},--platform=linux/${arch}) $(foreach tag,${OPERATOR_QUAY_TAG},--tag=${tag}) -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}

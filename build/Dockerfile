@@ -1,5 +1,5 @@
-ARG OPERATOR_SDK_VERSION
-FROM quay.io/operator-framework/ansible-operator:v${OPERATOR_SDK_VERSION}
+ARG OPERATOR_BASE_IMAGE_VERSION
+FROM quay.io/openshift/origin-ansible-operator:${OPERATOR_BASE_IMAGE_VERSION}
 
 COPY roles/ ${HOME}/roles/
 COPY playbooks/ ${HOME}/playbooks/
