@@ -10,6 +10,10 @@
     set_fact:
       is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
 
+  - name: Determine if the operator installation is managed externally or not
+    set_fact:
+      operator_installer: "{{ lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) }}" # can be 'helm' or 'skip'
+
   - name: Remove Kiali CR
     vars:
       custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
@@ -67,17 +71,6 @@
     - operator_installer == "helm"
     ignore_errors: yes
 
-  - name: Uninstall Operator via OLM
-    command:
-      argv:
-      - "helm"
-      - "uninstall"
-      - "--debug"
-      - "kiali-olm"
-    when:
-    - operator_installer == "olm"
-    ignore_errors: yes
-
   # Helm does not uninstall CRDs, we need to do it here
   - name: Remove CRDs
     vars:
@@ -101,7 +94,7 @@
     - operator_installer == "helm"
     - kiali.operator_namespace != istio.control_plane_namespace
 
-  - name: Removing CR namespace if it is different than control plan and operator namespace
+  - name: Removing CR namespace if it is different than control plane and operator namespace
     k8s:
       state: absent
       api_version: v1
