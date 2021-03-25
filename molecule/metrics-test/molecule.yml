@@ -22,7 +22,6 @@ provisioner:
         cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/metrics-test/kiali-cr.yaml"
         cr_namespace: kiali-operator
         wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
-        operator_installer: "{{ lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) }}" # can be helm, olm, skip
         istio:
           control_plane_namespace: istio-system
         kiali:
