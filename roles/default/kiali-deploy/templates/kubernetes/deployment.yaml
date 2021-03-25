@@ -49,6 +49,26 @@ spec:
 {% endif %}
     spec:
       serviceAccount: kiali-service-account
+      initContainer:
+      - name: copy-console
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
+        image: {{ kiali_vars.deployment.image_name }}:{{ kiali_vars.deployment.image_version }}
+        command:
+        - sh
+        - -c
+        - cp -r /opt/kiali/console/* /tmp/console
+        volumeMounts:
+        - name: kiali-console
+          mountPath: /tmp/console
 {% if kiali_vars.deployment.priority_class_name != "" %}
       priorityClassName: "{{ kiali_vars.deployment.priority_class_name }}"
 {% endif %}
@@ -62,6 +82,16 @@ spec:
       - image: {{ kiali_vars.deployment.image_name }}:{{ kiali_vars.deployment.image_version }}
         imagePullPolicy: {{ kiali_vars.deployment.image_pull_policy }}
         name: kiali
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          privileged: false
+          capabilities:
+            drop:
+            - ALL
         command:
         - "/opt/kiali/kiali"
         - "-config"
@@ -97,9 +127,9 @@ spec:
         - name: LOG_LEVEL
           value: "{{ kiali_vars.deployment.verbose_mode if kiali_vars.deployment.verbose_mode is defined else kiali_vars.deployment.logger.log_level }}"
         - name: LOG_SAMPLER_RATE
-          value: "{{ kiali_vars.deployment.logger.sampler_rate }}"  
+          value: "{{ kiali_vars.deployment.logger.sampler_rate }}"
         - name: LOG_TIME_FIELD_FORMAT
-          value: "{{ kiali_vars.deployment.logger.time_field_format }}" 
+          value: "{{ kiali_vars.deployment.logger.time_field_format }}"
 {% for env in kiali_deployment_environment_variables %}
         - name: {{ env }}
           valueFrom:
@@ -114,6 +144,8 @@ spec:
           mountPath: "/kiali-cert"
         - name: kiali-secret
           mountPath: "/kiali-secret"
+        - name: kiali-console
+          mountPath: "/opt/kiali/console"
 {% if kiali_vars.deployment.resources|length > 0 %}
         resources:
           {{ kiali_vars.deployment.resources | to_nice_yaml(indent=0) | trim | indent(10) }}
@@ -134,6 +166,10 @@ spec:
         secret:
           secretName: {{ kiali_vars.deployment.secret_name }}
           optional: true
+      - name: kiali-console
+        emptyDir:
+          medium: Memory
+          sizeLimit: 50Mi
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:
 {% if kiali_vars.deployment.affinity.node|length > 0 %}
