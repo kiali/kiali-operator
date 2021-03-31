@@ -10,8 +10,6 @@ metadata:
     app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
     app.kubernetes.io/part-of: kiali
   annotations:
-    kiali.io/api-spec: https://kiali.io/api
-    kiali.io/api-type: rest
 {% if kiali_vars.server.web_fqdn|length != 0 and kiali_vars.server.web_schema|length != 0 %}
     kiali.io/external-url: {{ kiali_vars.server.web_schema + '://' + kiali_vars.server.web_fqdn + ((':' + kiali_vars.server.web_port | string) if (kiali_vars.server.web_port | string | length != 0) else '') + (kiali_vars.server.web_root | default('')) }}
 {% endif %}

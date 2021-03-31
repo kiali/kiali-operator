@@ -11,8 +11,6 @@ metadata:
     app.kubernetes.io/part-of: kiali
   annotations:
     service.beta.openshift.io/serving-cert-secret-name: kiali-cert-secret
-    kiali.io/api-spec: https://kiali.io/api
-    kiali.io/api-type: rest
 {% if kiali_vars.deployment.service_annotations|length > 0 %}
     {{ kiali_vars.deployment.service_annotations | to_nice_yaml(indent=0) | trim | indent(4) }}
 {% endif %}
