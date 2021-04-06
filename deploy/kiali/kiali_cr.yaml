@@ -339,7 +339,7 @@ spec:
 #    resources: {}
 #
 # The name of a secret used by the Kiali.
-# This secret is optinally used when configuring the OpenID authentication strategy.
+# This secret is optionally used when configuring the OpenID authentication strategy.
 # Consult the OpenID docs for more information:
 #   https://kiali.io/documentation/latest/configuration/authentication/openid/
 #    ---
