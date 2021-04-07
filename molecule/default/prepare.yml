@@ -77,6 +77,8 @@
       - "--set"
       - "debug.enableProfiler={{ lookup('env', 'MOLECULE_OPERATOR_PROFILER_ENABLED') | default('true', True) }}"
       - "--set"
+      - "allowAdHocKialiNamespace=true"
+      - "--set"
       - "cr.create=false"
       - "--set"
       - "image.repo={{ kiali.operator_image_name }}"
