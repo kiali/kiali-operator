@@ -3,8 +3,8 @@ kind: Kiali
 metadata:
   name: kiali
 spec:
+  version: {{ kiali.spec_version }}
   # this test will try to use as many defaults as we can
-  version: default
   istio_namespace: {{ istio.control_plane_namespace }}
   deployment:
     namespace: {{ kiali.install_namespace }}
