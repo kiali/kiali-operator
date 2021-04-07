@@ -177,6 +177,13 @@
   when:
   - kiali_vars.deployment.namespace is not defined or kiali_vars.deployment.namespace == ""
 
+- name: Only allow ad-hoc kiali namespace when appropriate
+  fail:
+    msg: "The operator is forbidden from installing Kiali in a namespace [{{ kiali_vars.deployment.namespace }}] that is different from the namespace where the CR was created [{{ current_cr.metadata.namespace }}]"
+  when:
+  - kiali_vars.deployment.namespace != current_cr.metadata.namespace
+  - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
+
 - name: Set default istio namespace
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'istio_namespace': kiali_vars.deployment.namespace}, recursive=True) }}"
