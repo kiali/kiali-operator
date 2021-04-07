@@ -409,6 +409,9 @@ spec:
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
 # **Custom-dashboards settings:
+# component_status: Used in the Components health feature.
+#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `prometheus.url` when not provided.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # discovery_auto_threshold: Threshold of the number of pods, for a given Application or Workload, above which dashboards discovery will be skipped
 #   This setting only takes effect when discovery_enabled is set to 'auto'.
 # discovery_enabled: Enable, disable or set 'auto' mode to the dashboards discovery process. If set to true, Kiali
@@ -419,9 +422,6 @@ spec:
 #   with dashboards through annotations on pods (refer to the doc https://kiali.io/documentation/latest/runtimes-monitoring/#pods-annotations)
 #   Allowed values: true, false, auto.
 # enabled: Enable or disable custom dashboards, including the dashboards discovery process. Default: true.
-# component_status: Used in the Components health feature.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
-#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `prometheus.url` when not provided.
 # namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
 #   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
 # prometheus: Please check the section below about Prometheus-specific settings: they are identical. The Prometheus
@@ -429,12 +429,12 @@ spec:
 #   of Prometheus. If omitted, the same Prometheus as for Istio metrics will be reused for custom dashboards.
 #    ---
 #    custom_dashboards:
+#      component_status:
+#        health_check_url: ""
+#        is_core: false
 #      discovery_auto_threshold: 10
 #      discovery_enabled: auto
 #      enabled: true
-#      component_status:
-#        is_core: false
-#        health_check_url: ""
 #      namespace_label: "kubernetes_namespace"
 #      prometheus:
 #        auth:
@@ -461,8 +461,8 @@ spec:
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Grafana, for basic authentication. User only requires viewer permissions.
 # component_status: Used in the Components health feature.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 #   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # dashboards: A list of Grafana dashboards that Kiali can link to. Each item contains:
 #   name: The name of the dashboard in Grafana
 #   variables:
@@ -486,8 +486,8 @@ spec:
 #        use_kiali_token: false
 #        username: ""
 #      component_status:
-#        is_core: false
 #        health_check_url: ""
+#        is_core: false
 #      dashboards:
 #      - name: "Istio Service Dashboard"
 #        variables:
@@ -528,7 +528,6 @@ spec:
 #    ---
 #    istio:
 #      component_status:
-#        enabled: true
 #        components:
 #        - app_label: istiod
 #          is_core: true
@@ -536,6 +535,7 @@ spec:
 #          is_core: true
 #        - app_label: istio-egressgateway
 #          is_core: false
+#        enabled: true
 #      config_map_name: "istio"
 #      envoy_admin_local_port: 15000
 #      istio_identity_domain: "svc.cluster.local"
@@ -562,8 +562,8 @@ spec:
 # cache_enabled: Enable/disable Prometheus caching used for Health services
 # cache_expiration: Prometheus caching expiration expressed in seconds
 # component_status: Used in the Components health feature.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 #   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
 #      If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 #    ---
@@ -580,8 +580,8 @@ spec:
 #      cache_enabled: true
 #      cache_expiration: 300
 #      component_status:
-#        is_core: true
 #        health_check_url: ""
+#        is_core: true
 #      url: ""
 #
 # **Tracing-specific settings:
@@ -599,8 +599,8 @@ spec:
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Jaeger, for basic authentication. User only requires viewer permissions.
 # component_status: Used in the Components health feature.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 #   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
+#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # enabled: When true, connections to Jaeger are enabled. "in_cluster_url" and/or "url" need to be provided.
 # in_cluster_url: Set URL for in-cluster access, which enables further integration between Kiali and Jaeger.
 #      When not provided, Kiali will only show external links using the "url" config.
@@ -624,8 +624,8 @@ spec:
 #        use_kiali_token: false
 #        username: ""
 #      component_status:
-#        is_core: false
 #        health_check_url: ""
+#        is_core: false
 #      enabled: true
 #      in_cluster_url: ""
 #      namespace_selector: true

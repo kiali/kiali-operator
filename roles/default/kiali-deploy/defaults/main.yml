@@ -90,12 +90,12 @@ kiali_defaults:
 
   external_services:
     custom_dashboards:
+      component_status:
+        health_check_url: ""
+        is_core: false
       discovery_auto_threshold: 10
       discovery_enabled: "auto"
       enabled: true
-      component_status:
-        is_core: false
-        health_check_url: ""
       namespace_label: ""
       prometheus:
         auth:
@@ -117,8 +117,8 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       component_status:
-        is_core: false
         health_check_url: ""
+        is_core: false
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -137,7 +137,6 @@ kiali_defaults:
       url: ""
     istio:
       component_status:
-        enabled: true
         components:
         - app_label: "istiod"
           is_core: true
@@ -148,6 +147,7 @@ kiali_defaults:
         - app_label: "istio-egressgateway"
           is_core: false
           namespace: ""
+        enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
       istio_identity_domain: "svc.cluster.local"
@@ -168,8 +168,8 @@ kiali_defaults:
       cache_enabled: true
       cache_expiration: 300
       component_status:
-        is_core: true
         health_check_url: ""
+        is_core: true
       url: ""
     tracing:
       auth:
@@ -181,8 +181,8 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       component_status:
-        is_core: false
         health_check_url: ""
+        is_core: false
       enabled: true
       in_cluster_url: ""
       namespace_selector: true
