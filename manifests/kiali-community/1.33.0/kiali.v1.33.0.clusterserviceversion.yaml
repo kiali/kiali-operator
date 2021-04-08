@@ -272,7 +272,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.namespace
                 - name: ALLOW_AD_HOC_KIALI_NAMESPACE
-                  value: "true"
+                  value: "false"
                 - name: ANSIBLE_DEBUG_LOGS
                   value: "True"
                 - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
