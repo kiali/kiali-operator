@@ -399,7 +399,7 @@ spec:
           - get
           - list
           - watch
-        - apiGroups: ["networking.k8s.io"]
+        - apiGroups: ["extensions", "networking.k8s.io"]
           resources:
           - ingresses
           verbs:
@@ -518,7 +518,10 @@ spec:
           - watch
           - patch
         - apiGroups:
+          - config.istio.io
           - networking.istio.io
+          - authentication.istio.io
+          - rbac.istio.io
           - security.istio.io
           resources: ["*"]
           verbs:
