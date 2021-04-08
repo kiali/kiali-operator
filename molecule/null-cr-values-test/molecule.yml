@@ -25,6 +25,7 @@ provisioner:
         istio:
           control_plane_namespace: istio-system
         kiali:
+          spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
           install_namespace: istio-system
           accessible_namespaces: ["**"]
           auth_strategy: anonymous

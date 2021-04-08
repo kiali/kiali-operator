@@ -31,6 +31,7 @@ provisioner:
           issuer_uri: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') | replace('.','-') }}.nip.io:32000"
           username_claim: email
         kiali:
+          spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
           install_namespace: istio-system
           accessible_namespaces: ["**"]
           operator_namespace: kiali-operator

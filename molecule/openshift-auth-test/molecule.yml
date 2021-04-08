@@ -28,6 +28,7 @@ provisioner:
           username: kiali
           password: kiali
         kiali:
+          spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
           install_namespace: istio-system
           accessible_namespaces: ["**"]
           operator_namespace: kiali-operator
