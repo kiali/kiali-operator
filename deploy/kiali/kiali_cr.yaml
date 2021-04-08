@@ -409,9 +409,6 @@ spec:
 # In this case, you would set "external_services.grafana.auth.password" to "secret:myGrafanaCredentials:myGrafanaPw".
 #
 # **Custom-dashboards settings:
-# component_status: Used in the Components health feature.
-#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `prometheus.url` when not provided.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # discovery_auto_threshold: Threshold of the number of pods, for a given Application or Workload, above which dashboards discovery will be skipped
 #   This setting only takes effect when discovery_enabled is set to 'auto'.
 # discovery_enabled: Enable, disable or set 'auto' mode to the dashboards discovery process. If set to true, Kiali
@@ -422,6 +419,7 @@ spec:
 #   with dashboards through annotations on pods (refer to the doc https://kiali.io/documentation/latest/runtimes-monitoring/#pods-annotations)
 #   Allowed values: true, false, auto.
 # enabled: Enable or disable custom dashboards, including the dashboards discovery process. Default: true.
+# is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # namespace_label: Prometheus label name used for identifying namespaces in metrics for custom dashboards.
 #   Default is "kubernetes_namespace". It is quite common to use just "namespace" as well, depending on your Prometheus configuration.
 # prometheus: Please check the section below about Prometheus-specific settings: they are identical. The Prometheus
@@ -429,12 +427,10 @@ spec:
 #   of Prometheus. If omitted, the same Prometheus as for Istio metrics will be reused for custom dashboards.
 #    ---
 #    custom_dashboards:
-#      component_status:
-#        health_check_url: ""
-#        is_core: false
 #      discovery_auto_threshold: 10
 #      discovery_enabled: auto
 #      enabled: true
+#      is_core: false
 #      namespace_label: "kubernetes_namespace"
 #      prometheus:
 #        auth:
@@ -445,6 +441,7 @@ spec:
 #          type: "none"
 #          use_kiali_token: false
 #          username: ""
+#        health_check_url: ""
 #        url: ""
 #
 # **Grafana-specific settings:
@@ -460,9 +457,6 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", the same OAuth token used for authentication in Kiali will be used for the API calls to Grafana,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Grafana, for basic authentication. User only requires viewer permissions.
-# component_status: Used in the Components health feature.
-#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # dashboards: A list of Grafana dashboards that Kiali can link to. Each item contains:
 #   name: The name of the dashboard in Grafana
 #   variables:
@@ -471,7 +465,9 @@ spec:
 #     service: The name of a variable that holds the service name, if used in that dashboard (else it must be omitted)
 #     workload: The name of a variable that holds the workload name, if used in that dashboard (else it must be omitted)
 # enabled: When true, Grafana support will be enabled in Kiali.
+# health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
 # in_cluster_url: Set URL for in-cluster access. Example: "http://grafana.istio-system:3000". This URL can contain query parameters if needed, such as "?orgId=1".
+# is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # url: The URL that Kiali uses when integrating with Grafana. This URL must be accessible to clients external to
 #      the cluster in order for the integration to work properly. If empty, an attempt to auto-discover it is made.
 #      This URL can contain query parameters if needed, such as "?orgId=1".
@@ -485,9 +481,6 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
-#      component_status:
-#        health_check_url: ""
-#        is_core: false
 #      dashboards:
 #      - name: "Istio Service Dashboard"
 #        variables:
@@ -502,7 +495,9 @@ spec:
 #      - name: "Istio Performance Dashboard"
 #      - name: "Istio Wasm Extension Dashboard"
 #      enabled: true
+#      health_check_url: ""
 #      in_cluster_url: "http://grafana.istio-system:3000"
+#      is_core: false
 #      url: ""
 #
 # **Istio-specific settings:
@@ -561,9 +556,8 @@ spec:
 # cache_duration: Prometheus caching duration expressed in seconds
 # cache_enabled: Enable/disable Prometheus caching used for Health services
 # cache_expiration: Prometheus caching expiration expressed in seconds
-# component_status: Used in the Components health feature.
-#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+# health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided.
+# is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
 #      If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 #    ---
@@ -579,9 +573,8 @@ spec:
 #      cache_duration: 10
 #      cache_enabled: true
 #      cache_expiration: 300
-#      component_status:
-#        health_check_url: ""
-#        is_core: true
+#      health_check_url: ""
+#      is_core: true
 #      url: ""
 #
 # **Tracing-specific settings:
@@ -598,13 +591,12 @@ spec:
 #   use_kiali_token: When true and if auth.type is "bearer", the same OAuth token used for authentication in Kiali will be used for the API calls to Jaeger Query,
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Jaeger, for basic authentication. User only requires viewer permissions.
-# component_status: Used in the Components health feature.
-#   health_check_url: The url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
-#   is_core: When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # enabled: When true, connections to Jaeger are enabled. "in_cluster_url" and/or "url" need to be provided.
+# health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
 # in_cluster_url: Set URL for in-cluster access, which enables further integration between Kiali and Jaeger.
 #      When not provided, Kiali will only show external links using the "url" config.
 #      Example: "http://tracing.istio-system".
+# is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # namespace_selector: Kiali use this boolean to look traces with namespace selector : service.namespace. Default: true
 # url: External URL that will be used to generate links to Jaeger. It must be accessible to clients external to
 #      the cluster (e.g: browser) in order to generate valid links.
@@ -623,11 +615,10 @@ spec:
 #        type: "none"
 #        use_kiali_token: false
 #        username: ""
-#      component_status:
-#        health_check_url: ""
-#        is_core: false
 #      enabled: true
+#      health_check_url: ""
 #      in_cluster_url: ""
+#      is_core: false
 #      namespace_selector: true
 #      url: ""
 #      #use_grpc:

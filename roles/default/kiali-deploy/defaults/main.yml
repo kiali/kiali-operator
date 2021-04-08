@@ -90,12 +90,10 @@ kiali_defaults:
 
   external_services:
     custom_dashboards:
-      component_status:
-        health_check_url: ""
-        is_core: false
       discovery_auto_threshold: 10
       discovery_enabled: "auto"
       enabled: true
+      is_core: false
       namespace_label: ""
       prometheus:
         auth:
@@ -106,6 +104,7 @@ kiali_defaults:
           type: "none"
           use_kiali_token: false
           username: ""
+        health_check_url: ""
         url: ""
     grafana:
       auth:
@@ -116,9 +115,6 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      component_status:
-        health_check_url: ""
-        is_core: false
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -133,7 +129,9 @@ kiali_defaults:
       - name: "Istio Performance Dashboard"
       - name: "Istio Wasm Extension Dashboard"
       enabled: true
+      health_check_url: ""
       in_cluster_url: ""
+      is_core: false
       url: ""
     istio:
       component_status:
@@ -167,9 +165,8 @@ kiali_defaults:
       cache_duration: 7
       cache_enabled: true
       cache_expiration: 300
-      component_status:
-        health_check_url: ""
-        is_core: true
+      health_check_url: ""
+      is_core: true
       url: ""
     tracing:
       auth:
@@ -180,11 +177,10 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      component_status:
-        health_check_url: ""
-        is_core: false
       enabled: true
+      health_check_url: ""
       in_cluster_url: ""
+      is_core: false
       namespace_selector: true
       url: ""
       #use_grpc:
