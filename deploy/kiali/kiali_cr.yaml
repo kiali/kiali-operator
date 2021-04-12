@@ -640,13 +640,15 @@ spec:
 #
 # Certificate file used to identify the file server. If set, you must go over https to access Kiali.
 # The operator will set these if it deploys Kiali behind https.
-# When left undefined, the operator will assign a cluster-specific cert file to provide https by default.
+# When left undefined, the operator will attempt to generate a cluster-specific cert file that provides
+# https by default (today, this auto-generation of a cluster-specific cert is only supported on OpenShift).
 # When set to an empty string, https will be disabled.
 #    ---
 #    #cert_file:
 #
 # Private key file used to identify the server. If set, you must go over https to access Kiali.
-# When left undefined, the operator will assign a cluster-specific private key file to provide https by default.
+# When left undefined, the operator will attempt to generate a cluster-specific private key file that provide
+# https by default (today, this auto-generation of a cluster-specific private key is only supported on OpenShift).
 # When set to an empty string, https will be disabled.
 #    ---
 #    #private_key_file:
