@@ -79,6 +79,8 @@
       - "--set"
       - "allowAdHocKialiNamespace=true"
       - "--set"
+      - "allowAdHocKialiImage=true"
+      - "--set"
       - "cr.create=false"
       - "--set"
       - "image.repo={{ kiali.operator_image_name }}"

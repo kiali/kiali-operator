@@ -269,6 +269,13 @@
   when:
   - kiali_vars.identity.private_key_file is not defined
 
+- name: Only allow ad-hoc kiali image when appropriate
+  fail:
+    msg: "The operator is forbidden from accepting a Kiali CR that defines an ad hoc Kiali image [{{ kiali_vars.deployment.image_name }}:{{ kiali_vars.deployment.image_version }}]. Remove spec.deployment.image_name and spec.deployment.image_version from the Kiali CR."
+  when:
+  - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != ""
+  - lookup('env', 'ALLOW_AD_HOC_KIALI_IMAGE') | default('false', True) != "true"
+
 - name: Default the image name to a known supported image.
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_name': supported_kiali_images[kiali_vars.version].image_name}}, recursive=True) }}"
