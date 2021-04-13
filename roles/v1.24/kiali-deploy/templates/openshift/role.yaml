@@ -23,8 +23,8 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups: ["extensions", "apps"]
   resources:
   - deployments
@@ -33,8 +33,8 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups: ["batch"]
   resources:
   - cronjobs
@@ -42,8 +42,8 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups:
   - config.istio.io
   - networking.istio.io
@@ -52,12 +52,12 @@ rules:
   - security.istio.io
   resources: ["*"]
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
+  - create
+  - delete
+  - patch
 - apiGroups: ["apps.openshift.io"]
   resources:
   - deploymentconfigs
@@ -86,9 +86,9 @@ rules:
   resources:
   - experiments
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
+  - create
+  - delete
+  - patch

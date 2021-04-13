@@ -488,8 +488,8 @@ spec:
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups: [""]
           resources:
           - pods/portforward
@@ -505,8 +505,8 @@ spec:
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups: ["batch"]
           resources:
           - cronjobs
@@ -514,8 +514,8 @@ spec:
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups:
           - config.istio.io
           - networking.istio.io
@@ -524,20 +524,20 @@ spec:
           - security.istio.io
           resources: ["*"]
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["apps.openshift.io"]
           resources:
           - deploymentconfigs
           verbs:
           - get
           - list
-          - patch
           - watch
+          - patch
         - apiGroups: ["project.openshift.io"]
           resources:
           - projects
@@ -558,12 +558,12 @@ spec:
           resources:
           - experiments
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["authentication.k8s.io"]
           resources:
           - tokenreviews
