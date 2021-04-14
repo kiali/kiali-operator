@@ -404,6 +404,13 @@
   when:
   - kiali_vars.auth.strategy == "openid"
   - kiali_vars.auth.openid.issuer_uri == "" or kiali_vars.auth.openid.client_id == "" or kiali_vars.auth.openid.username_claim == ""
+- name: Check valid value for api_token on OpenID configuration
+  fail:
+    msg: "Invalid configuration for OpenID connect! The api_token must be either 'id_token' or 'access_token'"
+  when:
+    - kiali_vars.auth.strategy == "openid"
+    - kiali_vars.auth.openid.api_token != "id_token"
+    - kiali_vars.auth.openid.api_token != "access_token"
 # Fail if ingress is disabled but auth_strategy is openshift. This is because the openshift auth strategy
 # requires OAuth Client which requires a Route. So ingress must be enabled if strategy is openshift.
 - name: Ensure Ingress is Enabled if Auth Strategy is openshift
