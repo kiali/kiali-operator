@@ -33,13 +33,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups: ["autoscaling"]
-  resources:
-  - horizontalpodautoscalers
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups: ["batch"]
   resources:
   - cronjobs
