@@ -478,7 +478,6 @@ spec:
           - nodes
           - pods
           - pods/log
-          - pods/proxy
           - replicationcontrollers
           - services
           verbs:
@@ -492,6 +491,13 @@ spec:
           verbs:
           - create
           - post
+        - apiGroups: [""]
+          resources:
+          - pods/proxy
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups: ["extensions", "apps"]
           resources:
           - daemonsets
