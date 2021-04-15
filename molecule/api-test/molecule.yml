@@ -21,7 +21,7 @@ provisioner:
       all:
         test_dir_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/api-test"
         cr_file_path: "{{ test_dir_path }}/kiali-cr.yaml"
-        cr_namespace: kiali-operator
+        cr_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'istio-system' }}" # if external operator, assume CR must go in control plane namespace
         wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
         simple_mesh_namespace: "simple-mesh"
         istio:
@@ -30,7 +30,7 @@ provisioner:
           spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
           install_namespace: istio-system
           accessible_namespaces: ["**"]
-          operator_namespace: kiali-operator
+          operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'openshift-operators' }}" # if external operator, assume operator is in OLM location
           operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
           operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
           operator_watch_namespace: kiali-operator

@@ -29,10 +29,10 @@ provisioner:
           install_namespace: anothernamespace
           accessible_namespaces: ["**"]
           auth_strategy: anonymous
-          operator_namespace: kiali-operator
+          operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'openshift-operators' }}" # if external operator, assume operator is in OLM location
           operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
           operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
-          # Notice the operator will watch istio-system.
+          # Notice the operator will watch anothernamespace
           # That is where this test will deploy the CR (cr_namespace)
           # The default namespace should be where the CR is deployed,
           # and thus will determine where to install Kiali.
