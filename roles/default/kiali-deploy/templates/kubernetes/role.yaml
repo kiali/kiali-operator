@@ -15,6 +15,7 @@ rules:
   - configmaps
   - endpoints
   - pods/log
+  - pods/proxy
   verbs:
   - get
   - list
@@ -23,7 +24,6 @@ rules:
   resources:
   - namespaces
   - pods
-  - pods/proxy
   - replicationcontrollers
   - services
   verbs:

@@ -475,6 +475,7 @@ spec:
           - configmaps
           - endpoints
           - pods/log
+          - pods/proxy
           verbs:
           - get
           - list
@@ -483,7 +484,6 @@ spec:
           resources:
           - namespaces
           - pods
-          - pods/proxy
           - replicationcontrollers
           - services
           verbs:
