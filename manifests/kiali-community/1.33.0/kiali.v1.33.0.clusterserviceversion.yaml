@@ -531,6 +531,26 @@ spec:
           - create
           - delete
           - patch
+        - apiGroups: ["authentication.maistra.io"]
+          resources:
+          - servicemeshpolicies
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - watch
+        - apiGroups: ["rbac.maistra.io"]
+          resources:
+          - servicemeshrbacconfigs
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - watch
         - apiGroups: ["apps.openshift.io"]
           resources:
           - deploymentconfigs
