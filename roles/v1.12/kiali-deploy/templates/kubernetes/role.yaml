@@ -12,7 +12,6 @@ rules:
   - configmaps
   - endpoints
   - namespaces
-  - nodes
   - pods
   - pods/log
   - replicationcontrollers
