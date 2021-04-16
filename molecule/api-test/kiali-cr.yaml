@@ -17,4 +17,4 @@ spec:
     logger: 
       log_level: "trace"
     namespace: {{ kiali.install_namespace }}
-    service_type: NodePort
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}

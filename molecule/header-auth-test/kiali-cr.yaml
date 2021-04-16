@@ -17,7 +17,7 @@ spec:
     logger:
       log_level: "trace"
     namespace: {{ kiali.install_namespace }}
-    service_type: NodePort
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   # if signing key is not 16, 24, or 32 chars, then openid "implicit flow" is used and what we test
   login_token:
     signing_key: "abc12345"
