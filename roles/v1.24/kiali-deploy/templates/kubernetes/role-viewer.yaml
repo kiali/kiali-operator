@@ -14,10 +14,15 @@ rules:
   resources:
   - configmaps
   - endpoints
-  - namespaces
-  - nodes
-  - pods
   - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
   - replicationcontrollers
   - services
   verbs:
@@ -64,3 +69,4 @@ rules:
   verbs:
   - get
   - list
+  - watch

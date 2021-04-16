@@ -14,17 +14,22 @@ rules:
   resources:
   - configmaps
   - endpoints
-  - namespaces
-  - nodes
-  - pods
   - pods/log
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
   - replicationcontrollers
   - services
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups: ["extensions", "apps"]
   resources:
   - deployments
@@ -33,8 +38,8 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups: ["batch"]
   resources:
   - cronjobs
@@ -42,8 +47,8 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups:
   - config.istio.io
   - networking.istio.io
@@ -52,12 +57,12 @@ rules:
   - security.istio.io
   resources: ["*"]
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
+  - create
+  - delete
+  - patch
 - apiGroups: ["monitoring.kiali.io"]
   resources:
   - monitoringdashboards
@@ -68,9 +73,9 @@ rules:
   resources:
   - experiments
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
+  - create
+  - delete
+  - patch

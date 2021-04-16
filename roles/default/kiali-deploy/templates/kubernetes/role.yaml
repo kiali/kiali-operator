@@ -14,18 +14,23 @@ rules:
   resources:
   - configmaps
   - endpoints
-  - namespaces
-  - nodes
-  - pods
   - pods/log
   - pods/proxy
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: [""]
+  resources:
+  - namespaces
+  - pods
   - replicationcontrollers
   - services
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups: [""]
   resources:
   - pods/portforward
@@ -41,8 +46,8 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups: ["batch"]
   resources:
   - cronjobs
@@ -50,19 +55,19 @@ rules:
   verbs:
   - get
   - list
-  - patch
   - watch
+  - patch
 - apiGroups:
   - networking.istio.io
   - security.istio.io
   resources: ["*"]
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
+  - create
+  - delete
+  - patch
 - apiGroups: ["monitoring.kiali.io"]
   resources:
   - monitoringdashboards
@@ -73,12 +78,12 @@ rules:
   resources:
   - experiments
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
   - watch
+  - create
+  - delete
+  - patch
 - apiGroups: ["authentication.k8s.io"]
   resources:
   - tokenreviews

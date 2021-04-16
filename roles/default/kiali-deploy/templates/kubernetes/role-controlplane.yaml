@@ -10,8 +10,7 @@ metadata:
     app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
     app.kubernetes.io/part-of: kiali
 rules:
-- apiGroups:
-  - ""
+- apiGroups: [""]
   resources:
   - secrets
   verbs:
