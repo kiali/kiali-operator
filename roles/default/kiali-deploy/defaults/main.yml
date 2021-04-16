@@ -95,7 +95,7 @@ kiali_defaults:
       discovery_auto_threshold: 10
       discovery_enabled: "auto"
       enabled: true
-      is_core_component: false
+      is_core: false
       namespace_label: ""
       prometheus:
         auth:
@@ -106,6 +106,7 @@ kiali_defaults:
           type: "none"
           use_kiali_token: false
           username: ""
+        health_check_url: ""
         url: ""
     grafana:
       auth:
@@ -116,7 +117,6 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      is_core_component: false
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -131,11 +131,12 @@ kiali_defaults:
       - name: "Istio Performance Dashboard"
       - name: "Istio Wasm Extension Dashboard"
       enabled: true
+      health_check_url: ""
       in_cluster_url: ""
+      is_core: false
       url: ""
     istio:
       component_status:
-        enabled: true
         components:
         - app_label: "istiod"
           is_core: true
@@ -146,6 +147,7 @@ kiali_defaults:
         - app_label: "istio-egressgateway"
           is_core: false
           namespace: ""
+        enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
       istio_identity_domain: "svc.cluster.local"
@@ -165,6 +167,8 @@ kiali_defaults:
       cache_duration: 7
       cache_enabled: true
       cache_expiration: 300
+      health_check_url: ""
+      is_core: true
       url: ""
     tracing:
       auth:
@@ -175,9 +179,10 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
-      is_core_component: false
       enabled: true
+      health_check_url: ""
       in_cluster_url: ""
+      is_core: false
       namespace_selector: true
       url: ""
       #use_grpc:
