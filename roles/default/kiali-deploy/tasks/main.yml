@@ -715,8 +715,8 @@
   vars:
     status_progress_message: "Adding labels on accessible namespaces"
 
-- name: Add namespace labels on all accessible namespaces
-  include_tasks: create-namespace-label.yml
+- name: Build yaml for additional Kiali label on accessible namespaces
+  include_tasks: build-additional-namespace-label-yaml.yml
   vars:
     # everything to the left of the = is the label name; to the right is the label value
     the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
@@ -726,6 +726,18 @@
     loop_var: the_namespace
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
+
+- name: Create additional Kiali label on accessible namespaces
+  k8s:
+    state: "present"
+    definition: "{{ all_additional_namespaces_label_yaml }}"
+  when:
+  - all_additional_namespaces_label_yaml is defined
+  - all_additional_namespaces_label_yaml | length > 0
+
+- name: Erase potentially large fact
+  set_fact:
+    all_additional_namespaces_label_yaml: ""
 
 - include_tasks: update-status-progress.yml
   vars:
@@ -739,7 +751,6 @@
     namespace: "{{ kiali_vars.deployment.namespace }}"
     name: kiali
   when:
-  - is_openshift == True or is_k8s == True
   - current_image_name is defined and current_image_version is defined
   - (current_image_name != kiali_vars.deployment.image_name) or (current_image_version != kiali_vars.deployment.image_version)
 

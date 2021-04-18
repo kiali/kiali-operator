@@ -1,0 +1,13 @@
+- name: "Build yaml for additional Kiali label on namespace [{{ the_namespace }}]"
+  vars:
+    namespace_label_yaml: |
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ the_namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: {{ the_namespace_label_value }}
+      ...
+  set_fact:
+    all_additional_namespaces_label_yaml: "{{ (all_additional_namespaces_label_yaml | default('')) + namespace_label_yaml }}"
