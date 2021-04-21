@@ -523,7 +523,7 @@ spec:
 # istio_injector_name: The name of the istio-sidecar-injector config map. This defaults to `istio-sidecar-injector`
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
-# istiod_deployment_name: The name of the istiod deployment. Default: `istiod`
+# istiod_deployment_name: The name of the istiod deployment.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
