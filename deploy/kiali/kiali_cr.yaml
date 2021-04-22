@@ -520,6 +520,7 @@ spec:
 # config_map_name: The name of the istio control plane config map. It defaults to `istio`.
 # envoy_admin_local_port: The port which kiali will open to fetch envoy config data information.
 # istio_identity_domain: The annotation used by Istio to identify domains.
+# istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
 # istiod_deployment_name: The name of the istiod deployment.
@@ -539,6 +540,7 @@ spec:
 #      envoy_admin_local_port: 15000
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_injection_annotation: "sidecar.istio.io/inject"
+#      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
 #      istiod_deployment_name: "istiod"
 #      url_service_version: ""
