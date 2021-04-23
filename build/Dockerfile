@@ -9,4 +9,4 @@ COPY requirements.yml ${HOME}/requirements.yml
 RUN ansible-galaxy collection install -r ${HOME}/requirements.yml \
  && chmod -R ug+rwx ${HOME}/.ansible
 
-RUN cp /etc/ansible/ansible.cfg ${HOME}/ansible-profiler.cfg && printf "callback_whitelist = profile_tasks\n[callback_profile_tasks]\ntask_output_limit=100" >> ${HOME}/ansible-profiler.cfg
+RUN cp /etc/ansible/ansible.cfg ${HOME}/ansible-profiler.cfg && echo "callback_whitelist = profile_tasks" >> ${HOME}/ansible-profiler.cfg

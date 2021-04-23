@@ -277,6 +277,8 @@ spec:
                   value: "false"
                 - name: NAMESPACE_BATCH_SIZE
                   value: "50"
+                - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
+                  value: "100"
                 - name: ANSIBLE_DEBUG_LOGS
                   value: "True"
                 - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
