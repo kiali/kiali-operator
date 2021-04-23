@@ -52,6 +52,28 @@ Sometimes you made simple changes to the operator playbook and roles that can be
 
 In order to use this `run-operator-playbook` target, you must have Python3 in your PATH (having an alias is not enough). You must also `pip3 install --user -r operator/molecule/requirements.txt` to get the necessary Python3 libraries installed.
 
+### Running the Operator With the Ansible Profiler
+
+If the ansible.cfg has `callback_whitelist = profile_tasks` specified, a link:https://docs.ansible.com/ansible/2.9/plugins/callback/profile_tasks.html[profiler] is run and its report is dumped at the end of each reconciliation run. You can tell the operator to use such a configuration by setting the `ANSIBLE_CONFIG` environment variable to `/opt/ansible/ansible-profiler.cfg`.
+
+The profiler report is usually good enough to start tracking down performance issues. But it may be difficult to see performance issues over tasks that loop because the profiler report will show duplicate entries for each loop invocation. In that case, copy the profiler report to a file and pipe it to a script with the following content to provide a more cumulative report:
+
+```
+awk -F~ '                   ##Setting field separator as tilde here.
+{
+  val=$2;                   ##Creating a variable named val whose value is 2nd field of current line.
+  $2="@";                   ##Setting value of 2nd field as @ here to keep all lines same(to create index for array a).
+  a[$0]+=val                ##Creating an array named a whose index is the current line and its value is the new sum
+}
+!b[$0]++{                   ##Checking if array b, whose index is the current line, has a value of NULL; if so do following.
+  c[++count]=$0}            ##Creating an array named c whose index is variable count increasing value with 1 and value is line.
+END{                        ##Starting END block of awk code here.
+  for(i=1;i<=count;i++){    ##Starting a for loop whose value starts from 1 to till value of count variable.
+     sub("@",a[c[i]],c[i]); ##Substituting @ in value of array c(which is actually lines value) with value of SUMMED $2.
+     print c[i]}            ##Printing newly value of array c where $2 is now replaced with its actual value.
+}' OFS=\~ <(cat - | sed 's/\(.*\) -\+ \(.*\)s/\1~\2/') | sort -n -t '~' -k 2 -r | column -s~ -t
+```
+
 ## The Initial Kiali Operator Git Repo Creation
 
 NOTE: This section documents how the Kiali Operator git repo was originally created. This only had to be performed one time and one time only. Developers and consumers of Kiali and Kiali Operator do not need to know any of this, so you can skip this section. This is here just for historical purposes.
