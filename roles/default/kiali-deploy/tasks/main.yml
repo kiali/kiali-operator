@@ -715,29 +715,17 @@
   vars:
     status_progress_message: "Adding labels on accessible namespaces"
 
-- name: Build yaml for additional Kiali label on accessible namespaces
-  include_tasks: build-additional-namespace-label-yaml.yml
+- name: Create additional Kiali label on all accessible namespaces
+  include_tasks: batch-labels/process-additional-namespace-label.yml
   vars:
     # everything to the left of the = is the label name; to the right is the label value
     the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
     the_namespace_label_value: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^.*=(.*)$', '\\1') }}"
-  loop: "{{ kiali_vars.deployment.accessible_namespaces }}"
+  loop: "{{ kiali_vars.deployment.accessible_namespaces | batch(lookup('env', 'NAMESPACE_BATCH_SIZE') | int | default(1, True)) | list }}"
   loop_control:
-    loop_var: the_namespace
+    loop_var: accessible_namespaces_batch
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
-
-- name: Create additional Kiali label on accessible namespaces
-  k8s:
-    state: "present"
-    definition: "{{ all_additional_namespaces_label_yaml }}"
-  when:
-  - all_additional_namespaces_label_yaml is defined
-  - all_additional_namespaces_label_yaml | length > 0
-
-- name: Erase potentially large fact
-  set_fact:
-    all_additional_namespaces_label_yaml: ""
 
 - include_tasks: update-status-progress.yml
   vars:

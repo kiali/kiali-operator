@@ -72,31 +72,15 @@
     status_progress_message: "Creating additional roles"
   when:
   - is_openshift == True
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
-- name: Build additional Kiali roles yaml for OpenShift
-  include_tasks: build-additional-roles-yaml.yml
+- name: Create additional Kiali roles on all accessible namespaces on OpenShift
+  include_tasks: batch-roles/process-additional-roles.yml
   vars:
-    process_resource_cluster: "openshift"
-  loop: "{{ kiali_vars.deployment.accessible_namespaces }}"
+    the_cluster_type: "openshift"
+  loop: "{{ kiali_vars.deployment.accessible_namespaces | batch(lookup('env', 'NAMESPACE_BATCH_SIZE') | int | default(1, True)) | list }}"
   loop_control:
-    loop_var: role_namespace
-  when:
-  - is_openshift == True
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
-
-- name: Create additional Kiali roles on OpenShift
-  k8s:
-    state: "present"
-    definition: "{{ all_additional_roles_yaml }}"
-  when:
-  - is_openshift == True
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
-  - all_additional_roles_yaml is defined
-  - all_additional_roles_yaml | length > 0
-
-- name: Erase potentially large fact that is no longer needed
-  set_fact:
-    all_additional_roles_yaml: ""
+    loop_var: accessible_namespaces_batch
   when:
   - is_openshift == True
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
