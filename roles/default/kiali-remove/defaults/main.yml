@@ -1,4 +1,6 @@
 kiali_defaults:
+  istio_namespace: ""
+
   deployment:
     accessible_namespaces: []
     hpa:

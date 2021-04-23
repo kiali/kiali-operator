@@ -485,8 +485,6 @@
 - name: Find all namespaces (this is limited to what the operator has permission to see)
   set_fact:
     all_namespaces: "{{ lookup('k8s', api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
-  when:
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
@@ -664,9 +662,8 @@
 
 - name: Delete all additional Kiali roles from namespaces that Kiali no longer has access to
   include_tasks: remove-roles.yml
-  loop: "{{ no_longer_accessible_namespaces }}"
-  loop_control:
-    loop_var: role_namespace
+  vars:
+    role_namespaces: "{{ no_longer_accessible_namespaces }}"
   when:
   - no_longer_accessible_namespaces is defined
 
@@ -679,9 +676,8 @@
 
 - name: Delete all Kiali roles from namespaces if view_only_mode is changing since role bindings are immutable
   include_tasks: remove-roles.yml
-  loop: "{{ kiali_vars.deployment.accessible_namespaces }}"
-  loop_control:
-    loop_var: role_namespace
+  vars:
+    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
   when:
   - current_view_only_mode is defined
   - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
@@ -701,12 +697,25 @@
     status_progress_message: "Removing labels from inaccessible namespaces"
 
 - name: Remove Kiali label from namespaces that Kiali no longer has access to
-  include_tasks: remove-namespace-label.yml
   vars:
+    # everything to the left of the = is the name of the label we want to remove
     the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
-  loop: "{{ no_longer_accessible_namespaces }}"
-  loop_control:
-    loop_var: the_namespace
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we check for its existence
+  k8s:
+    state: present
+    definition: |
+      {% for namespace in no_longer_accessible_namespaces %}
+      {% if namespace in all_namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: null
+      ...
+      {% endif %}
+      {% endfor %}
   when:
   - no_longer_accessible_namespaces is defined
   - current_label_selector is defined
@@ -716,14 +725,24 @@
     status_progress_message: "Adding labels on accessible namespaces"
 
 - name: Create additional Kiali label on all accessible namespaces
-  include_tasks: batch-labels/process-additional-namespace-label.yml
   vars:
+    namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
     # everything to the left of the = is the label name; to the right is the label value
     the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
     the_namespace_label_value: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^.*=(.*)$', '\\1') }}"
-  loop: "{{ kiali_vars.deployment.accessible_namespaces | batch(lookup('env', 'NAMESPACE_BATCH_SIZE') | int | default(1, True)) | list }}"
-  loop_control:
-    loop_var: accessible_namespaces_batch
+  k8s:
+    state: present
+    definition: |
+      {% for namespace in namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: {{ the_namespace_label_value }}
+      ...
+      {% endfor %}
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
 

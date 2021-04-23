@@ -8,7 +8,7 @@
   include_tasks: process-resource.yml
   vars:
     process_resource_cluster: "kubernetes"
-    role_namespace: "{{ kiali_vars.deployment.namespace }}"
+    role_namespaces: "{{ [ kiali_vars.deployment.namespace ] }}"
   loop:
   - serviceaccount
   - configmap
@@ -74,12 +74,19 @@
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
 - name: Create additional Kiali roles on all accessible namespaces on Kubernetes
-  include_tasks: batch-roles/process-additional-roles.yml
   vars:
-    the_cluster_type: "kubernetes"
-  loop: "{{ kiali_vars.deployment.accessible_namespaces | batch(lookup('env', 'NAMESPACE_BATCH_SIZE') | int | default(1, True)) | list }}"
-  loop_control:
-    loop_var: accessible_namespaces_batch
+    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
+  k8s:
+    definition: "{{ lookup('template', 'templates/kubernetes/' + ('role-viewer' if kiali_vars.deployment.view_only_mode|bool == True else 'role') + '.yaml') }}"
+  when:
+  - is_k8s == True
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+
+- name: Create additional Kiali role bindings on all accessible namespaces on Kubernetes
+  vars:
+    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
+  k8s:
+    definition: "{{ lookup('template', 'templates/kubernetes/rolebinding.yaml') }}"
   when:
   - is_k8s == True
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
