@@ -1,0 +1,14 @@
+apiVersion: oauth.openshift.io/v1
+kind: OAuthClient
+metadata:
+  name: kiali-{{ kiali_vars.deployment.namespace }}
+  labels:
+    app: kiali
+    version: {{ kiali_vars.deployment.version_label }}
+    app.kubernetes.io/name: kiali
+    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
+    app.kubernetes.io/part-of: kiali
+redirectURIs:
+  - {{ kiali_route_url }}
+grantMethod: auto
+allowAnyScope: true

@@ -1,0 +1,11 @@
+- set_fact:
+    status_progress_step: "{{ 1 if status_progress_step is not defined else (status_progress_step|int + 1) }}"
+    status_progress_start: "{{ ('%Y-%m-%d %H:%M:%S' | strftime) if status_progress_start is not defined else (status_progress_start) }}"
+
+- name: Update CR status progress field
+  include_tasks: update-status.yml
+  vars:
+    status_vars:
+      progress:
+        message: "{{ status_progress_step }}. {{ status_progress_message }}"
+        duration: "{{ ('%Y-%m-%d %H:%M:%S' | strftime | to_datetime) - (status_progress_start | to_datetime) }}"
