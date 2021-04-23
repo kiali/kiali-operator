@@ -1,0 +1,65 @@
+apiVersion: "monitoring.kiali.io/v1alpha1"
+kind: MonitoringDashboard
+metadata:
+  name: kiali
+  labels:
+    app.kubernetes.io/name: kiali
+    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
+    app.kubernetes.io/part-of: kiali
+spec:
+  title: Kiali Internal Metrics
+  items:
+  - chart:
+      name: "API hit rate"
+      unit: "ops"
+      spans: 6
+      metricName: "kiali_api_processing_duration_seconds_count"
+      dataType: "rate"
+      aggregations:
+      - label: "route"
+        displayName: "Route"
+  - chart:
+      name: "API processing duration"
+      unit: "seconds"
+      spans: 6
+      metricName: "kiali_api_processing_duration_seconds"
+      dataType: "histogram"
+      aggregations:
+      - label: "route"
+        displayName: "Route"
+  - chart:
+      name: "Functions hit rate"
+      unit: "ops"
+      spans: 6
+      metricName: "kiali_go_function_processing_duration_seconds_count"
+      dataType: "rate"
+      aggregations:
+      - label: "function"
+        displayName: "Function"
+      - label: "type"
+        displayName: "Service"
+      - label: "package"
+        displayName: "Package"
+  - chart:
+      name: "Functions processing duration"
+      unit: "seconds"
+      spans: 6
+      metricName: "kiali_go_function_processing_duration_seconds"
+      dataType: "histogram"
+      aggregations:
+      - label: "function"
+        displayName: "Function"
+      - label: "type"
+        displayName: "Service"
+      - label: "package"
+        displayName: "Package"
+  - chart:
+      name: "Failures"
+      spans: 12
+      metricName: "kiali_go_function_failures_total"
+      dataType: "raw"
+      aggregations:
+      - label: "function"
+        displayName: "Function"
+      - label: "package"
+        displayName: "Package"
