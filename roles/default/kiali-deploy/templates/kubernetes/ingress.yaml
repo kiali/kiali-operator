@@ -30,4 +30,7 @@ spec:
         backend:
           serviceName: kiali
           servicePort: {{ kiali_vars.server.port }}
+{% if kiali_vars.server.web_fqdn|length != 0 %}
+    host: {{ kiali_vars.server.web_fqdn }}
+{% endif %}
 {% endif %}
