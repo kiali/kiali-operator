@@ -113,12 +113,15 @@
 - name: Delete all ConsoleLinks for namespaces that are no longer accessible
   k8s:
     state: absent
-    api_version: console.openshift.io/v1
-    kind: ConsoleLink
-    name: "kiali-namespace-{{ inaccessible_namespace }}"
-  loop: "{{ no_longer_accessible_namespaces }}"
-  loop_control:
-    loop_var: inaccessible_namespace
+    definition: |
+      {% for namespace in no_longer_accessible_namespaces  %}
+      ---
+      apiVersion: console.openshift.io/v1
+      kind: ConsoleLink
+      metadata:
+        name: "kiali-namespace-{{ namespace }}"
+      ...
+      {% endfor %}
   when:
   - is_openshift == True
   - no_longer_accessible_namespaces is defined
