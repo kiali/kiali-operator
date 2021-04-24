@@ -37,12 +37,6 @@
   - is_openshift == True
   - kiali_vars.deployment.hpa.spec | length == 0
 
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Processing route"
-  when:
-  - is_openshift == True
-
 - name: Create Route on OpenShift if enabled
   include_tasks: process-resource.yml
   vars:
@@ -94,7 +88,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Processing OpenShift resources"
+    status_progress_message: "Creating OpenShift resources"
   when:
   - is_openshift == True
 

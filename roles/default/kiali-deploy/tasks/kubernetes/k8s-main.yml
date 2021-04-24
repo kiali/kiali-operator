@@ -36,12 +36,6 @@
   - is_k8s == True
   - kiali_vars.deployment.hpa.spec | length == 0
 
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Processing ingress"
-  when:
-  - is_k8s == True
-
 - name: Create Ingress on Kubernetes if enabled
   include_tasks: process-resource.yml
   vars:
