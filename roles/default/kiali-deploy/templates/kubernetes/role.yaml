@@ -1,8 +1,10 @@
+{% for namespace in role_namespaces %}
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: {{ role_kind }}
 metadata:
   name: kiali
-  namespace: {{ role_namespace }}
+  namespace: {{ namespace }}
   labels:
     app: kiali
     version: {{ kiali_vars.deployment.version_label }}
@@ -89,3 +91,4 @@ rules:
   - tokenreviews
   verbs:
   - create
+{% endfor %}

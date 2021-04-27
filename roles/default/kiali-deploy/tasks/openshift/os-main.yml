@@ -8,7 +8,7 @@
   include_tasks: process-resource.yml
   vars:
     process_resource_cluster: "openshift"
-    role_namespace: "{{ kiali_vars.deployment.namespace }}"
+    role_namespaces: "{{ [ kiali_vars.deployment.namespace ] }}"
   loop:
   - serviceaccount
   - configmap
@@ -36,12 +36,6 @@
   when:
   - is_openshift == True
   - kiali_vars.deployment.hpa.spec | length == 0
-
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Processing route"
-  when:
-  - is_openshift == True
 
 - name: Create Route on OpenShift if enabled
   include_tasks: process-resource.yml
@@ -72,21 +66,29 @@
     status_progress_message: "Creating additional roles"
   when:
   - is_openshift == True
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
-- name: Create additional Kiali roles on OpenShift
-  include_tasks: process-additional-roles.yml
+- name: Create additional Kiali roles on all accessible namespaces on OpenShift
   vars:
-    process_resource_cluster: "openshift"
-  loop: "{{ kiali_vars.deployment.accessible_namespaces }}"
-  loop_control:
-    loop_var: role_namespace
+    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
+  k8s:
+    definition: "{{ lookup('template', 'templates/openshift/' + ('role-viewer' if kiali_vars.deployment.view_only_mode|bool == True else 'role') + '.yaml') }}"
+  when:
+  - is_openshift == True
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+
+- name: Create additional Kiali role bindings on all accessible namespaces on OpenShift
+  vars:
+    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
+  k8s:
+    definition: "{{ lookup('template', 'templates/openshift/rolebinding.yaml') }}"
   when:
   - is_openshift == True
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Processing OpenShift resources"
+    status_progress_message: "Creating OpenShift resources"
   when:
   - is_openshift == True
 
@@ -105,12 +107,15 @@
 - name: Delete all ConsoleLinks for namespaces that are no longer accessible
   k8s:
     state: absent
-    api_version: console.openshift.io/v1
-    kind: ConsoleLink
-    name: "kiali-namespace-{{ inaccessible_namespace }}"
-  loop: "{{ no_longer_accessible_namespaces }}"
-  loop_control:
-    loop_var: inaccessible_namespace
+    definition: |
+      {% for namespace in no_longer_accessible_namespaces  %}
+      ---
+      apiVersion: console.openshift.io/v1
+      kind: ConsoleLink
+      metadata:
+        name: "kiali-namespace-{{ namespace }}"
+      ...
+      {% endfor %}
   when:
   - is_openshift == True
   - no_longer_accessible_namespaces is defined
@@ -123,3 +128,4 @@
     namespaces: "{{ lookup('k8s', api_version='v1', kind='Namespace', label_selector=('maistra.io/member-of=' + kiali_vars.istio_namespace)) | default({}) | json_query('[].metadata.name') if '**' in all_accessible_namespaces else all_accessible_namespaces }}"
   when:
   - is_openshift == True
+  - openshift_version is version('4.3', '>=')
