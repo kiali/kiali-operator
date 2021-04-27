@@ -36,15 +36,27 @@
         {{ kiali_vars | to_nice_yaml }}
   debug:
     msg: "{{ msg.split('\n') }}"
-  tags: test
 
 - name: Set default deployment namespace to the same namespace where the CR lives
+  ignore_errors: yes
   vars:
     current_cr: "{{ _kiali_io_kiali }}"
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
   when:
   - kiali_vars.deployment.namespace is not defined or kiali_vars.deployment.namespace == ""
+
+- name: Set default istio namespace
+  ignore_errors: yes
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'istio_namespace': kiali_vars.deployment.namespace}, recursive=True) }}"
+  when:
+  - kiali_vars.istio_namespace == ""
+
+- name: Find all namespaces (this is limited to what the operator has permission to see)
+  ignore_errors: yes
+  set_fact:
+    all_namespaces: "{{ lookup('k8s', api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
 
 # When the Operator installed Kiali, the configmap has accessible_namespaces set.
 # There are no regexes in the configmap; they are all full namespace names.
@@ -67,14 +79,35 @@
 
 - name: Delete all additional Kiali roles in current accessible namespaces
   ignore_errors: yes
-  include_tasks: remove-roles.yml
+  k8s:
+    state: absent
+    definition: |
+      {% for namespace in current_accessible_namespaces %}
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: kiali
+        namespace: "{{ namespace }}"
+      ...
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: kiali
+        namespace: "{{ namespace }}"
+      ...
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: kiali-viewer
+        namespace: "{{ namespace }}"
+      ...
+      {% endfor %}
   when:
-  - is_openshift == True or is_k8s == True
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
-  loop: "{{ current_accessible_namespaces }}"
-  loop_control:
-    loop_var: role_namespace
 
 - name: Find currently configured label selector
   ignore_errors: yes
@@ -87,24 +120,34 @@
 
 - name: Remove Kiali label from namespaces found in current accessible namespaces
   ignore_errors: yes
-  include_tasks: remove-namespace-label.yml
   vars:
     # everything to the left of the = is the name of the label we want to remove
     the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we check for its existence
+  k8s:
+    state: present
+    definition: |
+      {% for namespace in current_accessible_namespaces %}
+      {% if namespace in all_namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: null
+      ...
+      {% endif %}
+      {% endfor %}
   when:
-  - is_openshift == True or is_k8s == True
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
   - current_label_selector is defined
-  loop: "{{ current_accessible_namespaces }}"
-  loop_control:
-    loop_var: the_namespace
 
 - name: Delete Kiali cluster roles
   ignore_errors: yes
   include_tasks: remove-clusterroles.yml
   when:
-  - is_openshift == True or is_k8s == True
   - current_accessible_namespaces is defined
   - '"**" in current_accessible_namespaces'
 
@@ -121,7 +164,6 @@
   retries: 6
   delay: 10
   when:
-  - is_openshift == True or is_k8s == True
   - k8s_item is defined
   - k8s_item.apiVersion is defined
   - k8s_item.kind is defined
@@ -141,6 +183,8 @@
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name='kiali', api_version='v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='MonitoringDashboard', api_version='monitoring.kiali.io/v1alpha1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='RoleBinding', resource_name='kiali-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='Role', resource_name='kiali-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
   loop_control:
     loop_var: k8s_item
 
@@ -166,7 +210,22 @@
   with_items:
   - "{{ query('k8s', kind='OAuthClient', resource_name='kiali-' + kiali_vars.deployment.namespace, api_version='oauth.openshift.io/v1') if is_openshift == True else [] }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Route', resource_name='kiali', api_version='route.openshift.io/v1') if is_openshift == True else [] }}"
-  - "{{ query('k8s', kind='ConsoleLink', label_selector='kiali.io/home=' + kiali_vars.deployment.namespace) if is_openshift == True else [] }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name='kiali-cabundle', api_version='v1') if is_openshift == True else [] }}"
   loop_control:
     loop_var: os_item
+
+- name: Delete OpenShift-specific Kiali ConsoleLinks
+  ignore_errors: yes
+  k8s:
+    state: absent
+    definition: |
+      {% for cl in query('k8s', kind='ConsoleLink', label_selector='kiali.io/home=' + kiali_vars.deployment.namespace) %}
+      ---
+      apiVersion: "{{ cl.apiVersion }}"
+      kind: "{{ cl.kind }}"
+      metadata:
+        name: "{{ cl.metadata.name }}"
+      ...
+      {% endfor %}
+  when:
+  - is_openshift == True

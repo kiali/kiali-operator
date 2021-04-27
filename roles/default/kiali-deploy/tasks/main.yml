@@ -198,10 +198,6 @@
     msg: "{{ msg.split('\n') }}"
   tags: test
 
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Determining defaults"
-
 # We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
 # provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
 # values accordingly.
@@ -463,10 +459,6 @@
 - debug:
     msg: "IMAGE_NAME={{ kiali_vars.deployment.image_name }}; IMAGE VERSION={{ kiali_vars.deployment.image_version }}; VERSION LABEL={{ kiali_vars.deployment.version_label }}"
 
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Determining accessible namespaces"
-
 # Determine the accessible namespaces. The user may have specified names using regex expressions.
 # We need to get a list of all namespaces and match them to the regex expressions.
 # Note that we replace kiali_vars.deployment.accessible_namespaces with the full list of actual namespace names
@@ -485,8 +477,6 @@
 - name: Find all namespaces (this is limited to what the operator has permission to see)
   set_fact:
     all_namespaces: "{{ lookup('k8s', api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
-  when:
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
@@ -522,10 +512,6 @@
   - kiali_vars.api.namespaces.label_selector is defined
   # this regex is not 100% accurate, but we want to at least catch obvious errors
   - kiali_vars.api.namespaces.label_selector is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
-
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Ensuring signing key exists"
 
 # If the signing key is empty string, we need to ensure a signing key secret exists - if it does not generate one.
 
@@ -613,10 +599,6 @@
   when:
   - kiali_vars.login_token.signing_key | regex_search('secret:.+:.+')
 
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Loading config map"
-
 # The following few tasks read the current Kiali configmap (if one exists) in order to figure out what
 # namespaces are no longer accessible. Those namespaces will have their Kiali roles removed.
 # They will also have the Kiali labels removed.
@@ -664,9 +646,8 @@
 
 - name: Delete all additional Kiali roles from namespaces that Kiali no longer has access to
   include_tasks: remove-roles.yml
-  loop: "{{ no_longer_accessible_namespaces }}"
-  loop_control:
-    loop_var: role_namespace
+  vars:
+    role_namespaces: "{{ no_longer_accessible_namespaces }}"
   when:
   - no_longer_accessible_namespaces is defined
 
@@ -679,9 +660,8 @@
 
 - name: Delete all Kiali roles from namespaces if view_only_mode is changing since role bindings are immutable
   include_tasks: remove-roles.yml
-  loop: "{{ kiali_vars.deployment.accessible_namespaces }}"
-  loop_control:
-    loop_var: role_namespace
+  vars:
+    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
   when:
   - current_view_only_mode is defined
   - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
@@ -698,38 +678,53 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Removing labels from inaccessible namespaces"
+    status_progress_message: "Processing namespace labels"
 
 - name: Remove Kiali label from namespaces that Kiali no longer has access to
-  include_tasks: remove-namespace-label.yml
   vars:
+    # everything to the left of the = is the name of the label we want to remove
     the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
-  loop: "{{ no_longer_accessible_namespaces }}"
-  loop_control:
-    loop_var: the_namespace
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we check for its existence
+  k8s:
+    state: present
+    definition: |
+      {% for namespace in no_longer_accessible_namespaces %}
+      {% if namespace in all_namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: null
+      ...
+      {% endif %}
+      {% endfor %}
   when:
   - no_longer_accessible_namespaces is defined
   - current_label_selector is defined
 
-- include_tasks: update-status-progress.yml
+- name: Create additional Kiali label on all accessible namespaces
   vars:
-    status_progress_message: "Adding labels on accessible namespaces"
-
-- name: Add namespace labels on all accessible namespaces
-  include_tasks: create-namespace-label.yml
-  vars:
+    namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
     # everything to the left of the = is the label name; to the right is the label value
     the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
     the_namespace_label_value: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^.*=(.*)$', '\\1') }}"
-  loop: "{{ kiali_vars.deployment.accessible_namespaces }}"
-  loop_control:
-    loop_var: the_namespace
+  k8s:
+    state: present
+    definition: |
+      {% for namespace in namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: {{ the_namespace_label_value }}
+      ...
+      {% endfor %}
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
-
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Deleting obsolete deployment"
 
 - name: Delete Kiali deployment if image is changing - this uninstalled any old version of Kiali that might be running
   k8s:
@@ -739,7 +734,6 @@
     namespace: "{{ kiali_vars.deployment.namespace }}"
     name: kiali
   when:
-  - is_openshift == True or is_k8s == True
   - current_image_name is defined and current_image_version is defined
   - (current_image_name != kiali_vars.deployment.image_name) or (current_image_version != kiali_vars.deployment.image_version)
 
@@ -793,7 +787,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Preparing to create monitoring dashboards"
+    status_progress_message: "Processing monitoring dashboards"
 
 - name: Wait for Monitoring Dashboards CRD to be ready
   community.kubernetes.k8s_info:
@@ -867,10 +861,6 @@
   when:
   - monitoringdashboards_crd_exists == True
 
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Deleting monitoring dashboards that are disabled"
-
 - name: Delete Monitoring Dashboards that should no longer be deployed
   k8s:
     state: "absent"
@@ -886,10 +876,6 @@
   - monitoring_dashboard_yamls_to_remove is defined
   - monitoring_dashboard_yamls_to_remove | length > 0
   ignore_errors: yes
-
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Creating monitoring dashboards that are enabled"
 
 - name: Create the Monitoring Dashboards
   k8s:
@@ -911,7 +897,7 @@
 
 - include_tasks: update-status-progress.yml
   vars:
-    status_progress_message: "Restarting pod if necessary"
+    status_progress_message: "Finished all resource creation"
 
 - name: Force the Kiali pod to restart if necessary
   vars:
@@ -933,8 +919,3 @@
   vars:
     status_vars:
       accessibleNamespaces: "{{ ('Number of accessible namespaces (including control plane namespace): ' + (kiali_vars.deployment.accessible_namespaces | length | string)) if (kiali_vars.deployment.accessible_namespaces | length > 20) else (kiali_vars.deployment.accessible_namespaces | join(',')) }}"
-
-# The final task is to mark our progress as done in the status field
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Finished"

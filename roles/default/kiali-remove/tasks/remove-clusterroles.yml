@@ -18,9 +18,7 @@
   - k8s_item.metadata.name is defined
   with_items:
   - "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
-  - "{{ query('k8s', kind='RoleBinding', resource_name='kiali-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
   - "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
   - "{{ query('k8s', kind='ClusterRole', resource_name='kiali-viewer', api_version='rbac.authorization.k8s.io/v1') }}"
-  - "{{ query('k8s', kind='Role', resource_name='kiali-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
   loop_control:
     loop_var: k8s_item

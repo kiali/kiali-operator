@@ -13,10 +13,15 @@ import re
 # filter out all non-accessible namespaces (i.e. return a list of only the namespaces that match an accessible namespace regex).
 def only_accessible_namespaces(value, accessible_namespaces=[]):
 
+  # cache the regex patterns for speed
+  accessible_namespace_regex_patterns = []
+  for accessible_namespace_regex in accessible_namespaces:
+    accessible_namespace_regex_patterns.append(re.compile('^' + accessible_namespace_regex + '$'))
+
   all_accessible_namespaces = []
   for namespace in value:
-    for accessible_namespace_regex in accessible_namespaces:
-      if re.match('^' + accessible_namespace_regex + '$', namespace):
+    for p in accessible_namespace_regex_patterns:
+      if re.match(p, namespace):
         all_accessible_namespaces.append(namespace)
         break
   return all_accessible_namespaces
