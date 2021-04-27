@@ -280,13 +280,13 @@ spec:
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
-                - name: RELATED_IMAGE_kiali_v1_0
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_0_TAG}"
-                - name: RELATED_IMAGE_kiali_v1_12
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_12_TAG}"
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_33_TAG}"
+                - name: RELATED_IMAGE_kiali_v1_33
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_33_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_24
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_24_TAG}"
+                - name: RELATED_IMAGE_kiali_v1_12
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel7${KIALI_1_12_TAG}"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
