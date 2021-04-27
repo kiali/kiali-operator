@@ -1,0 +1,9 @@
+kiali_vars:
+  istio_namespace: "{{ istio_namespace | default(kiali_defaults.istio_namespace) }}"
+
+  deployment: |
+    {%- if deployment is defined and deployment is iterable -%}
+    {{ kiali_defaults.deployment | combine(deployment, recursive=True) }}
+    {%- else -%}
+    {{ kiali_defaults.deployment }}
+    {%- endif -%}
