@@ -1,0 +1,21 @@
+{% for namespace in namespaces %}
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleLink
+metadata:
+  name: kiali-namespace-{{ namespace }}
+  labels:
+    app: kiali
+    version: {{ kiali_vars.deployment.version_label }}
+    app.kubernetes.io/name: kiali
+    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
+    app.kubernetes.io/part-of: kiali
+    kiali.io/home: {{ kiali_vars.deployment.namespace }}
+spec:
+  href: {{ kiali_route_url }}{{ '/' if kiali_vars.server.web_root == '/' else (kiali_vars.server.web_root + '/') }}console/graph/namespaces?namespaces={{ namespace }}
+  location: NamespaceDashboard
+  text: Kiali
+  namespaceDashboard:
+    namespaces:
+    - {{ namespace }}
+{% endfor %}

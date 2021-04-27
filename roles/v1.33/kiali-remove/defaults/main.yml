@@ -1,0 +1,11 @@
+kiali_defaults:
+  istio_namespace: ""
+
+  deployment:
+    accessible_namespaces: []
+    hpa:
+      api_version: "autoscaling/v2beta2"
+
+# Will be auto-detected, but for debugging purposes you can force one of these to true
+is_k8s: false
+is_openshift: false
