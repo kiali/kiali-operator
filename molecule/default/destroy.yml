@@ -1,6 +1,8 @@
 - name: Destroy
   hosts: localhost
   connection: local
+  collections:
+  - community.kubernetes
   tasks:
 
   - name: Get information about the cluster
