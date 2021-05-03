@@ -376,6 +376,11 @@ spec:
           - patch
           - update
           - watch
+        - apiGroups: ["authorization.k8s.io"]
+          resources:
+          - selfsubjectaccessreviews
+          verbs:
+          - list
         - apiGroups: ["rbac.authorization.k8s.io"]
           resources:
           - clusterrolebindings
