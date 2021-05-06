@@ -54,11 +54,9 @@
         tolerationSeconds: 777
       new_resources:
         requests:
-          memory: "31Mi"
-          cpu: "41m"
+          memory: "320Mi"
         limits:
-          memory: "32Mi"
-          cpu: "42m"
+          memory: "32Gi"
       new_pod_annotations:
         some.test.io/keepCamelCaseFOO: camelCaseValueFOO
       new_service_annotations:
@@ -94,11 +92,9 @@
       that:
       - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources | length > 0 }}"
       - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.requests | length > 0 }}"
-      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.requests.memory == '31Mi' }}"
-      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.requests.cpu == '41m' }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.requests.memory == '320Mi' }}"
       - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.limits | length > 0 }}"
-      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.limits.memory == '32Mi' }}"
-      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.limits.cpu == '42m' }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.limits.memory == '32Gi' }}"
       fail_msg: "Resources was not applied successfully: {{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources }}"
   - name: Assert that pod_annotations was applied
     assert:
