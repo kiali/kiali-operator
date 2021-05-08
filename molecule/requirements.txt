@@ -5,5 +5,5 @@ molecule
 openshift
 jmespath
 junit-xml
-kubernetes==11.0.0
+kubernetes
 docker
