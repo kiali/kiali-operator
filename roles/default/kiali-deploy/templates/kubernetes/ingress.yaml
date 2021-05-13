@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1beta1
 kind: Ingress
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali
@@ -28,7 +28,7 @@ spec:
       paths:
       - path: {{ kiali_vars.server.web_root }}
         backend:
-          serviceName: kiali
+          serviceName: {{ kiali_vars.deployment.resource_names_prefix }}
           servicePort: {{ kiali_vars.server.port }}
 {% if kiali_vars.server.web_fqdn|length != 0 %}
     host: {{ kiali_vars.server.web_fqdn }}

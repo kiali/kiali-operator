@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali
@@ -16,7 +16,7 @@ spec:
       app.kubernetes.io/name: kiali
   template:
     metadata:
-      name: kiali
+      name: {{ kiali_vars.deployment.resource_names_prefix }}
       labels:
         app: kiali
         version: {{ kiali_vars.deployment.version_label }}
@@ -45,7 +45,7 @@ spec:
         maxAvailable: 1
       type: RollingUpdate
     spec:
-      serviceAccount: kiali-service-account
+      serviceAccount: {{ kiali_vars.deployment.resource_names_prefix }}-service-account
 {% if kiali_vars.deployment.priority_class_name != "" %}
       priorityClassName: "{{ kiali_vars.deployment.priority_class_name }}"
 {% endif %}
@@ -122,10 +122,10 @@ spec:
       volumes:
       - name: kiali-configuration
         configMap:
-          name: kiali
+          name: {{ kiali_vars.deployment.resource_names_prefix }}
       - name: kiali-cert
         secret:
-          secretName: kiali-cert-secret
+          secretName: {{ kiali_vars.deployment.resource_names_prefix }}-cert-secret
 {% if kiali_vars.identity.cert_file == "" %}
           optional: true
 {% endif %}
@@ -135,7 +135,7 @@ spec:
           optional: true
       - name: kiali-cabundle
         configMap:
-          name: kiali-cabundle
+          name: {{ kiali_vars.deployment.resource_names_prefix }}-cabundle
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:
 {% if kiali_vars.deployment.affinity.node|length > 0 %}

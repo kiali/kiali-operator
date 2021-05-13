@@ -1,7 +1,7 @@
 apiVersion: oauth.openshift.io/v1
 kind: OAuthClient
 metadata:
-  name: kiali-{{ kiali_vars.deployment.namespace }}
+  name: {{ kiali_vars.deployment.resource_names_prefix }}-{{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali
     version: {{ kiali_vars.deployment.version_label }}

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kiali-cabundle
+  name: {{ kiali_vars.deployment.resource_names_prefix }}-cabundle
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali

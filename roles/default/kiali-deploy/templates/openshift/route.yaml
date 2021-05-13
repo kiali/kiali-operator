@@ -1,7 +1,7 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali
@@ -22,5 +22,5 @@ spec:
   to:
     kind: Service
     targetPort: {{ kiali_vars.server.port }}
-    name: kiali
+    name: {{ kiali_vars.deployment.resource_names_prefix }}
 {% endif %}

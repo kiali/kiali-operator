@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali

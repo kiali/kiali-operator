@@ -333,6 +333,18 @@ spec:
 #    ---
 #    replicas: 1
 #
+# Defines the prefix prepended to the names of all Kiali resources created by the operator.
+# You cannot change this prefix after a Kiali CR is created. If you attempt to change it,
+# the operator will abort with an error. If you want to change it, you must first
+# delete the original Kiali CR and create a new one.
+# Note that this does not affect the name of the auto-generated signing key secret. If
+# you do not supply a signing key, the operator will create one for you in a secret,
+# but that secret will always be named "kiali-signing-key". If you want a different
+# signing key secret, you are free to create your own and tell the operator about it via
+# the login_token.signing_key setting. See the docs on that setting for more details.
+#    ---
+#    resource_names_prefix: "kiali"
+#
 # Defines compute resources that are to be given to the Kiali pod's container.
 # The value is a dict as defined by Kubernetes. See the Kubernetes documentation
 # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container

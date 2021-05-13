@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali
@@ -21,7 +21,7 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      name: kiali
+      name: {{ kiali_vars.deployment.resource_names_prefix }}
       labels:
         app: kiali
         version: {{ kiali_vars.deployment.version_label }}
@@ -45,7 +45,7 @@ spec:
         {{ kiali_vars.deployment.pod_annotations | to_nice_yaml(indent=0) | trim | indent(8) }}
 {% endif %}
     spec:
-      serviceAccount: kiali-service-account
+      serviceAccount: {{ kiali_vars.deployment.resource_names_prefix }}-service-account
 {% if kiali_vars.deployment.priority_class_name != "" %}
       priorityClassName: "{{ kiali_vars.deployment.priority_class_name }}"
 {% endif %}
@@ -94,7 +94,7 @@ spec:
         - name: LOG_LEVEL
           value: "{{ kiali_vars.deployment.verbose_mode if kiali_vars.deployment.verbose_mode is defined else kiali_vars.deployment.logger.log_level }}"
         - name: LOG_SAMPLER_RATE
-          value: "{{ kiali_vars.deployment.logger.sampler_rate }}"  
+          value: "{{ kiali_vars.deployment.logger.sampler_rate }}"
         - name: LOG_TIME_FIELD_FORMAT
           value: "{{ kiali_vars.deployment.logger.time_field_format }}" 
 {% for env in kiali_deployment_environment_variables %}
@@ -120,10 +120,10 @@ spec:
       volumes:
       - name: kiali-configuration
         configMap:
-          name: kiali
+          name: {{ kiali_vars.deployment.resource_names_prefix }}
       - name: kiali-cert
         secret:
-          secretName: istio.kiali-service-account
+          secretName: "istio.{{ kiali_vars.deployment.resource_names_prefix }}-service-account"
 {% if kiali_vars.identity.cert_file == "" %}
           optional: true
 {% endif %}

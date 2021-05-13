@@ -2,7 +2,7 @@
 apiVersion: {{ kiali_vars.deployment.hpa.api_version }}
 kind: HorizontalPodAutoscaler
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels:
     app: kiali
@@ -14,6 +14,6 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: kiali
+    name: {{ kiali_vars.deployment.resource_names_prefix }}
   {{ kiali_vars.deployment.hpa.spec | to_nice_yaml(indent=0) | trim | indent(2) }}
 {% endif %}

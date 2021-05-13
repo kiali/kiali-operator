@@ -7,21 +7,21 @@
       apiVersion: rbac.authorization.k8s.io/v1
       kind: RoleBinding
       metadata:
-        name: kiali
+        name: "{{ kiali_vars.deployment.resource_names_prefix }}"
         namespace: "{{ namespace }}"
       ...
       ---
       apiVersion: rbac.authorization.k8s.io/v1
       kind: Role
       metadata:
-        name: kiali
+        name: "{{ kiali_vars.deployment.resource_names_prefix }}"
         namespace: "{{ namespace }}"
       ...
       ---
       apiVersion: rbac.authorization.k8s.io/v1
       kind: Role
       metadata:
-        name: kiali-viewer
+        name: "{{ kiali_vars.deployment.resource_names_prefix }}-viewer"
         namespace: "{{ namespace }}"
       ...
       {% endfor %}
