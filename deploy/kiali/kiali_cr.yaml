@@ -510,12 +510,14 @@ spec:
 #   components: A list of components that Kiali will check its statuses.
 #     app_label: Istio component pod app label.
 #     is_core: Whether the component is core for your deployment.
+#     is_proxy: Whether the component is a native Envoy proxy.
 #     namespace: The namespace where the component is installed in. It defaults to the 'istio_namespace' setting.
 #                Note that the Istio documentation suggests you install the ingress and egress to different namespaces,
 #                so you most likely will want to explicitly set this namespace value for the ingress and egress components.
 #                For example, something like:
 #                - app_label: istio-ingressgateway
 #                  is_core:   false
+#                  is_proxy:  true
 #                  namespace: <the namespace where your ingress is deployed>
 # config_map_name: The name of the istio control plane config map. It defaults to `istio`.
 # envoy_admin_local_port: The port which kiali will open to fetch envoy config data information.
@@ -531,10 +533,13 @@ spec:
 #        components:
 #        - app_label: istiod
 #          is_core: true
+#          is_proxy: false
 #        - app_label: istio-ingressgateway
 #          is_core: true
+#          is_proxy: true
 #        - app_label: istio-egressgateway
 #          is_core: false
+#          is_proxy: true
 #        enabled: true
 #      config_map_name: "istio"
 #      envoy_admin_local_port: 15000
