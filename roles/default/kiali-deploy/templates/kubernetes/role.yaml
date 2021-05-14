@@ -3,7 +3,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: {{ role_kind }}
 metadata:
-  name: {{ kiali_vars.deployment.resource_names_prefix }}
+  name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ namespace }}
   labels: {{ kiali_resource_metadata_labels }}
 rules:

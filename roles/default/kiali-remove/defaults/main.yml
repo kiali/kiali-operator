@@ -5,7 +5,7 @@ kiali_defaults:
     accessible_namespaces: []
     hpa:
       api_version: "autoscaling/v2beta2"
-    resource_names_prefix: "kiali"
+    instance_name: "kiali"
 
 # Will be auto-detected, but for debugging purposes you can force one of these to true
 is_k8s: false

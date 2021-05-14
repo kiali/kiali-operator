@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ kiali_vars.deployment.resource_names_prefix }}
+  name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels: {{ kiali_resource_metadata_labels }}
 spec:
@@ -9,10 +9,10 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: kiali
-      app.kubernetes.io/instance: {{ kiali_vars.deployment.resource_names_prefix }}
+      app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
   template:
     metadata:
-      name: {{ kiali_vars.deployment.resource_names_prefix }}
+      name: {{ kiali_vars.deployment.instance_name }}
       labels: {{ kiali_resource_metadata_labels | combine(kiali_vars.deployment.pod_labels) }}
       annotations:
 {% if kiali_vars.server.metrics_enabled|bool == True %}
@@ -33,7 +33,7 @@ spec:
         maxAvailable: 1
       type: RollingUpdate
     spec:
-      serviceAccount: {{ kiali_vars.deployment.resource_names_prefix }}-service-account
+      serviceAccount: {{ kiali_vars.deployment.instance_name }}-service-account
 {% if kiali_vars.deployment.priority_class_name != "" %}
       priorityClassName: "{{ kiali_vars.deployment.priority_class_name }}"
 {% endif %}
@@ -110,10 +110,10 @@ spec:
       volumes:
       - name: kiali-configuration
         configMap:
-          name: {{ kiali_vars.deployment.resource_names_prefix }}
+          name: {{ kiali_vars.deployment.instance_name }}
       - name: kiali-cert
         secret:
-          secretName: {{ kiali_vars.deployment.resource_names_prefix }}-cert-secret
+          secretName: {{ kiali_vars.deployment.instance_name }}-cert-secret
 {% if kiali_vars.identity.cert_file == "" %}
           optional: true
 {% endif %}
@@ -123,7 +123,7 @@ spec:
           optional: true
       - name: kiali-cabundle
         configMap:
-          name: {{ kiali_vars.deployment.resource_names_prefix }}-cabundle
+          name: {{ kiali_vars.deployment.instance_name }}-cabundle
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:
 {% if kiali_vars.deployment.affinity.node|length > 0 %}

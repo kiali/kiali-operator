@@ -66,6 +66,7 @@ kiali_defaults:
     image_pull_secrets: []
     image_version: ""
     ingress_enabled: true
+    instance_name: "kiali"
     logger:
       log_format: "text"
       log_level: "info"
@@ -78,7 +79,6 @@ kiali_defaults:
     pod_labels: {}
     priority_class_name: ""
     replicas: 1
-    resource_names_prefix: "kiali"
     resources: {}
     secret_name: "kiali"
     service_annotations: {}

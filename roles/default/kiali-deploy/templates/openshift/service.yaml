@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ kiali_vars.deployment.resource_names_prefix }}
+  name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels: {{ kiali_resource_metadata_labels }}
   annotations:
-    service.beta.openshift.io/serving-cert-secret-name: {{ kiali_vars.deployment.resource_names_prefix }}-cert-secret
+    service.beta.openshift.io/serving-cert-secret-name: {{ kiali_vars.deployment.instance_name }}-cert-secret
 {% if kiali_vars.deployment.service_annotations|length > 0 %}
     {{ kiali_vars.deployment.service_annotations | to_nice_yaml(indent=0) | trim | indent(4) }}
 {% endif %}
@@ -24,5 +24,5 @@ spec:
 {% endif %}
   selector:
     app.kubernetes.io/name: kiali
-    app.kubernetes.io/instance: {{ kiali_vars.deployment.resource_names_prefix }}
+    app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
   {% if kiali_vars.deployment.additional_service_yaml is defined %}{{ kiali_vars.deployment.additional_service_yaml | to_nice_yaml(indent=0) | trim | indent(2) }}{% endif %}

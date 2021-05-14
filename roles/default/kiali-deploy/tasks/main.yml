@@ -201,22 +201,22 @@
     msg: "{{ msg.split('\n') }}"
   tags: test
 
-# Never allow the resource names prefix to change to avoid leaking resources that we fail to update or clean up.
-- name: Ensure the resource_names_prefix has not changed
+# Never allow the instance_name to change to avoid leaking resources that we fail to update or clean up.
+- name: Ensure the instance_name has not changed
   fail:
-    msg: "The deployment.resource_names_prefix cannot be changed to a different value. It was [{{ current_cr.status.deployment.resourceNamesPrefix }}] but is now [{{ kiali_vars.deployment.resource_names_prefix }}]. In order to install Kiali with a different resource names prefix, please uninstall Kiali first."
+    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_cr.status.deployment.instanceName }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
   when:
   - current_cr.status is defined
   - current_cr.status.deployment is defined
-  - current_cr.status.deployment.resourceNamesPrefix is defined
-  - current_cr.status.deployment.resourceNamesPrefix != kiali_vars.deployment.resource_names_prefix
+  - current_cr.status.deployment.instanceName is defined
+  - current_cr.status.deployment.instanceName != kiali_vars.deployment.instance_name
 
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Setting up configuration"
     status_vars:
       deployment:
-        resourceNamesPrefix: "{{ kiali_vars.deployment.resource_names_prefix }}"
+        instanceName: "{{ kiali_vars.deployment.instance_name }}"
 
 # We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
 # provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
@@ -396,10 +396,10 @@
 
 - name: Make sure the correct auth.openshift.client_id_prefix is defined when using openshift auth strategy
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'auth': {'openshift': {'client_id_prefix': kiali_vars.deployment.resource_names_prefix }}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'auth': {'openshift': {'client_id_prefix': kiali_vars.deployment.instance_name }}}, recursive=True) }}"
   when:
   - kiali_vars.auth.strategy == 'openshift'
-  - kiali_vars.auth.openshift.client_id_prefix != kiali_vars.deployment.resource_names_prefix
+  - kiali_vars.auth.openshift.client_id_prefix != kiali_vars.deployment.instance_name
 
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
@@ -493,7 +493,7 @@
       version: "{{ kiali_vars.deployment.version_label }}"
       app.kubernetes.io/name: kiali
       app.kubernetes.io/version: "{{ kiali_vars.deployment.version_label }}"
-      app.kubernetes.io/instance: "{{ kiali_vars.deployment.resource_names_prefix }}"
+      app.kubernetes.io/instance: "{{ kiali_vars.deployment.instance_name }}"
       app.kubernetes.io/part-of: kiali
 
 # Determine the accessible namespaces. The user may have specified names using regex expressions.
@@ -552,7 +552,7 @@
 
 # If the signing key is empty string, we need to ensure a signing key secret exists. If one does not exist, we need to generate one.
 # Note that to avoid granting to the operator the very powerful permission to CRUD all secrets in all namespaces, we always generate
-# a signing key secret with the name "kiali-signing-key" regardless of the value of kiali_vars.deployment.resource_names_prefix.
+# a signing key secret with the name "kiali-signing-key" regardless of the value of kiali_vars.deployment.instance_name.
 # Thus, all Kiali instances will be using the same signing key secret name. If the user does not want this, they can generate their
 # own secret with their own key (which is a smart thing to do anyway). The user tells the operator what the name of that secret
 # signing key is via "login_token.signing_key" with value "secret:<theSecretName>:<theSecretKey>".
@@ -645,7 +645,7 @@
 
 - name: Find current configmap, if it exists
   set_fact:
-    current_configmap: "{{ lookup('k8s', resource_name=kiali_vars.deployment.resource_names_prefix, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
+    current_configmap: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
 
 - name: Find some current configuration settings
   set_fact:
@@ -654,21 +654,21 @@
     current_view_only_mode: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.view_only_mode') }}"
     current_image_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_name') }}"
     current_image_version: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_version') }}"
-    current_resource_names_prefix: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.resource_names_prefix') }}"
+    current_instance_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.instance_name') }}"
   when:
   - current_configmap is defined
   - current_configmap.data is defined
   - current_configmap.data['config.yaml'] is defined
 
-# Never allow the resource names prefix to change to avoid leaking resources that we fail to update or clean up.
-# I actually don't know how this will ever fail because we would not have found the configmap if the prefix is different,
+# Never allow the instance name to change to avoid leaking resources that we fail to update or clean up.
+# I actually don't know how this will ever fail because we would not have found the configmap if the instance name is different,
 # but do this at least as a sanity check.
-- name: Do not allow user to change resource names prefix
+- name: Do not allow user to change deployment.instance_name
   fail:
-    msg: "The deployment.resource_names_prefix cannot be changed to a different value. It was [{{ current_resource_names_prefix }}] but is now [{{ kiali_vars.deployment.resource_names_prefix }}]. In order to install Kiali with a different resource names prefix, please uninstall Kiali first."
+    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_instance_name }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
   when:
-  - current_resource_names_prefix is defined
-  - current_resource_names_prefix != kiali_vars.deployment.resource_names_prefix
+  - current_instance_name is defined
+  - current_instance_name != kiali_vars.deployment.instance_name
 
 # Because we need to remove the labels that were created before, we must not allow the user to change
 # the label_selector. So if the current accessible_namespaces is not ** but the label_select is being changed,
@@ -783,7 +783,7 @@
     api_version: apps/v1
     kind: Deployment
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    name: "{{ kiali_vars.deployment.resource_names_prefix }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
   when:
   - current_image_name is defined and current_image_version is defined
   - (current_image_name != kiali_vars.deployment.image_name) or (current_image_version != kiali_vars.deployment.image_version)
@@ -793,7 +793,7 @@
 # that requires a pod restart - in which case we update this timestamp.
 - name: Find current deployment, if it exists
   set_fact:
-    current_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.resource_names_prefix, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
+    current_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
 
 - name: Get current deployment last-updated annotation timestamp from existing deployment
   set_fact:
@@ -947,7 +947,7 @@
 # If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
 - name: Force the Kiali pod to restart if necessary
   vars:
-    updated_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.resource_names_prefix, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
+    updated_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
     definition: "{{ updated_deployment }}"
