@@ -535,9 +535,11 @@
   debug:
     msg: "{{ kiali_vars.deployment.accessible_namespaces }}"
 
+# Note that we add the instance name to the member-of key name only if the instance name is not the default 'kiali'.
+# This is for backward compatibility, and for simplicity when deploying under normal default conditions.
 - name: When accessible namespaces are specified, ensure label selector is set
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector': ('kiali.io/member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector': ('kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - kiali_vars.api.namespaces.label_selector is not defined

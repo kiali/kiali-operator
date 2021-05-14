@@ -8,7 +8,7 @@
   k8s_log:
     namespace: "{{ kiali.operator_namespace }}"
     label_selectors:
-    - app=kiali-operator
+    - app.kubernetes.io/name=kiali-operator
   register: kiali_operator_logs
   ignore_errors: yes
   when:
@@ -25,7 +25,7 @@
   k8s_log:
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app=kiali
+    - app.kubernetes.io/name=kiali
   register: kiali_logs
   ignore_errors: yes
   when:

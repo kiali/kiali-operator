@@ -4,7 +4,7 @@
     kind: Pod
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - app.kubernetes.io/name = kiali
   register: kiali_pod
   until:
   - kiali_pod is success

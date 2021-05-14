@@ -41,6 +41,9 @@ spec:
 
 ##########
 # Tag used to identify a particular instance/installation of the Kiali server.
+# This is merely a human-readable string that will be used within Kiali to
+# help a user identify the Kiali being used (e.g. in the Kiali UI title bar).
+# See deployment.instance_name for the setting used to customize Kiali resource names that are created.
 #  ---
 #  installation_tag: ""
 
@@ -100,9 +103,11 @@ spec:
 # (e.g. "myLabel=myValue") which is used when fetching the list of available namespaces.
 # This does not affect explicit namespace access.
 # Note that if you do not set this but deployment.accessible_namespaces does not have the
-# special "all namespaces" value of "**" then this label_selector will be set
-# to a default value of "kiali.io/member-of=<deployment.namespace>" where
-# <deployment.namespace> is the namespace where Kiali is to be installed.
+# special "all namespaces" entry of "**" then this label_selector will be set
+# to a default value of "kiali.io/[<deployment.instance_name>.]member-of=<deployment.namespace>"
+# where [<deployment.instance_name>.] is the instance name assigned to the Kiali installation
+# if it is not the default 'kiali' (otherwise, this is omitted) and <deployment.namespace>
+# is the namespace where Kiali is to be installed.
 # If deployment.accessible_namespaces does not have the special value of "**"
 # then the Kiali operator will add a new label to all accessible namespaces - that new
 # label will be this label_selector.
@@ -268,8 +273,8 @@ spec:
 #    ---
 #    ingress_enabled: true
 #
-# The instance name of this Kiali installation. This will be the prefix prepended
-# to the names of all Kiali resources created by the operator and will be used
+# The instance name of this Kiali installation. This instance name will be the prefix
+# prepended to the names of all Kiali resources created by the operator and will be used
 # to label those resources as belonging to this Kiali installation instance.
 # You cannot change this instance name after a Kiali CR is created. If you attempt
 # to change it, the operator will abort with an error. If you want to change it,
@@ -280,6 +285,8 @@ spec:
 # Kiali instances in the same deployment namespace. If you want a different
 # signing key secret, you are free to create your own and tell the operator about it via
 # the login_token.signing_key setting. See the docs on that setting for more details.
+# Note also that if you are setting this value, you may also want to change
+# the installation_tag setting, but this is not required.
 #    ---
 #    instance_name: "kiali"
 #

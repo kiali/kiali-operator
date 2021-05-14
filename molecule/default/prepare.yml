@@ -135,7 +135,7 @@
       kind: Deployment
       namespace: "{{ kiali.install_namespace }}"
       label_selectors:
-      - app = kiali
+      - app.kubernetes.io/name = kiali
     register: kiali_deployment
     until:
     - kiali_deployment is success

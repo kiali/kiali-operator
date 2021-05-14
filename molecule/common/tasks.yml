@@ -19,7 +19,7 @@
     kind: Pod
     namespace: "{{ kiali.operator_namespace }}"
     label_selectors:
-    - app = kiali-operator
+    - app.kubernetes.io/name = kiali-operator
   register: kiali_operator_pod
 
 - name: Get Kiali Pod
@@ -28,7 +28,7 @@
     kind: Pod
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - app.kubernetes.io/name = kiali
   register: kiali_pod
 
 - name: Get Kiali Configmap
@@ -45,7 +45,7 @@
     kind: Deployment
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - app.kubernetes.io/name = kiali
   register: kiali_deployment
 
 - name: Get Kiali Service
@@ -54,7 +54,7 @@
     kind: Service
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - app.kubernetes.io/name = kiali
   register: kiali_service
 
 - name: Get Kiali Route
@@ -63,7 +63,7 @@
     kind: Route
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - app.kubernetes.io/name = kiali
   register: kiali_route
   when:
   - is_openshift == True
