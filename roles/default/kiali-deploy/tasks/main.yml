@@ -394,6 +394,13 @@
   - is_openshift == True
   - kiali_vars.external_services.tracing.auth.ca_file is not defined or kiali_vars.external_services.tracing.auth.ca_file == ''
 
+- name: Make sure the correct auth.openshift.client_id_prefix is defined when using openshift auth strategy
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'auth': {'openshift': {'client_id_prefix': kiali_vars.deployment.resource_names_prefix }}}, recursive=True) }}"
+  when:
+  - kiali_vars.auth.strategy == 'openshift'
+  - kiali_vars.auth.openshift.client_id_prefix != kiali_vars.deployment.resource_names_prefix
+
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
     msg: "AUTH STRATEGY={{ kiali_vars.auth.strategy }}"
@@ -479,6 +486,16 @@
 - debug:
     msg: "IMAGE_NAME={{ kiali_vars.deployment.image_name }}; IMAGE VERSION={{ kiali_vars.deployment.image_version }}; VERSION LABEL={{ kiali_vars.deployment.version_label }}"
 
+- name: Determine what metadata labels to apply to all created resources
+  set_fact:
+    kiali_resource_metadata_labels:
+      app: kiali
+      version: "{{ kiali_vars.deployment.version_label }}"
+      app.kubernetes.io/name: kiali
+      app.kubernetes.io/version: "{{ kiali_vars.deployment.version_label }}"
+      app.kubernetes.io/instance: "{{ kiali_vars.deployment.resource_names_prefix }}"
+      app.kubernetes.io/part-of: kiali
+
 # Determine the accessible namespaces. The user may have specified names using regex expressions.
 # We need to get a list of all namespaces and match them to the regex expressions.
 # Note that we replace kiali_vars.deployment.accessible_namespaces with the full list of actual namespace names
@@ -559,12 +576,7 @@
       metadata:
         namespace: "{{ kiali_vars.deployment.namespace }}"
         name: kiali-signing-key
-        labels:
-          app: kiali
-          version: "{{ kiali_vars.deployment.version_label }}"
-          app.kubernetes.io/name: kiali
-          app.kubernetes.io/version: "{{ kiali_vars.deployment.version_label }}"
-          app.kubernetes.io/part-of: kiali
+        labels: "{{ kiali_resource_metadata_labels }}"
       type: Opaque
       data:
         key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') | b64encode }}"

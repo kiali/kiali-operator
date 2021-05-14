@@ -3,12 +3,7 @@ kind: Service
 metadata:
   name: {{ kiali_vars.deployment.resource_names_prefix }}
   namespace: {{ kiali_vars.deployment.namespace }}
-  labels:
-    app: kiali
-    version: {{ kiali_vars.deployment.version_label }}
-    app.kubernetes.io/name: kiali
-    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
-    app.kubernetes.io/part-of: kiali
+  labels: {{ kiali_resource_metadata_labels }}
   annotations:
 {% if kiali_vars.server.web_fqdn|length != 0 and kiali_vars.server.web_schema|length != 0 %}
     kiali.io/external-url: {{ kiali_vars.server.web_schema + '://' + kiali_vars.server.web_fqdn + ((':' + kiali_vars.server.web_port | string) if (kiali_vars.server.web_port | string | length != 0) else '') + (kiali_vars.server.web_root | default('')) }}
@@ -31,5 +26,5 @@ spec:
 {% endif %}
   selector:
     app.kubernetes.io/name: kiali
-    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
+    app.kubernetes.io/instance: {{ kiali_vars.deployment.resource_names_prefix }}
   {% if kiali_vars.deployment.additional_service_yaml is defined %}{{ kiali_vars.deployment.additional_service_yaml | to_nice_yaml(indent=0) | trim | indent(2) }}{% endif %}
