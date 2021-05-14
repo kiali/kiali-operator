@@ -200,11 +200,44 @@
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Role', resource_name=kiali_vars.deployment.instance_name + '-viewer', api_version='rbac.authorization.k8s.io/v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name=kiali_vars.deployment.instance_name, api_version='v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='MonitoringDashboard', api_version='monitoring.kiali.io/v1alpha1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='RoleBinding', resource_name=kiali_vars.deployment.instance_name + '-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='Role', resource_name=kiali_vars.deployment.instance_name + '-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
   loop_control:
     loop_var: k8s_item
+
+- name: Unlabel the signing key secret if it exists to indicate this Kiali instance no longer uses it
+  ignore_errors: yes
+  vars:
+    doomed_label: "{{ 'kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of' }}"
+  k8s:
+    state: present
+    definition: |
+      apiVersion: "{{ k8s_item.apiVersion }}"
+      kind: "{{ k8s_item.kind }}"
+      metadata:
+        name: "{{ k8s_item.metadata.name }}"
+        namespace: "{{ k8s_item.metadata.namespace }}"
+        labels:
+          {{ doomed_label }}: null
+  with_items:
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') }}"
+  loop_control:
+    loop_var: k8s_item
+
+- name: Delete the signing key secret if no other Kiali installation is using it
+  ignore_errors: yes
+  vars:
+    signing_key_secret_labels: "{{ lookup('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') | default({}) | json_query('metadata.labels') }}"
+  k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: kiali-signing-key
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+  when:
+  - (signing_key_secret_labels is not defined) or (signing_key_secret_labels | length == 0) or (signing_key_secret_labels | dict2items | selectattr('key', 'match', 'kiali.io/.*member-of') | list | length == 0)
 
 - name: Delete OpenShift-specific Kiali resources
   ignore_errors: yes

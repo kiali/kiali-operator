@@ -588,6 +588,25 @@
   - signing_key_secret_raw.resources is defined
   - signing_key_secret_raw.resources | length == 0
 
+# Because we must use a fixed name for the secret, we need to attach a label to indicate this Kiali install will be using it.
+# This allows multiple Kiali instances deployed in the same namespace to share the secret. This secret won't be removed
+# as long as our label exists on the secret resource.
+- name: Add label to kiali-signing-key secret to make it known this Kiali instance will be using it
+  vars:
+    the_label: "{{ 'kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of' }}"
+  k8s:
+    state: present
+    definition: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+        name: kiali-signing-key
+        labels:
+          {{ the_label }}: {{ kiali_vars.deployment.namespace }}
+  when:
+  - kiali_vars.login_token.signing_key == ""
+
 - name: Point signing key to the generated secret
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'login_token': {'signing_key': 'secret:kiali-signing-key:key'}}, recursive=True) }}"
