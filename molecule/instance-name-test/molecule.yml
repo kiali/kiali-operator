@@ -1,0 +1,47 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: $DORP
+platforms:
+- name: default
+  groups:
+  - k8s
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callback_whitelist: junit
+  playbooks:
+    destroy: ./destroy-instance-name-test.yml
+    prepare: ./prepare-instance-name-test.yml
+    cleanup: ../default/cleanup.yml
+  inventory:
+    group_vars:
+      all:
+        cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/instance-name-test/kiali-cr.yaml"
+        cr_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'istio-system' }}" # if external operator, assume CR must go in control plane namespace
+        wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
+        istio:
+          control_plane_namespace: istio-system
+        kiali:
+          spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
+          install_namespace: istio-system
+          accessible_namespaces: ["instancenametest"]
+          auth_strategy: anonymous
+          operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'openshift-operators' }}" # if external operator, assume operator is in OLM location
+          operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
+          operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
+          operator_watch_namespace: kiali-operator
+          operator_cluster_role_creator: "true"
+          image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')|default('quay.io/kiali/kiali', True)) }}"
+          image_version: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION')|default('latest', True) }}"
+          image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_PULL_POLICY')|default('Always', True) }}"
+          operator_image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_PULL_POLICY')|default('Always', True) }}"
+          instance_name: "kiali" # we start by installing the default instance - we'll later install one with a different instance name
+scenario:
+  name: instance-name-test
+  test_sequence:
+  - prepare
+  - converge
+  - destroy

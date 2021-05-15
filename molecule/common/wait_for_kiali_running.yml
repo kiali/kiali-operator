@@ -1,10 +1,12 @@
 - name: Asserting that Kiali Pod exists and there is only one
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
   k8s_info:
     api_version: v1
     kind: Pod
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app.kubernetes.io/name = kiali
+    - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_pod
   until:
   - kiali_pod is success
