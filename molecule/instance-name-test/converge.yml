@@ -51,16 +51,28 @@
       - signingKeyWithLabel1 | selectattr('metadata.name', 'equalto', 'kiali-signing-key') | length == 1
       - signingKeyWithLabel2 | selectattr('metadata.name', 'equalto', 'kiali-signing-key') | length == 1
 
+  # just set some common constants so our assert code below is easier to read
+  - set_fact:
+      queryNamespace: "{{ istio.control_plane_namespace }}"
+      apiCMap: "v1"
+      apiDepl: "apps/v1"
+      apiRole: "rbac.authorization.k8s.io/v1"
+      apiRoBi: "rbac.authorization.k8s.io/v1"
+      apiServ: "v1"
+      apiSvcA: "v1"
+      apiIngr: "networking.k8s.io/v1beta1"
+      apiRout: "route.openshift.io/v1"
+
   - name: Kubernetes - Make sure we have the basic resources we expect, with the labels we expect
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Deployment',     namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Ingress',        namespace=istio.control_plane_namespace, label_selector=item) | length == 1
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     - app.kubernetes.io/instance=kialitwo
@@ -70,13 +82,13 @@
   - name: OpenShift - Make sure we have the basic resources we expect, with the labels we expect
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='Deployment',     namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Route',          namespace=istio.control_plane_namespace, label_selector=item) | length == 1
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     - app.kubernetes.io/instance=kialitwo
@@ -114,13 +126,13 @@
   - name: Kubernetes - Make sure we have the basic resources we expect, with the labels we expect for the remaining instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Deployment',     namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Ingress',        namespace=istio.control_plane_namespace, label_selector=item) | length == 1
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     when:
@@ -129,13 +141,13 @@
   - name: OpenShift - Make sure we have the basic resources we expect, with the labels we expect for the remaining instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='Deployment',     namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=istio.control_plane_namespace, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=istio.control_plane_namespace, label_selector=item) | length == 1
-      - query('k8s', kind='Route',          namespace=istio.control_plane_namespace, label_selector=item) | length == 1
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     when:
@@ -146,13 +158,13 @@
   - name: Kubernetes - Confirm we have no more resources for the deleted instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Deployment',     namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Role',           namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='RoleBinding',    namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Service',        namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='ServiceAccount', namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Ingress',        namespace=istio.control_plane_namespace, label_selector=item) | length == 0
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 0
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 0
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 0
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 0
     loop:
     - app.kubernetes.io/instance=kialitwo
     when:
@@ -161,13 +173,13 @@
   - name: OpenShift - Confirm we have no more resources for the deleted instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Deployment',     namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Role',           namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='RoleBinding',    namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Service',        namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='ServiceAccount', namespace=istio.control_plane_namespace, label_selector=item) | length == 0
-      - query('k8s', kind='Route',          namespace=istio.control_plane_namespace, label_selector=item) | length == 0
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 0
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 0
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 0
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 0
     loop:
     - app.kubernetes.io/instance=kialitwo
     when:

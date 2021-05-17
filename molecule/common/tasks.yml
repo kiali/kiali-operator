@@ -79,8 +79,10 @@
   - is_openshift == True
 
 - name: Determine the Kiali Route URL on OpenShift
+  vars:
+    web_root: "{{ kiali_configmap.server.web_root if kiali_configmap.server.web_root != '/' else '' }}"
   set_fact:
-    kiali_base_url: "https://{{ kiali_route.resources[0].spec.host }}"
+    kiali_base_url: "https://{{ kiali_route.resources[0].spec.host }}{{ web_root }}"
   when:
   - is_openshift == True
 
@@ -88,8 +90,9 @@
 - name: Determine the Kiali Ingress URL on minikube
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    web_root: "{{ kiali_configmap.server.web_root if kiali_configmap.server.web_root != '/' else '' }}"
   set_fact:
-    kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}/{{ instance_name }}"
+    kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}{{ web_root }}"
   when:
   - is_k8s == True
 
