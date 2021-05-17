@@ -140,12 +140,15 @@ kiali_defaults:
         components:
         - app_label: "istiod"
           is_core: true
+          is_proxy: false
           namespace: ""
         - app_label: "istio-ingressgateway"
           is_core: true
+          is_proxy: true
           namespace: ""
         - app_label: "istio-egressgateway"
           is_core: false
+          is_proxy: true
           namespace: ""
         enabled: true
       config_map_name: "istio"
