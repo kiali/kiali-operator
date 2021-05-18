@@ -3,7 +3,7 @@ kiali_vars:
 
   deployment: |
     {%- if deployment is defined and deployment is iterable -%}
-    {{ kiali_defaults.deployment | combine(deployment, recursive=True) }}
+    {{ kiali_defaults.deployment | combine((deployment | stripnone), recursive=True) }}
     {%- else -%}
     {{ kiali_defaults.deployment }}
     {%- endif -%}

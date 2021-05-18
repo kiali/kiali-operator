@@ -5,6 +5,9 @@
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Initializing"
+    status_vars:
+      deployment:
+        accessibleNamespaces: null
 
 - name: Get information about the cluster
   set_fact:
@@ -198,16 +201,30 @@
     msg: "{{ msg.split('\n') }}"
   tags: test
 
-# We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
-# provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
-# values accordingly.
-# We determine the default Istio namespace var first, and the rest will use it for their default as appropriate.
-
 - name: Set default deployment namespace to the same namespace where the CR lives
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
   when:
   - kiali_vars.deployment.namespace is not defined or kiali_vars.deployment.namespace == ""
+
+# Never allow the deployment.instance_name or deployment.namespace to change to avoid leaking resources - to uninstall resources you must delete the Kiali CR
+- name: Ensure the deployment.instance_name has not changed
+  fail:
+    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_cr.status.deployment.instanceName }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.instanceName is defined
+  - current_cr.status.deployment.instanceName != kiali_vars.deployment.instance_name
+
+- name: Ensure the deployment.namespace has not changed
+  fail:
+    msg: "The deployment.namespace cannot be changed to a different value. It was [{{ current_cr.status.deployment.namespace }}] but is now [{{ kiali_vars.deployment.namespace }}]. In order to install Kiali with a different deployment.namespace, please uninstall Kiali first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.namespace is defined
+  - current_cr.status.deployment.namespace != kiali_vars.deployment.namespace
 
 - name: Only allow ad-hoc kiali namespace when appropriate
   fail:
@@ -215,6 +232,27 @@
   when:
   - kiali_vars.deployment.namespace != current_cr.metadata.namespace
   - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
+
+- name: Make sure instance_name follows the DNS label standard because it will be a Service name
+  fail:
+    msg: "The value for deployment.instance_name [{{ kiali_vars.deployment.instance_name }}] does not follow the DNS label standard as defined in RFC 1123. In short, it must only contain lowercase alphanumeric characters or '-'."
+  when:
+  # regex must follow https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+  # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
+  - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Setting up configuration"
+    status_vars:
+      deployment:
+        instanceName: "{{ kiali_vars.deployment.instance_name }}"
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+
+# We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
+# provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
+# values accordingly.
+# We determine the default Istio namespace var first, and the rest will use it for their default as appropriate.
 
 - name: Set default istio namespace
   set_fact:
@@ -374,6 +412,13 @@
   - is_openshift == True
   - kiali_vars.external_services.tracing.auth.ca_file is not defined or kiali_vars.external_services.tracing.auth.ca_file == ''
 
+- name: Make sure the correct auth.openshift.client_id_prefix is defined when using openshift auth strategy
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'auth': {'openshift': {'client_id_prefix': kiali_vars.deployment.instance_name }}}, recursive=True) }}"
+  when:
+  - kiali_vars.auth.strategy == 'openshift'
+  - kiali_vars.auth.openshift.client_id_prefix != kiali_vars.deployment.instance_name
+
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
     msg: "AUTH STRATEGY={{ kiali_vars.auth.strategy }}"
@@ -459,6 +504,16 @@
 - debug:
     msg: "IMAGE_NAME={{ kiali_vars.deployment.image_name }}; IMAGE VERSION={{ kiali_vars.deployment.image_version }}; VERSION LABEL={{ kiali_vars.deployment.version_label }}"
 
+- name: Determine what metadata labels to apply to all created resources
+  set_fact:
+    kiali_resource_metadata_labels:
+      app: kiali
+      version: "{{ kiali_vars.deployment.version_label }}"
+      app.kubernetes.io/name: kiali
+      app.kubernetes.io/version: "{{ kiali_vars.deployment.version_label }}"
+      app.kubernetes.io/instance: "{{ kiali_vars.deployment.instance_name }}"
+      app.kubernetes.io/part-of: kiali
+
 # Determine the accessible namespaces. The user may have specified names using regex expressions.
 # We need to get a list of all namespaces and match them to the regex expressions.
 # Note that we replace kiali_vars.deployment.accessible_namespaces with the full list of actual namespace names
@@ -498,9 +553,11 @@
   debug:
     msg: "{{ kiali_vars.deployment.accessible_namespaces }}"
 
+# Note that we add the instance name to the member-of key name only if the instance name is not the default 'kiali'.
+# This is for backward compatibility, and for simplicity when deploying under normal default conditions.
 - name: When accessible namespaces are specified, ensure label selector is set
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector': ('kiali.io/member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector': ('kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
   - kiali_vars.api.namespaces.label_selector is not defined
@@ -513,7 +570,12 @@
   # this regex is not 100% accurate, but we want to at least catch obvious errors
   - kiali_vars.api.namespaces.label_selector is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
 
-# If the signing key is empty string, we need to ensure a signing key secret exists - if it does not generate one.
+# If the signing key is empty string, we need to ensure a signing key secret exists. If one does not exist, we need to generate one.
+# Note that to avoid granting to the operator the very powerful permission to CRUD all secrets in all namespaces, we always generate
+# a signing key secret with the name "kiali-signing-key" regardless of the value of kiali_vars.deployment.instance_name.
+# Thus, all Kiali instances will be using the same signing key secret name. If the user does not want this, they can generate their
+# own secret with their own key (which is a smart thing to do anyway). The user tells the operator what the name of that secret
+# signing key is via "login_token.signing_key" with value "secret:<theSecretName>:<theSecretKey>".
 
 - name: Get information about any existing signing key secret if we need to know if it exists or not
   k8s_info:
@@ -525,7 +587,7 @@
   when:
   - kiali_vars.login_token.signing_key == ""
 
-- name: Create secret to store a random signing key if a secret does not already exist and we need one
+- name: Create kiali-signing-key secret to store a random signing key if a secret does not already exist and we need one
   k8s:
     state: present
     definition:
@@ -534,9 +596,7 @@
       metadata:
         namespace: "{{ kiali_vars.deployment.namespace }}"
         name: kiali-signing-key
-        labels:
-          app: kiali
-          version: "{{ kiali_vars.deployment.version_label }}"
+        labels: "{{ kiali_resource_metadata_labels }}"
       type: Opaque
       data:
         key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') | b64encode }}"
@@ -545,6 +605,25 @@
   - signing_key_secret_raw is defined
   - signing_key_secret_raw.resources is defined
   - signing_key_secret_raw.resources | length == 0
+
+# Because we must use a fixed name for the secret, we need to attach a label to indicate this Kiali install will be using it.
+# This allows multiple Kiali instances deployed in the same namespace to share the secret. This secret won't be removed
+# as long as our label exists on the secret resource.
+- name: Add label to kiali-signing-key secret to make it known this Kiali instance will be using it
+  vars:
+    the_label: "{{ 'kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of' }}"
+  k8s:
+    state: present
+    definition: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+        name: kiali-signing-key
+        labels:
+          {{ the_label }}: {{ kiali_vars.deployment.namespace }}
+  when:
+  - kiali_vars.login_token.signing_key == ""
 
 - name: Point signing key to the generated secret
   set_fact:
@@ -605,7 +684,7 @@
 
 - name: Find current configmap, if it exists
   set_fact:
-    current_configmap: "{{ lookup('k8s', resource_name='kiali', namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
+    current_configmap: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
 
 - name: Find some current configuration settings
   set_fact:
@@ -614,10 +693,21 @@
     current_view_only_mode: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.view_only_mode') }}"
     current_image_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_name') }}"
     current_image_version: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_version') }}"
+    current_instance_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.instance_name') }}"
   when:
   - current_configmap is defined
   - current_configmap.data is defined
   - current_configmap.data['config.yaml'] is defined
+
+# Never allow the instance name to change to avoid leaking resources that we fail to update or clean up.
+# I actually don't know how this will ever fail because we would not have found the configmap if the instance name is different,
+# but do this at least as a sanity check.
+- name: Do not allow user to change deployment.instance_name
+  fail:
+    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_instance_name }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
+  when:
+  - current_instance_name is defined
+  - current_instance_name != kiali_vars.deployment.instance_name
 
 # Because we need to remove the labels that were created before, we must not allow the user to change
 # the label_selector. So if the current accessible_namespaces is not ** but the label_select is being changed,
@@ -732,7 +822,7 @@
     api_version: apps/v1
     kind: Deployment
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    name: kiali
+    name: "{{ kiali_vars.deployment.instance_name }}"
   when:
   - current_image_name is defined and current_image_version is defined
   - (current_image_name != kiali_vars.deployment.image_name) or (current_image_version != kiali_vars.deployment.image_version)
@@ -742,7 +832,7 @@
 # that requires a pod restart - in which case we update this timestamp.
 - name: Find current deployment, if it exists
   set_fact:
-    current_deployment: "{{ lookup('k8s', resource_name='kiali', namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
+    current_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
 
 - name: Get current deployment last-updated annotation timestamp from existing deployment
   set_fact:
@@ -894,14 +984,9 @@
   ignore_errors: yes
 
 # If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
-
-- include_tasks: update-status-progress.yml
-  vars:
-    status_progress_message: "Finished all resource creation"
-
 - name: Force the Kiali pod to restart if necessary
   vars:
-    updated_deployment: "{{ lookup('k8s', resource_name='kiali', namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
+    updated_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
     definition: "{{ updated_deployment }}"
@@ -915,7 +1000,9 @@
 # So instead - if the list of namespaces is manageable, store them in a comma-separate list.
 # Otherwise, we'll just log the count. The purpose of this accessibleNamespaces status field is
 # just to inform the user how many namespaces the operator processed.
-- include_tasks: update-status.yml
+- include_tasks: update-status-progress.yml
   vars:
+    status_progress_message: "Finished all resource creation"
     status_vars:
-      accessibleNamespaces: "{{ ('Number of accessible namespaces (including control plane namespace): ' + (kiali_vars.deployment.accessible_namespaces | length | string)) if (kiali_vars.deployment.accessible_namespaces | length > 20) else (kiali_vars.deployment.accessible_namespaces | join(',')) }}"
+      deployment:
+        accessibleNamespaces: "{{ ('Number of accessible namespaces (including control plane namespace): ' + (kiali_vars.deployment.accessible_namespaces | length | string)) if (kiali_vars.deployment.accessible_namespaces | length > 20) else (kiali_vars.deployment.accessible_namespaces | join(',')) }}"

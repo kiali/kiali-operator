@@ -6,7 +6,7 @@
   k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
-    name: kiali
+    name: "{{ kiali_vars.deployment.instance_name }}"
     namespace: "{{ kiali_vars.deployment.namespace }}"
   register: kiali_route_raw
   until:

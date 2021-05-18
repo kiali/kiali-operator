@@ -66,6 +66,7 @@ kiali_defaults:
     image_pull_secrets: []
     image_version: ""
     ingress_enabled: true
+    instance_name: "kiali"
     logger:
       log_format: "text"
       log_level: "info"

@@ -1,11 +1,8 @@
-apiVersion: "monitoring.kiali.io/v1alpha1"
+apiVersion: monitoring.kiali.io/v1alpha1
 kind: MonitoringDashboard
 metadata:
   name: vertx-jvm
-  labels:
-    app.kubernetes.io/name: kiali
-    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
-    app.kubernetes.io/part-of: kiali
+  labels: {{ kiali_resource_metadata_labels }}
 spec:
   runtime: Vert.x
   title: JVM Metrics

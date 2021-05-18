@@ -5,6 +5,11 @@
 # the user will never be able to delete the Kiali CR - in fact, the delete will hang indefinitely
 # and the user will need to do an ugly hack to fix it.
 
+- name: Get the original CR that was deleted
+  ignore_errors: yes
+  set_fact:
+    current_cr: "{{ _kiali_io_kiali }}"
+
 - name: Get information about the cluster
   ignore_errors: yes
   set_fact:
@@ -37,10 +42,23 @@
   debug:
     msg: "{{ msg.split('\n') }}"
 
+# There is an edge case where a user installed Kiali with one instance name, then changed the instance name in the CR.
+# This is not allowed. When this happens, the operator will abort with an error message telling the user to uninstall Kiali.
+# The user will do this by deleting the Kiali CR, at which time this ansible role is executed.
+# In this case we must use the instance name stored in the status not the spec because the spec will have the bad name
+# and the status will have the correct name that was used to initially install Kiali.
+- name: Ensure the correct instance_name is used
+  ignore_errors: yes
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'instance_name': current_cr.status.deployment.instanceName}}, recursive=True) }}"
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.instanceName is defined
+  - current_cr.status.deployment.instanceName != kiali_vars.deployment.instance_name
+
 - name: Set default deployment namespace to the same namespace where the CR lives
   ignore_errors: yes
-  vars:
-    current_cr: "{{ _kiali_io_kiali }}"
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
   when:
@@ -67,7 +85,7 @@
 - name: Find current configmap, if it exists
   ignore_errors: yes
   set_fact:
-    current_configmap: "{{ lookup('k8s', resource_name='kiali', namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
+    current_configmap: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
 - name: Find currently accessible namespaces
   ignore_errors: yes
   set_fact:
@@ -87,21 +105,21 @@
       apiVersion: rbac.authorization.k8s.io/v1
       kind: RoleBinding
       metadata:
-        name: kiali
+        name: "{{ kiali_vars.deployment.instance_name }}"
         namespace: "{{ namespace }}"
       ...
       ---
       apiVersion: rbac.authorization.k8s.io/v1
       kind: Role
       metadata:
-        name: kiali
+        name: "{{ kiali_vars.deployment.instance_name }}"
         namespace: "{{ namespace }}"
       ...
       ---
       apiVersion: rbac.authorization.k8s.io/v1
       kind: Role
       metadata:
-        name: kiali-viewer
+        name: "{{ kiali_vars.deployment.instance_name }}-viewer"
         namespace: "{{ namespace }}"
       ...
       {% endfor %}
@@ -170,23 +188,56 @@
   - k8s_item.metadata is defined
   - k8s_item.metadata.name is defined
   with_items:
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='HorizontalPodAutoscaler', resource_name='kiali', api_version=kiali_vars.deployment.hpa.api_version) }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Ingress', resource_name='kiali', api_version='networking.k8s.io/v1beta1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Deployment', resource_name='kiali', api_version='apps/v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ReplicaSet', resource_name='kiali', api_version='v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Pod', resource_name='kiali', api_version='v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Service', resource_name='kiali', api_version='v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ServiceAccount', resource_name='kiali-service-account', api_version='v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='RoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Role', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Role', resource_name='kiali-viewer', api_version='rbac.authorization.k8s.io/v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name='kiali', api_version='v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='HorizontalPodAutoscaler', resource_name=kiali_vars.deployment.instance_name, api_version=kiali_vars.deployment.hpa.api_version) }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Ingress', resource_name=kiali_vars.deployment.instance_name, api_version='networking.k8s.io/v1beta1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Deployment', resource_name=kiali_vars.deployment.instance_name, api_version='apps/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ReplicaSet', resource_name=kiali_vars.deployment.instance_name, api_version='v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Pod', resource_name=kiali_vars.deployment.instance_name, api_version='v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Service', resource_name=kiali_vars.deployment.instance_name, api_version='v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ServiceAccount', resource_name=kiali_vars.deployment.instance_name + '-service-account', api_version='v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='RoleBinding', resource_name=kiali_vars.deployment.instance_name, api_version='rbac.authorization.k8s.io/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Role', resource_name=kiali_vars.deployment.instance_name, api_version='rbac.authorization.k8s.io/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Role', resource_name=kiali_vars.deployment.instance_name + '-viewer', api_version='rbac.authorization.k8s.io/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name=kiali_vars.deployment.instance_name, api_version='v1') }}"
   - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='MonitoringDashboard', api_version='monitoring.kiali.io/v1alpha1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='RoleBinding', resource_name='kiali-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
-  - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='Role', resource_name='kiali-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='RoleBinding', resource_name=kiali_vars.deployment.instance_name + '-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
+  - "{{ query('k8s', namespace=kiali_vars.istio_namespace, kind='Role', resource_name=kiali_vars.deployment.instance_name + '-controlplane', api_version='rbac.authorization.k8s.io/v1') }}"
   loop_control:
     loop_var: k8s_item
+
+- name: Unlabel the signing key secret if it exists to indicate this Kiali instance no longer uses it
+  ignore_errors: yes
+  vars:
+    doomed_label: "{{ 'kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of' }}"
+  k8s:
+    state: present
+    definition: |
+      apiVersion: "{{ k8s_item.apiVersion }}"
+      kind: "{{ k8s_item.kind }}"
+      metadata:
+        name: "{{ k8s_item.metadata.name }}"
+        namespace: "{{ k8s_item.metadata.namespace }}"
+        labels:
+          {{ doomed_label }}: null
+  with_items:
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') }}"
+  loop_control:
+    loop_var: k8s_item
+
+- name: Delete the signing key secret if no other Kiali installation is using it
+  ignore_errors: yes
+  vars:
+    signing_key_secret_labels: "{{ lookup('k8s', namespace=kiali_vars.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') | default({}) | json_query('metadata.labels') }}"
+  k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: kiali-signing-key
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+  when:
+  - (signing_key_secret_labels is not defined) or (signing_key_secret_labels | length == 0) or (signing_key_secret_labels | dict2items | selectattr('key', 'match', 'kiali.io/.*member-of') | list | length == 0)
 
 - name: Delete OpenShift-specific Kiali resources
   ignore_errors: yes
@@ -208,9 +259,9 @@
   - os_item.metadata is defined
   - os_item.metadata.name is defined
   with_items:
-  - "{{ query('k8s', kind='OAuthClient', resource_name='kiali-' + kiali_vars.deployment.namespace, api_version='oauth.openshift.io/v1') if is_openshift == True else [] }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Route', resource_name='kiali', api_version='route.openshift.io/v1') if is_openshift == True else [] }}"
-  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name='kiali-cabundle', api_version='v1') if is_openshift == True else [] }}"
+  - "{{ query('k8s', kind='OAuthClient', resource_name=kiali_vars.deployment.instance_name + '-' + kiali_vars.deployment.namespace, api_version='oauth.openshift.io/v1') if is_openshift == True else [] }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='Route', resource_name=kiali_vars.deployment.instance_name, api_version='route.openshift.io/v1') if is_openshift == True else [] }}"
+  - "{{ query('k8s', namespace=kiali_vars.deployment.namespace, kind='ConfigMap', resource_name=kiali_vars.deployment.instance_name + '-cabundle', api_version='v1') if is_openshift == True else [] }}"
   loop_control:
     loop_var: os_item
 
@@ -219,7 +270,7 @@
   k8s:
     state: absent
     definition: |
-      {% for cl in query('k8s', kind='ConsoleLink', label_selector='kiali.io/home=' + kiali_vars.deployment.namespace) %}
+      {% for cl in query('k8s', kind='ConsoleLink', label_selector='kiali.io/home=' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + kiali_vars.deployment.namespace) %}
       ---
       apiVersion: "{{ cl.apiVersion }}"
       kind: "{{ cl.kind }}"

@@ -130,12 +130,14 @@
     - prometheus_config is defined
 
   - name: Asserting that Kiali is Deployed
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
     k8s_info:
       api_version: v1
       kind: Deployment
       namespace: "{{ kiali.install_namespace }}"
       label_selectors:
-      - app = kiali
+      - "app.kubernetes.io/name={{ instance_name }}"
     register: kiali_deployment
     until:
     - kiali_deployment is success

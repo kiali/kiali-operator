@@ -32,7 +32,7 @@
     api_version: "{{ kiali_vars.deployment.hpa.api_version }}"
     kind: "HorizontalPodAutoscaler"
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    name: "kiali"
+    name: "{{ kiali_vars.deployment.instance_name }}"
   when:
   - is_openshift == True
   - kiali_vars.deployment.hpa.spec | length == 0
@@ -56,7 +56,7 @@
     api_version: "route.openshift.io/v1"
     kind: "Route"
     namespace: "{{ kiali_vars.deployment.namespace }}"
-    name: "kiali"
+    name: "{{ kiali_vars.deployment.instance_name }}"
   when:
   - is_openshift == True
   - kiali_vars.deployment.ingress_enabled|bool == False
@@ -113,7 +113,7 @@
       apiVersion: console.openshift.io/v1
       kind: ConsoleLink
       metadata:
-        name: "kiali-namespace-{{ namespace }}"
+        name: "{{ kiali_vars.deployment.instance_name }}-namespace-{{ namespace }}"
       ...
       {% endfor %}
   when:
