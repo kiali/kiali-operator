@@ -735,14 +735,18 @@ spec:
 # on this list of Istio types. Other Istio types are not yet supported.
 #    ---
 #    cache_istio_types:
+#    - "AuthorizationPolicy"
 #    - "DestinationRule"
+#    - "EnvoyFilter"
 #    - "Gateway"
-#    - "ServiceEntry"
-#    - "VirtualService"
-#    - "Sidecar"
 #    - "PeerAuthentication"
 #    - "RequestAuthentication"
-#    - "AuthorizationPolicy"
+#    - "ServiceEntry"
+#    - "Sidecar"
+#    - "VirtualService"
+#    - "WorkloadEntry"
+#    - "WorkloadGroup"
+
 #
 # List of namespaces or regex defining namespaces to include in a cache.
 #    ---

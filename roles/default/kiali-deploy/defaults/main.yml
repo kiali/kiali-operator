@@ -216,14 +216,17 @@ kiali_defaults:
     cache_duration: 300
     cache_enabled: true
     cache_istio_types:
+    - "AuthorizationPolicy"
     - "DestinationRule"
+    - "EnvoyFilter"
     - "Gateway"
-    - "ServiceEntry"
-    - "VirtualService"
-    - "Sidecar"
     - "PeerAuthentication"
     - "RequestAuthentication"
-    - "AuthorizationPolicy"
+    - "ServiceEntry"
+    - "Sidecar"
+    - "VirtualService"
+    - "WorkloadEntry"
+    - "WorkloadGroup"
 
     cache_namespaces:
     - ".*"
