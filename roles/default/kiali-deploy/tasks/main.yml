@@ -233,6 +233,14 @@
   - kiali_vars.deployment.namespace != current_cr.metadata.namespace
   - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
 
+- name: Make sure instance_name follows the DNS label standard because it will be a Service name
+  fail:
+    msg: "The value for deployment.instance_name [{{ kiali_vars.deployment.instance_name }}] does not follow the DNS label standard as defined in RFC 1123. In short, it must only contain lowercase alphanumeric characters or '-'."
+  when:
+  # regex must follow https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+  # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
+  - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
+
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Setting up configuration"
