@@ -712,16 +712,6 @@
   - current_configmap.data is defined
   - current_configmap.data['config.yaml'] is defined
 
-# Never allow the instance name to change to avoid leaking resources that we fail to update or clean up.
-# I actually don't know how this will ever fail because we would not have found the configmap if the instance name is different,
-# but do this at least as a sanity check.
-- name: Do not allow user to change deployment.instance_name
-  fail:
-    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_instance_name }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
-  when:
-  - current_instance_name is defined
-  - current_instance_name != kiali_vars.deployment.instance_name
-
 # Because we need to remove the labels that were created before, we must not allow the user to change
 # the label_selector. So if the current accessible_namespaces is not ** but the label_select is being changed,
 # we need to abort since we won't know what the old labels were. If current accessible_namespaces is ** then
