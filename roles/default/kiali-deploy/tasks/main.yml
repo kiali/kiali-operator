@@ -241,10 +241,23 @@
   # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
   - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
 
+- set_fact:
+    status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
+  loop: "{{ data[0] | zip(data[1]) | list }}"
+  vars:
+    data:
+    - ['isKubernetes', 'isOpenshift', 'isMaistra', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
+    - ["{{is_k8s}}", "{{is_openshift}}", "{{is_maistra}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
+  when:
+  - item.1 != ""
+  - item.1 != "false"
+  - item.1 != False
+
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Setting up configuration"
     status_vars:
+      environment: "{{ status_environment | default({}) }}"
       deployment:
         instanceName: "{{ kiali_vars.deployment.instance_name }}"
         namespace: "{{ kiali_vars.deployment.namespace }}"
