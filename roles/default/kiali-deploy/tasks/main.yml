@@ -241,10 +241,23 @@
   # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
   - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
 
+- set_fact:
+    status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
+  loop: "{{ data[0] | zip(data[1]) | list }}"
+  vars:
+    data:
+    - ['isKubernetes', 'isOpenshift', 'isMaistra', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
+    - ["{{is_k8s}}", "{{is_openshift}}", "{{is_maistra}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
+  when:
+  - item.1 != ""
+  - item.1 != "false"
+  - item.1 != False
+
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Setting up configuration"
     status_vars:
+      environment: "{{ status_environment | default({}) }}"
       deployment:
         instanceName: "{{ kiali_vars.deployment.instance_name }}"
         namespace: "{{ kiali_vars.deployment.namespace }}"
@@ -698,16 +711,6 @@
   - current_configmap is defined
   - current_configmap.data is defined
   - current_configmap.data['config.yaml'] is defined
-
-# Never allow the instance name to change to avoid leaking resources that we fail to update or clean up.
-# I actually don't know how this will ever fail because we would not have found the configmap if the instance name is different,
-# but do this at least as a sanity check.
-- name: Do not allow user to change deployment.instance_name
-  fail:
-    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_instance_name }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
-  when:
-  - current_instance_name is defined
-  - current_instance_name != kiali_vars.deployment.instance_name
 
 # Because we need to remove the labels that were created before, we must not allow the user to change
 # the label_selector. So if the current accessible_namespaces is not ** but the label_select is being changed,
