@@ -103,6 +103,8 @@
     k8s:
       state: absent
       wait: yes
+      wait_sleep: 5
+      wait_timeout: "{{ 5 * wait_retries|int }}"
       api_version: kiali.io/v1alpha1
       kind: Kiali
       name: "{{ custom_resource.metadata.name }}"
