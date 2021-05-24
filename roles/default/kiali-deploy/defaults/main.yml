@@ -209,17 +209,17 @@ kiali_defaults:
     ui_defaults:
       graph:
         find_options:
-          - description: "Find: slow edges (> 1s)"
-            expression: "rt > 1000"
-          - description: "Find: unhealthy nodes"
-            expression:  "! healthy"
-          - description: "Find: unknown nodes"
-            Expression:  "name = unknown"
+        - description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+        - description: "Find: unhealthy nodes"
+          expression:  "! healthy"
+        - description: "Find: unknown nodes"
+          expression:  "name = unknown"
         hide_options:
-          - description: "Hide: healthy nodes"
-            expression: "healthy"
-          - description: "Hide: unknown nodes"
-            expression:  "name = unknown"
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+        - description: "Hide: unknown nodes"
+          expression:  "name = unknown"
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "15s"

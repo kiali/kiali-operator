@@ -701,17 +701,17 @@ spec:
 #      ---
 #      graph:
 #        find_options:
-#          - description: "Find: slow edges (> 1s)"
-#            expression: "rt > 1000"
-#          - description: "Find: unhealthy nodes"
-#            expression:  "! healthy"
-#          - description: "Find: unknown nodes"
-#            Expression:  "name = unknown"
+#        - description: "Find: slow edges (> 1s)"
+#          expression: "rt > 1000"
+#        - description: "Find: unhealthy nodes"
+#          expression:  "! healthy"
+#        - description: "Find: unknown nodes"
+#          expression:  "name = unknown"
 #        hide_options:
-#          - description: "Hide: healthy nodes"
-#            expression: "healthy"
-#          - description: "Hide: unknown nodes"
-#            expression:  "name = unknown"
+#        - description: "Hide: healthy nodes"
+#          expression: "healthy"
+#        - description: "Hide: unknown nodes"
+#          expression:  "name = unknown"
 #
 # Duration of metrics to fetch on each refresh. Omit for default.
 # Valid values: 1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 7d, 30d
