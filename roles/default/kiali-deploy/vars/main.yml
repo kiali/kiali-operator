@@ -39,6 +39,13 @@ kiali_vars:
     {{ kiali_defaults.auth }}
     {%- endif -%}
 
+  custom_dashboards: |
+    {%- if custom_dashboards is defined and custom_dashboards is iterable -%}
+    {{ custom_dashboards }}
+    {%- else -%}
+    {{ kiali_defaults.custom_dashboards }}
+    {%- endif -%}
+
   deployment: |
     {%- if deployment is defined and deployment is iterable -%}
     {{ kiali_defaults.deployment | combine((deployment | stripnone), recursive=True) }}

@@ -27,7 +27,7 @@ spec:
         prometheus.io/scrape: "false"
         prometheus.io/port: null
 {% endif %}
-        kiali.io/runtimes: go,kiali
+        kiali.io/dashboards: go,kiali
         operator.kiali.io/last-updated: "{{ deployment_last_updated }}"
 {% if kiali_vars.deployment.pod_annotations|length > 0 %}
         {{ kiali_vars.deployment.pod_annotations | to_nice_yaml(indent=0) | trim | indent(8) }}

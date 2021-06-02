@@ -29,7 +29,7 @@
       wait_timeout: 600
     ignore_errors: yes
 
-  # Wait for the last things to be removed (which are the configmap and monitoring dashboards). This avoids the namespace-stuck-problem.
+  # Wait for the last things to be removed (e.g. the configmap). This avoids the namespace-stuck-problem.
   - name: Wait for Kiali ConfigMap to be uninstalled
     vars:
       instance_name: "{{ kiali.instance_name | default('kiali') }}"
@@ -38,18 +38,6 @@
       kind: ConfigMap
       namespace: "{{ kiali.install_namespace }}"
       name: "{{ instance_name }}"
-    register: doomed_list
-    until:
-    - doomed_list is success
-    - doomed_list | json_query("resources[*]") | length == 0
-    retries: "{{ wait_retries }}"
-    delay: 5
-
-  - name: Wait for Kiali MonitoringDashboards to be uninstalled
-    k8s_info:
-      api_version: monitoring.kiali.io/v1alpha1
-      kind: MonitoringDashboard
-      namespace: "{{ kiali.install_namespace }}"
     register: doomed_list
     until:
     - doomed_list is success

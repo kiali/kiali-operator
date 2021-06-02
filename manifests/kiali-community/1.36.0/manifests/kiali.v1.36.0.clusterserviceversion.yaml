@@ -27,47 +27,9 @@ metadata:
               "namespace": "istio-system",
               "view_only_mode": false
             },
-            "external_services": {
-              "grafana": {
-                "url": ""
-              },
-              "prometheus": {
-                "url": ""
-              },
-              "tracing": {
-                "url": ""
-              }
-            },
             "server": {
               "web_root": "/mykiali"
             }
-          }
-        },
-        {
-          "apiVersion": "monitoring.kiali.io/v1alpha1",
-          "kind": "MonitoringDashboard",
-          "metadata": {
-            "name": "myappdashboard"
-          },
-          "spec": {
-            "title": "My App Dashboard",
-            "items": [
-              {
-                "chart": {
-                  "name": "My App Processing Duration",
-                  "unit": "seconds",
-                  "spans": 6,
-                  "metricName": "my_app_duration_seconds",
-                  "dataType": "histogram",
-                  "aggregations": [
-                    {
-                      "label": "id",
-                      "displayName": "ID"
-                    }
-                  ]
-                }
-              }
-            ]
           }
         }
       ]
@@ -207,19 +169,6 @@ spec:
       - displayName: Web Root
         description: "Defines the root context path for the Kiali console, API endpoints and readiness/liveness probes. Default: / (when deployed on OpenShift; /kiali (when deployed on Kubernetes)"
         path: server.web_root
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
-    - name: monitoringdashboards.monitoring.kiali.io
-      group: monitoring.kiali.io
-      description: A configuration file for defining an individual metric dashboard.
-      displayName: Monitoring Dashboard
-      kind: MonitoringDashboard
-      version: v1alpha1
-      resources: []
-      specDescriptors:
-      - displayName: Title
-        description: "The title of the dashboard."
-        path: title
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
   apiservicedefinitions: {}
@@ -464,17 +413,6 @@ spec:
           - patch
           - update
           - watch
-        - apiGroups: ["monitoring.kiali.io"]
-          resources:
-          - monitoringdashboards
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - patch
-          - update
-          - watch
         # The permissions below are for Kiali itself; operator needs these so it can escalate when creating Kiali's roles
         - apiGroups: [""]
           resources:
@@ -575,12 +513,6 @@ spec:
           - routes
           verbs:
           - get
-        - apiGroups: ["monitoring.kiali.io"]
-          resources:
-          - monitoringdashboards
-          verbs:
-          - get
-          - list
         - apiGroups: ["iter8.tools"]
           resources:
           - experiments

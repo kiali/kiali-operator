@@ -70,6 +70,7 @@ spec:
 
 ##########
 # The version of the Ansible playbook to execute in order to install that version of Kiali.
+# It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
 # If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
 # Refer to this file to see where these values are defined in the master branch:
 # https://github.com/kiali/kiali-operator/tree/master/playbooks/default-supported-images.yml
@@ -169,6 +170,29 @@ spec:
 #      client_id_prefix: kiali
 
 ##########
+# A list of user-defined custom monitoring dashboards that you can use to generate metrics charts for your applications.
+# The server has some built-in dashboards; if you define a custom dashboard here with the same name as a built-in
+# dashboard, your custom dashboard takes precedence and will overwrite the built-in dashboard.
+# You can disable one or more of the built-in dashboards by simply defining an empty dashboard.
+#
+# An example of an additional user-defined dashboard:
+#   - name: myapp
+#     title: My App Metrics
+#     items:
+#     - chart
+#         name: "Thread Count"
+#         spans: 4
+#         metricName: "thread-count"
+#         dataType: "raw"
+#
+# An example of disabling a built-in dashboard:
+#   - name: envoy
+#
+# See the Kiali documentation for more details on custom monitoring dashboards.
+#  ---
+#  custom_dashboards: []
+
+##########
 #  ---
 #  deployment:
 #
@@ -199,19 +223,6 @@ spec:
 #      node: {}
 #      pod: {}
 #      pod_anti: {}
-#
-# Names of the out-of-box custom monitoring dashboards that are to be installed.
-# The custom monitoring dashboards are defined in yaml files located within the operator.
-# Consult the operator templates for the custom monitoring dashboard yaml files available.
-# For example, see this for the current list of yaml files available:
-# https://github.com/kiali/kiali-operator/tree/master/roles/default/kiali-deploy/templates/dashboards
-# These settings will determine the additional metric graphs that you will see within the Kiali UI.
-# You can specify an includes and excludes list, the excludes list takes precedence.
-# Each list can have fileglob wildcard characters '*' and '?' for file matching.
-#    ---
-#    custom_dashboards:
-#      excludes: ['']
-#      includes: ['*']
 #
 # Determines what (if any) HorizontalPodAutoscaler should be created to autoscale the Kiali pod.
 # A typical way to configure HPA for Kiali is:
