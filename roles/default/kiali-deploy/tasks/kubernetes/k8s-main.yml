@@ -52,13 +52,10 @@
 - name: Delete Ingress on Kubernetes if disabled
   k8s:
     state: absent
-    api_version: "networking.k8s.io/{{ item }}"
+    api_version: "networking.k8s.io/{{ 'v1' if (lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
     kind: "Ingress"
     namespace: "{{ kiali_vars.deployment.namespace }}"
     name: "{{ kiali_vars.deployment.instance_name }}"
-  loop:
-  - 'v1'
-  - 'v1beta1'
   when:
   - is_k8s == True
   - kiali_vars.deployment.ingress_enabled|bool == False
