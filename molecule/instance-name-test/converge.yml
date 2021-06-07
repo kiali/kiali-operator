@@ -60,7 +60,7 @@
       apiRoBi: "rbac.authorization.k8s.io/v1"
       apiServ: "v1"
       apiSvcA: "v1"
-      apiIngr: "networking.k8s.io/v1"
+      apiIngr: "networking.k8s.io/{{ 'v1' if (lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
       apiRout: "route.openshift.io/v1"
 
   - name: Kubernetes - Make sure we have the basic resources we expect, with the labels we expect
