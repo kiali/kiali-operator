@@ -1,0 +1,107 @@
+# Get the custom dashboard definition
+
+- name: "/namespaces/{namespace}/customdashboard/kiali"
+  vars:
+    param_namespace: "{{ kiali.install_namespace }}"
+    param_dashboard: "kiali"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/kiali"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that we were able to get the Kiali custom dashboard and its four charts
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.name == 'kiali'
+    - api_customdashboard_json.title == 'Kiali Internal Metrics'
+    - api_customdashboard_json.charts | length == 4
+    - api_customdashboard_json | json_query('charts[?name==`API hit rate`].spans') | join == "6"
+    - api_customdashboard_json | json_query('charts[?name==`API processing duration`].spans') | join == "6"
+    - api_customdashboard_json | json_query('charts[?name==`API Failures`].spans') | join == "12"
+    - api_customdashboard_json | json_query('charts[?name==`Graph generation duration`].spans') | join == "12"
+
+# Get the app dashboard
+
+- name: "/namespaces/{namespace}/customdashboard/kiali?labelsFilter=app:kiali"
+  vars:
+    param_namespace: "{{ kiali.install_namespace }}"
+    param_dashboard: "kiali"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilters=app:kiali"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/kiali?labelsFilter=app:kiali"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that we were able to get the Kiali app dashboard
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.charts | length > 0
+    - api_customdashboard_json | json_query('charts[?name==`API hit rate`].metrics') | length > 0
+    - api_customdashboard_json | json_query('charts[?name==`API processing duration`].metrics') | length > 0
+
+# Get the workload dashboard
+
+- name: "/namespaces/{namespace}/customdashboard/kiali?labelsFilter=app:kiali,version:{version}"
+  vars:
+    param_namespace: "{{ kiali.install_namespace }}"
+    param_dashboard: "kiali"
+    param_version: "{{ kiali.image_version }}"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilters=app:kiali,version:{{ param_version }}"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/kiali?labelsFilter=app:kiali,version:{version}"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that we were able to get the Kiali workload dashboard
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.charts | length > 0
+    - api_customdashboard_json | json_query('charts[?name==`API hit rate`].metrics') | length > 0
+    - api_customdashboard_json | json_query('charts[?name==`API processing duration`].metrics') | length > 0
+
+# Assert that we removed the "go" custom dashboard when we installed Kiali
+#
+- name: "/namespaces/{namespace}/customdashboard/go (should not exist)"
+  vars:
+    param_namespace: "{{ kiali.install_namespace }}"
+    param_dashboard: "go"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}"
+    return_content: yes
+    validate_certs: false
+    status_code: 500
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: Assert that the built-in Go dashboard was removed
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.error == "Dashboard [go] does not exist or is disabled"

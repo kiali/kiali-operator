@@ -65,12 +65,6 @@ rules:
   - create
   - delete
   - patch
-- apiGroups: ["monitoring.kiali.io"]
-  resources:
-  - monitoringdashboards
-  verbs:
-  - get
-  - list
 - apiGroups: ["iter8.tools"]
   resources:
   - experiments

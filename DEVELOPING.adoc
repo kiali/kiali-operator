@@ -101,7 +101,7 @@ If you need to alter Kubernetes resources for either the Kiali Server or Operato
 
 The Operator's own resources are deployed either via OLM or the Operator Helm Chart. You must make changes to support them all. Today there are three sets of OLM metadata maintained in the kiali-operator repository - we call them the "golden copies" because they are the source of truth for the link:https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators/kiali[OperatorHub.io upstream operator], link:https://github.com/operator-framework/community-operators/tree/master/community-operators/kiali[community operator], and the Red Hat OSSM Operator. The Operator Helm Chart templates are link:https://github.com/kiali/helm-charts/tree/master/kiali-operator[here.]
 
-The Kiali server resources are deployed by the link:./roles[Kiali Operator Ansible roles] or by the link:https://github.com/kiali/helm-charts/tree/master/kiali-server[Kiali Server Helm Chart]. There are link:./roles/default/kiali-deploy/templates/kubernetes[generic Kubernetes templates] as well as link:./roles/default/kiali-deploy/templates/openshift[OpenShift templates] for the link:./roles/default[default] (i.e. current) release as well as link:./roles[select previous releases]. The custom dashboards templates are cluster-type-agnostic and are link:./roles/default/kiali-deploy/templates/dashboards[here].
+The Kiali server resources are deployed by the link:./roles[Kiali Operator Ansible roles] or by the link:https://github.com/kiali/helm-charts/tree/master/kiali-server[Kiali Server Helm Chart]. There are link:./roles/default/kiali-deploy/templates/kubernetes[generic Kubernetes templates] as well as link:./roles/default/kiali-deploy/templates/openshift[OpenShift templates] for the link:./roles/default[default] (i.e. current) release as well as link:./roles[select previous releases].
 
 The configuration settings for the Kiali CR and Kiali ConfigMap are documented in the link:./deploy/kiali/kiali_cr.yaml[kiali_cr.yaml example file] and are defined in the Kiali Operator Ansible roles and in the Helm Charts, described below in more detail.
 
@@ -170,8 +170,7 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 
 ### Are You Altering a Kiali Monitoring Dashboard Template?
 
-- [ ] Modify the link:https://github.com/kiali/kiali-operator/tree/master/roles/default/kiali-deploy/templates/dashboards[templates used by the Operator]
-- [ ] Modify the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/dashboards[templates used by the Server Helm Chart]
+- [ ] Modify the link:https://github.com/kiali/kiali/tree/master/config/dashboards/dashboards.go[built-in templates used by the Server]
 
 ### Do You Need To Backport Changes To Support Older Versions?
 

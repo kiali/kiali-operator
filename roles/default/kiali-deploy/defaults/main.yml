@@ -48,6 +48,8 @@ kiali_defaults:
       client_id_prefix: "kiali"
     strategy: ""
 
+  custom_dashboards: []
+
   deployment:
     accessible_namespaces: ["^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"]
     #additional_service_yaml:
@@ -55,9 +57,6 @@ kiali_defaults:
       node: {}
       pod: {}
       pod_anti: {}
-    custom_dashboards:
-      excludes: ['']
-      includes: ['*']
     hpa:
       api_version: "autoscaling/v2beta2"
       spec: {}

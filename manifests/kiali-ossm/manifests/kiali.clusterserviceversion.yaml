@@ -34,20 +34,6 @@ metadata:
               },
               "namespace": "istio-system",
               "view_only_mode": false
-            },
-            "external_services": {
-              "grafana": {
-                "url": ""
-              },
-              "prometheus": {
-                "url": ""
-              },
-              "tracing": {
-                "url": ""
-              }
-            },
-            "server": {
-              "web_root": "/mykiali"
             }
           }
         },

@@ -9,8 +9,6 @@ spec:
     strategy: openshift
   deployment:
     accessible_namespaces: {{ kiali.accessible_namespaces }}
-    custom_dashboards:
-      includes: []
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: {{ kiali.image_version }}
