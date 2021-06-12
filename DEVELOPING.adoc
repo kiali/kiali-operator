@@ -52,14 +52,15 @@ Sometimes you made simple changes to the operator playbook and roles that can be
 
 In order to use this `run-operator-playbook` target, you must have Python3 in your PATH (having an alias is not enough).
 
-You also must make sure your local environment matches as closely as possible to the environment of the Kiali operator. To find out the different versions of software within the Kiali operator image, run the following:
+You also must make sure your local Python and Ansible environment matches as closely as possible to the environment of the Kiali operator. To find out the different versions of software within the Kiali operator image, run the following:
 
 * To get the Python version: `docker run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest python3 --version`
 * To get the Python libraries (`openshift` and `kubernetes` are important ones to look at): `docker run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest pip3 list`
 * To get the Ansible version: `docker run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest ansible --version`
 
-To get started, try to run `python -m pip install --user --upgrade -r operator/molecule/requirements.txt` to get Python3 libraries installed.
-_(as of 06/24/2021, you need very specific versions of kubernetes and openshift libraries via `python -m pip install --user openshift==0.11.2 kubernetes==11.0.0`)_
+To get started, try to run `python -m pip install --user --upgrade -r operator/molecule/requirements.txt` to get Python3 libraries installed. If you need to, you can install specific versions of the libraries like this: `python -m pip install --user openshift==0.12.1 kubernetes==12.0.1`.
+
+You also must get the required Ansible collections installed. To install these, run `ansible-galaxy collection install -r operator/requirements.yml --force-with-deps`
 
 ### Running the Operator With the Ansible Profiler
 
