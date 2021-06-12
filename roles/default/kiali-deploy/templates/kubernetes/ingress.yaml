@@ -1,4 +1,4 @@
-apiVersion: "networking.k8s.io/{{ 'v1' if (lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
+apiVersion: "networking.k8s.io/{{ 'v1' if (lookup(k8s_plugin, kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
 kind: Ingress
 metadata:
   name: {{ kiali_vars.deployment.instance_name }}
@@ -22,7 +22,7 @@ spec:
   - http:
       paths:
       - path: {{ kiali_vars.server.web_root }}
-{% if lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable %}
+{% if lookup(k8s_plugin, kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable %}
         pathType: Prefix
         backend:
           service:
