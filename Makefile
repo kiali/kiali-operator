@@ -53,6 +53,10 @@ clean:
 	@$(eval OP_SDK ?= $(shell which operator-sdk 2>/dev/null || echo "${OUTDIR}/operator-sdk-install/operator-sdk"))
 	@"${OP_SDK}" version
 
+## get-operator-sdk: Downloads the Operator SDK CLI if it is not already in PATH.
+get-operator-sdk: .ensure-operator-sdk-exists
+	@echo Operator SDK location: ${OP_SDK}
+
 ## build: Build Kiali operator container image.
 .PHONY: build
 build:
@@ -73,6 +77,15 @@ else
 	@echo Pushing Kiali operator image using podman
 	podman push ${OPERATOR_QUAY_TAG}
 endif
+
+## validate: Checks the latest version of the OLM bundle metadata for correctness.
+validate: .ensure-operator-sdk-exists
+	@printf "==========\nValidating kiali-ossm metadata\n==========\n"
+	@mkdir -p ${OUTDIR}/kiali-ossm && rm -rf ${OUTDIR}/kiali-ossm/* && cp -R ./manifests/kiali-ossm ${OUTDIR} && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR_VERSION="2.0.0" KIALI_OLD_OPERATOR_VERSION="1.0.0" KIALI_OPERATOR_TAG=":2.0.0" KIALI_1_24_TAG=":1.24.0" KIALI_1_12_TAG=":1.12.0" KIALI_1_0_TAG=":1.0.0" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm/manifests/kiali.clusterserviceversion.yaml && ${OP_SDK} bundle validate --verbose ${OUTDIR}/kiali-ossm
+	@printf "==========\nValidating kiali-community metadata\n==========\n"
+	@for d in $$(ls -1d manifests/kiali-community/* | sort -V | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
+	@printf "==========\nValidating kiali-upstream metadata\n==========\n"
+	@for d in $$(ls -1d manifests/kiali-upstream/* | sort -V | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
 
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:
