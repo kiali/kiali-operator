@@ -9,7 +9,6 @@ spec:
 
   additional_display_details: null
   installation_tag: null
-  istio_component_namespaces: null
   istio_namespace: {{ istio.control_plane_namespace }}
 
   api:
