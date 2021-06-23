@@ -1,6 +1,6 @@
 - name: Get information about the cluster
   set_fact:
-    api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+    api_groups: "{{ lookup('kubernetes.core.k8s', cluster_info='api_groups') }}"
 - name: Determine the cluster type
   set_fact:
     is_openshift: "{{ True if 'route.openshift.io' in api_groups else False }}"
@@ -11,7 +11,7 @@
 
 - name: Get Kiali CR if present
   set_fact:
-    kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+    kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
 - name: Get Kiali Operator Pod
   k8s_info:
@@ -37,7 +37,7 @@
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
   set_fact:
-    kiali_configmap: "{{ lookup('k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
+    kiali_configmap: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
 
 - name: Format Configmap
   set_fact:

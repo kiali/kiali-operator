@@ -2,7 +2,7 @@
   hosts: localhost
   connection: local
   collections:
-  - community.kubernetes
+  - kubernetes.core
 
 - name: Include the base destroy play to destroy the first kiali install
   import_playbook: ../default/destroy.yml

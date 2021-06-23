@@ -2,7 +2,7 @@
   hosts: localhost
   connection: local
   collections:
-  - community.kubernetes
+  - kubernetes.core
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
@@ -14,9 +14,10 @@
     vars:
       namespace_list: [ 'instancenametest' ]
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: Make sure the one new namespace label exists
     vars:
-      namespacesWithLabel: "{{ query('k8s', kind='Namespace', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
+      namespacesWithLabel: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
     assert:
       that:
       - namespacesWithLabel | selectattr('metadata.name', 'equalto', 'instancenametest') | length == 1
@@ -38,12 +39,13 @@
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: Make sure the two new namespace labels exists and the two labels on the signing key exist
     vars:
-      namespacesWithLabel1: "{{ query('k8s', kind='Namespace', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
-      namespacesWithLabel2: "{{ query('k8s', kind='Namespace', label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
-      signingKeyWithLabel1: "{{ query('k8s', kind='Secret', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
-      signingKeyWithLabel2: "{{ query('k8s', kind='Secret', label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
+      namespacesWithLabel1: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
+      namespacesWithLabel2: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
+      signingKeyWithLabel1: "{{ lookup('kubernetes.core.k8s', kind='Secret',    label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
+      signingKeyWithLabel2: "{{ lookup('kubernetes.core.k8s', kind='Secret',    label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
     assert:
       that:
       - namespacesWithLabel1 | selectattr('metadata.name', 'equalto', 'instancenametest') | length == 1
@@ -51,6 +53,7 @@
       - signingKeyWithLabel1 | selectattr('metadata.name', 'equalto', 'kiali-signing-key') | length == 1
       - signingKeyWithLabel2 | selectattr('metadata.name', 'equalto', 'kiali-signing-key') | length == 1
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   # just set some common constants so our assert code below is easier to read
   - set_fact:
       queryNamespace: "{{ istio.control_plane_namespace }}"
@@ -60,35 +63,45 @@
       apiRoBi: "rbac.authorization.k8s.io/v1"
       apiServ: "v1"
       apiSvcA: "v1"
-      apiIngr: "networking.k8s.io/{{ 'v1' if (lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
+      apiIngr: "networking.k8s.io/{{ 'v1' if (lookup('kubernetes.core.k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
       apiRout: "route.openshift.io/v1"
 
+  # TODO This confirms the behavior that we expect but is likely faulty.
+  # If this assert fails, it means https://github.com/ansible-collections/kubernetes.core/issues/147 was fixed
+  # and that we need to check all calls to lookup and query using kubernetes.core.k8s and make sure they still work as intended.
+  - assert:
+      that:
+      - lookup('kubernetes.core.k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable
+      - lookup('kubernetes.core.k8s', kind='Ingress', api_version='networking.k8s.io/v1_INVALID', errors='ignore') is not iterable
+
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: Kubernetes - Make sure we have the basic resources we expect, with the labels we expect
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
-      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
-      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     - app.kubernetes.io/instance=kialitwo
     when:
     - is_k8s == True
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: OpenShift - Make sure we have the basic resources we expect, with the labels we expect
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
-      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     - app.kubernetes.io/instance=kialitwo
@@ -110,12 +123,13 @@
       name: "{{ custom_resource.metadata.name }}"
       namespace: "{{ cr_namespace }}"
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: Make sure the first namespace label exists but the second one is gone, same with the signing key
     vars:
-      namespacesWithLabel1: "{{ query('k8s', kind='Namespace', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
-      namespacesWithLabel2: "{{ query('k8s', kind='Namespace', label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
-      signingKeyWithLabel1: "{{ query('k8s', kind='Secret', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
-      signingKeyWithLabel2: "{{ query('k8s', kind='Secret', label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
+      namespacesWithLabel1: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
+      namespacesWithLabel2: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
+      signingKeyWithLabel1: "{{ lookup('kubernetes.core.k8s', kind='Secret',    label_selector='kiali.io/member-of=' + istio.control_plane_namespace) }}"
+      signingKeyWithLabel2: "{{ lookup('kubernetes.core.k8s', kind='Secret',    label_selector='kiali.io/kialitwo.member-of=' + istio.control_plane_namespace) }}"
     assert:
       that:
       - namespacesWithLabel1 | selectattr('metadata.name', 'equalto', 'instancenametest') | length == 1
@@ -125,31 +139,33 @@
 
   # Check that the resources for the remaining instance still exist
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: Kubernetes - Make sure we have the basic resources we expect, with the labels we expect for the remaining instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
-      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
-      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     when:
     - is_k8s == True
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: OpenShift - Make sure we have the basic resources we expect, with the labels we expect for the remaining instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
-      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
-      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
-      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - lookup('kubernetes.core.k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
+      - lookup('kubernetes.core.k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     when:
@@ -157,31 +173,33 @@
 
   # Check that the resources for the deleted instance have been removed
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: Kubernetes - Confirm we have no more resources for the deleted instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 0
-      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 0
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 0
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 0
-      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
-      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
-      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 0
     loop:
     - app.kubernetes.io/instance=kialitwo
     when:
     - is_k8s == True
 
+  # TODO the k8s lookup below assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   - name: OpenShift - Confirm we have no more resources for the deleted instance
     assert:
       that:
-      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 0
-      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 0
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 0
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 0
-      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
-      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
+      - lookup('kubernetes.core.k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 0
     loop:
     - app.kubernetes.io/instance=kialitwo
     when:
