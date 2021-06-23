@@ -38,6 +38,35 @@
   when:
   - is_openshift == True
 
+- name: Create simple-sa service account
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: simple-sa
+        namespace: "{{ simple_mesh_namespace }}"
+
+- name: Create simple-scc so OpenShift deployments are successful
+  k8s:
+    state: present
+    definition:
+      apiVersion: security.openshift.io/v1
+      kind: SecurityContextConstraints
+      metadata:
+        name: simple-scc
+      runAsUser:
+        type: RunAsAny
+      seLinuxContext:
+        type: RunAsAny
+      supplementalGroups:
+        type: RunAsAny
+      users:
+      - "system:serviceaccount:{{ simple_mesh_namespace }}:simple-sa"
+  when:
+  - is_openshift == True
+
 - name: Create simple-server deployment
   k8s:
     state: present
@@ -62,6 +91,7 @@
               app: simple-server
               version: v99
           spec:
+            serviceAccountName: simple-sa
             containers:
             - name: simple-server
               image: quay.io/jmazzitelli/alpine:latest
@@ -118,6 +148,7 @@
               app: simple-client
               version: v99
           spec:
+            serviceAccountName: simple-sa
             containers:
             - name: simple-client
               image: quay.io/jmazzitelli/alpine:latest

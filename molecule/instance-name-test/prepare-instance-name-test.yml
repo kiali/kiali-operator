@@ -2,7 +2,7 @@
   hosts: localhost
   connection: local
   collections:
-  - community.kubernetes
+  - kubernetes.core
 
 - name: Create the test namespace
   import_playbook: ./process-namespace.yml
