@@ -2,7 +2,7 @@
   hosts: localhost
   connection: local
   collections:
-  - community.kubernetes
+  - kubernetes.core
   tasks:
 
   # Cleanup should only ever execute when a molecule test fails
