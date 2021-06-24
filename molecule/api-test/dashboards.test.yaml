@@ -26,8 +26,8 @@
     - api_customdashboard_json.charts | length == 4
     - api_customdashboard_json | json_query('charts[?name==`API hit rate`].spans') | join == "6"
     - api_customdashboard_json | json_query('charts[?name==`API processing duration`].spans') | join == "6"
-    - api_customdashboard_json | json_query('charts[?name==`API Failures`].spans') | join == "12"
-    - api_customdashboard_json | json_query('charts[?name==`Graph generation duration`].spans') | join == "12"
+    - api_customdashboard_json | json_query('charts[?name==`API Failures`].spans') | join == "6"
+    - api_customdashboard_json | json_query('charts[?name==`Graph generation duration`].spans') | join == "6"
 
 # Get the app dashboard
 

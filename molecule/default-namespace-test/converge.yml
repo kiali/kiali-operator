@@ -2,7 +2,7 @@
   hosts: localhost
   connection: local
   collections:
-  - community.kubernetes
+  - kubernetes.core
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
@@ -11,10 +11,10 @@
 
   - name: Get some Kiali resources that we know should have been created
     set_fact:
-      doomed_cm: "{{ query('k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
-      doomed_cm_cabundle: "{{ query('k8s', kind='ConfigMap', resource_name='kiali-cabundle', namespace=cr_namespace, api_version='v1') }}"
-      doomed_rb: "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
-      doomed_role: "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+      doomed_cm: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
+      doomed_cm_cabundle: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='kiali-cabundle', namespace=cr_namespace, api_version='v1') }}"
+      doomed_rb: "{{ query('kubernetes.core.k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+      doomed_role: "{{ query('kubernetes.core.k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
 
   # note: the cabundle configmap is only ever created on openshift and not on any other kubernetes type
   - assert:
@@ -38,10 +38,10 @@
 
   - name: Get some Kiali resources that we know were created but should now be deleted
     set_fact:
-      doomed_cm: "{{ query('k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
-      doomed_cm_cabundle: "{{ query('k8s', kind='ConfigMap', resource_name='kiali-cabundle', namespace=cr_namespace, api_version='v1') }}"
-      doomed_rb: "{{ query('k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
-      doomed_role: "{{ query('k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+      doomed_cm: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='kiali', namespace=cr_namespace, api_version='v1') }}"
+      doomed_cm_cabundle: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='kiali-cabundle', namespace=cr_namespace, api_version='v1') }}"
+      doomed_rb: "{{ query('kubernetes.core.k8s', kind='ClusterRoleBinding', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
+      doomed_role: "{{ query('kubernetes.core.k8s', kind='ClusterRole', resource_name='kiali', api_version='rbac.authorization.k8s.io/v1') }}"
 
   - assert:
       that:

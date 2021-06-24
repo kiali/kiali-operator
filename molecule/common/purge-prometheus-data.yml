@@ -6,7 +6,7 @@
     namespace: "{{ k8s_item.metadata.namespace }}"
     name: "{{ k8s_item.metadata.name }}"
   with_items:
-  - "{{ query('k8s', namespace=istio.control_plane_namespace, kind='Pod', label_selector='app=prometheus', api_version='v1') }}"
+  - "{{ lookup('kubernetes.core.k8s', namespace=istio.control_plane_namespace, kind='Pod', label_selector='app=prometheus', api_version='v1') }}" # TODO this assumes faulty behavior - may need to change in the future. See: https://github.com/ansible-collections/kubernetes.core/issues/147
   loop_control:
     loop_var: k8s_item
 
