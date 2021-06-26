@@ -224,6 +224,10 @@ kiali_defaults:
           expression: "healthy"
         - description: "Hide: unknown nodes"
           expression:  "name = unknown"
+        traffic:
+          grpc: "requests"
+          http: "requests"
+          tcp: "sent"
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "15s"
