@@ -746,10 +746,13 @@ spec:
 #        - description: "Hide: unknown nodes"
 #          expression:  "name = unknown"
 #
-# Traffic settings determine which rates are used to determine graph traffic. Valid settings:
-# grpc: none | sent (messages) | received (messages) | requests | total (messages)
+# Traffic settings determine which rates are used to determine graph traffic. gRPC traffic is
+# measured in requests or sent/received/total messages.  HTTP traffic is measure in requests.
+# TCP traffic is measured in sent/received/total bytes.  Only request traffic supplies response
+# codes.  Valid values:
+# grpc: none | requests | sent | received | total
 # http: none | requests
-# tcp:  none | sent (bytes) | received (bytes) | total (bytes)
+# tcp:  none | sent | received | total
 #      ---
 #        traffic:
 #          grpc: "requests"
