@@ -539,10 +539,13 @@ spec:
 #                  namespace: <the namespace where your ingress is deployed>
 # config_map_name: The name of the istio control plane config map. It defaults to `istio`.
 # envoy_admin_local_port: The port which kiali will open to fetch envoy config data information.
+# istio_canary_revision: These values are used in Canary upgrade/downgrade functionality when istio_upgrade_action is true.
+#   current: The current installed Istio revision.
+#   upgrade: The installed Istio Canary revision to upgrade to.
 # istio_identity_domain: The annotation used by Istio to identify domains.
-# istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
+# istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istiod_deployment_name: The name of the istiod deployment.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
@@ -561,6 +564,9 @@ spec:
 #        enabled: true
 #      config_map_name: "istio"
 #      envoy_admin_local_port: 15000
+#      #istio_canary_revision:
+#        #current: prod
+#        #upgrade: canary
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_injection_annotation: "sidecar.istio.io/inject"
 #      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
@@ -700,6 +706,7 @@ spec:
 #    ---
 #    app_label_name: "app"
 #    injection_label_name: "istio-injection"
+#    injection_label_rev:  "istio.io/rev"
 #    version_label_name: "version"
 
 ##########
@@ -710,6 +717,11 @@ spec:
 # Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
 #    ---
 #    istio_injection_action: true
+#
+# Flag to activate the Kiali functionality of upgrading namespaces to point to installed Istio Canary revision.
+# Related Canary upgrade and current revisions of Istio should be defined in istio_canary_revision section.
+#    ---
+#    istio_upgrade_action: false
 #
 # Default settings for the UI. These defaults apply to all users.
 #    ---
