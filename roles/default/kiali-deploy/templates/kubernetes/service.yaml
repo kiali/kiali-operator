@@ -25,6 +25,10 @@ spec:
     port: {{ kiali_vars.server.metrics_port }}
 {% endif %}
   selector:
+{% if query('k8s', kind='Service', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace) | length > 0 %}
+    app: null
+    version: null
+{% endif %}
     app.kubernetes.io/name: kiali
     app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
   {% if kiali_vars.deployment.additional_service_yaml is defined %}{{ kiali_vars.deployment.additional_service_yaml | to_nice_yaml(indent=0) | trim | indent(2) }}{% endif %}
