@@ -1,4 +1,4 @@
-- name: Create simple-mesh namespace with Istio auto-injection enabled
+- name: Create simple-mesh namespace with Istio auto-injection enabled and custom dashboards
   k8s:
     state: present
     definition:
@@ -8,6 +8,28 @@
         name: "{{ simple_mesh_namespace }}"
         labels:
           istio-injection: enabled
+        annotations:
+          dashboards.kiali.io/templates: |
+            - name: custom_envoy1
+              title: Custom_Envoy_1
+              discoverOn: "envoy_server_uptime"
+              items:
+                - chart:
+                    name: "Pods uptime"
+                    spans: 3
+                    metricName: "envoy_server_uptime"
+                    dataType: "raw"
+            - name: custom_envoy2
+              title: Custom_Envoy_2
+              discoverOn: "envoy_server_uptime"
+              items:
+                - chart:
+                    name: "Allocated memory"
+                    unit: "bytes"
+                    spans: 3
+                    metricName: "envoy_server_memory_allocated"
+                    dataType: "raw"
+                    min: 0
 
 - name: Create Maistra SMM to add simple-mesh to the mesh
   k8s:
@@ -87,6 +109,19 @@
           metadata:
             annotations:
               sidecar.istio.io/inject: "true"
+              dashboards.kiali.io/templates: |
+                - name: custom_envoy1
+                - name: custom_envoy3
+                  title: Custom_Envoy_3
+                  discoverOn: "envoy_server_uptime"
+                  items:
+                    - chart:
+                        name: "Heap size"
+                        unit: "bytes"
+                        spans: 3
+                        metricName: "envoy_server_memory_heap_size"
+                        dataType: "raw"
+                        min: 0
             labels:
               app: simple-server
               version: v99
