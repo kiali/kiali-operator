@@ -122,9 +122,9 @@ spec:
     url: https://github.com/kiali/kiali-operator
   installModes:
   - type: OwnNamespace
-    supported: true
+    supported: false
   - type: SingleNamespace
-    supported: true
+    supported: false
   - type: MultiNamespace
     supported: false
   - type: AllNamespaces
