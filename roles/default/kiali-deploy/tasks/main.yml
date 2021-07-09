@@ -789,7 +789,7 @@
       metadata:
         name: "{{ namespace }}"
         labels:
-          {{ the_namespace_label_name }}: {{ the_namespace_label_value }}
+          {{ the_namespace_label_name }}: "{{ the_namespace_label_value }}"
       ...
       {% endfor %}
   when:
