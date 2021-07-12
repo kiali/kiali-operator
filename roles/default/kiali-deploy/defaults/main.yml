@@ -152,6 +152,9 @@ kiali_defaults:
         enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
+      #istio_canary_revision:
+        #current: prod
+        #upgrade: canary
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
@@ -201,10 +204,12 @@ kiali_defaults:
   istio_labels:
     app_label_name: "app"
     injection_label_name: "istio-injection"
+    injection_label_rev: "istio.io/rev"
     version_label_name: "version"
 
   kiali_feature_flags:
     istio_injection_action: true
+    istio_upgrade_action: false
     ui_defaults:
       graph:
         find_options:
