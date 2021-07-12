@@ -181,3 +181,21 @@
     assert:
       that:
       - kiali_output.json | length > 0
+
+  - name: Pause to wait for the session to timeout
+    pause:
+      seconds: 20
+
+  - name: Session should have timed out - request should fail
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      headers:
+        Cookie: "{{ new_kiali_cookie }}"
+      return_content: yes
+      validate_certs: false
+      status_code: 400
+    register: kiali_output
+  - name: Assert that we were able to get the list of namespaces
+    assert:
+      that:
+      - kiali_output.json | length > 0

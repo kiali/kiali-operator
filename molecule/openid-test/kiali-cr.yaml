@@ -24,3 +24,4 @@ spec:
   # if signing key is not 16, 24, or 32 chars, then openid "implicit flow" is used and what we test
   login_token:
     signing_key: "abc12345"
+    expiration_seconds: 15
