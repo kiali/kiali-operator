@@ -2,8 +2,8 @@
   k8s:
     state: present
     definition:
-      apiVersion: v1
-      kind: Namespace
+      apiVersion: "{{ 'project.openshift.io/v1' if is_openshift == True else 'v1' }}"
+      kind: "{{ 'Project' if is_openshift == True else 'Namespace' }}"
       metadata:
         name: "{{ simple_mesh_namespace }}"
         labels:
