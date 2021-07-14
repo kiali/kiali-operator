@@ -1,6 +1,8 @@
 - name: Tests
   hosts: localhost
   connection: local
+  collections:
+  - kubernetes.core
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
@@ -14,10 +16,7 @@
       that:
       - kiali_configmap.installation_tag == ""
       - kiali_configmap.additional_display_details | length == 1
-      - kiali_configmap.deployment.custom_dashboards.includes | length == 1
-      - kiali_configmap.deployment.custom_dashboards.includes[0] == '*'
-      - kiali_configmap.deployment.custom_dashboards.excludes | length == 1
-      - kiali_configmap.deployment.custom_dashboards.excludes[0] == ''
+      - kiali_configmap.custom_dashboards | length == 0
       - kiali_configmap.deployment.ingress_enabled == True
       - kiali_configmap.deployment.replicas == 1
       - kiali_configmap.deployment.secret_name == "kiali"

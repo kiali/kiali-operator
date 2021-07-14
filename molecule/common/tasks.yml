@@ -1,6 +1,6 @@
 - name: Get information about the cluster
   set_fact:
-    api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+    api_groups: "{{ lookup('kubernetes.core.k8s', cluster_info='api_groups') }}"
 - name: Determine the cluster type
   set_fact:
     is_openshift: "{{ True if 'route.openshift.io' in api_groups else False }}"
@@ -13,7 +13,7 @@
 
 - name: Get Kiali CR if present
   set_fact:
-    kiali_cr: "{{ lookup('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+    kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
 - name: Get Kiali Operator Pod
   k8s_info:
@@ -21,64 +21,80 @@
     kind: Pod
     namespace: "{{ kiali.operator_namespace }}"
     label_selectors:
-    - app = kiali-operator
+    - app.kubernetes.io/name = kiali-operator
   register: kiali_operator_pod
 
 - name: Get Kiali Pod
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
   k8s_info:
     api_version: v1
     kind: Pod
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_pod
 
 - name: Get Kiali Configmap
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
   set_fact:
-    kiali_configmap: "{{ lookup('k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name='kiali') }}"
+    kiali_configmap: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
 
 - name: Format Configmap
   set_fact:
     kiali_configmap: "{{ kiali_configmap.data['config.yaml'] | from_yaml }}"
 
 - name: Get Kiali Deployment
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
   k8s_info:
     api_version: apps/v1
     kind: Deployment
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_deployment
 
 - name: Get Kiali Service
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
   k8s_info:
     api_version: v1
     kind: Service
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_service
 
 - name: Get Kiali Route
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
   k8s_info:
     api_version: route.openshift.io/v1
     kind: Route
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
-    - app = kiali
+    - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_route
   when:
   - is_openshift == True
 
 - name: Determine the Kiali Route URL on OpenShift
+  vars:
+    web_root: "{{ kiali_configmap.server.web_root if kiali_configmap.server.web_root != '/' else '' }}"
   set_fact:
-    kiali_base_url: "https://{{ kiali_route.resources[0].spec.host }}"
+    kiali_base_url: "https://{{ kiali_route.resources[0].spec.host }}{{ web_root }}"
   when:
   - is_openshift == True
 
+# To avoid problems with Ingress/Minikube conflicts, if installing multiple kiali instances set web_root to the instance name
 - name: Determine the Kiali Ingress URL on minikube
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    web_root: "{{ kiali_configmap.server.web_root if kiali_configmap.server.web_root != '/' else '' }}"
   set_fact:
-    kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}/kiali"
+    kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}{{ web_root }}"
   when:
   - is_minikube == True
 

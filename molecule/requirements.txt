@@ -1,9 +1,9 @@
 # Project requirements
 # 'pip install -r requirements.txt'
-# In addition to these, you must also exec "ansible-galaxy collection install community.kubernetes"
+# In addition to these, you must also exec "ansible-galaxy collection install kubernetes.core"
 molecule
 openshift
 jmespath
 junit-xml
-kubernetes==11.0.0
+kubernetes
 docker

@@ -41,32 +41,21 @@ spec:
 
 ##########
 # Tag used to identify a particular instance/installation of the Kiali server.
+# This is merely a human-readable string that will be used within Kiali to
+# help a user identify the Kiali being used (e.g. in the Kiali UI title bar).
+# See deployment.instance_name for the setting used to customize Kiali resource names that are created.
 #  ---
 #  installation_tag: ""
 
 ##########
-# The namespaces where individual Istio components are installed.
-# If left empty, it is assumed all Istio components are installed in the
-# defined istio_namespace. If a component is not listed here, it is
-# assumed that component is installed in istio_namespace. For example:
-#  istio_component_namespaces:
-#    prometheus: prom-ns
-# means Prometheus is installed in the namespace "prom-ns" but all other
-# Istio components are installed in the namespace defined in istio_namespace.
-# NOTE: You can find Istio Components Status settings under `external_services`.
-#  ---
-#  istio_component_namespaces: {}
-
-##########
 # The namespace where Istio is installed. If left empty, it is assumed to be the
 # same namespace as where Kiali is installed (i.e. deployment.namespace).
-# Note that if you install some Istio components in other namespaces, specify
-# that component's namespace in istio_component_namespaces.
 #  ---
 #  istio_namespace: ""
 
 ##########
 # The version of the Ansible playbook to execute in order to install that version of Kiali.
+# It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
 # If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
 # Refer to this file to see where these values are defined in the master branch:
 # https://github.com/kiali/kiali-operator/tree/master/playbooks/default-supported-images.yml
@@ -100,9 +89,11 @@ spec:
 # (e.g. "myLabel=myValue") which is used when fetching the list of available namespaces.
 # This does not affect explicit namespace access.
 # Note that if you do not set this but deployment.accessible_namespaces does not have the
-# special "all namespaces" value of "**" then this label_selector will be set
-# to a default value of "kiali.io/member-of=<deployment.namespace>" where
-# <deployment.namespace> is the namespace where Kiali is to be installed.
+# special "all namespaces" entry of "**" then this label_selector will be set
+# to a default value of "kiali.io/[<deployment.instance_name>.]member-of=<deployment.namespace>"
+# where [<deployment.instance_name>.] is the instance name assigned to the Kiali installation
+# if it is not the default 'kiali' (otherwise, this is omitted) and <deployment.namespace>
+# is the namespace where Kiali is to be installed.
 # If deployment.accessible_namespaces does not have the special value of "**"
 # then the Kiali operator will add a new label to all accessible namespaces - that new
 # label will be this label_selector.
@@ -111,7 +102,7 @@ spec:
 #    namespaces:
 #      exclude:
 #      - "istio-operator"
-#      - "kube.*"
+#      - "kube-.*"
 #      - "openshift.*"
 #      - "ibm.*"
 #      - "kiali-operator"
@@ -164,6 +155,29 @@ spec:
 #      client_id_prefix: kiali
 
 ##########
+# A list of user-defined custom monitoring dashboards that you can use to generate metrics charts for your applications.
+# The server has some built-in dashboards; if you define a custom dashboard here with the same name as a built-in
+# dashboard, your custom dashboard takes precedence and will overwrite the built-in dashboard.
+# You can disable one or more of the built-in dashboards by simply defining an empty dashboard.
+#
+# An example of an additional user-defined dashboard:
+#   - name: myapp
+#     title: My App Metrics
+#     items:
+#     - chart
+#         name: "Thread Count"
+#         spans: 4
+#         metricName: "thread-count"
+#         dataType: "raw"
+#
+# An example of disabling a built-in dashboard:
+#   - name: envoy
+#
+# See the Kiali documentation for more details on custom monitoring dashboards.
+#  ---
+#  custom_dashboards: []
+
+##########
 #  ---
 #  deployment:
 #
@@ -175,7 +189,7 @@ spec:
 # Kiali to be given access to all namespaces via a single cluster role (if using this special value of "**",
 # you are required to have already granted the operator permissions to create cluster roles and cluster role bindings).
 #    ---
-#    accessible_namespaces: ["^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+#    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
 #
 # Additional custom yaml to add to the service definition. This is used mainly to customize the service type.
 # For example, if the deployment.service_type is set to "LoadBalancer" and you want to set the loadBalancerIP,
@@ -194,19 +208,6 @@ spec:
 #      node: {}
 #      pod: {}
 #      pod_anti: {}
-#
-# Names of the out-of-box custom monitoring dashboards that are to be installed.
-# The custom monitoring dashboards are defined in yaml files located within the operator.
-# Consult the operator templates for the custom monitoring dashboard yaml files available.
-# For example, see this for the current list of yaml files available:
-# https://github.com/kiali/kiali-operator/tree/master/roles/default/kiali-deploy/templates/dashboards
-# These settings will determine the additional metric graphs that you will see within the Kiali UI.
-# You can specify an includes and excludes list, the excludes list takes precedence.
-# Each list can have fileglob wildcard characters '*' and '?' for file matching.
-#    ---
-#    custom_dashboards:
-#      excludes: ['']
-#      includes: ['*']
 #
 # Determines what (if any) HorizontalPodAutoscaler should be created to autoscale the Kiali pod.
 # A typical way to configure HPA for Kiali is:
@@ -267,6 +268,23 @@ spec:
 # If true, an Ingress will be created if on Kubernetes or a Route if on OpenShift.
 #    ---
 #    ingress_enabled: true
+#
+# The instance name of this Kiali installation. This instance name will be the prefix
+# prepended to the names of all Kiali resources created by the operator and will be used
+# to label those resources as belonging to this Kiali installation instance.
+# You cannot change this instance name after a Kiali CR is created. If you attempt
+# to change it, the operator will abort with an error. If you want to change it,
+# you must first delete the original Kiali CR and create a new one.
+# Note that this does not affect the name of the auto-generated signing key secret. If
+# you do not supply a signing key, the operator will create one for you in a secret,
+# but that secret will always be named "kiali-signing-key" and shared across all
+# Kiali instances in the same deployment namespace. If you want a different
+# signing key secret, you are free to create your own and tell the operator about it via
+# the login_token.signing_key setting. See the docs on that setting for more details.
+# Note also that if you are setting this value, you may also want to change
+# the installation_tag setting, but this is not required.
+#    ---
+#    instance_name: "kiali"
 #
 # Determines the logger configuration.
 # log_format supports text and json.
@@ -510,18 +528,24 @@ spec:
 #   components: A list of components that Kiali will check its statuses.
 #     app_label: Istio component pod app label.
 #     is_core: Whether the component is core for your deployment.
+#     is_proxy: Whether the component is a native Envoy proxy.
 #     namespace: The namespace where the component is installed in. It defaults to the 'istio_namespace' setting.
 #                Note that the Istio documentation suggests you install the ingress and egress to different namespaces,
 #                so you most likely will want to explicitly set this namespace value for the ingress and egress components.
 #                For example, something like:
 #                - app_label: istio-ingressgateway
 #                  is_core:   false
+#                  is_proxy:  true
 #                  namespace: <the namespace where your ingress is deployed>
 # config_map_name: The name of the istio control plane config map. It defaults to `istio`.
 # envoy_admin_local_port: The port which kiali will open to fetch envoy config data information.
+# istio_canary_revision: These values are used in Canary upgrade/downgrade functionality when istio_upgrade_action is true.
+#   current: The current installed Istio revision.
+#   upgrade: The installed Istio Canary revision to upgrade to.
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
+# istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istiod_deployment_name: The name of the istiod deployment.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
@@ -530,15 +554,22 @@ spec:
 #        components:
 #        - app_label: istiod
 #          is_core: true
+#          is_proxy: false
 #        - app_label: istio-ingressgateway
 #          is_core: true
+#          is_proxy: true
 #        - app_label: istio-egressgateway
 #          is_core: false
+#          is_proxy: true
 #        enabled: true
 #      config_map_name: "istio"
 #      envoy_admin_local_port: 15000
+#      #istio_canary_revision:
+#        #current: prod
+#        #upgrade: canary
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_injection_annotation: "sidecar.istio.io/inject"
+#      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
 #      istiod_deployment_name: "istiod"
 #      url_service_version: ""
@@ -675,6 +706,7 @@ spec:
 #    ---
 #    app_label_name: "app"
 #    injection_label_name: "istio-injection"
+#    injection_label_rev:  "istio.io/rev"
 #    version_label_name: "version"
 
 ##########
@@ -686,9 +718,30 @@ spec:
 #    ---
 #    istio_injection_action: true
 #
+# Flag to activate the Kiali functionality of upgrading namespaces to point to installed Istio Canary revision.
+# Related Canary upgrade and current revisions of Istio should be defined in istio_canary_revision section.
+#    ---
+#    istio_upgrade_action: false
+#
 # Default settings for the UI. These defaults apply to all users.
 #    ---
 #    ui_defaults:
+#
+# Default presets for Graph Find/Hide
+#      ---
+#      graph:
+#        find_options:
+#        - description: "Find: slow edges (> 1s)"
+#          expression: "rt > 1000"
+#        - description: "Find: unhealthy nodes"
+#          expression:  "! healthy"
+#        - description: "Find: unknown nodes"
+#          expression:  "name = unknown"
+#        hide_options:
+#        - description: "Hide: healthy nodes"
+#          expression: "healthy"
+#        - description: "Hide: unknown nodes"
+#          expression:  "name = unknown"
 #
 # Duration of metrics to fetch on each refresh. Omit for default.
 # Valid values: 1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 7d, 30d
@@ -728,14 +781,18 @@ spec:
 # on this list of Istio types. Other Istio types are not yet supported.
 #    ---
 #    cache_istio_types:
+#    - "AuthorizationPolicy"
 #    - "DestinationRule"
+#    - "EnvoyFilter"
 #    - "Gateway"
-#    - "ServiceEntry"
-#    - "VirtualService"
-#    - "Sidecar"
 #    - "PeerAuthentication"
 #    - "RequestAuthentication"
-#    - "AuthorizationPolicy"
+#    - "ServiceEntry"
+#    - "Sidecar"
+#    - "VirtualService"
+#    - "WorkloadEntry"
+#    - "WorkloadGroup"
+
 #
 # List of namespaces or regex defining namespaces to include in a cache.
 #    ---

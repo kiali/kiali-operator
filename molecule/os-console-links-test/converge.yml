@@ -1,6 +1,8 @@
 - name: Tests
   hosts: localhost
   connection: local
+  collections:
+  - kubernetes.core
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:

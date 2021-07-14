@@ -5,7 +5,7 @@
   - is_minikube == True
 
 - name: Query Prometheus from Kiali Pod
-  community.kubernetes.k8s_exec:
+  k8s_exec:
     namespace: "{{ kiali_pod.resources[0].metadata.namespace }}"
     pod: "{{ kiali_pod.resources[0].metadata.name}}"
     command: "curl -skL {{ credentials_arg }} -d query={{ prometheus_request.query}} -d time={{ prometheus_request.time }} {{ url }}"

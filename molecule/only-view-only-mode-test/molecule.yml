@@ -29,7 +29,7 @@ provisioner:
           install_namespace: istio-system
           accessible_namespaces: ["istio-system"]
           auth_strategy: anonymous
-          operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'openshift-operators' }}" # if external operator, assume operator is in OLM location
+          operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else ('openshift-operators' if (query('kubernetes.core.k8s', kind='Namespace', resource_name='openshift-operators') | length > 0) else 'operators') }}" # if external operator, assume operator is in OLM location
           operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
           operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
           operator_watch_namespace: kiali-operator

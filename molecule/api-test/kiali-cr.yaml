@@ -7,10 +7,11 @@ spec:
   istio_namespace: {{ istio.control_plane_namespace }}
   auth:
     strategy: anonymous
+  # this will test that we can remove the "go" custom monitoring dashboard
+  custom_dashboards:
+  - name: go
   deployment:
     accessible_namespaces: {{ kiali.accessible_namespaces }}
-    custom_dashboards:
-      includes: ['kiali*']
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: {{ kiali.image_version }}

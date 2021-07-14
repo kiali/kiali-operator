@@ -9,7 +9,6 @@
 
 kiali_defaults:
   installation_tag: ""
-  istio_component_namespaces: {}
   istio_namespace: ""
   version: "default"
 
@@ -22,7 +21,7 @@ kiali_defaults:
     namespaces:
       exclude:
       - "istio-operator"
-      - "kube.*"
+      - "kube-.*"
       - "openshift.*"
       - "ibm.*"
       - "kiali-operator"
@@ -48,16 +47,15 @@ kiali_defaults:
       client_id_prefix: "kiali"
     strategy: ""
 
+  custom_dashboards: []
+
   deployment:
-    accessible_namespaces: ["^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
     #additional_service_yaml:
     affinity:
       node: {}
       pod: {}
       pod_anti: {}
-    custom_dashboards:
-      excludes: ['']
-      includes: ['*']
     hpa:
       api_version: "autoscaling/v2beta2"
       spec: {}
@@ -66,6 +64,7 @@ kiali_defaults:
     image_pull_secrets: []
     image_version: ""
     ingress_enabled: true
+    instance_name: "kiali"
     logger:
       log_format: "text"
       log_level: "info"
@@ -140,19 +139,26 @@ kiali_defaults:
         components:
         - app_label: "istiod"
           is_core: true
+          is_proxy: false
           namespace: ""
         - app_label: "istio-ingressgateway"
           is_core: true
+          is_proxy: true
           namespace: ""
         - app_label: "istio-egressgateway"
           is_core: false
+          is_proxy: true
           namespace: ""
         enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
+      #istio_canary_revision:
+        #current: prod
+        #upgrade: canary
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
+      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
       istiod_deployment_name: "istiod"
       url_service_version: ""
     prometheus:
@@ -198,11 +204,26 @@ kiali_defaults:
   istio_labels:
     app_label_name: "app"
     injection_label_name: "istio-injection"
+    injection_label_rev: "istio.io/rev"
     version_label_name: "version"
 
   kiali_feature_flags:
     istio_injection_action: true
+    istio_upgrade_action: false
     ui_defaults:
+      graph:
+        find_options:
+        - description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+        - description: "Find: unhealthy nodes"
+          expression:  "! healthy"
+        - description: "Find: unknown nodes"
+          expression:  "name = unknown"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+        - description: "Hide: unknown nodes"
+          expression:  "name = unknown"
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "15s"
@@ -212,14 +233,17 @@ kiali_defaults:
     cache_duration: 300
     cache_enabled: true
     cache_istio_types:
+    - "AuthorizationPolicy"
     - "DestinationRule"
+    - "EnvoyFilter"
     - "Gateway"
-    - "ServiceEntry"
-    - "VirtualService"
-    - "Sidecar"
     - "PeerAuthentication"
     - "RequestAuthentication"
-    - "AuthorizationPolicy"
+    - "ServiceEntry"
+    - "Sidecar"
+    - "VirtualService"
+    - "WorkloadEntry"
+    - "WorkloadGroup"
 
     cache_namespaces:
     - ".*"

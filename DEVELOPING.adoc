@@ -50,7 +50,38 @@ To install the operator that contains your local changes, run `make operator-cre
 
 Sometimes you made simple changes to the operator playbook and roles that can be quickly tested by running the Ansible playbook on your local machine. This saves time because it doesn't require you to install the operator directly in your cluster. To do this, you must have Ansible installed (e.g. `ansible-playbook` must be in your $PATH). You can run the operator playbook via `make run-operator-playbook`. This will run both the kiali-deploy and kiali-remove playbooks so the operator will install and then immediately uninstall a Kiali Server. The operator playbook is configured via the files found in the link:dev-playbook-config[dev-playbook-config directory].
 
-In order to use this `run-operator-playbook` target, you must have Python3 in your PATH (having an alias is not enough). You must also `pip3 install --user -r operator/molecule/requirements.txt` to get the necessary Python3 libraries installed.
+In order to use this `run-operator-playbook` target, you must have Python3 in your PATH (having an alias is not enough).
+
+You also must make sure your local environment matches as closely as possible to the environment of the Kiali operator. To find out the different versions of software within the Kiali operator image, run the following:
+
+* To get the Python version: `docker run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest python3 --version`
+* To get the Python libraries (`openshift` and `kubernetes` are important ones to look at): `docker run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest pip3 list`
+* To get the Ansible version: `docker run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest ansible --version`
+
+To get started, try to run `python -m pip install --user --upgrade -r operator/molecule/requirements.txt` to get Python3 libraries installed.
+_(as of 06/24/2021, you need very specific versions of kubernetes and openshift libraries via `python -m pip install --user openshift==0.11.2 kubernetes==11.0.0`)_
+
+### Running the Operator With the Ansible Profiler
+
+If the ansible.cfg has `callback_whitelist = profile_tasks` specified, a link:https://docs.ansible.com/ansible/2.9/plugins/callback/profile_tasks.html[profiler] is run and its report is dumped at the end of each reconciliation run. You can tell the operator to use such a configuration by setting the `ANSIBLE_CONFIG` environment variable to `/opt/ansible/ansible-profiler.cfg`.
+
+The profiler report is usually good enough to start tracking down performance issues. But it may be difficult to see performance issues over tasks that loop because the profiler report will show duplicate entries for each loop invocation. In that case, copy the profiler report to a file and pipe it to a script with the following content to provide a more cumulative report:
+
+```
+awk -F~ '                   ##Setting field separator as tilde here.
+{
+  val=$2;                   ##Creating a variable named val whose value is 2nd field of current line.
+  $2="@";                   ##Setting value of 2nd field as @ here to keep all lines same(to create index for array a).
+  a[$0]+=val                ##Creating an array named a whose index is the current line and its value is the new sum
+}
+!b[$0]++{                   ##Checking if array b, whose index is the current line, has a value of NULL; if so do following.
+  c[++count]=$0}            ##Creating an array named c whose index is variable count increasing value with 1 and value is line.
+END{                        ##Starting END block of awk code here.
+  for(i=1;i<=count;i++){    ##Starting a for loop whose value starts from 1 to till value of count variable.
+     sub("@",a[c[i]],c[i]); ##Substituting @ in value of array c(which is actually lines value) with value of SUMMED $2.
+     print c[i]}            ##Printing newly value of array c where $2 is now replaced with its actual value.
+}' OFS=\~ <(cat - | sed 's/\(.*\) -\+ \(.*\)s/\1~\2/') | sort -n -t '~' -k 2 -r | column -s~ -t
+```
 
 ## The Initial Kiali Operator Git Repo Creation
 
@@ -79,7 +110,7 @@ If you need to alter Kubernetes resources for either the Kiali Server or Operato
 
 The Operator's own resources are deployed either via OLM or the Operator Helm Chart. You must make changes to support them all. Today there are three sets of OLM metadata maintained in the kiali-operator repository - we call them the "golden copies" because they are the source of truth for the link:https://github.com/operator-framework/community-operators/tree/master/upstream-community-operators/kiali[OperatorHub.io upstream operator], link:https://github.com/operator-framework/community-operators/tree/master/community-operators/kiali[community operator], and the Red Hat OSSM Operator. The Operator Helm Chart templates are link:https://github.com/kiali/helm-charts/tree/master/kiali-operator[here.]
 
-The Kiali server resources are deployed by the link:./roles[Kiali Operator Ansible roles] or by the link:https://github.com/kiali/helm-charts/tree/master/kiali-server[Kiali Server Helm Chart]. There are link:./roles/default/kiali-deploy/templates/kubernetes[generic Kubernetes templates] as well as link:./roles/default/kiali-deploy/templates/openshift[OpenShift templates] for the link:./roles/default[default] (i.e. current) release as well as link:./roles[select previous releases]. The custom dashboards templates are cluster-type-agnostic and are link:./roles/default/kiali-deploy/templates/dashboards[here].
+The Kiali server resources are deployed by the link:./roles[Kiali Operator Ansible roles] or by the link:https://github.com/kiali/helm-charts/tree/master/kiali-server[Kiali Server Helm Chart]. There are link:./roles/default/kiali-deploy/templates/kubernetes[generic Kubernetes templates] as well as link:./roles/default/kiali-deploy/templates/openshift[OpenShift templates] for the link:./roles/default[default] (i.e. current) release as well as link:./roles[select previous releases].
 
 The configuration settings for the Kiali CR and Kiali ConfigMap are documented in the link:./deploy/kiali/kiali_cr.yaml[kiali_cr.yaml example file] and are defined in the Kiali Operator Ansible roles and in the Helm Charts, described below in more detail.
 
@@ -148,8 +179,7 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 
 ### Are You Altering a Kiali Monitoring Dashboard Template?
 
-- [ ] Modify the link:https://github.com/kiali/kiali-operator/tree/master/roles/default/kiali-deploy/templates/dashboards[templates used by the Operator]
-- [ ] Modify the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/dashboards[templates used by the Server Helm Chart]
+- [ ] Modify the link:https://github.com/kiali/kiali/tree/master/config/dashboards/dashboards.go[built-in templates used by the Server]
 
 ### Do You Need To Backport Changes To Support Older Versions?
 

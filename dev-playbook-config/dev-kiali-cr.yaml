@@ -16,9 +16,5 @@ spec:
   deployment:
     accessible_namespaces:
     - "**"
-    custom_dashboards:
-      includes:
-      - 'go*'
-      - 'kiali*'
     image_version: dev
     namespace: istio-system

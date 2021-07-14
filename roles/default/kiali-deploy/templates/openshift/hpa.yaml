@@ -2,18 +2,13 @@
 apiVersion: {{ kiali_vars.deployment.hpa.api_version }}
 kind: HorizontalPodAutoscaler
 metadata:
-  name: kiali
+  name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ kiali_vars.deployment.namespace }}
-  labels:
-    app: kiali
-    version: {{ kiali_vars.deployment.version_label }}
-    app.kubernetes.io/name: kiali
-    app.kubernetes.io/version: {{ kiali_vars.deployment.version_label }}
-    app.kubernetes.io/part-of: kiali
+  labels: {{ kiali_resource_metadata_labels }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: kiali
+    name: {{ kiali_vars.deployment.instance_name }}
   {{ kiali_vars.deployment.hpa.spec | to_nice_yaml(indent=0) | trim | indent(2) }}
 {% endif %}

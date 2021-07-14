@@ -1,0 +1,13 @@
+- name: Prepare
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+- name: Create the test namespace
+  import_playbook: ./process-namespace.yml
+  vars:
+    state: present
+
+- name: Include the base prepare play to create the first kiali install
+  import_playbook: ../default/prepare.yml

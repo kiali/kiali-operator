@@ -8,8 +8,6 @@ spec:
   auth:
     strategy: {{ kiali.auth_strategy }}
   deployment:
-    custom_dashboards:
-      includes: []
     namespace: {{ kiali.install_namespace }}
     # Note that we start with no affinity or tolerations or resources sections,
     # so the first time through we just pick up the defaults.
