@@ -8,5 +8,16 @@
   # Cleanup should only ever execute when a molecule test fails
   # api-test has its own cleanup because we need to ensure the simple-mesh namespace is deleted
 
+  - name: Get information about the cluster
+    set_fact:
+      api_groups: "{{ lookup('kubernetes.core.k8s', cluster_info='api_groups') }}"
+  - name: Determine the cluster type
+    set_fact:
+      is_openshift: "{{ True if 'route.openshift.io' in api_groups else False }}"
+      is_k8s: "{{ False if 'route.openshift.io' in api_groups else True }}"
+  - name: Determine the Istio implementation
+    set_fact:
+      is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
+
   - import_tasks: ../default/dump-logs.yml
   - import_tasks: delete-simple-mesh.yml
