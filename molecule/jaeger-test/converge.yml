@@ -21,16 +21,18 @@
     debug:
       msg: "{{ status_response.json }}"  
 
-  - name: Check if Jaeger status if present (if it is present it means error)
+  # IstioStatus API returns a statuses list of external components (Jaeger is one of them)
+  # If Jaeger is in the list, it means that there is an error (Unreacheable)
+  - name: Check if Jaeger status is present
     set_fact:
-      jaeger_status: "{{ item.status }}"     
+      jaeger_error: "{{ item.status }}"     
     loop: "{{ status_response.json }}"
     when: "item.name == 'jaeger'"
   
-  - name: Assert that Jaeger status if not in the response
+  - name: Assert that there is no error related to Jaeger
     assert:
       that:
-      - jaeger_status is not defined
+      - jaeger_error is not defined
 
   # Update Jaeger URL to a bad URL just to test a bad integration
   - import_tasks: update-jaeger-url.yml
@@ -53,13 +55,13 @@
   - set_fact:
       current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
-  - name: Check if Jaeger status if present (presence means an error)
+  - name: Check if Jaeger status is present
     set_fact:
-      jaeger_status: "{{ item.status }}"     
+      jaeger_error: "{{ item.status }}"     
     loop: "{{ status_response.json }}"
     when: "item.name == 'jaeger'"
   
-  - name: Assert that Jaeger status is in the response
+  - name: Assert that there is an error related to Jaeger
     assert:
       that:
-      - jaeger_status is defined
+      - jaeger_error is defined
