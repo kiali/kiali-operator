@@ -1,0 +1,65 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  
+  - name: Get statuses from Istio components
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes      
+    register: status_response
+  
+  - name: "Results: /api/istio/status"
+    debug:
+      msg: "{{ status_response.json }}"  
+
+  - name: Check if Jaeger status if present (if it is present it means error)
+    set_fact:
+      jaeger_status: "{{ item.status }}"     
+    loop: "{{ status_response.json }}"
+    when: "item.name == 'jaeger'"
+  
+  - name: Assert that Jaeger status if not in the response
+    assert:
+      that:
+      - jaeger_status is not defined
+
+  # Update Jaeger URL to a bad URL just to test a bad integration
+  - import_tasks: update-jaeger-url.yml
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Get statuses from Istio components
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes      
+    register: status_response
+  
+  - name: "Results: /api/istio/status"
+    debug:
+      msg: "{{ status_response.json }}"  
+
+  - set_fact:
+      current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: Check if Jaeger status if present (presence means an error)
+    set_fact:
+      jaeger_status: "{{ item.status }}"     
+    loop: "{{ status_response.json }}"
+    when: "item.name == 'jaeger'"
+  
+  - name: Assert that Jaeger status is in the response
+    assert:
+      that:
+      - jaeger_status is defined
