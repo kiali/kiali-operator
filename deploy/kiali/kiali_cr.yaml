@@ -728,7 +728,7 @@ spec:
 #    ui_defaults:
 #
 # Default settings for UI Graph
-#   ---
+#      ---
 #      graph:
 #
 # Each Find/Hide option consists of a human readable description and a valid Find/Hide expression
