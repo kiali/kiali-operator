@@ -36,7 +36,7 @@
     param_namespace: "{{ kiali.install_namespace }}"
     param_dashboard: "kiali"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilters=app:kiali"
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilter=app:kiali"
     return_content: yes
     validate_certs: false
   register: api_results_raw
@@ -64,7 +64,7 @@
     param_dashboard: "kiali"
     param_version: "{{ kiali.image_version }}"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilters=app:kiali,version:{{ param_version }}"
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilter=app:kiali,version:{{ param_version }}"
     return_content: yes
     validate_certs: false
   register: api_results_raw
@@ -85,7 +85,7 @@
     - api_customdashboard_json | json_query('charts[?name==`API processing duration`].metrics') | length > 0
 
 # Assert that we removed the "go" custom dashboard when we installed Kiali
-#
+
 - name: "/namespaces/{namespace}/customdashboard/go (should not exist)"
   vars:
     param_namespace: "{{ kiali.install_namespace }}"
@@ -105,3 +105,105 @@
     that:
     - api_customdashboard_json is defined
     - api_customdashboard_json.error == "Dashboard [go] does not exist or is disabled"
+
+# Below will test the dashboard override features.
+# You can add dashboard yaml in a namespace annotation and in a workload (pod) annotation.
+# The workload dashboards override the namespace dashboards which override the built-in dashboards.
+# The queries below will all ask for the dashboards for the simple-server workload and the simple-mesh namespace
+
+# custom_envoy1 (workload)
+- name: "/namespaces/{namespace}/customdashboard/custom_envoy1?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server (workload annotation should have removed this dashboard)"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+    param_dashboard: "custom_envoy1"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+    return_content: yes
+    validate_certs: false
+    status_code: 500
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/custom_envoy1?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server (workload annotation should have removed this dashboard)"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that workload annotations overrode (and removed) the namespace dashboard
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.error == "Dashboard [custom_envoy1] does not exist or is disabled"
+
+# custom_envoy1 (namespace)
+- name: "/namespaces/{namespace}/customdashboard/custom_envoy1 (namespace annotation defined this)"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+    param_dashboard: "custom_envoy1"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/custom_envoy1 (namespace annotation defined this)"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that we were able to get the Kiali dashboard from the namespace annotation
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.title == "Custom_Envoy_1"
+
+# custom_envoy2
+- name: "/namespaces/{namespace}/customdashboard/custom_envoy2?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+    param_dashboard: "custom_envoy2"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/custom_envoy2?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that we were able to get the Kiali dashboard from the workload annotation
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.title == "Custom_Envoy_2"
+
+# custom_envoy3
+- name: "/namespaces/{namespace}/customdashboard/custom_envoy3?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+  vars:
+    param_namespace: "{{ simple_mesh_namespace }}"
+    param_dashboard: "custom_envoy3"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- set_fact:
+    api_customdashboard_json: "{{ api_results_raw.json }}"
+
+- name: "Results: /namespaces/{namespace}/customdashboard/custom_envoy3?labelsFilter=app:simple-server,version:v99&workloadType=Deployment&workload=simple-server"
+  debug:
+    msg: "{{ api_customdashboard_json }}"
+
+- name: Assert that we were able to get the Kiali dashboard from the workload annotation
+  assert:
+    that:
+    - api_customdashboard_json is defined
+    - api_customdashboard_json.title == "Custom_Envoy_3"
