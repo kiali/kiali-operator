@@ -471,6 +471,7 @@ spec:
           - configmaps
           - endpoints
           - pods/log
+          - pods/proxy
           verbs:
           - get
           - list
