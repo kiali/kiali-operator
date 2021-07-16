@@ -26,6 +26,13 @@
     when:
     - is_maistra == True
 
+  - set_fact:
+      ossm_secret_password: "{{ ossm_secret_htpasswd_raw.resources[0].data.rawPassword | b64decode }}"
+    when:
+    - ossm_secret_htpasswd_raw is defined
+    - ossm_secret_htpasswd_raw.resources is defined
+    - ossm_secret_htpasswd_raw.resources | length == 1
+
   - name: Define url and auth for Prometheus for Service Mesh
     set_fact:
       prometheus_config:
@@ -34,11 +41,22 @@
           username: internal
           type: basic
           use_kiali_token: false
-          password: "{{ ossm_secret_htpasswd_raw.resources[0].data.rawPassword | b64decode }}"
+          password: "{{ ossm_secret_password }}"
     when:
-    - ossm_secret_htpasswd_raw is defined
-    - ossm_secret_htpasswd_raw.resources is defined
-    - ossm_secret_htpasswd_raw.resources | length == 1
+    - ossm_secret_password is defined
+
+  - name: Define url and auth for Tracing for Service Mesh
+    set_fact:
+      tracing_config:
+        in_cluster_url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
+        url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
+        auth:
+          username: internal
+          type: basic
+          use_kiali_token: false
+          password: "{{ ossm_secret_password }}"
+    when:
+    - ossm_secret_password is defined
 
   - name: Make sure the operator namespace exists
     k8s:
@@ -118,14 +136,14 @@
       namespace: "{{ cr_namespace }}"
       definition: "{{ lookup('template', cr_file_path) }}"
     when:
-    - prometheus_config is not defined
+    - ossm_secret_password is not defined
 
   - name: Create Kiali CR with specific prometheus config added
     k8s:
       namespace: "{{ cr_namespace }}"
-      definition: "{{ lookup('template', cr_file_path) | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config }}}, recursive=True) | to_yaml }}"
+      definition: "{{ lookup('template', cr_file_path) | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config, 'tracing': tracing_config }}}, recursive=True) | to_yaml }}"
     when:
-    - prometheus_config is defined
+    - ossm_secret_password is defined
 
   - name: Asserting that Kiali is Deployed
     vars:
