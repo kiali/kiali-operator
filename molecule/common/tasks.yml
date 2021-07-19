@@ -100,6 +100,6 @@
 
 - name: Determine the Kiali Ingress URL on kind
   set_fact:
-    kiali_base_url: "https://{{ kiali_service.resources[0].status.loadBalancer.ingress[0].ip }}/kiali"
+    kiali_base_url: "http://{{ kiali_service.resources[0].status.loadBalancer.ingress[0].ip }}:20001/kiali"
   when:
   - is_kind == True
