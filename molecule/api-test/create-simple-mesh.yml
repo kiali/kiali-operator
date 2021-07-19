@@ -43,12 +43,12 @@
       spec:
         controlPlaneRef:
           namespace: "{{ istio.control_plane_namespace }}"
-          name: full
+          name: "{{ maistra_smcp.metadata.name }}"
   when:
   - is_openshift == True
   - is_maistra == True
 
-- name: Create NAD so CNI works, only if on OpenShift
+- name: Create NAD so CNI works, only if on OpenShift but not running Maistra
   k8s:
     state: present
     definition:
@@ -59,6 +59,7 @@
         name: istio-cni
   when:
   - is_openshift == True
+  - is_maistra == False
 
 - name: Create simple-sa service account
   k8s:
