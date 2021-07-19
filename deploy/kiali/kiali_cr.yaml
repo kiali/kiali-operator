@@ -727,9 +727,12 @@ spec:
 #    ---
 #    ui_defaults:
 #
-# Default presets for Graph Find/Hide
+# Default settings for UI Graph
 #      ---
 #      graph:
+#
+# Each Find/Hide option consists of a human readable description and a valid Find/Hide expression
+#      ---
 #        find_options:
 #        - description: "Find: slow edges (> 1s)"
 #          expression: "rt > 1000"
@@ -742,6 +745,19 @@ spec:
 #          expression: "healthy"
 #        - description: "Hide: unknown nodes"
 #          expression:  "name = unknown"
+#
+# Traffic settings determine which rates are used to determine graph traffic. gRPC traffic is
+# measured in requests or sent/received/total messages.  HTTP traffic is measure in requests.
+# TCP traffic is measured in sent/received/total bytes.  Only request traffic supplies response
+# codes.  Valid values:
+# grpc: none | requests | sent | received | total
+# http: none | requests
+# tcp:  none | sent | received | total
+#        ---
+#        traffic:
+#          grpc: "requests"
+#          http: "requests"
+#          tcp:  "sent"
 #
 # Duration of metrics to fetch on each refresh. Omit for default.
 # Valid values: 1m, 5m, 10m, 30m, 1h, 3h, 6h, 12h, 1d, 7d, 30d
