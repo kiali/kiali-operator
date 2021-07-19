@@ -27,6 +27,20 @@
       test_token: "{{ test_token }}"
       sa_namespace: "token-test-ns"
 
+  - name: Pause to wait for longer than login_token.expiration_seconds - the session should timeout
+    pause:
+      seconds: "{{ 2 + kiali_cr.spec.login_token.expiration_seconds | int }}"
+
+  - name: Session should have timed out - request should fail
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      headers:
+        Authorization: "{{ login_bearer_token }}"
+      return_content: yes
+      status_code: 401
+      validate_certs: false
+    register: kiali_output
+
   - name: Delete Token Test Resources
     vars:
       sa_namespace: "token-test-ns"
