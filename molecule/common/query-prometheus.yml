@@ -2,7 +2,7 @@
   debug:
     msg: "If a metric test fails, run this to ensure the clock is reset: minikube ssh -- sudo date -u $(date -u +%m%d%H%M%Y.%S)"
   when:
-  - is_k8s == True
+  - is_minikube == True
 
 - name: Query Prometheus from Kiali Pod
   k8s_exec:
