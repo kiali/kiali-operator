@@ -13,6 +13,6 @@ spec:
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: {{ kiali.image_version }}
     accessible_namespaces: {{ kiali.accessible_namespaces }}
-    service_type: NodePort
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
     # the operator is only given permission to deploy Kiali in view_only_mode
     view_only_mode: true
