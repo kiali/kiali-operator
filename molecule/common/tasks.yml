@@ -11,6 +11,21 @@
   set_fact:
     is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
 
+- name: Get SMCP if running in Maistra environment
+  k8s_info:
+    api_version: maistra.io/v2
+    kind: ServiceMeshControlPlane
+    namespace: "{{ istio.control_plane_namespace }}"
+  register: maistra_smcp
+  when:
+  - is_maistra == True
+
+- name: There must one and only one SMCP already installed in the control plane
+  set_fact:
+    maistra_smcp: "{{ maistra_smcp.resources[0] }}"
+  when:
+  - is_maistra == True
+
 - name: Get Kiali CR if present
   set_fact:
     kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"

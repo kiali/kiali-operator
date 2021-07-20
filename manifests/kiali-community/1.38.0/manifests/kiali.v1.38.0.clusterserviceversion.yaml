@@ -1,25 +1,17 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: kiali-operator.v1.10.0
+  name: kiali-operator.v1.38.0
   namespace: placeholder
   annotations:
-    # Setting olm.maxOpenShiftVersion automatically
-    # This property was added via an automatic process since it was possible to identify that this distribution uses API(s),
-    # which will be removed in the k8s version 1.22 and OpenShift version OCP 4.9. Then, it will prevent OCP users to
-    # upgrade their cluster to 4.9 before they have installed in their current clusters a version of your operator that
-    # is compatible with it. Please, ensure that your project is no longer using these API(s) and that you start to
-    # distribute solutions which is compatible with Openshift 4.9.
-    # For further information, check the README of this repository.
-    olm.properties: '[{"type": "olm.maxOpenShiftVersion", "value": "4.8"}]'
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: quay.io/kiali/kiali-operator:v1.10.0
+    containerImage: quay.io/kiali/kiali-operator:v1.38.0
     capabilities: Deep Insights
     support: Kiali
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: 2019-10-11T00:00:00Z
+    createdAt: 2021-07-15T12:22:19Z
     alm-examples: |-
       [
         {
@@ -33,57 +25,18 @@ metadata:
             "istio_namespace": "istio-system",
             "deployment": {
               "namespace": "istio-system",
-              "verbose_mode": "4",
               "view_only_mode": false
-            },
-            "external_services": {
-              "grafana": {
-                "url": ""
-              },
-              "prometheus": {
-                "url": ""
-              },
-              "tracing": {
-                "url": ""
-              }
             },
             "server": {
               "web_root": "/mykiali"
             }
           }
-        },
-        {
-          "apiVersion": "monitoring.kiali.io/v1alpha1",
-          "kind": "MonitoringDashboard",
-          "metadata": {
-            "name": "myappdashboard"
-          },
-          "spec": {
-            "title": "My App Dashboard",
-            "items": [
-              {
-                "chart": {
-                  "name": "My App Processing Duration",
-                  "unit": "seconds",
-                  "spans": 6,
-                  "metricName": "my_app_duration_seconds",
-                  "dataType": "histogram",
-                  "aggregations": [
-                    {
-                      "label": "id",
-                      "displayName": "ID"
-                    }
-                  ]
-                }
-              }
-            ]
-          }
         }
       ]
 spec:
-  version: 1.10.0
+  version: 1.38.0
   maturity: stable
-  replaces: kiali-operator.v1.9.1
+  replaces: kiali-operator.v1.37.0
   displayName: Kiali Operator
   description: |-
     ## About the managed application
@@ -120,7 +73,7 @@ spec:
 
     For quick descriptions of all the settings you can configure in the Kiali
     Custom Resource (CR), see the file
-    [kiali_cr.yaml](https://github.com/kiali/kiali/blob/v1.10.0/operator/deploy/kiali/kiali_cr.yaml)
+    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/master/deploy/kiali/kiali_cr.yaml)
 
     Note that the Kiali operator can be told to restrict Kiali's access to
     specific namespaces, or can provide to Kiali cluster-wide access to all
@@ -129,27 +82,15 @@ spec:
     ## Prerequisites for enabling this Operator
 
     Today Kiali works with Istio. So before you install Kiali, you must have
-    already installed Istio. Note that Istio can come pre-bundled with Kiali
-    (specifically if you installed the Istio demo helm profile or if you
-    installed Istio with the helm option '--set kiali.enabled=true'). If you
-    already have the pre-bundled Kiali in your Istio environment and you want to
-    install Kiali via the Kiali Operator, uninstall the pre-bundled Kiali first.
-    You can do this via this command,
-
-        kubectl delete --ignore-not-found=true all,secrets,sa,templates,configmaps,deployments,clusterroles,clusterrolebindings,ingresses,customresourcedefinitions --selector="app=kiali" -n istio-system
+    already installed Istio.
+    If you already have Kiali in your Istio environment and you want to
+    install Kiali via the Kiali Operator, uninstall the installed Kiali first.
 
     When you install Kiali in a non-OpenShift Kubernetes environment, the
-    authentication strategy will default to `login`. When using the
-    authentication strategy of `login`, you are required to create a Kubernetes
-    Secret with a `username` and `passphrase` that you want users to provide in
-    order to successfully log into Kiali. Here is an example command you can
-    execute to create such a secret (with a username of `admin` and a passphrase
-    of `admin`),
+    authentication strategy will default to `token`.
 
-        kubectl create secret generic kiali -n istio-system --from-literal "username=admin" --from-literal "passphrase=admin"
-
-    If you wish to use the "ldap" authentication strategy, you must have an LDAP
-    server available and accessible to Kiali.
+    If you wish to use the `openid` authentication strategy, you must have an
+    OpenID Connect available and accessible to Kiali.
   icon:
   - base64data: PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDIyLjAuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxMjgwIDEyODAiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDEyODAgMTI4MDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiMwMTMxNDQ7fQoJLnN0MXtmaWxsOiMwMDkzREQ7fQo8L3N0eWxlPgo8Zz4KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik04MTAuOSwxODAuOWMtMjUzLjYsMC00NTkuMSwyMDUuNS00NTkuMSw0NTkuMXMyMDUuNSw0NTkuMSw0NTkuMSw0NTkuMVMxMjcwLDg5My42LDEyNzAsNjQwCgkJUzEwNjQuNSwxODAuOSw4MTAuOSwxODAuOXogTTgxMC45LDEwMjkuMmMtMjE1LDAtMzg5LjItMTc0LjMtMzg5LjItMzg5LjJjMC0yMTUsMTc0LjMtMzg5LjIsMzg5LjItMzg5LjJTMTIwMC4xLDQyNSwxMjAwLjEsNjQwCgkJUzEwMjUuOSwxMDI5LjIsODEwLjksMTAyOS4yeiIvPgoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTY1My4zLDI4NGMtMTM2LjQsNjAuNS0yMzEuNiwxOTcuMS0yMzEuNiwzNTZjMCwxNTguOCw5NS4yLDI5NS41LDIzMS42LDM1NmM5OC40LTg3LjEsMTYwLjQtMjE0LjMsMTYwLjQtMzU2CgkJQzgxMy43LDQ5OC4zLDc1MS42LDM3MS4xLDY1My4zLDI4NHoiLz4KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0zNTEuOCw2NDBjMC0xMDkuOCwzOC42LTIxMC41LDEwMi44LTI4OS41Yy0zOS42LTE4LjItODMuNi0yOC4zLTEzMC0yOC4zQzE1MC45LDMyMi4yLDEwLDQ2NC41LDEwLDY0MAoJCXMxNDAuOSwzMTcuOCwzMTQuNiwzMTcuOGM0Ni4zLDAsOTAuNC0xMC4xLDEzMC0yOC4zQzM5MC4zLDg1MC41LDM1MS44LDc0OS44LDM1MS44LDY0MHoiLz4KPC9nPgo8L3N2Zz4K
     mediatype: image/svg+xml
@@ -165,10 +106,10 @@ spec:
     matchLabels:
       name: kiali-operator
   links:
-  - name: Getting Started Guide
-    url: https://www.kiali.io/documentation/getting-started/
+  - name: Installation Guide
+    url: https://www.kiali.io/documentation/latest/installation-guide
   - name: Features
-    url: https://www.kiali.io/documentation/features
+    url: https://www.kiali.io/documentation/latest/features
   - name: Documentation Home
     url: https://www.kiali.io/documentation
   - name: Blogs and Articles
@@ -177,11 +118,13 @@ spec:
     url: https://github.com/kiali/kiali
   - name: UI Source Code
     url: https://github.com/kiali/kiali-ui
+  - name: Operator Source Code
+    url: https://github.com/kiali/kiali-operator
   installModes:
   - type: OwnNamespace
-    supported: true
+    supported: false
   - type: SingleNamespace
-    supported: true
+    supported: false
   - type: MultiNamespace
     supported: false
   - type: AllNamespaces
@@ -207,27 +150,15 @@ spec:
         version: oauth.openshift.io/v1
       - kind: Route
         version: route.openshift.io/v1
-      - kind: Ingress
-        version: extensions/v1beta1
       specDescriptors:
       - displayName: Authentication Strategy
-        description: "Determines how a user is to log into Kiali. Choose 'login' to use a username and passphrase as defined in a Secret. Choose 'anonymous' to allow full access to Kiali without requiring credentials (use this at your own risk). Choose 'openshift' if on OpenShift to use the OpenShift OAuth login which controls access based on the individual's OpenShift RBAC roles. Default: openshift (when deployed in OpenShift); login (when deployed in Kubernetes)"
+        description: "Determines how a user is to log into Kiali. Default: openshift (when deployed in OpenShift); token (when deployed in other Kubernetes clusters)"
         path: auth.strategy
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
       - displayName: Kiali Namespace
         description: "The namespace where Kiali and its associated resources will be created. Default: istio-system"
         path: deployment.namespace
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
-      - displayName: Secret Name
-        description: "If Kiali is configured with auth.strategy 'login', an admin must create a Secret with credentials ('username' and 'passphrase') which will be used to authenticate users logging into Kiali. This setting defines the name of that secret. Default: kiali"
-        path: deployment.secret_name
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:selector:core:v1:Secret'
-      - displayName: Verbose Mode
-        description: "Determines the priority levels of log messages Kiali will output. Typical values are '3' for INFO and higher priority messages, '4' for DEBUG and higher priority messages (this makes the logs more noisy). Default: 3"
-        path: deployment.verbose_mode
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
       - displayName: View Only Mode
@@ -238,19 +169,6 @@ spec:
       - displayName: Web Root
         description: "Defines the root context path for the Kiali console, API endpoints and readiness/liveness probes. Default: / (when deployed on OpenShift; /kiali (when deployed on Kubernetes)"
         path: server.web_root
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
-    - name: monitoringdashboards.monitoring.kiali.io
-      group: monitoring.kiali.io
-      description: A configuration file for defining an individual metric dashboard.
-      displayName: Monitoring Dashboard
-      kind: MonitoringDashboard
-      version: v1alpha1
-      resources: []
-      specDescriptors:
-      - displayName: Title
-        description: "The title of the dashboard."
-        path: title
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
   apiservicedefinitions: {}
@@ -269,27 +187,27 @@ spec:
               name: kiali-operator
               labels:
                 app: kiali-operator
-                version: v1.10.0
+                # required for the operator SDK metric service selector
+                name: kiali-operator
+                version: v1.38.0
+                app.kubernetes.io/name: kiali-operator
+                app.kubernetes.io/version: v1.38.0
+                app.kubernetes.io/part-of: kiali-operator
               annotations:
                 prometheus.io/scrape: "true"
-                prometheus.io/port: "8383"
             spec:
               serviceAccountName: kiali-operator
               containers:
-              - name: ansible
-                command:
-                - /usr/local/bin/ao-logs
-                - /tmp/ansible-operator/runner
-                - stdout
-                image: quay.io/kiali/kiali-operator:v1.10.0
-                imagePullPolicy: "IfNotPresent"
-                volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
-                  readOnly: true
               - name: operator
-                image: quay.io/kiali/kiali-operator:v1.10.0
+                image: quay.io/kiali/kiali-operator:v1.38.0
                 imagePullPolicy: "IfNotPresent"
+                args:
+                - "--zap-log-level=info"
+                - "--leader-election-id=kiali-operator"
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  privileged: false
+                  runAsNonRoot: true
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
@@ -306,8 +224,21 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                - name: OPERATOR_NAME
-                  value: "kiali-operator"
+                - name: ALLOW_AD_HOC_KIALI_NAMESPACE
+                  value: "false"
+                - name: ALLOW_AD_HOC_KIALI_IMAGE
+                  value: "false"
+                - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
+                  value: "100"
+                - name: ANSIBLE_DEBUG_LOGS
+                  value: "True"
+                - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
+                  value: "1"
+                - name: ANSIBLE_CONFIG
+                  value: "/etc/ansible/ansible.cfg"
+                ports:
+                - name: http-metrics
+                  containerPort: 8080
               volumes:
               - name: runner
                 emptyDir: {}
@@ -322,6 +253,7 @@ spec:
           - pods
           - serviceaccounts
           - services
+          - services/finalizers
           verbs:
           - create
           - delete
@@ -337,10 +269,40 @@ spec:
           - get
           - list
           - patch
+        - apiGroups: [""]
+          resources:
+          - secrets
+          verbs:
+          - create
+          - list
+          - watch
+        - apiGroups: [""]
+          resourceNames:
+          - kiali-signing-key
+          resources:
+          - secrets
+          verbs:
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups: ["apps"]
           resources:
           - deployments
           - replicasets
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups: ["autoscaling"]
+          resources:
+          - horizontalpodautoscalers
           verbs:
           - create
           - delete
@@ -394,7 +356,7 @@ spec:
           - get
           - list
           - watch
-        - apiGroups: ["extensions"]
+        - apiGroups: ["extensions", "networking.k8s.io"]
           resources:
           - ingresses
           verbs:
@@ -427,9 +389,22 @@ spec:
           - patch
           - update
           - watch
-        - apiGroups: ["monitoring.kiali.io"]
+        - apiGroups: ["config.openshift.io"]
           resources:
-          - monitoringdashboards
+          - clusteroperators
+          verbs:
+          - list
+          - watch
+        - apiGroups: ["config.openshift.io"]
+          resourceNames:
+          - kube-apiserver
+          resources:
+          - clusteroperators
+          verbs:
+          - get
+        - apiGroups: ["console.openshift.io"]
+          resources:
+          - consolelinks
           verbs:
           - create
           - delete
@@ -443,18 +418,31 @@ spec:
           resources:
           - configmaps
           - endpoints
-          - namespaces
-          - nodes
-          - pods
           - pods/log
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups: [""]
+          resources:
+          - namespaces
+          - pods
           - replicationcontrollers
           - services
           verbs:
           - get
           - list
           - watch
+          - patch
+        - apiGroups: [""]
+          resources:
+          - pods/portforward
+          verbs:
+          - create
+          - post
         - apiGroups: ["extensions", "apps"]
           resources:
+          - daemonsets
           - deployments
           - replicasets
           - statefulsets
@@ -462,13 +450,7 @@ spec:
           - get
           - list
           - watch
-        - apiGroups: ["autoscaling"]
-          resources:
-          - horizontalpodautoscalers
-          verbs:
-          - get
-          - list
-          - watch
+          - patch
         - apiGroups: ["batch"]
           resources:
           - cronjobs
@@ -477,6 +459,7 @@ spec:
           - get
           - list
           - watch
+          - patch
         - apiGroups:
           - config.istio.io
           - networking.istio.io
@@ -485,32 +468,32 @@ spec:
           - security.istio.io
           resources: ["*"]
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["authentication.maistra.io"]
           resources:
           - servicemeshpolicies
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["rbac.maistra.io"]
           resources:
           - servicemeshrbacconfigs
           verbs:
-          - create
-          - delete
           - get
           - list
-          - patch
           - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["apps.openshift.io"]
           resources:
           - deploymentconfigs
@@ -518,6 +501,7 @@ spec:
           - get
           - list
           - watch
+          - patch
         - apiGroups: ["project.openshift.io"]
           resources:
           - projects
@@ -528,10 +512,19 @@ spec:
           - routes
           verbs:
           - get
-        - apiGroups: ["monitoring.kiali.io"]
+        - apiGroups: ["iter8.tools"]
           resources:
-          - monitoringdashboards
+          - experiments
           verbs:
           - get
           - list
+          - watch
+          - create
+          - delete
+          - patch
+        - apiGroups: ["authentication.k8s.io"]
+          resources:
+          - tokenreviews
+          verbs:
+          - create
         serviceAccountName: kiali-operator
