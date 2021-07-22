@@ -775,6 +775,14 @@ spec:
 # Valid values: pause, 10s, 15s, 30s, 1m, 5m, 15m
 #      ---
 #      refresh_interval: "15s"
+#
+#   Features specific to the validations subsystem.
+#    ---
+#    validations:
+#
+#      If you wish to ignore one or more validation errors, put their validation codes (e.g. KIA0101) in this list.
+#      ---
+#      ignore: []
 
 ##########
 #  ---
