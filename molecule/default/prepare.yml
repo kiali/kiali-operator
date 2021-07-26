@@ -131,6 +131,15 @@
       network_policy_state: "present"
       network_policy_namespace: "{{ kiali.install_namespace }}"
 
+  - name: Wait for the CRD to be established
+    k8s_info:
+      api_version: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      name: kialis.kiali.io
+      wait: yes
+      wait_condition:
+        type: Established
+
   - name: Create Kiali CR based solely on the template
     k8s:
       namespace: "{{ cr_namespace }}"
