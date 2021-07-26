@@ -231,6 +231,8 @@ kiali_defaults:
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "15s"
+    validations:
+      ignore: []
 
   kubernetes_config:
     burst: 200
