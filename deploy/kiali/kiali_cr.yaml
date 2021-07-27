@@ -630,7 +630,8 @@ spec:
 # health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
 # in_cluster_url: Set URL for in-cluster access, which enables further integration between Kiali and Jaeger.
 #      When not provided, Kiali will only show external links using the "url" config.
-#      Example: "http://tracing.istio-system".
+#      Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the "use_grpc" value.
+#      Example: "http://tracing.istio-system:16685".
 # is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # namespace_selector: Kiali use this boolean to look traces with namespace selector : service.namespace. Default: true
 # url: External URL that will be used to generate links to Jaeger. It must be accessible to clients external to
