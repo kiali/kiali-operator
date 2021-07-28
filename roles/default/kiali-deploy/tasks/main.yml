@@ -564,7 +564,7 @@
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
 
-- fail:
+- debug:
     msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterroles: {{ can_i_create_clusterroles }}"
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
@@ -574,7 +574,7 @@
   - can_i_create_clusterroles.result.status.allowed is defined
   - can_i_create_clusterroles.result.status.allowed == False
 
-- fail:
+- debug:
     msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterrolebindings: {{ can_i_create_clusterrolebindings }}"
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
