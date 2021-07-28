@@ -542,7 +542,7 @@
       kind: SelfSubjectAccessReview
       spec:
         resourceAttributes:
-          group: rbac.authorization.k8s.io/v1
+          group: rbac.authorization.k8s.io
           resource: clusterroles
           verb: create
   when:
@@ -558,14 +558,14 @@
       kind: SelfSubjectAccessReview
       spec:
         resourceAttributes:
-          group: rbac.authorization.k8s.io/v1
+          group: rbac.authorization.k8s.io
           resource: clusterrolebindings
           verb: create
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
 
-- debug:
-    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterroles: {{ can_i_create_clusterroles }}"
+- fail:
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterroles"
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
   - can_i_create_clusterroles is defined
@@ -574,8 +574,8 @@
   - can_i_create_clusterroles.result.status.allowed is defined
   - can_i_create_clusterroles.result.status.allowed == False
 
-- debug:
-    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterrolebindings: {{ can_i_create_clusterrolebindings }}"
+- fail:
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterrolebindings"
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
   - can_i_create_clusterrolebindings is defined
