@@ -1,3 +1,6 @@
+- set_fact:
+    k8s_plugin: community.kubernetes.k8s
+
 - name: Get the original CR as-is for the camelCase keys and so we can update its status field
   set_fact:
     current_cr: "{{ _kiali_io_kiali }}"
@@ -11,7 +14,7 @@
 
 - name: Get information about the cluster
   set_fact:
-    api_groups: "{{ lookup('k8s', cluster_info='api_groups') }}"
+    api_groups: "{{ lookup(k8s_plugin, cluster_info='api_groups') }}"
   when:
   - is_openshift == False
   - is_k8s == False
@@ -35,12 +38,12 @@
 
 - name: Determine the Kubernetes version
   set_fact:
-    k8s_version: "{{ lookup('k8s', cluster_info='version').kubernetes.gitVersion | regex_replace('^v', '') }}"
+    k8s_version: "{{ lookup(k8s_plugin, cluster_info='version').kubernetes.gitVersion | regex_replace('^v', '') }}"
   ignore_errors: yes
 
 - name: Determine the OpenShift version
   vars:
-    kube_apiserver_cluster_op_raw: "{{ lookup('k8s', api_version='config.openshift.io/v1', kind='ClusterOperator', resource_name='kube-apiserver') | default({}) }}"
+    kube_apiserver_cluster_op_raw: "{{ lookup(k8s_plugin, api_version='config.openshift.io/v1', kind='ClusterOperator', resource_name='kube-apiserver') | default({}) }}"
     ri_query: "status.versions[?name == 'raw-internal'].version"
   set_fact:
     openshift_version: "{{ kube_apiserver_cluster_op_raw | json_query(ri_query) | join }}"
@@ -520,7 +523,7 @@
 
 - name: Find all namespaces (this is limited to what the operator has permission to see)
   set_fact:
-    all_namespaces: "{{ lookup('k8s', api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
+    all_namespaces: "{{ lookup(k8s_plugin, api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
@@ -673,7 +676,7 @@
 
 - name: Find current configmap, if it exists
   set_fact:
-    current_configmap: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
+    current_configmap: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
 
 - name: Find some current configuration settings
   set_fact:
@@ -811,7 +814,7 @@
 # that requires a pod restart - in which case we update this timestamp.
 - name: Find current deployment, if it exists
   set_fact:
-    current_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
+    current_deployment: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
 
 - name: Get current deployment last-updated annotation timestamp from existing deployment
   set_fact:
@@ -850,7 +853,7 @@
 # If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
 - name: Force the Kiali pod to restart if necessary
   vars:
-    updated_deployment: "{{ lookup('k8s', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
+    updated_deployment: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
     definition: "{{ updated_deployment }}"

@@ -23,7 +23,7 @@ spec:
     port: {{ kiali_vars.server.metrics_port }}
 {% endif %}
   selector:
-{% if query('k8s', kind='Service', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace) | length > 0 %}
+{% if query(k8s_plugin, kind='Service', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace) | length > 0 %}
     app: null
     version: null
 {% endif %}

@@ -1,3 +1,27 @@
+# This is the Ansible Galaxy requirements that need to be installed locally to be able to run
+# the operator Ansible playbook locally.
+#
+# To install these into your local Ansible environment:
+#   ansible-galaxy collection install -r requirements.yml --force-with-deps
+#
+# Make sure these collections match that which is inside the Ansible Operator SDK base image.
+# You can determine what collections are installed by looking in the base image like this:
+#
+# podman run \
+#   -it --rm --entrypoint '' \
+#   quay.io/openshift/origin-ansible-operator:4.8 \
+#   ls /opt/ansible/.ansible/collections/ansible_collections
+#
+# To determine the version of a specific collection, look at the MANIFEST.json:
+#
+# podman run \
+#   -it --rm --entrypoint '' \
+#   quay.io/openshift/origin-ansible-operator:4.8 \
+#   cat /opt/ansible/.ansible/collections/ansible_collections/community/kubernetes/MANIFEST.json | grep version
+
 collections:
-- community.kubernetes
-- operator_sdk.util
+- name: community.kubernetes
+  version: 1.2.1
+- name: operator_sdk.util
+  version: 0.2.0
+
