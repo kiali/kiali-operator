@@ -13,12 +13,12 @@ spec:
       issuer_uri: {{ openid.issuer_uri }}
       username_claim: {{ openid.username_claim }}
   deployment:
+    logger:
+      log_level: trace
     accessible_namespaces: {{ kiali.accessible_namespaces }}
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: {{ kiali.image_version }}
-    logger:
-      log_level: "trace"
     namespace: {{ kiali.install_namespace }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   # if signing key is not 16, 24, or 32 chars, then openid "implicit flow" is used and what we test
