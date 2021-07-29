@@ -11,11 +11,11 @@ spec:
   custom_dashboards:
   - name: go
   deployment:
+    logger:
+      log_level: debug
     accessible_namespaces: {{ kiali.accessible_namespaces }}
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: {{ kiali.image_version }}
-    logger: 
-      log_level: "trace"
     namespace: {{ kiali.install_namespace }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
