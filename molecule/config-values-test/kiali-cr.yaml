@@ -7,6 +7,8 @@ spec:
   # this test will try to use as many defaults as we can
   istio_namespace: {{ istio.control_plane_namespace }}
   deployment:
+    logger:
+      log_level: debug
     namespace: {{ kiali.install_namespace }}
     image_name: {{ kiali.image_name }}
     image_pull_policy: {{ kiali.image_pull_policy }}
