@@ -532,6 +532,58 @@
     role_kind: "{{ 'ClusterRole' if '**' in kiali_vars.deployment.accessible_namespaces else 'Role' }}"
     role_binding_kind: "{{ 'ClusterRoleBinding' if '**' in kiali_vars.deployment.accessible_namespaces else 'RoleBinding' }}"
 
+- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterroles
+  register: can_i_create_clusterroles
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterroles
+          verb: create
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+
+- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterrolebindings
+  register: can_i_create_clusterrolebindings
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterrolebindings
+          verb: create
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+
+- fail:
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterroles"
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterroles is defined
+  - can_i_create_clusterroles.result is defined
+  - can_i_create_clusterroles.result.status is defined
+  - can_i_create_clusterroles.result.status.allowed is defined
+  - can_i_create_clusterroles.result.status.allowed == False
+
+- fail:
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterrolebindings"
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterrolebindings is defined
+  - can_i_create_clusterrolebindings.result is defined
+  - can_i_create_clusterrolebindings.result.status is defined
+  - can_i_create_clusterrolebindings.result.status.allowed is defined
+  - can_i_create_clusterrolebindings.result.status.allowed == False
+
 - name: Find all namespaces (this is limited to what the operator has permission to see)
   set_fact:
     all_namespaces: "{{ lookup(k8s_plugin, api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
