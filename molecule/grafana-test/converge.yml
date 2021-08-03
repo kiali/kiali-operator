@@ -67,23 +67,33 @@
 
   - name: Check if Grafana status is present
     set_fact:
-      grafana_error: "{{ item.status }}"     
+      grafana_bad_url_error: "{{ item.status }}"     
     loop: "{{ status_response.json }}"
     when: "item.name == 'grafana'"
   
   - name: Assert that there is an error related to Grafana
     assert:
       that:
-      - grafana_error is defined
+      - grafana_bad_url_error is defined
         
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
   # Update Grafana Health URL to used an alternative URL for health checking 
-  - name: Update Grafana Health URL
+  - name: Update Grafana Health URL (Kubernetes)
     vars:
       current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
     set_fact:
-      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'health_check_url': 'https://grafana.{{ istio.control_plane_namespace }}.svc'}}}}, recursive=True) }}"
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'health_check_url': 'http://grafana.' +  istio.control_plane_namespace + '.svc:3000'}}}}, recursive=True) }}"
+    when:
+    - is_openshift == False
+
+  - name: Update Grafana Health URL (OpenShift)
+    vars:
+      current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
+    set_fact:
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'health_check_url': 'https://grafana.' +  istio.control_plane_namespace + '.svc:3000'}}}}, recursive=True) }}"
+    when:
+    - is_openshift == True
 
   - import_tasks: ../common/set_kiali_cr.yml
 
@@ -107,11 +117,11 @@
   # If Grafana is in the list, it means that there is an error (Unreacheable)
   - name: Check if Grafana status is present
     set_fact:
-      grafana_error: "{{ item.status }}"     
+      grafana_health_url_error: "{{ item.status }}"     
     loop: "{{ status_response.json }}"
     when: "item.name == 'grafana'"
   
   - name: Assert that there is no error related to Grafana
     assert:
       that:
-      - grafana_error is not defined
+      - grafana_health_url_error is not defined

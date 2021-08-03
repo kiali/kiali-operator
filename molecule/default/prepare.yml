@@ -67,7 +67,7 @@
   - name: Define url and auth for Grafana for Service Mesh
     set_fact:
       grafana_config:
-        in_cluster_url: "https://grafana.{{ istio.control_plane_namespace }}.svc"
+        in_cluster_url: "https://grafana.{{ istio.control_plane_namespace }}.svc:3000"
         url: "https://grafana.{{ istio.control_plane_namespace }}.svc"
         auth:
           username: internal
