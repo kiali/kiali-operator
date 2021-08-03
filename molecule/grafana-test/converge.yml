@@ -1,0 +1,117 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  
+  - name: Get statuses from Istio components
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes      
+    register: status_response
+  
+  - name: "Results: /api/istio/status"
+    debug:
+      msg: "{{ status_response.json }}"  
+
+  # IstioStatus API returns a statuses list of external components (Grafana is one of them)
+  # If Grafana is in the list, it means that there is an error (Unreacheable)
+  - name: Check if Grafana status is present
+    set_fact:
+      grafana_error: "{{ item.status }}"     
+    loop: "{{ status_response.json }}"
+    when: "item.name == 'grafana'"
+  
+  - name: Assert that there is no error related to Grafana
+    assert:
+      that:
+      - grafana_error is not defined
+  
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+  # Update Grafana URL to a bad URL just to test a bad integration
+  - name: Update Grafana URL
+    vars:
+      current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
+    set_fact:
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'in_cluster_url': 'http://wrong.url'}}}}, recursive=True) }}"
+
+  - import_tasks: ../common/set_kiali_cr.yml
+
+
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Get statuses from Istio components
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes      
+    register: status_response
+  
+  - name: "Results: /api/istio/status"
+    debug:
+      msg: "{{ status_response.json }}"  
+
+  - set_fact:
+      current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: Check if Grafana status is present
+    set_fact:
+      grafana_error: "{{ item.status }}"     
+    loop: "{{ status_response.json }}"
+    when: "item.name == 'grafana'"
+  
+  - name: Assert that there is an error related to Grafana
+    assert:
+      that:
+      - grafana_error is defined
+        
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+  # Update Grafana Health URL to used an alternative URL for health checking 
+  - name: Update Grafana Health URL
+    vars:
+      current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
+    set_fact:
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'health_check_url': 'https://grafana.{{ istio.control_plane_namespace }}.svc'}}}}, recursive=True) }}"
+
+  - import_tasks: ../common/set_kiali_cr.yml
+
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Get statuses from Istio components
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes      
+    register: status_response
+  
+  - name: "Results: /api/istio/status"
+    debug:
+      msg: "{{ status_response.json }}"  
+
+  # IstioStatus API returns a statuses list of external components (Grafana is one of them)
+  # If Grafana is in the list, it means that there is an error (Unreacheable)
+  - name: Check if Grafana status is present
+    set_fact:
+      grafana_error: "{{ item.status }}"     
+    loop: "{{ status_response.json }}"
+    when: "item.name == 'grafana'"
+  
+  - name: Assert that there is no error related to Grafana
+    assert:
+      that:
+      - grafana_error is not defined
