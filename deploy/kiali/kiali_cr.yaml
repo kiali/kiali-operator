@@ -655,7 +655,7 @@ spec:
 #      is_core: false
 #      namespace_selector: true
 #      url: ""
-#      #use_grpc:
+#      use_grpc: true
 #      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
 ##########
