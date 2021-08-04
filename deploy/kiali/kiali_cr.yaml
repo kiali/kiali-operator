@@ -627,7 +627,6 @@ spec:
 #       and auth.token config is ignored then.
 #   username: Username to be used when making requests to Jaeger, for basic authentication. User only requires viewer permissions.
 # enabled: When true, connections to Jaeger are enabled. "in_cluster_url" and/or "url" need to be provided.
-# health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
 # in_cluster_url: Set URL for in-cluster access, which enables further integration between Kiali and Jaeger.
 #      When not provided, Kiali will only show external links using the "url" config.
 #      Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the "use_grpc" value.
@@ -652,12 +651,11 @@ spec:
 #        use_kiali_token: false
 #        username: ""
 #      enabled: true
-#      health_check_url: ""
 #      in_cluster_url: ""
 #      is_core: false
 #      namespace_selector: true
 #      url: ""
-#      #use_grpc:
+#      use_grpc: true
 #      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
 ##########

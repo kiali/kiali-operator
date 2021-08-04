@@ -186,12 +186,11 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       enabled: true
-      health_check_url: ""
       in_cluster_url: ""
       is_core: false
       namespace_selector: true
       url: ""
-      #use_grpc:
+      use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
   health_config:
