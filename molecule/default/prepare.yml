@@ -64,6 +64,19 @@
     when:
     - ossm_secret_password is defined
 
+  - name: Define url and auth for Grafana for Service Mesh
+    set_fact:
+      grafana_config:
+        in_cluster_url: "https://grafana.{{ istio.control_plane_namespace }}.svc:3000"
+        url: "https://grafana.{{ istio.control_plane_namespace }}.svc"
+        auth:
+          username: internal
+          type: basic
+          use_kiali_token: false
+          password: "{{ ossm_secret_password }}"
+    when:
+    - ossm_secret_password is defined
+
   - name: Make sure the operator namespace exists
     k8s:
       state: present
@@ -156,7 +169,7 @@
   - name: Create Kiali CR with specific prometheus config added
     k8s:
       namespace: "{{ cr_namespace }}"
-      definition: "{{ lookup('template', cr_file_path) | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config, 'tracing': tracing_config }}}, recursive=True) | to_yaml }}"
+      definition: "{{ lookup('template', cr_file_path) | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config, 'tracing': tracing_config, 'grafana': grafana_config }}}, recursive=True) | to_yaml }}"
     when:
     - ossm_secret_password is defined
 
