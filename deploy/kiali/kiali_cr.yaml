@@ -724,6 +724,10 @@ spec:
 #    ---
 #    istio_upgrade_action: false
 #
+# When there is no VirtualService referencing to a subset in a DestinationRule, skip that subset's validation.
+#    ---
+#    skip_subset_validation: false
+#
 # Default settings for the UI. These defaults apply to all users.
 #    ---
 #    ui_defaults:
