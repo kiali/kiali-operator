@@ -340,6 +340,9 @@ spec:
 #    pod_annotations: {}
 #
 # Custom labels to be created on the Kiali pod.
+# An example use for this setting is to inject an Istio sidecar such as:
+# pod_labels:
+#   sidecar.istio.io/inject: "true"
 #    ---
 #    pod_labels: {}
 #
