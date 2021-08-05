@@ -491,7 +491,7 @@ spec:
 #     workload: The name of a variable that holds the workload name, if used in that dashboard (else it must be omitted)
 # enabled: When true, Grafana support will be enabled in Kiali.
 # health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided.
-# in_cluster_url: Set URL for in-cluster access. Example: "http://grafana.istio-system:3000". This URL can contain query parameters if needed, such as "?orgId=1".
+# in_cluster_url: Set URL for in-cluster access. Example: "http://grafana.istio-system:3000". This URL can contain query parameters if needed, such as "?orgId=1". If not defined, it will default to "http://grafana.<istio_namespace>:3000".
 # is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # url: The URL that Kiali uses when integrating with Grafana. This URL must be accessible to clients external to
 #      the cluster in order for the integration to work properly. If empty, an attempt to auto-discover it is made.
@@ -521,7 +521,7 @@ spec:
 #      - name: "Istio Wasm Extension Dashboard"
 #      enabled: true
 #      health_check_url: ""
-#      in_cluster_url: "http://grafana.istio-system:3000"
+#      #in_cluster_url
 #      is_core: false
 #      url: ""
 #
