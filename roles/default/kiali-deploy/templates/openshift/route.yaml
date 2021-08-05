@@ -16,6 +16,7 @@ spec:
     insecureEdgeTerminationPolicy: Redirect
   to:
     kind: Service
-    targetPort: {{ kiali_vars.server.port }}
     name: {{ kiali_vars.deployment.instance_name }}
+  port:
+    targetPort: {{ kiali_vars.server.port }}
 {% endif %}
