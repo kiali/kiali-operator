@@ -131,7 +131,7 @@ kiali_defaults:
       - name: "Istio Wasm Extension Dashboard"
       enabled: true
       health_check_url: ""
-      in_cluster_url: ""
+      #in_cluster_url
       is_core: false
       url: ""
     istio:
