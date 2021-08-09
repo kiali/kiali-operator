@@ -8,8 +8,7 @@ metadata:
   labels: {{ kiali_resource_metadata_labels }}
 rules:
 - apiGroups: [""]
-  resources:
-  - secrets
+  resources:  
   - configmaps
   - endpoints
   - pods/log
@@ -98,4 +97,14 @@ rules:
   - tokenreviews
   verbs:
   - create
+- apiGroups: [""]
+  resourceNames:
+  - cacerts
+  - istio-ca-secret
+  resources:
+  - secrets
+  verbs:
+  - create
+  - list
+  - watch
 {% endfor %}
