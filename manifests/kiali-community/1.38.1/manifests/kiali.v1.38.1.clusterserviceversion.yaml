@@ -1,17 +1,17 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: kiali-operator.v1.38.0
+  name: kiali-operator.v1.38.1
   namespace: placeholder
   annotations:
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: quay.io/kiali/kiali-operator:v1.38.0
+    containerImage: quay.io/kiali/kiali-operator:v1.38.1
     capabilities: Deep Insights
     support: Kiali
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: 2021-07-15T12:22:08Z
+    createdAt: 2021-08-06T00:00:00Z
     alm-examples: |-
       [
         {
@@ -24,7 +24,7 @@ metadata:
             "installation_tag": "My Kiali",
             "istio_namespace": "istio-system",
             "deployment": {
-              "namespace": "default",
+              "namespace": "istio-system",
               "view_only_mode": false
             },
             "server": {
@@ -34,7 +34,7 @@ metadata:
         }
       ]
 spec:
-  version: 1.38.0
+  version: 1.38.1
   maturity: stable
   replaces: kiali-operator.v1.37.0
   displayName: Kiali Operator
@@ -189,9 +189,9 @@ spec:
                 app: kiali-operator
                 # required for the operator SDK metric service selector
                 name: kiali-operator
-                version: v1.38.0
+                version: v1.38.1
                 app.kubernetes.io/name: kiali-operator
-                app.kubernetes.io/version: v1.38.0
+                app.kubernetes.io/version: v1.38.1
                 app.kubernetes.io/part-of: kiali-operator
               annotations:
                 prometheus.io/scrape: "true"
@@ -199,7 +199,7 @@ spec:
               serviceAccountName: kiali-operator
               containers:
               - name: operator
-                image: quay.io/kiali/kiali-operator:v1.38.0
+                image: quay.io/kiali/kiali-operator:v1.38.1
                 imagePullPolicy: "IfNotPresent"
                 args:
                 - "--zap-log-level=info"
