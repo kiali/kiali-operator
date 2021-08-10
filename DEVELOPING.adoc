@@ -155,7 +155,7 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 - [ ] Check if you need to modify the link:./roles/default/kiali-remove[Operator remove role]
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates[Server Helm Chart templates]
 
-### Are You Altering a Kiali Server Role Permission?
+### Are You Altering a Kiali Server Role Permission that Applies to Resources in All Accessible Namespaces?
 
 - [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
@@ -167,6 +167,16 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates/clusterrole.yaml[Operator Helm Chart clusterrole.yaml]
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/role.yaml[Server Helm Chart role.yaml]
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/role-viewer.yaml[Server Helm Chart role-viewer.yaml]
+
+### Are You Altering a Kiali Server Role Permission that Applies to Resources Only in the Control Plane Namespace?
+
+- [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
+- [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes/role-controlplane.yaml[Operator Kubernetes role-controlplane.yaml]
+- [ ] Update the link:./roles/default/kiali-deploy/templates/openshift/role-controlplane.yaml[Operator OpenShift role-controlplane.yaml]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates/clusterrole.yaml[Operator Helm Chart clusterrole.yaml]
+- [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/templates/role-controlplane.yaml[Server Helm Chart role-controlplane.yaml]
 
 ### Are You Altering a Kiali Server Configuration Setting?
 
