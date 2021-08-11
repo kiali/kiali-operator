@@ -718,7 +718,8 @@ spec:
 #
 # Flag to indicate Kiali to enable/disable clustering and federation related features.
 #    ---
-#    clustering: true
+#    clustering:
+#      enabled: true
 #
 # Flag to indicate Kiali to enable/disable an Action to label a namespace for automatic Istio Sidecar injection.
 #    ---

@@ -5,8 +5,10 @@ metadata:
   namespace: {{ kiali_vars.istio_namespace }}
   labels: {{ kiali_resource_metadata_labels }}
 rules:
+{% if kiali_vars.kiali_feature_flags.clustering.enabled|bool == True %}
 - apiGroups: [""]
   resources:
   - secrets
   verbs:
   - list
+{% endif %}

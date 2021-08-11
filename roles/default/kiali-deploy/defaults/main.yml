@@ -207,7 +207,8 @@ kiali_defaults:
     version_label_name: "version"
 
   kiali_feature_flags:
-    clustering: true
+    clustering:
+      enabled: true
     istio_injection_action: true
     istio_upgrade_action: false
     ui_defaults:
