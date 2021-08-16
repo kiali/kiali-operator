@@ -22,60 +22,34 @@
     set_fact:
       operator_installer: "{{ lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) }}" # can be 'helm' or 'skip'
 
-  - name: See if we have Service Mesh htpasswd secret for accessing external services like Prometheus
+  - name: Get the SMCP name if on Maistra
+    k8s_info:
+      api_version: maistra.io/v2
+      kind: smcp
+      namespace: "{{ istio.control_plane_namespace }}"
+    register: smcp_raw
+    when:
+    - is_maistra == True
+
+  - set_fact:
+      smcp_name: "{{ smcp_raw.resources[0].metadata.name }}"
+    when:
+    - is_maistra == True
+
+  - name: See if we have Maistra htpasswd secret for accessing external services like Prometheus
     k8s_info:
       api_version: v1
       kind: Secret
       namespace: "{{ istio.control_plane_namespace }}"
       name: htpasswd
-    register: ossm_secret_htpasswd_raw
+    register: maistra_secret_htpasswd_raw
     when:
     - is_maistra == True
 
   - set_fact:
-      ossm_secret_password: "{{ ossm_secret_htpasswd_raw.resources[0].data.rawPassword | b64decode }}"
+      maistra_secret_password: "{{ maistra_secret_htpasswd_raw.resources[0].data.rawPassword | b64decode }}"
     when:
-    - ossm_secret_htpasswd_raw is defined
-    - ossm_secret_htpasswd_raw.resources is defined
-    - ossm_secret_htpasswd_raw.resources | length == 1
-
-  - name: Define url and auth for Prometheus for Service Mesh
-    set_fact:
-      prometheus_config:
-        url: "https://prometheus.{{ istio.control_plane_namespace }}.svc:9090"
-        auth:
-          username: internal
-          type: basic
-          use_kiali_token: false
-          password: "{{ ossm_secret_password }}"
-    when:
-    - ossm_secret_password is defined
-
-  - name: Define url and auth for Tracing for Service Mesh
-    set_fact:
-      tracing_config:
-        in_cluster_url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
-        url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
-        auth:
-          username: internal
-          type: basic
-          use_kiali_token: false
-          password: "{{ ossm_secret_password }}"
-    when:
-    - ossm_secret_password is defined
-
-  - name: Define url and auth for Grafana for Service Mesh
-    set_fact:
-      grafana_config:
-        in_cluster_url: "https://grafana.{{ istio.control_plane_namespace }}.svc:3000"
-        url: "https://grafana.{{ istio.control_plane_namespace }}.svc"
-        auth:
-          username: internal
-          type: basic
-          use_kiali_token: false
-          password: "{{ ossm_secret_password }}"
-    when:
-    - ossm_secret_password is defined
+    - is_maistra == True
 
   - name: Make sure the operator namespace exists
     k8s:
@@ -159,19 +133,49 @@
       wait_condition:
         type: Established
 
-  - name: Create Kiali CR based solely on the template
-    k8s:
-      namespace: "{{ cr_namespace }}"
-      definition: "{{ lookup('template', cr_file_path) }}"
-    when:
-    - ossm_secret_password is not defined
+  - name: Prepare initial Kiali CR definition based solely on the template
+    set_fact:
+      kiali_cr_definition: "{{ lookup('template', cr_file_path) }}"
 
-  - name: Create Kiali CR with specific prometheus config added
+  - name: Modify the Kiali CR definition with specific Maistra config for Prometheus, Tracing, Grafana and Istio
+    vars:
+      prometheus_config:
+        url: "https://prometheus.{{ istio.control_plane_namespace }}.svc:9090"
+        auth:
+          username: internal
+          type: basic
+          use_kiali_token: false
+          password: "{{ maistra_secret_password }}"
+      tracing_config:
+        in_cluster_url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
+        url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
+        auth:
+          username: internal
+          type: basic
+          use_kiali_token: false
+          password: "{{ maistra_secret_password }}"
+      grafana_config:
+        in_cluster_url: "https://grafana.{{ istio.control_plane_namespace }}.svc:3000"
+        url: "https://grafana.{{ istio.control_plane_namespace }}.svc"
+        auth:
+          username: internal
+          type: basic
+          use_kiali_token: false
+          password: "{{ maistra_secret_password }}"
+      istio_config:
+        config_map_name: "istio-{{ smcp_name }}"
+        istio_sidecar_injector_config_map_name: "istio-sidecar-injector-{{ smcp_name }}"
+        istiod_deployment_name: "istiod-{{ smcp_name }}"
+        url_service_version: "http://istiod-{{ smcp_name }}.{{ istio.control_plane_namespace }}:15014/version"
+    set_fact:
+      kiali_cr_definition: "{{ kiali_cr_definition | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config, 'tracing': tracing_config, 'grafana': grafana_config, 'istio': istio_config }}}, recursive=True) | to_yaml }}"
+    when:
+    - is_maistra == True
+
+  - name: Create Kiali CR
     k8s:
       namespace: "{{ cr_namespace }}"
-      definition: "{{ lookup('template', cr_file_path) | from_yaml | combine({'spec':{'external_services':{'prometheus': prometheus_config, 'tracing': tracing_config, 'grafana': grafana_config }}}, recursive=True) | to_yaml }}"
-    when:
-    - ossm_secret_password is defined
+      definition: "{{ kiali_cr_definition }}"
 
   - name: Asserting that Kiali is Deployed
     vars:
