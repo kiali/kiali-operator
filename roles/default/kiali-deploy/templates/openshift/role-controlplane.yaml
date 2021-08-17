@@ -12,13 +12,16 @@ rules:
   verbs:
   - list
 {% endif %}
+{% if kiali_vars.kiali_feature_flags.certificates_information_indicators.enabled|bool == True %}
 - apiGroups: [""]
   resourceNames:
-  - cacerts
-  - istio-ca-secret
+{% for s in kiali_vars.kiali_feature_flags.certificates_information_indicators.secrets %}
+  - {{ s }}
+{% endfor %}
   resources:
   - secrets
   verbs:
   - get
   - list
   - watch
+{% endif %}
