@@ -313,6 +313,7 @@ spec:
           - secrets
           verbs:
           - create
+          - get
           - list
           - watch
         - apiGroups: [""]

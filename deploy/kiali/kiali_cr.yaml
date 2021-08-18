@@ -721,8 +721,8 @@ spec:
 #    certificates_information_indicators:
 #      enabled: true
 #      secrets:
-#      - istio-ca-secret
 #      - cacerts
+#      - istio-ca-secret
 #
 # Flag to indicate Kiali to enable/disable clustering and federation related features.
 #    ---

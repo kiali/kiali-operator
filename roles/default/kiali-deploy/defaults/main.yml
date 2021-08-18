@@ -210,8 +210,8 @@ kiali_defaults:
     certificates_information_indicators:
       enabled: true
       secrets:
-      - istio-ca-secret
       - cacerts
+      - istio-ca-secret
     clustering:
       enabled: true
     istio_injection_action: true

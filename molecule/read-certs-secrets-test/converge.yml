@@ -41,6 +41,7 @@
     assert:
       that: 
       - cert_role is defined
+      - cert_role.verbs | length == 3
       - get_verb in cert_role.verbs
       - list_verb in cert_role.verbs
       - watch_verb in cert_role.verbs
