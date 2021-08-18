@@ -97,14 +97,4 @@ rules:
   - tokenreviews
   verbs:
   - create
-- apiGroups: [""]
-  resourceNames:
-  - cacerts
-  - istio-ca-secret
-  resources:
-  - secrets
-  verbs:
-  - create
-  - list
-  - watch
 {% endfor %}
