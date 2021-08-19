@@ -10,6 +10,10 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   
+  - name: Remember the good in_cluster_url
+    set_fact:
+      good_in_cluster_url: "{{ kiali_configmap.external_services.grafana.in_cluster_url }}"
+
   - name: Get statuses from Istio components
     uri:
       url: "{{ kiali_base_url }}/api/istio/status"
@@ -79,21 +83,11 @@
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
   # Update Grafana Health URL to used an alternative URL for health checking 
-  - name: Update Grafana Health URL (Kubernetes)
+  - name: Update Grafana Health URL
     vars:
       current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
     set_fact:
-      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'health_check_url': 'http://grafana.' +  istio.control_plane_namespace + '.svc:3000'}}}}, recursive=True) }}"
-    when:
-    - is_openshift == False
-
-  - name: Update Grafana Health URL (OpenShift)
-    vars:
-      current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
-    set_fact:
-      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'health_check_url': 'https://grafana.' +  istio.control_plane_namespace + '.svc:3000'}}}}, recursive=True) }}"
-    when:
-    - is_openshift == True
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'in_cluster_url': good_in_cluster_url, 'health_check_url': good_in_cluster_url }}}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
 
