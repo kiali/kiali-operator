@@ -248,8 +248,6 @@ spec:
           resources:
           - configmaps
           - endpoints
-          - events
-          - persistentvolumeclaims
           - pods
           - serviceaccounts
           - services
