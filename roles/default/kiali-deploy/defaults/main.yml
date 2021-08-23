@@ -30,6 +30,7 @@ kiali_defaults:
   auth:
     openid:
       additional_request_params: {}
+      allowed_domains: []
       api_proxy: ""
       api_proxy_ca_data: ""
       api_token: "id_token"
