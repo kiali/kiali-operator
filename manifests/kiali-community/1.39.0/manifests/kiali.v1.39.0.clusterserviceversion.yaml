@@ -278,14 +278,6 @@ spec:
           - watch
         - apiGroups: [""]
           resourceNames:
-          - cacerts
-          - istio-ca-secret
-          resources:
-          - secrets
-          verbs:
-          - get
-        - apiGroups: [""]
-          resourceNames:
           - kiali-signing-key
           resources:
           - secrets
