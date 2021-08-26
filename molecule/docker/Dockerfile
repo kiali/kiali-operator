@@ -1,4 +1,4 @@
-FROM quay.io/ansible/molecule:3.1.5
+FROM quay.io/kiali/ansible-molecule:3.1.5
 RUN apk add gettext gcc libc-dev
 RUN pip install openshift junit-xml jmespath docker kubernetes
 RUN ansible-galaxy collection install kubernetes.core
