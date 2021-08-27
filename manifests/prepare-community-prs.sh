@@ -33,13 +33,13 @@ while [[ $# -gt 0 ]]; do
 $0 [option...]
 
 Valid options:
-  -go|--git-operatorhub <directory>
+  -go|--gitrepo-operatorhub <directory>
       The directory where the local community-operators git repo is located.
       This is the location where you git cloned the repo https://github.com/k8s-operatorhub/community-operators
       Default: ${DEFAULT_GIT_REPO_OPERATORHUB}
       which resolves to:
       $(readlink -f ${DEFAULT_GIT_REPO_OPERATORHUB} || echo '<git repo does not exist at the default location>')
-  -gr|--git-repo <directory>
+  -gr|--gitrepo-redhat <directory>
       The directory where the local community-operators-prod git repo is located.
       This is the location where you git cloned the repo https://github.com/redhat-openshift-ecosystem/community-operators-prod
       Default: ${DEFAULT_GIT_REPO_REDHAT}
