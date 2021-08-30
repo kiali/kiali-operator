@@ -547,6 +547,7 @@ spec:
 #   upgrade: The installed Istio Canary revision to upgrade to.
 # istio_identity_domain: The annotation used by Istio to identify domains.
 # istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
+# istio_injection_label: The label used by Istio to automatically inject a specific workload
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
 # istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istiod_deployment_name: The name of the istiod deployment.
@@ -572,6 +573,7 @@ spec:
 #        #upgrade:
 #      istio_identity_domain: "svc.cluster.local"
 #      istio_injection_annotation: "sidecar.istio.io/inject"
+#      istio_injection_label: "sidecar.istio.io/inject"
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
 #      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
 #      istiod_deployment_name: "istiod"
