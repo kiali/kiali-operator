@@ -23,3 +23,5 @@
     - api_status_json.status['Kiali core commit hash'] is defined
     - api_status_json.status['Kiali core version'] is defined
     - api_status_json.status['Kiali state'] == 'running'
+    - api_status_json.istioEnvironment is defined
+    - api_status_json.istioEnvironment.isMaistra == is_maistra

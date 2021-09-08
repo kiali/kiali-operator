@@ -546,7 +546,10 @@ spec:
 #   current: The current installed Istio revision.
 #   upgrade: The installed Istio Canary revision to upgrade to.
 # istio_identity_domain: The annotation used by Istio to identify domains.
-# istio_injection_annotation: The annotation used by Istio to automatically inject a specific workload
+# istio_injection_annotation: The name of the field that annotates a workload to indicate a sidecar should be
+#                             automatically injected by Istio. This is the name of a Kubernetes annotation. Note that some
+#                             Istio implementations also support labels by the same name. In other words, if a
+#                             workload has a Kubernetes label with this name, that may also trigger automatic sidecar injection.
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
 # istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istiod_deployment_name: The name of the istiod deployment.
