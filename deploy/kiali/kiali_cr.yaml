@@ -716,6 +716,14 @@ spec:
 #  ---
 #  kiali_feature_flags:
 #
+# Flag to enable/disable displaying certificates information and which secrets to grant read permissions
+#    ---
+#    certificates_information_indicators:
+#      enabled: true
+#      secrets:
+#      - cacerts
+#      - istio-ca-secret
+#
 # Flag to indicate Kiali to enable/disable clustering and federation related features.
 #    ---
 #    clustering:
