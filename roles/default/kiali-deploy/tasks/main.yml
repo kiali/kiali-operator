@@ -294,7 +294,7 @@
   when:
   - is_maistra == False
   - kiali_vars.external_services.tracing.in_cluster_url == ""
-  - kiali_vars.external_services.tracing.use_grpc is not defined or kiali_vars.external_services.tracing.use_grpc == True
+  - kiali_vars.external_services.tracing.use_grpc is not defined or kiali_vars.external_services.tracing.use_grpc|bool == True
 
 - name: Set default Tracing in_cluster_url for http consumption
   set_fact:
@@ -303,7 +303,7 @@
   - is_maistra == False
   - kiali_vars.external_services.tracing.in_cluster_url == ""
   - kiali_vars.external_services.tracing.use_grpc is defined
-  - kiali_vars.external_services.tracing.use_grpc == False
+  - kiali_vars.external_services.tracing.use_grpc|bool == False
 
 - name: Set default Istio service that provides version info (istiod service that was introduced in Istio 1.6)
   set_fact:
@@ -707,28 +707,28 @@
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'TRACING_PASSWORD': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
-  - kiali_vars.external_services.tracing.enabled == True
+  - kiali_vars.external_services.tracing.enabled|bool == True
   - kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for tracing token
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'TRACING_TOKEN': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
-  - kiali_vars.external_services.tracing.enabled == True
+  - kiali_vars.external_services.tracing.enabled|bool == True
   - kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for grafana password
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'GRAFANA_PASSWORD': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
-  - kiali_vars.external_services.grafana.enabled == True
+  - kiali_vars.external_services.grafana.enabled|bool == True
   - kiali_vars.external_services.grafana.auth.password | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for grafana token
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'GRAFANA_TOKEN': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
-  - kiali_vars.external_services.grafana.enabled == True
+  - kiali_vars.external_services.grafana.enabled|bool == True
   - kiali_vars.external_services.grafana.auth.token | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for login token signing key
