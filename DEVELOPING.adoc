@@ -64,7 +64,7 @@ You also must get the required Ansible collections installed. To install these, 
 
 ### Running the Operator With the Ansible Profiler
 
-If the ansible.cfg has `callback_whitelist = profile_tasks` specified, a link:https://docs.ansible.com/ansible/2.9/plugins/callback/profile_tasks.html[profiler] is run and its report is dumped at the end of each reconciliation run. You can tell the operator to use such a configuration by setting the `ANSIBLE_CONFIG` environment variable to `/opt/ansible/ansible-profiler.cfg`.
+If the ansible.cfg has `callback_enabled = profile_tasks` specified, a link:https://docs.ansible.com/ansible/2.9/plugins/callback/profile_tasks.html[profiler] is run and its report is dumped at the end of each reconciliation run. You can tell the operator to use such a configuration by setting the `ANSIBLE_CONFIG` environment variable to `/opt/ansible/ansible-profiler.cfg`.
 
 The profiler report is usually good enough to start tracking down performance issues. But it may be difficult to see performance issues over tasks that loop because the profiler report will show duplicate entries for each loop invocation. In that case, copy the profiler report to a file and pipe it to a script with the following content to provide a more cumulative report:
 
