@@ -24,12 +24,14 @@
       - kiali_configmap.deployment.logger.log_level == "info"
       - kiali_configmap.deployment.logger.time_field_format == "2006-01-02T15:04:05Z07:00"
       - kiali_configmap.deployment.logger.sampler_rate == "1"
+      - kiali_configmap.external_services.custom_dashboards.prometheus.custom_headers | length == 0
       - kiali_configmap.external_services.grafana.auth.password == ""
       - kiali_configmap.external_services.grafana.auth.type == "none"
       - kiali_configmap.external_services.grafana.url == ""
       - kiali_configmap.external_services.istio.istio_identity_domain == "svc.cluster.local"
       - kiali_configmap.external_services.istio.istio_sidecar_annotation == "sidecar.istio.io/status"
       - kiali_configmap.external_services.prometheus.url != ""
+      - kiali_configmap.external_services.prometheus.custom_headers | length == 0
       - kiali_configmap.identity.cert_file is defined
       - kiali_configmap.identity.private_key_file is defined
       - kiali_configmap.istio_labels.app_label_name == "app"

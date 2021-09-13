@@ -466,7 +466,12 @@ spec:
 #          type: "none"
 #          use_kiali_token: false
 #          username: ""
+#        cache_duration: 10
+#        cache_enabled: true
+#        cache_expiration: 300
+#        custom_headers: {}
 #        health_check_url: ""
+#        is_core: true
 #        url: ""
 #
 # **Grafana-specific settings:
@@ -597,6 +602,7 @@ spec:
 # cache_duration: Prometheus caching duration expressed in seconds
 # cache_enabled: Enable/disable Prometheus caching used for Health services
 # cache_expiration: Prometheus caching expiration expressed in seconds
+# custom_headers: A set of name/value settings that will be passed as headers when requests are sent to Prometheus.
 # health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided.
 # is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
@@ -614,6 +620,7 @@ spec:
 #      cache_duration: 10
 #      cache_enabled: true
 #      cache_expiration: 300
+#      custom_headers: {}
 #      health_check_url: ""
 #      is_core: true
 #      url: ""

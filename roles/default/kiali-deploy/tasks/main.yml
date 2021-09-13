@@ -194,6 +194,24 @@
   - kiali_vars.deployment.node_selector is defined
   - kiali_vars.deployment.node_selector | length > 0
 
+- name: Replace snake_case with camelCase in external_services.custom_dashboards.prometheus.custom_headers
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['custom_dashboards']['prometheus'].pop('custom_headers') %}
+      {{ kiali_vars | combine({'external_services': {'custom_dashboards': {'prometheus': {'custom_headers': current_cr.spec.external_services.custom_dashboards.prometheus.custom_headers }}}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.custom_dashboards.prometheus.custom_headers is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.custom_headers | length > 0
+
+- name: Replace snake_case with camelCase in external_services.prometheus.custom_headers
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['prometheus'].pop('custom_headers') %}
+      {{ kiali_vars | combine({'external_services': {'prometheus': {'custom_headers': current_cr.spec.external_services.prometheus.custom_headers }}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.prometheus.custom_headers is defined
+  - kiali_vars.external_services.prometheus.custom_headers | length > 0
+
 - name: Print some debug information
   vars:
     msg: |
