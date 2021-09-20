@@ -105,7 +105,12 @@ kiali_defaults:
           type: "none"
           use_kiali_token: false
           username: ""
+        cache_duration: 7
+        cache_enabled: true
+        cache_expiration: 300
+        custom_headers: {}
         health_check_url: ""
+        is_core: true
         url: ""
     grafana:
       auth:
@@ -173,6 +178,7 @@ kiali_defaults:
       cache_duration: 7
       cache_enabled: true
       cache_expiration: 300
+      custom_headers: {}
       health_check_url: ""
       is_core: true
       url: ""
