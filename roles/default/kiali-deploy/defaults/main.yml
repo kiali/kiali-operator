@@ -240,6 +240,10 @@ kiali_defaults:
           grpc: "requests"
           http: "requests"
           tcp: "sent"
+      metrics_inbound:
+        aggregations: []
+      metrics_outbound:
+        aggregations: []
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "15s"
