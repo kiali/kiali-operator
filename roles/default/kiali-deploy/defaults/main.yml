@@ -59,6 +59,7 @@ kiali_defaults:
     hpa:
       api_version: "autoscaling/v2beta2"
       spec: {}
+    image_digest: ""
     image_name: ""
     image_pull_policy: "IfNotPresent"
     image_pull_secrets: []

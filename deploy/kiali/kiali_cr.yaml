@@ -228,6 +228,11 @@ spec:
 #      api_version: "autoscaling/v2beta2"
 #      spec: {}
 #
+# If image_version is a digest hash, this value indicates what type of digest it is.
+# A typical value would be "sha256". Note: do NOT prefix this value with a "@".
+#    ---
+#    image_digest: ""
+#
 # Determines which Kiali image to download and install.
 # If you set this to a specific name (i.e. you do not leave it as the default empty string),
 # you must make sure that image is supported by the operator.
@@ -252,7 +257,8 @@ spec:
 # Choose "lastrelease" to use the last Kiali release.
 # Choose "latest" to use the latest image (which may or may not be a released version of Kiali).
 # Choose "operator_version" to use the image whose version is the same as the operator version.
-# Otherwise, you can set this to any valid Kiali version (such as "v1.0").
+# Otherwise, you can set this to any valid Kiali version (such as "v1.0") or any valid Kiali
+# digest hash (if you set this to a digest hash, you must indicate the digest in image_digest).
 # Note that if this is set to "latest" then the image_pull_policy will be "Always".
 # If you set this to a specific version (i.e. you do not leave it as the default empty string),
 # you must make sure that image is supported by the operator.
