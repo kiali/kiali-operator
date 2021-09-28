@@ -791,7 +791,8 @@ spec:
 #
 # Additional label aggregation for inbound/outbound metric pages in detail pages.
 # You will see these configurations in the "Metric Settings" drop-down.
-# The following is an example about how to configure additional aggregations (not default values).
+# The following is an example about how to configure additional aggregations.
+# These are not the default values; the actual default value for both metrics_inbound and metrics_outbound aggregations is an empty list.
 #
 #      #metrics_inbound:
 #        #aggregations:
