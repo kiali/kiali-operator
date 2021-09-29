@@ -795,6 +795,24 @@ spec:
 #      ---
 #      metrics_per_refresh: "1m"
 #
+# Additional label aggregation for inbound/outbound metric pages in detail pages.
+# You will see these configurations in the "Metric Settings" drop-down.
+# The following is an example about how to configure additional aggregations.
+# These are not the default values; the actual default value for both metrics_inbound and metrics_outbound aggregations is an empty list.
+#
+#      #metrics_inbound:
+#        #aggregations:
+#        #- display_name: Istio Network
+#        #  label: topology_istio_io_network
+#        #- display_name: Istio Revision
+#        #  label: istio_io_rev
+#      #metrics_outbound:
+#        #aggregations:
+#        #- display_name: Istio Network
+#        #  label: topology_istio_io_network
+#        #- display_name: Istio Revision
+#        #  label: istio_io_rev
+#
 # Default selections for the namespace selection dropdown. Non-existent or
 # inaccessible namespaces will be ignored. Omit, or set to an empty array for no
 # default namespaces.
