@@ -228,6 +228,15 @@ spec:
 #      api_version: "autoscaling/v2beta2"
 #      spec: {}
 #
+# hostAliases setting that will be configured in kiali container.
+# A typical way to configure hostAliases for Kiali is:
+#
+#    host_aliases:
+#      - ip: 192.168.1.100
+#        hostnames:
+#          - "foo.local"
+#          - "bar.local"
+#
 # If image_version is a digest hash, this value indicates what type of digest it is.
 # A typical value would be "sha256". Note: do NOT prefix this value with a "@".
 #    ---
