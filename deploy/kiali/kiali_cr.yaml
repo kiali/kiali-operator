@@ -611,6 +611,10 @@ spec:
 # custom_headers: A set of name/value settings that will be passed as headers when requests are sent to Prometheus.
 # health_check_url: Used in the Components health feature. This is the url which kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided.
 # is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
+# thanos_proxy: Used to query through thanos. Kiali use the url parameter to query but with the next configurations.
+#  enabled: Used to check this configuration when thanos is used
+#  retention_period: Thanos Retention period value expresed in string
+#  scrape_interval: Thanos Scrape interval value expresed in string
 # url: The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod.
 #      If empty, assumes it is in the istio namespace at the URL "http://prometheus.<istio_namespace>:9090"
 #    ---
@@ -629,6 +633,10 @@ spec:
 #      custom_headers: {}
 #      health_check_url: ""
 #      is_core: true
+#      thanos_proxy:
+#        enabled: false
+#        retention_period: "7d"
+#        scrape_interval: "30s"
 #      url: ""
 #
 # **Tracing-specific settings:
