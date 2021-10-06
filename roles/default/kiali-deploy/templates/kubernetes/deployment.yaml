@@ -43,6 +43,10 @@ spec:
       - name: {{ n }}
 {% endfor %}
 {% endif %}
+{% if kiali_vars.deployment.host_aliases|length > 0 %}
+      hostAliases:
+        {{ kiali_vars.deployment.host_aliases | to_nice_yaml(indent=0) | trim | indent(8) }}
+{% endif %}
       containers:
       - image: {{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}
         imagePullPolicy: {{ kiali_vars.deployment.image_pull_policy }}

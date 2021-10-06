@@ -228,6 +228,20 @@ spec:
 #      api_version: "autoscaling/v2beta2"
 #      spec: {}
 #
+# This is content for the Kubernetes hostAliases setting for the Kiali server.
+# This allows you to modify the Kiali server pod /etc/hosts file.
+# A typical way to configure this setting is:
+#
+#    host_aliases:
+#    - ip: 192.168.1.100
+#      hostnames:
+#      - "foo.local"
+#      - "bar.local"
+#
+# For details on the content of this setting, see:
+# https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/#adding-additional-entries-with-hostaliases
+#    ---
+#    host_aliases: []
 # If image_version is a digest hash, this value indicates what type of digest it is.
 # A typical value would be "sha256". Note: do NOT prefix this value with a "@".
 #    ---
