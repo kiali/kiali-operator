@@ -38,8 +38,8 @@ provisioner:
           # and thus will determine where to install Kiali.
           operator_watch_namespace: anothernamespace
           operator_cluster_role_creator: "true"
-          image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')|default('quay.io/kiali/kiali', True)) }}"
-          image_version: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION')|default('latest', True) }}"
+          image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else ('quay.io/kiali/kiali' if ansible_env.MOLECULE_KIALI_IMAGE_NAME is not defined else lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')) }}"
+          image_version: "{{ 'latest' if ansible_env.MOLECULE_KIALI_IMAGE_VERSION is not defined else lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION') }}"
           image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_PULL_POLICY')|default('Always', True) }}"
           operator_image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_PULL_POLICY')|default('Always', True) }}"
 scenario:
