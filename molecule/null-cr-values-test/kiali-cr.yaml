@@ -30,10 +30,10 @@ spec:
       node: null
       pod: null
       pod_anti: null
-    image_name: {{ kiali.image_name }}
+    image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_pull_secrets: null
-    image_version: {{ kiali.image_version }}
+    image_version: "{{ kiali.image_version }}"
     ingress_enabled: null
     logger:
       log_format: null

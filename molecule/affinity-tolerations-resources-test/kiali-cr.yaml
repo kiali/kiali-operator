@@ -13,9 +13,9 @@ spec:
     namespace: {{ kiali.install_namespace }}
     # Note that we start with no affinity or tolerations or resources sections,
     # so the first time through we just pick up the defaults.
-    image_name: {{ kiali.image_name }}
+    image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
-    image_version: {{ kiali.image_version }}
+    image_version: "{{ kiali.image_version }}"
     accessible_namespaces: {{ kiali.accessible_namespaces }}
     # while we are here, make sure the additional service yaml retains camelCase
     additional_service_yaml:

@@ -62,7 +62,7 @@
   vars:
     param_namespace: "{{ kiali.install_namespace }}"
     param_dashboard: "kiali"
-    param_version: "{{ kiali.image_version }}"
+    param_version: "{{ kiali.image_version if kiali.image_version != '' else kiali_configmap.deployment.image_version }}"
   uri:
     url: "{{ kiali_base_url }}/api/namespaces/{{ param_namespace }}/customdashboard/{{ param_dashboard }}?labelsFilter=app:kiali,version:{{ param_version }}"
     return_content: yes
