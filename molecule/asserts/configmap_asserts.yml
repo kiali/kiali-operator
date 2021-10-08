@@ -3,10 +3,12 @@
     that:
     - kiali_configmap.auth.strategy == kiali.auth_strategy
 
-- name: Assert Kiali Configmap has the correct Image Version
+- name: Assert Kiali Configmap has the correct Image Version if we know what the version should be
   assert:
     that:
     - kiali_configmap.deployment.image_version ==  kiali.image_version
+  when:
+  - kiali.image_version != ""
 
 - name: Assert Kiali Configmap has the correct Image Pull Policy
   assert:
