@@ -51,12 +51,11 @@
       that:
       - kiali_configmap.api.namespaces.label_selector == "kiali.io/member-of={{ istio.control_plane_namespace }}"
 
-  # TODO kubernetes.core.k8s behaves oddly - query doesn't return a list, but should; lookup returns a list but shouldn't.
-  #      For now, just use lookup since it returns the list which is what we want
   - name: Make sure the new label exists, but didn't overwrite any existing labels
     vars:
-      namespacesWithCustomLabel: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector='customLabel=test') }}"
-      namespacesWithKialiLabel: "{{ lookup('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector) }}"
+      # Use query - it is the only way to ensure a list is returned; for some reason, lookup/wantList=true is not working
+      namespacesWithCustomLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector='customLabel=test') }}"
+      namespacesWithKialiLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector) }}"
     assert:
       that:
       - namespacesWithCustomLabel | length == 1
