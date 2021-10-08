@@ -11,9 +11,9 @@ spec:
     logger:
       log_level: debug
     namespace: {{ kiali.install_namespace }}
-    image_name: {{ kiali.image_name }}
+    image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
-    image_version: {{ kiali.image_version }}
+    image_version: "{{ kiali.image_version }}"
     accessible_namespaces: {{ kiali.accessible_namespaces }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
     # the operator is only given permission to deploy Kiali in view_only_mode
