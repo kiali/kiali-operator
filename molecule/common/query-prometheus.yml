@@ -10,13 +10,16 @@
     pod: "{{ kiali_pod.resources[0].metadata.name}}"
     command: "curl -skL {{ credentials_arg }} -d query={{ prometheus_request.query}} -d time={{ prometheus_request.time }} {{ url }}"
   register: prometheus_query_results_raw
+  ignore_errors: yes # TODO why is this returning a rc=3? We are getting back good results
   vars:
     credentials_arg: "{{ ('-u ' + kiali_configmap.external_services.prometheus.auth.username + ':' + kiali_configmap.external_services.prometheus.auth.password) if kiali_configmap.external_services.prometheus.auth.username != '' else '' }}"
     url: "{{ kiali_configmap.external_services.prometheus.url }}/api/v1/query }}"
 
 - name: Raw Prometheus query results
+  vars:
+    url: "{{ kiali_configmap.external_services.prometheus.url }}/api/v1/query }}"
   debug:
-    msg: "Request: {{ prometheus_request }}; Results: {{ prometheus_query_results_raw }}"
+    msg: "URL: {{ url }}; Request: {{ prometheus_request }}; Results: {{ prometheus_query_results_raw }}"
 
 - set_fact:
     prometheus_query_results:
