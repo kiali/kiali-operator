@@ -80,6 +80,8 @@
     when:
     - operator_installer == "helm"
     ignore_errors: yes
+    retries: "{{ wait_retries }}"
+    delay: 5
 
   - name: Removing Operator namespace
     k8s:
@@ -91,6 +93,8 @@
     when:
     - operator_installer == "helm"
     - kiali.operator_namespace != istio.control_plane_namespace
+    retries: "{{ wait_retries }}"
+    delay: 5
 
   - name: Removing CR namespace if it is different than control plane and operator namespace
     k8s:
@@ -102,3 +106,5 @@
     when:
     - cr_namespace != istio.control_plane_namespace
     - cr_namespace != kiali.operator_namespace
+    retries: "{{ wait_retries }}"
+    delay: 5
