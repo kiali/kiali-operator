@@ -66,7 +66,10 @@ kiali_defaults:
     image_pull_policy: "IfNotPresent"
     image_pull_secrets: []
     image_version: ""
-    ingress_enabled: true
+    ingress:
+      class_name: "nginx"
+      #enabled:
+      #override_yaml:
     instance_name: "kiali"
     logger:
       log_format: "text"
@@ -75,7 +78,6 @@ kiali_defaults:
       time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: ""
     node_selector: {}
-    #override_ingress_yaml:
     pod_annotations: {}
     pod_labels: {}
     priority_class_name: ""

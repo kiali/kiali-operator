@@ -34,7 +34,10 @@ spec:
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_pull_secrets: null
     image_version: "{{ kiali.image_version }}"
-    ingress_enabled: null
+    ingress:
+      class_name: null
+      enabled: null
+      override_yaml: null
     logger:
       log_format: null
       log_level: null
@@ -42,7 +45,6 @@ spec:
       time_field_format: null
     namespace: {{ kiali.install_namespace }}
     node_selector: null
-    override_ingress_yaml: null
     pod_annotations: null
     pod_labels: null
     priority_class_name: null
