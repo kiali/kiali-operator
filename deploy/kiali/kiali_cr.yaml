@@ -579,6 +579,7 @@ spec:
 # istio_sidecar_annotation: The pod annotation used by Istio to identify the sidecar.
 # istio_sidecar_injector_config_map_name: The name of the istio-sidecar-injector config map.
 # istiod_deployment_name: The name of the istiod deployment.
+# root_namespace: The namespace to treat as the administrative root namespace for Istio configuration.
 # url_service_version: The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint.
 #    ---
 #    istio:
@@ -604,6 +605,7 @@ spec:
 #      istio_sidecar_annotation: "sidecar.istio.io/status"
 #      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
 #      istiod_deployment_name: "istiod"
+#      root_namespace: ""
 #      url_service_version: ""
 #
 #
