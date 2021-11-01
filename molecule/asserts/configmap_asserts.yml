@@ -18,12 +18,12 @@
 - name: Assert Kiali Configmap has the correct Istio Namespace
   assert:
     that:
-    - kiali_configmap.external_services.istio.root_namespace == istio.control_plane_namespace
+    - kiali_configmap.istio_namespace == istio.control_plane_namespace    
 
 - name: Assert Kiali Configmap has the correct Root Namespace
   assert:
     that:
-    - kiali_configmap.io_namespace == istio.control_plane_namespace    
+    - kiali_configmap.external_services.istio.root_namespace == istio.control_plane_namespace
 
 - name: Assert Kiali Configmap has the correct Prometheus Url for Upstream Istio installs
   assert:
