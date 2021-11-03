@@ -129,7 +129,7 @@ spec:
 #    strategy: ""
 #
 # To learn how to configure the OpenId authentication strategy, read the documentation
-# at the website on https://kiali.io/documentation/latest/configuration/authentication/openid/
+# at the website on https://kiali.io/docs/configuration/authentication/openid/
 #
 #    ---
 #    openid:
@@ -384,7 +384,7 @@ spec:
 # The name of a secret used by the Kiali.
 # This secret is optionally used when configuring the OpenID authentication strategy.
 # Consult the OpenID docs for more information:
-#   https://kiali.io/documentation/latest/configuration/authentication/openid/
+#   https://kiali.io/docs/configuration/authentication/openid/
 #    ---
 #    secret_name: "kiali"
 #
@@ -462,7 +462,7 @@ spec:
 #   discovering dashboards for workloads having many pods (thus many metrics).
 #   When set to 'auto', Kiali will skip dashboards discovery for workloads with more than a configured threshold of pods
 #   (see 'discovery_auto_threshold'). When discovery is disabled or auto/skipped, it is still possible to tie workloads
-#   with dashboards through annotations on pods (refer to the doc https://kiali.io/documentation/latest/runtimes-monitoring/#pods-annotations)
+#   with dashboards through annotations on pods (refer to the doc https://kiali.io/docs/configuration/custom-dashboard/#pod-annotations)
 #   Allowed values: true, false, auto.
 # enabled: Enable or disable custom dashboards, including the dashboards discovery process. Default: true.
 # is_core: Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning.
