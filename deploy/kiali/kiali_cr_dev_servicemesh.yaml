@@ -14,7 +14,8 @@ spec:
     image_name: "${KIALI_IMAGE_NAME}"
     image_pull_policy: "${KIALI_IMAGE_PULL_POLICY}"
     image_version: "${KIALI_IMAGE_VERSION}"
-    ingress_enabled: true
+    ingress:
+      enabled: true
     namespace: "${NAMESPACE}"
     service_type: "${SERVICE_TYPE}"
     logger:

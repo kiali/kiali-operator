@@ -139,14 +139,14 @@
   - kiali_vars.deployment.resources is defined
   - kiali_vars.deployment.resources | length > 0
 
-- name: Replace snake_case with camelCase in deployment.override_ingress_yaml
+- name: Replace snake_case with camelCase in deployment.ingress.override_yaml
   set_fact:
     kiali_vars: |
-      {% set a=kiali_vars['deployment'].pop('override_ingress_yaml') %}
-      {{ kiali_vars | combine({'deployment': {'override_ingress_yaml': current_cr.spec.deployment.override_ingress_yaml }}, recursive=True) }}
+      {% set a=kiali_vars['deployment']['ingress'].pop('override_yaml') %}
+      {{ kiali_vars | combine({'deployment': {'ingress': {'override_yaml': current_cr.spec.deployment.ingress.override_yaml }}}, recursive=True) }}
   when:
-  - kiali_vars.deployment.override_ingress_yaml is defined
-  - kiali_vars.deployment.override_ingress_yaml | length > 0
+  - kiali_vars.deployment.ingress.override_yaml is defined
+  - kiali_vars.deployment.ingress.override_yaml | length > 0
 
 - name: Replace snake_case with camelCase in deployment.pod_annotations
   set_fact:
@@ -343,6 +343,12 @@
 
 # Determine some more defaults.
 
+- name: Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift)
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.ingress.enabled is not defined or kiali_vars.deployment.ingress.enabled == ""
+
 - name: Set default tracing use_grpc setting
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': { 'use_grpc': False if is_maistra else True }}}, recursive=True) }}"
@@ -483,10 +489,10 @@
 # requires OAuth Client which requires a Route. So ingress must be enabled if strategy is openshift.
 - name: Ensure Ingress is Enabled if Auth Strategy is openshift
   fail:
-    msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress_enabled is false. Aborting."
+    msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress.enabled is false. Aborting."
   when:
   - kiali_vars.auth.strategy == "openshift"
-  - kiali_vars.deployment.ingress_enabled|bool == False
+  - kiali_vars.deployment.ingress.enabled|bool == False
 
 - name: Confirm the cluster can access github.com when it needs to determine the last release of Kiali
   uri:

@@ -47,7 +47,7 @@
     loop_var: process_resource_item
   when:
   - is_k8s == True
-  - kiali_vars.deployment.ingress_enabled|bool == True
+  - kiali_vars.deployment.ingress.enabled|bool == True
 
 - name: Delete Ingress on Kubernetes if disabled
   k8s:
@@ -58,7 +58,7 @@
     name: "{{ kiali_vars.deployment.instance_name }}"
   when:
   - is_k8s == True
-  - kiali_vars.deployment.ingress_enabled|bool == False
+  - kiali_vars.deployment.ingress.enabled|bool == False
 
 - include_tasks: update-status-progress.yml
   vars:

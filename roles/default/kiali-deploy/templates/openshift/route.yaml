@@ -4,12 +4,12 @@ metadata:
   name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels: {{ kiali_resource_metadata_labels }}
-{% if kiali_vars.deployment.override_ingress_yaml is defined and kiali_vars.deployment.override_ingress_yaml.metadata is defined and kiali_vars.deployment.override_ingress_yaml.metadata.annotations is defined %}
-  {{ kiali_vars.deployment.override_ingress_yaml.metadata | to_nice_yaml(indent=0) | trim | indent(2) }}
+{% if kiali_vars.deployment.ingress.override_yaml is defined and kiali_vars.deployment.ingress.override_yaml.metadata is defined and kiali_vars.deployment.ingress.override_yaml.metadata.annotations is defined %}
+  {{ kiali_vars.deployment.ingress.override_yaml.metadata | to_nice_yaml(indent=0) | trim | indent(2) }}
 {% endif %}
 spec:
-{% if kiali_vars.deployment.override_ingress_yaml is defined and kiali_vars.deployment.override_ingress_yaml.spec is defined %}
-  {{ kiali_vars.deployment.override_ingress_yaml.spec | to_nice_yaml(indent=0) | trim | indent(2) }}
+{% if kiali_vars.deployment.ingress.override_yaml is defined and kiali_vars.deployment.ingress.override_yaml.spec is defined %}
+  {{ kiali_vars.deployment.ingress.override_yaml.spec | to_nice_yaml(indent=0) | trim | indent(2) }}
 {% else %}
   tls:
     termination: reencrypt
