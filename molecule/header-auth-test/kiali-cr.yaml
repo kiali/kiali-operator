@@ -8,6 +8,8 @@ spec:
   auth:
     strategy: header
   deployment:
+    ingress:
+      enabled: true
     logger:
       log_level: trace
     accessible_namespaces: {{ kiali.accessible_namespaces }}

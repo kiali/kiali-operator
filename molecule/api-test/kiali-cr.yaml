@@ -11,6 +11,8 @@ spec:
   custom_dashboards:
   - name: go
   deployment:
+    ingress:
+      enabled: true
     logger:
       log_level: debug
     accessible_namespaces: {{ kiali.accessible_namespaces }}

@@ -36,7 +36,7 @@ spec:
     image_version: "{{ kiali.image_version }}"
     ingress:
       class_name: null
-      enabled: null
+      enabled: true
       override_yaml: null
     logger:
       log_format: null

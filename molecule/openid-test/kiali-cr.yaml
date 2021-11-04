@@ -13,6 +13,8 @@ spec:
       issuer_uri: {{ openid.issuer_uri }}
       username_claim: {{ openid.username_claim }}
   deployment:
+    ingress:
+      enabled: true
     logger:
       log_level: trace
     accessible_namespaces: {{ kiali.accessible_namespaces }}
