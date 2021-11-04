@@ -8,6 +8,8 @@ spec:
   auth:
     strategy: {{ kiali.auth_strategy }}
   deployment:
+    ingress:
+      enabled: true
     logger:
       log_level: debug
     # For this test, we do not define namespace.
