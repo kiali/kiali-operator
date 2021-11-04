@@ -12,8 +12,7 @@
 
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
-  # We load in the current kiali CR and then alter it with new config.
-  # We do this TWO times to check changing different settings.
+  # We load in the current kiali CR and then alter it with new config and deploy that new CR.
 
   - set_fact:
       current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
@@ -22,9 +21,7 @@
     debug:
       msg: "{{ current_kiali_cr }}"
 
-  # First perform some sanity checks making sure some default values are as expected
-
-  # NEW CONFIG TEST #1
+  # Change the existing CR to get a new config
 
   - name: Set new deployment.version_label to something longer than k8s maximum of 63 chars
     vars:
@@ -53,7 +50,7 @@
             protocol: "http"
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'health_config': custom_health_config}}, recursive=True) }}"
-  
+
   - name: Add host_aliases
     vars:
       custom_host_aliases:
@@ -67,6 +64,18 @@
         - "bar2.local"
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'host_aliases': custom_host_aliases}}}, recursive=True) }}"
+
+  - name: Add custom_secrets
+    vars:
+      custom_secrets:
+      - name: extra-secret-1
+        mount: /extra-secret-1
+        optional: true
+      - name: extra-secret-2
+        mount: /extra-secret-2
+        optional: true
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'custom_secrets': custom_secrets}}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -121,3 +130,20 @@
       - kiali_pod_spec.hostAliases[1].hostnames | length == 2
       - kiali_pod_spec.hostAliases[1].hostnames[0] == "foo2.local"
       - kiali_pod_spec.hostAliases[1].hostnames[1] == "bar2.local"
+
+  - name: Make sure the custom secrets made it to the pod
+    vars:
+      es1_volume_secretName_query: "volumes[?name=='extra-secret-1'].secret.secretName"
+      es2_volume_secretName_query: "volumes[?name=='extra-secret-2'].secret.secretName"
+      es1_volume_optional_query: "volumes[?name=='extra-secret-1'].secret.optional"
+      es2_volume_optional_query: "volumes[?name=='extra-secret-2'].secret.optional"
+      es1_mountPath_query: "containers[0].volumeMounts[?name=='extra-secret-1'].mountPath"
+      es2_mountPath_query: "containers[0].volumeMounts[?name=='extra-secret-2'].mountPath"
+    assert:
+      that:
+      - kiali_pod.resources[0].spec | json_query(es1_volume_secretName_query) | join == 'extra-secret-1'
+      - kiali_pod.resources[0].spec | json_query(es2_volume_secretName_query) | join == 'extra-secret-2'
+      - kiali_pod.resources[0].spec | json_query(es1_volume_optional_query) | join
+      - kiali_pod.resources[0].spec | json_query(es2_volume_optional_query) | join
+      - kiali_pod.resources[0].spec | json_query(es1_mountPath_query) | join == '/extra-secret-1'
+      - kiali_pod.resources[0].spec | json_query(es2_mountPath_query) | join == '/extra-secret-2'
