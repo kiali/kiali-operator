@@ -110,6 +110,10 @@ spec:
           mountPath: "/kiali-secret"
         - name: kiali-cabundle
           mountPath: "/kiali-cabundle"
+{% for secret in kiali_vars.deployment.custom_secrets %}
+        - name: {{ secret.name }}
+          mountPath: "{{ secret.mount }}"
+{% endfor %}
 {% if kiali_vars.deployment.resources|length > 0 %}
         resources:
           {{ kiali_vars.deployment.resources | to_nice_yaml(indent=0) | trim | indent(10) }}
@@ -133,6 +137,12 @@ spec:
       - name: kiali-cabundle
         configMap:
           name: {{ kiali_vars.deployment.instance_name }}-cabundle
+{% for secret in kiali_vars.deployment.custom_secrets %}
+      - name: {{ secret.name }}
+        secret:
+          secretName: {{ secret.name }}
+          optional: {{ secret.optional }}
+{% endfor %}
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:
 {% if kiali_vars.deployment.affinity.node|length > 0 %}

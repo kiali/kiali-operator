@@ -210,6 +210,25 @@ spec:
 #      pod: {}
 #      pod_anti: {}
 #
+# Defines additional secrets that are to be mounted in the Kiali pod.
+# These are useful to contain certs that are used by Kiali to securely connect to third party systems
+# (for example, see external_services.tracing.auth.ca_file).
+# These secrets must be created by an external mechanism. Kiali will not generate these secrets; it
+# is assumed these secrets are externally managed. You can define 0, 1, or more secrets.
+# For each secret, you define its "name", "mount" (the location of the mount as a file path), and "optional"
+# to indicate if the secret may or may not exist at the time the Kial pod starts ("optional" will
+# default to false if not specified here). For example:
+#
+#    custom_secrets:
+#    - name: mysecret
+#      mount: /mysecret-path
+#    - name: my-other-secret
+#      mount: /my-other-secret-location
+#      optional: true
+#
+#    ---
+#    custom_secrets: []
+#
 # Determines what (if any) HorizontalPodAutoscaler should be created to autoscale the Kiali pod.
 # A typical way to configure HPA for Kiali is:
 #
