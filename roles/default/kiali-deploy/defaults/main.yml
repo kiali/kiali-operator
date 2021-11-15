@@ -68,6 +68,7 @@ kiali_defaults:
     image_pull_secrets: []
     image_version: ""
     ingress:
+      additional_labels: {}
       class_name: "nginx"
       #enabled:
       #override_yaml:
