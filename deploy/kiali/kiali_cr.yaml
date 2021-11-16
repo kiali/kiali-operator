@@ -416,8 +416,16 @@ spec:
 # Defines compute resources that are to be given to the Kiali pod's container.
 # The value is a dict as defined by Kubernetes. See the Kubernetes documentation
 # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container
+# If you do not set this at all, the default is:
+#
+#      requests:
+#        cpu: "10m"
+#        memory: "64Mi"
+#
+# If you set this to an empty dict ("{}"), then no resources will be defined in the Deployment.
+#
 #    ---
-#    resources: {}
+#    #resources:
 #
 # The name of a secret used by the Kiali.
 # This secret is optionally used when configuring the OpenID authentication strategy.

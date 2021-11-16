@@ -343,6 +343,17 @@
 
 # Determine some more defaults.
 
+- name: Provide some default resource limits
+  vars:
+    res:
+      requests:
+        cpu: "10m"
+        memory: "64Mi"
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'resources': res }}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.resources is not defined
+
 - name: Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift)
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) }}"

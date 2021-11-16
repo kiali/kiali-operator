@@ -84,7 +84,7 @@ kiali_defaults:
     pod_labels: {}
     priority_class_name: ""
     replicas: 1
-    resources: {}
+    #resources:
     secret_name: "kiali"
     service_annotations: {}
     #service_type: "NodePort"
