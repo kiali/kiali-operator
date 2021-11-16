@@ -308,6 +308,17 @@
 
 # Determine some more defaults.
 
+- name: Provide some default resource limits
+  vars:
+    res:
+      requests:
+        cpu: "10m"
+        memory: "64Mi"
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'resources': res }}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.resources is not defined
+
 - name: Set default tracing use_grpc setting
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': { 'use_grpc': False if is_maistra else True }}}, recursive=True) }}"
