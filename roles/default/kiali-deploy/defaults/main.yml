@@ -242,6 +242,8 @@ kiali_defaults:
           expression:  "! healthy"
         - description: "Find: unknown nodes"
           expression:  "name = unknown"
+        - description: "Find: nodes with the 2 highest ranks"
+          expression:  "rank <= 2"
         hide_options:
         - description: "Hide: healthy nodes"
           expression: "healthy"
