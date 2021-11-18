@@ -23,9 +23,10 @@
       - kiali_configmap.deployment.logger.log_level == "info"
       - kiali_configmap.deployment.logger.time_field_format == "2006-01-02T15:04:05Z07:00"
       - kiali_configmap.deployment.logger.sampler_rate == "1"
-      - kiali_configmap.deployment.resources | length == 1
+      - kiali_configmap.deployment.resources | length == 2
       - kiali_configmap.deployment.resources.requests.cpu == "10m"
       - kiali_configmap.deployment.resources.requests.memory == "64Mi"
+      - kiali_configmap.deployment.resources.limits.memory == "1Gi"
       - kiali_configmap.external_services.custom_dashboards.prometheus.custom_headers | length == 0
       - kiali_configmap.external_services.istio.istio_identity_domain == "svc.cluster.local"
       - kiali_configmap.external_services.istio.istio_sidecar_annotation == "sidecar.istio.io/status"

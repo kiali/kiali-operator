@@ -421,6 +421,8 @@ spec:
 #      requests:
 #        cpu: "10m"
 #        memory: "64Mi"
+#      limits:
+#        memory: "1Gi"
 #
 # If you set this to an empty dict ("{}"), then no resources will be defined in the Deployment.
 #

@@ -349,6 +349,8 @@
       requests:
         cpu: "10m"
         memory: "64Mi"
+      limits:
+        memory: "1Gi"
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'resources': res }}, recursive=True) }}"
   when:

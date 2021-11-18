@@ -15,12 +15,14 @@
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
     assert:
       that:
-      - kiali_configmap.deployment.resources | length == 1
+      - kiali_configmap.deployment.resources | length == 2
       - kiali_configmap.deployment.resources.requests.cpu == "10m"
       - kiali_configmap.deployment.resources.requests.memory == "64Mi"
-      - kiali_pod_spec.containers[0].resources | length == 1
+      - kiali_configmap.deployment.resources.limits.memory == "1Gi"
+      - kiali_pod_spec.containers[0].resources | length == 2
       - kiali_pod_spec.containers[0].resources.requests.cpu == "10m"
       - kiali_pod_spec.containers[0].resources.requests.memory == "64Mi"
+      - kiali_pod_spec.containers[0].resources.limits.memory == "1Gi"
 
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
