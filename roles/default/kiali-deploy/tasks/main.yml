@@ -620,7 +620,7 @@
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
-    all_accessible_namespaces: "{{ (all_namespaces | only_accessible_namespaces(accessible_namespaces=kiali_vars.deployment.accessible_namespaces) + [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace ]) | unique | sort }}"
+    all_accessible_namespaces: "{{ (all_namespaces | only_accessible_namespaces(accessible_namespaces=kiali_vars.deployment.accessible_namespaces) + [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
