@@ -23,8 +23,14 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 DORP ?= docker
 
 # The version of the SDK this Makefile will download if needed, and the corresponding base image
-OPERATOR_SDK_VERSION ?= 1.8.0
-OPERATOR_BASE_IMAGE_VERSION ?= 4.8
+OPERATOR_SDK_VERSION ?= 1.8.2
+OPERATOR_BASE_IMAGE_VERSION ?= v${OPERATOR_SDK_VERSION}
+OPERATOR_BASE_IMAGE_REPO ?= quay.io/operator-framework/ansible-operator
+# These are what we really want - but origin-ansible-operator does not support multiarch today.
+# When that is fixed, we want to use this image instead of the image above.
+# See: https://github.com/kiali/kiali/issues/4483
+#OPERATOR_BASE_IMAGE_VERSION ?= 4.8
+#OPERATOR_BASE_IMAGE_REPO ?= quay.io/openshift/origin-ansible-operator
 
 .PHONY: help
 help: Makefile
@@ -62,10 +68,10 @@ get-operator-sdk: .ensure-operator-sdk-exists
 build:
 ifeq ($(DORP),docker)
 	@echo Building container image for Kiali operator using docker
-	docker build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	docker build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_BASE_IMAGE_REPO=${OPERATOR_BASE_IMAGE_REPO} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
 else
 	@echo Building container image for Kiali operator using podman
-	podman build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	podman build --pull -t ${OPERATOR_QUAY_TAG} --build-arg OPERATOR_BASE_IMAGE_REPO=${OPERATOR_BASE_IMAGE_REPO} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
 endif
 
 ## push: Pushes the operator image to quay.
