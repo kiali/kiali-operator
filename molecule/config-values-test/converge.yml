@@ -10,6 +10,20 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
+  - name: Test the default deployment.resources is what we expect
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_configmap.deployment.resources | length == 2
+      - kiali_configmap.deployment.resources.requests.cpu == "10m"
+      - kiali_configmap.deployment.resources.requests.memory == "64Mi"
+      - kiali_configmap.deployment.resources.limits.memory == "1Gi"
+      - kiali_pod_spec.containers[0].resources | length == 2
+      - kiali_pod_spec.containers[0].resources.requests.cpu == "10m"
+      - kiali_pod_spec.containers[0].resources.requests.memory == "64Mi"
+      - kiali_pod_spec.containers[0].resources.limits.memory == "1Gi"
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config and deploy that new CR.
@@ -76,6 +90,10 @@
         optional: true
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'custom_secrets': custom_secrets}}}, recursive=True) }}"
+
+  - name: Set deployment.resources to empty map which means we want to not define the pod resources at all
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'resources': {}}}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -147,3 +165,11 @@
       - kiali_pod.resources[0].spec | json_query(es2_volume_optional_query) | join
       - kiali_pod.resources[0].spec | json_query(es1_mountPath_query) | join == '/extra-secret-1'
       - kiali_pod.resources[0].spec | json_query(es2_mountPath_query) | join == '/extra-secret-2'
+
+  - name: Test the default deployment.resources is now empty
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_configmap.deployment.resources | length == 0
+      - kiali_pod_spec.containers[0].resources | length == 0

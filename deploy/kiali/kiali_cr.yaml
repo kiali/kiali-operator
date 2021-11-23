@@ -308,6 +308,11 @@ spec:
 #    ---
 #    ingress:
 #
+# Additional labels to add to the Ingress (or Route if OpenShift). These are added to the
+# labels that are created by default; these do not override the default labels.
+#      ---
+#      additional_labels: {}
+#
 # If class_name is a non-empty string, it will be used as the spec.ingressClassName
 # in the created Kubernetes Ingress resource. This setting is ignored if on OpenShift.
 # This is also ignored if override_yaml.spec is defined (i.e. you must define the
@@ -331,6 +336,8 @@ spec:
 # Note that only 'metadata.annotations' and 'spec' is valid and only they will
 # be used to override those same sections in the created resource. You can define
 # either one or both.
+# Note that `metadata.labels` is not allowed - you cannot override the labels; to add
+# labels to the default set of labels, use the "additional_labels" setting.
 # Example:
 #      override_yaml:
 #        metadata:
@@ -409,8 +416,18 @@ spec:
 # Defines compute resources that are to be given to the Kiali pod's container.
 # The value is a dict as defined by Kubernetes. See the Kubernetes documentation
 # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container
+# If you do not set this at all, the default is:
+#
+#      requests:
+#        cpu: "10m"
+#        memory: "64Mi"
+#      limits:
+#        memory: "1Gi"
+#
+# If you set this to an empty dict ("{}"), then no resources will be defined in the Deployment.
+#
 #    ---
-#    resources: {}
+#    #resources:
 #
 # The name of a secret used by the Kiali.
 # This secret is optionally used when configuring the OpenID authentication strategy.

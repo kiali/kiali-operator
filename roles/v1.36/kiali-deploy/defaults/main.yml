@@ -63,6 +63,8 @@ kiali_defaults:
     image_pull_policy: "IfNotPresent"
     image_pull_secrets: []
     image_version: ""
+    ingress:
+      additional_labels: {}
     ingress_enabled: true
     instance_name: "kiali"
     logger:
@@ -77,7 +79,7 @@ kiali_defaults:
     pod_labels: {}
     priority_class_name: ""
     replicas: 1
-    resources: {}
+    #resources:
     secret_name: "kiali"
     service_annotations: {}
     #service_type: "NodePort"

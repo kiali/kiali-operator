@@ -239,6 +239,10 @@ spec:
                 ports:
                 - name: http-metrics
                   containerPort: 8080
+                resources:
+                  requests:
+                    cpu: "10m"
+                    memory: "64Mi"
               volumes:
               - name: runner
                 emptyDir: {}
