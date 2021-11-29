@@ -78,6 +78,18 @@
 - debug:
     msg: "OPERATOR VERSION: [{{ operator_version }}]"
 
+# To remain backward compatible with some settings that have changed in later releases,
+# let's take some deprecated settings and set the current settings appropriately.
+
+- name: deployment.ingress_enabled is deprecated but if deployment.ingress.enabled is not set then use the old setting
+  set_fact:
+    kiali_vars: |
+      {% set ie=kiali_vars['deployment'].pop('ingress_enabled') %}
+      {{ kiali_vars | combine({'deployment': {'ingress': {'enabled': ie|bool }}}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.ingress_enabled is defined
+  - kiali_vars.deployment.ingress is not defined or kiali_vars.deployment.ingress.enabled is not defined
+
 # Because we are passing through some yaml directly to Kubernetes resources, we have to retain the camelCase keys.
 # All CR parameters are converted to snake_case, but the original yaml is found in the special _kiali_io_kiali param.
 # We need to copy that original yaml into our vars where appropriate to keep the camelCase.
