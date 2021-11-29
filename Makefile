@@ -152,4 +152,4 @@ validate: .ensure-operator-sdk-exists
 ## container-multi-arch-push-kiali-operator-quay: Pushes the Kiali Operator multi-arch image to quay.
 container-multi-arch-push-kiali-operator-quay: .ensure-buildx-builder
 	@echo Pushing Kiali Operator multi-arch image to ${OPERATOR_QUAY_TAG} using docker buildx
-	docker buildx build --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} --push --pull --no-cache --builder=kiali-builder $(foreach arch,${TARGET_ARCHS},--platform=linux/${arch}) $(foreach tag,${OPERATOR_QUAY_TAG},--tag=${tag}) -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
+	docker buildx build --build-arg OPERATOR_BASE_IMAGE_REPO=${OPERATOR_BASE_IMAGE_REPO} --build-arg OPERATOR_BASE_IMAGE_VERSION=${OPERATOR_BASE_IMAGE_VERSION} --push --pull --no-cache --builder=kiali-builder $(foreach arch,${TARGET_ARCHS},--platform=linux/${arch}) $(foreach tag,${OPERATOR_QUAY_TAG},--tag=${tag}) -f ${ROOTDIR}/build/Dockerfile ${ROOTDIR}
