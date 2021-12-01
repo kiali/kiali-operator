@@ -163,12 +163,14 @@
       that:
       - "{{ kiali_deployment.resources[0].spec.template.spec.affinity is not defined }}"
       fail_msg: "Empty affinity was not applied successfully: {{ kiali_deployment.resources[0].spec.template.spec }} [kiali CR={{ kiali_cr }}]"
-  - name: Assert that empty resources was applied
+  - name: Assert that empty resources was applied and we have the default resources set
     assert:
       that:
-      # I do not know why, but k8s doesn't remove resources entirely; k8s sets it to an empty dict
-      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources | length == 0 }}"
-      fail_msg: "Empty resources was not applied successfully: {{ kiali_deployment.resources[0].spec.template.spec.containers[0] }} [kiali CR={{ kiali_cr }}]"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources | length == 2 }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.requests.cpu == '10m' }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.requests.memory == '64Mi' }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.containers[0].resources.limits.memory == '1Gi' }}"
+      fail_msg: "Empty resources was not applied successfully - the default resources is not correct: {{ kiali_deployment.resources[0].spec.template.spec.containers[0] }} [kiali CR={{ kiali_cr }}]"
 
   - name: Try to obtain the HPA which should have been removed
     k8s_info:
