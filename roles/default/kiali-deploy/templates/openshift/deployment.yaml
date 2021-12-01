@@ -15,9 +15,9 @@ spec:
       name: {{ kiali_vars.deployment.instance_name }}
       labels: {{ kiali_resource_metadata_labels | combine(kiali_vars.deployment.pod_labels) }}
       annotations:
-{% if kiali_vars.server.metrics_enabled|bool == True %}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
         prometheus.io/scrape: "true"
-        prometheus.io/port: "{{ kiali_vars.server.metrics_port }}"
+        prometheus.io/port: "{{ kiali_vars.server.observability.metrics.port }}"
 {% else %}
         prometheus.io/scrape: "false"
         prometheus.io/port: null
@@ -63,9 +63,9 @@ spec:
         ports:
           - name: api-port
             containerPort: {{ kiali_vars.server.port }}
-{% if kiali_vars.server.metrics_enabled|bool == True %}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
           - name: http-metrics
-            containerPort: {{ kiali_vars.server.metrics_port }}
+            containerPort: {{ kiali_vars.server.observability.metrics.port }}
 {% endif %}
         readinessProbe:
           httpGet:
