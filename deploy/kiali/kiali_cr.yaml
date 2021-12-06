@@ -56,6 +56,8 @@ spec:
 ##########
 # The version of the Ansible playbook to execute in order to install that version of Kiali.
 # It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
+# The only supported value today is "default".
+#
 # If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
 # Refer to this file to see where these values are defined in the master branch:
 # https://github.com/kiali/kiali-operator/tree/master/playbooks/default-supported-images.yml
