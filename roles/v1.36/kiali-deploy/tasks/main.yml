@@ -1,5 +1,5 @@
 - set_fact:
-    k8s_plugin: community.kubernetes.k8s
+    k8s_plugin: kubernetes.core.k8s
 
 - name: Get the original CR as-is for the camelCase keys and so we can update its status field
   set_fact:

@@ -7,7 +7,7 @@
 
 - ignore_errors: yes
   set_fact:
-    k8s_plugin: community.kubernetes.k8s
+    k8s_plugin: kubernetes.core.k8s
 
 - name: Get the original CR that was deleted
   ignore_errors: yes
@@ -273,7 +273,7 @@
   k8s:
     state: absent
     definition: |
-      {% for cl in query(k8s_plugin, kind='ConsoleLink', label_selector='kiali.io/home=' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + kiali_vars.deployment.namespace) %}
+      {% for cl in lookup(k8s_plugin, kind='ConsoleLink', label_selector='kiali.io/home=' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + kiali_vars.deployment.namespace) %}
       ---
       apiVersion: "{{ cl.apiVersion }}"
       kind: "{{ cl.kind }}"
