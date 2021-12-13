@@ -120,7 +120,7 @@
       - kiali_output.location is defined
   - name: There is a weird problem where the location has two '?' portions - I think its a bug. So build the URL that we know is good.
     set_fact:
-      openid_approval_endpoint: "{{ kiali_output.url | regex_replace('auth/local','approval')  }}"
+      openid_approval_endpoint: "{{ kiali_output.location | regex_replace('\\?.*\\?', '/approval?')  }}"
 
   - name: Send request to OpenID approval endpoint
     uri:
