@@ -33,7 +33,7 @@
 
   # BEGIN A SUCCESSFUL HEADER LOGIN PROCESS
 
-  - name: Step One - start
+  - name: Step one - start
     uri:
       url: "{{ proxy.url }}/oauth2/start?rd=%2F"
       return_content: yes
@@ -65,7 +65,21 @@
       that:
       - kiali_output.location is defined
 
-  - name: Step three - local login (strip some weirdness in the location URL)
+  - name: Step three - auth local request (strip some weirdness in the location URL)
+    uri:
+      url: "{{ kiali_output.location | regex_replace('\\?.+(\\/auth\\/local)', '\\1') }}"
+      return_content: yes
+      validate_certs: false
+      follow_redirects: none
+      status_code: 302
+      method: GET
+    register: kiali_output
+  - name: Assert step three
+    assert:
+      that:
+      - kiali_output.location is defined
+
+  - name: Step four - local login (strip some weirdness in the location URL)
     uri:
       url: "{{ kiali_output.location | regex_replace('\\?.+(\\/auth\\/local)', '\\1') }}"
       return_content: yes
@@ -78,14 +92,14 @@
         login: "{{ proxy.username }}"
         password: "{{ proxy.password }}"
     register: kiali_output
-  - name: Assert step three
+  - name: Assert step four
     assert:
       that:
       - kiali_output.location is defined
 
-  - name: Step four - approval (strip some weirdness off the location - why is ansible doing that?)
+  - name: Step five - approval (strip some weirdness in the location URL)
     uri:
-      url: "{{ kiali_output.location | regex_replace('\\?req.+(\\/approval)', '\\1') }}"
+      url: "{{ kiali_output.location | regex_replace('\\?.+(\\/approval)', '\\1') }}"
       headers:
         Cookie: "{{ oauth_cookie1 }}"
       return_content: yes
@@ -94,12 +108,12 @@
       status_code: 303
       method: GET
     register: kiali_output
-  - name: Assert step four
+  - name: Assert step five
     assert:
       that:
       - kiali_output.location is defined
 
-  - name: Step five - callback (strip some weirdness off the location - why is ansible doing that?)
+  - name: Step six - callback (strip some weirdness off the location - why is ansible doing that?)
     uri:
       url: "{{ kiali_output.location | regex_replace('\\?req.+(\\/oauth2)', '\\1') }}"
       headers:
@@ -110,7 +124,7 @@
       status_code: 302
       method: GET
     register: kiali_output
-  - name: Assert step four
+  - name: Assert step six
     assert:
       that:
       - kiali_output.location is defined
@@ -118,7 +132,7 @@
   - set_fact:
       oauth_cookie2: "{{ kiali_output.set_cookie | regex_replace('([^;]+).*', '\\1') }}"
 
-  - name: Step six - get bearer token
+  - name: Step seven - get bearer token
     uri:
       url: "{{ kiali_output.location }}"
       headers:
@@ -129,7 +143,7 @@
       status_code: 302
       method: GET
     register: kiali_output
-  - name: Assert step five
+  - name: Assert step seven
     assert:
       that:
       - kiali_output.authorization is defined
