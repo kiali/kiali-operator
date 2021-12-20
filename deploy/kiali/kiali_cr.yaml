@@ -1,3 +1,8 @@
+###################################################################
+##             NOTICE! THIS FILE IS GOING AWAY SOON!             ##
+## SEE THE kiali.io WEBSITE FOR CR DOCUMENTATION AND AN EXAMPLE. ##
+###################################################################
+
 apiVersion: kiali.io/v1alpha1
 kind: Kiali
 metadata:
