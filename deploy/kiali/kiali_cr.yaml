@@ -543,6 +543,10 @@ spec:
 #        custom_headers: {}
 #        health_check_url: ""
 #        is_core: true
+#        thanos_proxy:
+#          enabled: false
+#          retention_period: "7d"
+#          scrape_interval: "30s"
 #        url: ""
 #
 # **Grafana-specific settings:
