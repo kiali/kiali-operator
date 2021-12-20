@@ -244,11 +244,15 @@ kiali_defaults:
           expression:  "! healthy"
         - description: "Find: unknown nodes"
           expression:  "name = unknown"
+        - description: "Find: nodes with the 2 top rankings"
+          expression:  "rank <= 2"
         hide_options:
         - description: "Hide: healthy nodes"
           expression: "healthy"
         - description: "Hide: unknown nodes"
           expression:  "name = unknown"
+        - description: "Hide: nodes ranked lower than the 2 top rankings"
+          expression:  "rank > 2"
         traffic:
           grpc: "requests"
           http: "requests"
