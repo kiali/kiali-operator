@@ -832,13 +832,13 @@ fi
 
 # validate the CR by creating a test version of it
 if [ -n "${KIALI_CR_FILE:-}" ]; then
-  if ! cat "${KIALI_CR_FILE}" | sed 's/kind: Kiali/kind: TestKiali/g' | kubectl apply -n ${NAMESPACE} -f - ; then
+  if ! cat "${KIALI_CR_FILE}" | sed 's/kind: Kiali/kind: TestKiali/g' | sed 's/- kiali.io\/finalizer//g' | kubectl apply -n ${NAMESPACE} -f - ; then
     echo "ERROR! Validation failed for Kiali CR [${KIALI_CR_FILE}]"
   else
     echo "Kiali CR [${KIALI_CR_FILE}] is valid."
   fi
 else
-  if ! ${CLIENT_EXE} get -n "${NAMESPACE}" kiali "${KIALI_CR_NAME}" -o yaml | sed 's/kind: Kiali/kind: TestKiali/g' | kubectl apply -n "${NAMESPACE}" -f - ; then
+  if ! ${CLIENT_EXE} get -n "${NAMESPACE}" kiali "${KIALI_CR_NAME}" -o yaml | sed 's/kind: Kiali/kind: TestKiali/g' | sed 's/- kiali.io\/finalizer//g' | kubectl apply -n "${NAMESPACE}" -f - ; then
     echo "ERROR! Validation failed for Kiali CR [${KIALI_CR_NAME}] in namespace [${NAMESPACE}]"
   else
     echo "Kiali CR [${KIALI_CR_NAME}] in namespace [${NAMESPACE}] is valid."
