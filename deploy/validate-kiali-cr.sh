@@ -727,6 +727,7 @@ while [[ $# -gt 0 ]]; do
     -kcf|--kiali-cr-file)  KIALI_CR_FILE="$2"        ; shift;shift ;;
     -kcn|--kiali-cr-name)  KIALI_CR_NAME="$2"        ; shift;shift ;;
     -n|--namespace)        NAMESPACE="$2"            ; shift;shift ;;
+    -pc|--print-crd)       PRINT_CRD="$2"            ; shift;shift ;;
     -h|--help)
       cat <<HELPMSG
 
@@ -742,6 +743,9 @@ $0 [option...]
   -n|--namespace
       The namespace where the existing CR is or where the test CR will be created.
       Default: "default"
+  -pc|--print-crd
+      If true, then this script will just print the CRD used to validate. It will not validate anything.
+      Default "false"
 HELPMSG
       exit 1
       ;;
@@ -755,12 +759,24 @@ done
 # Set up some defaults
 
 : ${NAMESPACE:=default}
+: ${PRINT_CRD:=false}
+
+# If we are to print the CRD, do it now immediately and then exit. Nothing else to do.
+if [ "${PRINT_CRD}" == "true" ]; then
+  if [ -n "${KIALI_CRD_LOCATION:-}" ]; then
+    [ -f "${KIALI_CRD_LOCATION}" ] && cat "${KIALI_CRD_LOCATION}" || curl "${KIALI_CRD_LOCATION}"
+  else
+    echo "$(crd)"
+  fi
+  exit $?
+fi
 
 echo "=== SETTINGS ==="
 echo KIALI_CRD_LOCATION=${KIALI_CRD_LOCATION:-}
 echo KIALI_CR_FILE=${KIALI_CR_FILE:-}
 echo KIALI_CR_NAME=${KIALI_CR_NAME:-}
 echo NAMESPACE=${NAMESPACE}
+echo PRINT_CRD=${PRINT_CRD}
 echo "=== SETTINGS ==="
 
 # Determine what cluster client tool we are using.
