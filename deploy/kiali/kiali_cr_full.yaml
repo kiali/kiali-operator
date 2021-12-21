@@ -1,0 +1,388 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+  annotations:
+    ansible.sdk.operatorframework.io/verbosity: "1"
+spec:
+  additional_display_details:
+  - title: "API Documentation"
+    annotation: "kiali.io/api-spec"
+    icon_annotation: "kiali.io/api-type"
+
+  installation_tag: "My Kiali"
+
+  istio_namespace: "istio-system"
+
+  version: "default"
+
+  api:
+    namespaces:
+      exclude:
+      - "istio-operator"
+      - "kube-.*"
+      - "openshift.*"
+      - "ibm.*"
+      - "kiali-operator"
+      label_selector: "kiali.io/member-of=istio-system"
+
+  auth:
+    strategy: "anonymous"
+    openid:
+      additional_request_params:
+        openIdReqParam: "openIdReqParamValue"
+      allowed_domains: [ "allowed.domain" ]
+      api_proxy: ""
+      api_proxy_ca_data: ""
+      api_token: "id_token"
+      authentication_timeout: 300
+      authorization_endpoint: ""
+      client_id: ""
+      disable_rbac: false
+      http_proxy: ""
+      https_proxy: ""
+      insecure_skip_verify_tls: false
+      issuer_uri: ""
+      scopes: ["openid", "profile", "email"]
+      username_claim: "sub"
+    openshift:
+      client_id_prefix: "kiali"
+
+  custom_dashboards:
+  - name: "a-custom-dashboard"
+
+  deployment:
+    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    additional_service_yaml: { "externalName": "kiali.example.com" }
+    affinity:
+      node:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/e2e-az-name
+              operator: In
+              values:
+              - e2e-az1
+              - e2e-az2
+      pod:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: security
+              operator: In
+              values:
+              - S1
+          topologyKey: topology.kubernetes.io/zone
+      pod_anti:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: security
+                operator: In
+                values:
+                - S2
+            topologyKey: topology.kubernetes.io/zone
+    custom_secrets:
+    - name: "a-custom-secret"
+      mount: "/a-custom-secret-path"
+      optional: true
+    hpa:
+      api_version: "autoscaling/v2beta2"
+      spec:
+        maxReplicas: 2
+        minReplicas: 1
+        targetCPUUtilizationPercentage: 80
+    host_aliases:
+    - ip: "192.168.1.100"
+      hostnames:
+      - "foo.local"
+      - "bar.local"
+    image_digest: ""
+    image_name: ""
+    image_pull_policy: "IfNotPresent"
+    image_pull_secrets: [ "image.pull.secret" ]
+    image_version: ""
+    ingress:
+      additional_labels:
+        ingressAdditionalLabel: "ingressAdditionalLabelValue"
+      class_name: "nginx"
+      enabled: false
+      override_yaml:
+        metadata:
+          annotations:
+            nginx.ingress.kubernetes.io/secure-backends: "true"
+            nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+        spec:
+          rules:
+          - http:
+              paths:
+              - path: "/kiali"
+                backend:
+                  serviceName: "kiali"
+                  servicePort: 20001
+    instance_name: "kiali"
+    logger:
+      log_level: "info"
+      log_format: "text"
+      sampler_rate: "1"
+      time_field_format: "2006-01-02T15:04:05Z07:00"
+    namespace: "istio-system"
+    node_selector:
+      nodeSelector: "nodeSelectorValue"
+    pod_annotations:
+      podAnnotation: "podAnnotationValue"
+    pod_labels:
+      sidecar.istio.io/inject: "true"
+    priority_class_name: ""
+    replicas: 1
+    resources:
+      requests:
+        cpu: "10m"
+        memory: "64Mi"
+      limits:
+        memory: "1Gi"
+    secret_name: "kiali"
+    service_annotations:
+      svcAnnotation: "svcAnnotationValue"
+    service_type: "NodePort"
+    tolerations:
+    - key: "example-key"
+      operator: "Exists"
+      effect: "NoSchedule"
+    verbose_mode: "3"
+    version_label: ""
+    view_only_mode: false
+
+  extensions:
+    iter_8:
+      enabled: false
+
+  external_services:
+    custom_dashboards:
+      discovery_auto_threshold: 10
+      discovery_enabled: "auto"
+      enabled: true
+      is_core: false
+      namespace_label: "kubernetes_namespace"
+      prometheus:
+        auth:
+          ca_file: ""
+          insecure_skip_verify: false
+          password: ""
+          token: ""
+          type: "none"
+          use_kiali_token: false
+          username: ""
+        cache_duration: 10
+        cache_enabled: true
+        cache_expiration: 300
+        custom_headers:
+          customHeader1: "customHeader1Value"
+        health_check_url: ""
+        is_core: true
+        thanos_proxy:
+          enabled: false
+          retention_period: "7d"
+          scrape_interval: "30s"
+        url: ""
+    grafana:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      dashboards:
+      - name: "Istio Service Dashboard"
+        variables:
+          namespace: "var-namespace"
+          service: "var-service"
+      - name: "Istio Workload Dashboard"
+        variables:
+          namespace: "var-namespace"
+          workload: "var-workload"
+      - name: "Istio Control Plane Dashboard"
+      enabled: true
+      health_check_url: ""
+      in_cluster_url: ""
+      is_core: false
+      url: ""
+    istio:
+      component_status:
+        components:
+        - app_label: "istiod"
+          is_core: true
+          is_proxy: false
+        - app_label: "istio-ingressgateway"
+          is_core: true
+          is_proxy: true
+        - app_label: "istio-egressgateway"
+          is_core: false
+          is_proxy: true
+        enabled: true
+      config_map_name: "istio"
+      envoy_admin_local_port: 15000
+      istio_canary_revision:
+        current: "1-9-9"
+        upgrade: "1-10-2"
+      istio_identity_domain: "svc.cluster.local"
+      istio_injection_annotation: "sidecar.istio.io/inject"
+      istio_sidecar_annotation: "sidecar.istio.io/status"
+      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
+      istiod_deployment_name: "istiod"
+      istiod_pod_monitoring_port: 15014
+      root_namespace: ""
+      url_service_version: ""
+    prometheus:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      cache_duration: 10
+      cache_enabled: true
+      cache_expiration: 300
+      custom_headers:
+        customHeader1: "customHeader1Value"
+      health_check_url: ""
+      is_core: true
+      thanos_proxy:
+        enabled: false
+        retention_period: "7d"
+        scrape_interval: "30s"
+      url: ""
+    tracing:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      enabled: true
+      in_cluster_url: ""
+      is_core: false
+      namespace_selector: true
+      url: ""
+      use_grpc: true
+      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
+
+  health_config:
+    rate:
+    - namespace: ".*"
+      kind: ".*"
+      name: ".*"
+      tolerance:
+      - protocol: "http"
+        direction: ".*"
+        code: "[1234]00"
+        degraded: 5
+        failure: 10
+
+  identity:
+    cert_file: ""
+    private_key_file: ""
+
+  istio_labels:
+    app_label_name: "app"
+    injection_label_name: "istio-injection"
+    injection_label_rev:  "istio.io/rev"
+    version_label_name: "version"
+
+  kiali_feature_flags:
+    certificates_information_indicators:
+      enabled: true
+      secrets:
+      - "cacerts"
+      - "istio-ca-secret"
+    clustering:
+      enabled: true
+    istio_injection_action: true
+    istio_upgrade_action: false
+    ui_defaults:
+      graph:
+        find_options:
+        - description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+        - description: "Find: unhealthy nodes"
+          expression:  "! healthy"
+        - description: "Find: unknown nodes"
+          expression:  "name = unknown"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+        - description: "Hide: unknown nodes"
+          expression:  "name = unknown"
+        traffic:
+          grpc: "requests"
+          http: "requests"
+          tcp:  "sent"
+      metrics_per_refresh: "1m"
+      metrics_inbound:
+        aggregations:
+        - display_name: "Istio Network"
+          label: "topology_istio_io_network"
+        - display_name: "Istio Revision"
+          label: "istio_io_rev"
+      metrics_outbound:
+        aggregations:
+        - display_name: "Istio Network"
+          label: "topology_istio_io_network"
+        - display_name: "Istio Revision"
+          label: "istio_io_rev"
+      namespaces: [ "istio-system" ]
+      refresh_interval: "15s"
+    validations:
+      ignore: [ "KIA0101" ]
+
+  kubernetes_config:
+    burst: 200
+    cache_duration: 300
+    cache_enabled: true
+    cache_istio_types:
+    - "AuthorizationPolicy"
+    - "DestinationRule"
+    - "EnvoyFilter"
+    - "Gateway"
+    - "PeerAuthentication"
+    - "RequestAuthentication"
+    - "ServiceEntry"
+    - "Sidecar"
+    - "VirtualService"
+    - "WorkloadEntry"
+    - "WorkloadGroup"
+    cache_namespaces:
+    - ".*"
+    cache_token_namespace_duration: 10
+    excluded_workloads:
+    - "CronJob"
+    - "DeploymentConfig"
+    - "Job"
+    - "ReplicationController"
+    qps: 175
+
+  login_token:
+    expiration_seconds: 86400
+    signing_key: ""
+
+  server:
+    address: ""
+    audit_log: true
+    cors_allow_all: false
+    gzip_enabled: true
+    metrics_enabled: true
+    metrics_port: 9090
+    port: 20001
+    web_fqdn: ""
+    web_history_mode: ""
+    web_port: ""
+    web_root: ""
+    web_schema: ""
