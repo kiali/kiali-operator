@@ -56,14 +56,14 @@ spec:
             containerPort: {{ kiali_vars.server.port }}
         readinessProbe:
           httpGet:
-            path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
+            path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/api/healthz
             port: api-port
             scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
           initialDelaySeconds: 5
           periodSeconds: 30
         livenessProbe:
           httpGet:
-            path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
+            path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/api/healthz
             port: api-port
             scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
           initialDelaySeconds: 5

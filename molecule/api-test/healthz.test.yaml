@@ -1,5 +1,5 @@
-- name: "/healthz"
+- name: "/api/healthz"
   uri:
-    url: "{{ kiali_base_url }}/healthz"
+    url: "{{ kiali_base_url }}/api/healthz"
     return_content: no
     validate_certs: false
