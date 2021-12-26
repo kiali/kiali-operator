@@ -1,4 +1,4 @@
-- name: "/api/healthz"
+- name: "/healthz"
   uri:
     url: "{{ kiali_base_url }}/api/healthz"
     return_content: no
