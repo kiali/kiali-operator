@@ -975,6 +975,7 @@ spec:
 #  login_token:
 #
 # The token expiration in seconds.
+# This is applicable to token and header auth strategies only.
 #    ---
 #    expiration_seconds: 86400
 #
