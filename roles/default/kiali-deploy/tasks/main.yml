@@ -680,6 +680,19 @@
   # this regex is not 100% accurate, but we want to at least catch obvious errors
   - kiali_vars.api.namespaces.label_selector is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
 
+# If the signing key is not empty string, and is not of the special value secret:name:key,
+# do some validation on it's length
+- name: Validate signing key, if it is set in the CR
+  fail:
+    msg: "Signing key must be 16, 24 or 32 byte length"
+  when:
+    - kiali_vars.auth.strategy != 'anonymous'
+    - kiali_vars.login_token.signing_key != ""
+    - not(kiali_vars.login_token.signing_key | regex_search('secret:.+:.+'))
+    - kiali_vars.login_token.signing_key | length != 16
+    - kiali_vars.login_token.signing_key | length != 24
+    - kiali_vars.login_token.signing_key | length != 32
+
 # If the signing key is empty string, we need to ensure a signing key secret exists. If one does not exist, we need to generate one.
 # Note that to avoid granting to the operator the very powerful permission to CRUD all secrets in all namespaces, we always generate
 # a signing key secret with the name "kiali-signing-key" regardless of the value of kiali_vars.deployment.instance_name.
