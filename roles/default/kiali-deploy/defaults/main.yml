@@ -257,6 +257,10 @@ kiali_defaults:
           expression:  "name = unknown"
         - description: "Hide: nodes ranked lower than the 2 top rankings"
           expression:  "rank > 2"
+        settings:
+          font_label: 13
+          min_font_badge: 7
+          min_font_label: 10
         traffic:
           grpc: "requests"
           http: "requests"

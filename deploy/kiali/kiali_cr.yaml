@@ -858,6 +858,16 @@ spec:
 #        - description: "Hide: unknown nodes"
 #          expression:  "name = unknown"
 #
+# Settings that affect the graph visualization.
+# font_label: font used for node text (edge label font is determined from this value). Numeric.
+# min_font_badge: smallest effective font (zoomed font) before removing node badges. Numeric.
+# min_font_label: smallest effective node text font (zoomed font) before removing labels. Numeric.
+#        ---
+#        settings:
+#          font_label: 13
+#          min_font_badge: 7
+#          min_font_label: 10
+#
 # Traffic settings determine which rates are used to determine graph traffic. gRPC traffic is
 # measured in requests or sent/received/total messages.  HTTP traffic is measure in requests.
 # TCP traffic is measured in sent/received/total bytes.  Only request traffic supplies response
