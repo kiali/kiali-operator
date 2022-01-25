@@ -586,6 +586,16 @@ spec:
           verbs:
           - get
           - list
+        - apiGroups: ["iter8.tools"]
+          resources:
+          - experiments
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
         - apiGroups: ["authentication.k8s.io"]
           resources:
           - tokenreviews
