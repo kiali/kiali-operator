@@ -57,9 +57,6 @@ spec:
     version_label: null
     view_only_mode: null
 
-  extensions:
-    iter8: null
-
   external_services:
     custom_dashboards: null
 

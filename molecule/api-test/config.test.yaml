@@ -15,8 +15,6 @@
 - name: Assert that we were able to get the config
   assert:
     that:
-    - api_config_json.extensions is defined
-    - api_config_json.extensions.iter8 is defined
     - api_config_json.healthConfig is defined
     - api_config_json.istioAnnotations is defined
     - api_config_json.istioAnnotations.istioInjectionAnnotation is defined
