@@ -123,6 +123,16 @@ if [ -n "${KIALI_CR_NAME:-}" ]; then
   fi
 fi
 
+# Make sure we have admin rights to some cluster
+if ! ${CLIENT_EXE} get namespaces &> /dev/null ; then
+  echo "ERROR! You must be connected to/logged into a cluster"
+  exit 1
+fi
+if [ "$(${CLIENT_EXE} auth can-i create crd --all-namespaces)" != "yes" ]; then
+  echo "ERROR! You must have cluster-admin permissions"
+  exit 1
+fi
+
 # install the test CRD with the schema
 if [ -n "${KIALI_CRD_LOCATION:-}" ]; then
   if ! ${CLIENT_EXE} apply --validate=true --wait=true -f "${KIALI_CRD_LOCATION}" &> /dev/null ; then
