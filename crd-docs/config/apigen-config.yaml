@@ -6,9 +6,9 @@ source_repositories:
   short_name: kiali-operator
   commit_reference: openapi-crd-generate-api-docs
   crd_paths:
-  - crd-docs/config/crd
+  - crd-docs/crd
   cr_paths:
-  - crd-docs/docs/cr
+  - crd-docs/cr
   metadata:
     kialis.kiali.io:
       owner:

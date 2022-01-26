@@ -5,11 +5,10 @@
 #
 # This script can be used to validate a Kiali CR.
 #
-# To use this script, either "oc" or "kubectl" must be in your PATH and
-# you must be connected to the cluster where the Kiali CR is located
-# and you must have cluster-admin rights.
-#
-# This script maintains a CRD with a schema that it will use for validation.
+# To use this script, you must:
+# * Have "oc" or "kubectl"
+# * Be connected to a cluster
+# * Have cluster-admin rights
 #
 ##############################################################################
 
@@ -17,7 +16,7 @@ set -u
 
 crd() {
 SCRIPT_ROOT="$(cd "$(dirname "$0")" ; pwd -P)"
-cat "${SCRIPT_ROOT}/kiali.io_kialis.yaml" | sed 's/ name: kialis.kiali.io/ name: testkialis.kiali.io/g' | sed 's/ kind: Kiali/ kind: TestKiali/g' | sed 's/ listKind: KialiList/ listKind: TestKialiList/g' | sed 's/ plural: kialis/ plural: testkialis/g' | sed 's/ singular: kiali/ singular: testkiali/g'
+cat "${SCRIPT_ROOT}/../crd/kiali.io_kialis.yaml" | sed 's/ name: kialis.kiali.io/ name: testkialis.kiali.io/g' | sed 's/ kind: Kiali/ kind: TestKiali/g' | sed 's/ listKind: KialiList/ listKind: TestKialiList/g' | sed 's/ plural: kialis/ plural: testkialis/g' | sed 's/ singular: kiali/ singular: testkiali/g'
 }
 
 # process command line args to override environment
