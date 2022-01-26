@@ -93,6 +93,10 @@ validate: .ensure-operator-sdk-exists
 	@printf "==========\nValidating the latest version of kiali-upstream metadata\n==========\n"
 	@for d in $$(ls -1d manifests/kiali-upstream/* | sort -V | grep -v ci.yaml | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
 
+## validate-cr: Ensures the example CR is valid according to the CRD schema
+validate-cr:
+	${ROOTDIR}/crd-docs/bin/validate-kiali-cr.sh --kiali-cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_kiali.yaml
+
 ## gen-crd-doc: Generates documentation for the Kiali CR configuration
 gen-crd-doc:
 	mkdir -p ${OUTDIR}/crd-docs
