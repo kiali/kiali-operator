@@ -25,6 +25,7 @@ _CMD=""
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
+    -ce|--client-exe)      CLIENT_EXE="$2"           ; shift;shift ;;
     -crd|--crd-location)   KIALI_CRD_LOCATION="$2"   ; shift;shift ;;
     -kcf|--kiali-cr-file)  KIALI_CR_FILE="$2"        ; shift;shift ;;
     -kcn|--kiali-cr-name)  KIALI_CR_NAME="$2"        ; shift;shift ;;
@@ -35,6 +36,8 @@ while [[ $# -gt 0 ]]; do
 
 $0 [option...]
 
+  -ce|--client-exe
+      The path to the client executable. Should be a path to either a "oc" or "kubectl" executable.
   -crd|--crd-location
       The file or URL location where the Kiali CRD is. This CRD must include the schema.
       If not specified, the internally defined CRD is used.
@@ -82,17 +85,21 @@ echo PRINT_CRD=${PRINT_CRD}
 echo "=== SETTINGS ==="
 
 # Determine what cluster client tool we are using.
-if which oc &>/dev/null; then
-  CLIENT_EXE="$(which oc)"
-  echo "Using 'oc' located here: ${CLIENT_EXE}"
-else
-  if which kubectl &>/dev/null; then
-    CLIENT_EXE="$(which kubectl)"
-    echo "Using 'kubectl' located here: ${CLIENT_EXE}"
+if [ -z "${CLIENT_EXE:-}" ]; then
+  if which oc &>/dev/null; then
+    CLIENT_EXE="$(which oc)"
+    echo "Using 'oc' located here: ${CLIENT_EXE}"
   else
-    echo "ERROR! You do not have 'oc' or 'kubectl' in your PATH. Please install it and retry."
-    exit 1
+    if which kubectl &>/dev/null; then
+      CLIENT_EXE="$(which kubectl)"
+      echo "Using 'kubectl' located here: ${CLIENT_EXE}"
+    else
+      echo "ERROR! You do not have 'oc' or 'kubectl' in your PATH. Please install it and retry."
+      exit 1
+    fi
   fi
+else
+  echo "Client executable: ${CLIENT_EXE}"
 fi
 
 if [ -z "${KIALI_CR_FILE:-}" -a -z "${KIALI_CR_NAME:-}" ]; then
