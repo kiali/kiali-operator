@@ -126,12 +126,12 @@ fi
 
 # install the test CRD with the schema
 if [ -n "${KIALI_CRD_LOCATION:-}" ]; then
-  if ! ${CLIENT_EXE} apply --wait=true -f "${KIALI_CRD_LOCATION}" &> /dev/null ; then
+  if ! ${CLIENT_EXE} apply --validate=true --wait=true -f "${KIALI_CRD_LOCATION}" &> /dev/null ; then
     echo "ERROR! Failed to install the test CRD from [${KIALI_CRD_LOCATION}]"
     exit 1
   fi
 else
-  if ! echo "$(crd)" | ${CLIENT_EXE} apply --wait=true -f - &> /dev/null ; then
+  if ! echo "$(crd)" | ${CLIENT_EXE} apply --validate=true --wait=true -f - &> /dev/null ; then
     echo "ERROR! Failed to install the test CRD"
     exit 1
   fi
