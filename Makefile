@@ -96,7 +96,7 @@ validate: .ensure-operator-sdk-exists
 ## gen-crd-doc: Generates documentation for the Kiali CR configuration
 gen-crd-doc:
 	mkdir -p ${OUTDIR}/crd-docs
-	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output -v ${ROOTDIR}/crd-docs/config:/opt/crd-docs-generator/config -v ${ROOTDIR}/crd-docs/docs:/opt/crd-docs-generator/docs quay.io/giantswarm/crd-docs-generator --config /opt/crd-docs-generator/config/apigen-config.yaml
+	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output -v ${ROOTDIR}/crd-docs/config:/opt/crd-docs-generator/config -v ${ROOTDIR}/crd-docs/docs:/opt/crd-docs-generator/docs quay.io/jmazzitelli/crd-docs-generator:latest --config /opt/crd-docs-generator/config/apigen-config.yaml
 
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:

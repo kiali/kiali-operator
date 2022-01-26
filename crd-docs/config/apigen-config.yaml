@@ -5,6 +5,10 @@ source_repositories:
   organization: jmazzitelli
   short_name: kiali-operator
   commit_reference: openapi-crd-generate-api-docs
+  crd_paths:
+  - crd-docs/config/crd
+  cr_paths:
+  - crd-docs/docs/cr
   metadata:
     kialis.kiali.io:
       owner:
