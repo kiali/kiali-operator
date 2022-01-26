@@ -307,8 +307,13 @@ kiali_defaults:
     audit_log: true
     cors_allow_all: false
     gzip_enabled: true
-    metrics_enabled: true
-    metrics_port: 9090
+    observability:
+      metrics:
+        enabled: true
+        port: 9090
+      tracing:
+        collector_url: http://jaeger-collector.istio-system:14268/api/traces
+        enabled: false
     port: 20001
     web_fqdn: ""
     web_history_mode: ""

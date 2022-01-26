@@ -19,10 +19,10 @@ spec:
   - name: {{ 'http' if kiali_vars.identity.cert_file == "" else 'tcp' }}
     protocol: TCP
     port: {{ kiali_vars.server.port }}
-{% if kiali_vars.server.metrics_enabled|bool == True %}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
   - name: http-metrics
     protocol: TCP
-    port: {{ kiali_vars.server.metrics_port }}
+    port: {{ kiali_vars.server.observability.metrics.port }}
 {% endif %}
   selector:
 {% if query(k8s_plugin, kind='Service', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace) | length > 0 %}
