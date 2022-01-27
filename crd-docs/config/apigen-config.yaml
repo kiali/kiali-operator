@@ -2,9 +2,9 @@ template_path: ./apigen-crd.template
 
 source_repositories:
 - url: https://github.com/jmazzitelli/kiali-operator
-  organization: jmazzitelli
+  organization: kiali
   short_name: kiali-operator
-  commit_reference: openapi-crd-generate-api-docs
+  commit_reference: master
   crd_paths:
   - crd-docs/crd
   cr_paths:
