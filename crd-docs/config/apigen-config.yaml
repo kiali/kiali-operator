@@ -1,7 +1,7 @@
 template_path: ./apigen-crd.template
 
 source_repositories:
-- url: https://github.com/jmazzitelli/kiali-operator
+- url: https://github.com/kiali/kiali-operator
   organization: kiali
   short_name: kiali-operator
   commit_reference: master
