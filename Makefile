@@ -100,7 +100,7 @@ validate-cr:
 ## gen-crd-doc: Generates documentation for the Kiali CR configuration
 gen-crd-doc:
 	mkdir -p ${OUTDIR}/crd-docs
-	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output -v ${ROOTDIR}/crd-docs/config:/opt/crd-docs-generator/config quay.io/jmazzitelli/crd-docs-generator:latest --config /opt/crd-docs-generator/config/apigen-config.yaml
+	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output -v ${ROOTDIR}/crd-docs/config:/opt/crd-docs-generator/config quay.io/giantswarm/crd-docs-generator:0.9.0 --config /opt/crd-docs-generator/config/apigen-config.yaml
 
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:
