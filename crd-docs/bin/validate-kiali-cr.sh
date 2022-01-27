@@ -15,8 +15,16 @@
 set -u
 
 crd() {
-SCRIPT_ROOT="$(cd "$(dirname "$0")" ; pwd -P)"
-cat "${SCRIPT_ROOT}/../crd/kiali.io_kialis.yaml" | sed 's/ name: kialis.kiali.io/ name: testkialis.kiali.io/g' | sed 's/ kind: Kiali/ kind: TestKiali/g' | sed 's/ listKind: KialiList/ listKind: TestKialiList/g' | sed 's/ plural: kialis/ plural: testkialis/g' | sed 's/ singular: kiali/ singular: testkiali/g'
+  local crd_file=""
+
+  # if not specified, use the default location; otherwise, it is either a file or a URL
+  if [ -z "${KIALI_CRD_LOCATION:-}" ]; then
+    local script_root="$(cd "$(dirname "$0")" ; pwd -P)"
+    crd_file="${script_root}/../crd/kiali.io_kialis.yaml"
+  elif [ -f "${KIALI_CRD_LOCATION}" ]; then
+    crd_file="${KIALI_CRD_LOCATION}"
+  fi
+  ([ -n "${crd_file}" ] && cat "${crd_file}" || curl -sL "${KIALI_CRD_LOCATION}") | sed 's/ name: kialis.kiali.io/ name: testkialis.kiali.io/g' | sed 's/ kind: Kiali/ kind: TestKiali/g' | sed 's/ listKind: KialiList/ listKind: TestKialiList/g' | sed 's/ plural: kialis/ plural: testkialis/g' | sed 's/ singular: kiali/ singular: testkiali/g'
 }
 
 # process command line args to override environment
@@ -67,11 +75,7 @@ done
 
 # If we are to print the CRD, do it now immediately and then exit. Nothing else to do.
 if [ "${PRINT_CRD}" == "true" ]; then
-  if [ -n "${KIALI_CRD_LOCATION:-}" ]; then
-    [ -f "${KIALI_CRD_LOCATION}" ] && cat "${KIALI_CRD_LOCATION}" || curl "${KIALI_CRD_LOCATION}"
-  else
-    echo "$(crd)"
-  fi
+  echo "$(crd)"
   exit $?
 fi
 
@@ -134,16 +138,9 @@ if [ "$(${CLIENT_EXE} auth can-i create crd --all-namespaces)" != "yes" ]; then
 fi
 
 # install the test CRD with the schema
-if [ -n "${KIALI_CRD_LOCATION:-}" ]; then
-  if ! ${CLIENT_EXE} apply --validate=true --wait=true -f "${KIALI_CRD_LOCATION}" &> /dev/null ; then
-    echo "ERROR! Failed to install the test CRD from [${KIALI_CRD_LOCATION}]"
-    exit 1
-  fi
-else
-  if ! echo "$(crd)" | ${CLIENT_EXE} apply --validate=true --wait=true -f - &> /dev/null ; then
-    echo "ERROR! Failed to install the test CRD"
-    exit 1
-  fi
+if ! echo "$(crd)" | ${CLIENT_EXE} apply --validate=true --wait=true -f - &> /dev/null ; then
+  echo "ERROR! Failed to install the test CRD"
+  exit 1
 fi
 
 # wait for the test CRD to be established and then give k8s a few more seconds.
@@ -177,13 +174,7 @@ else
 fi
 
 # delete the test CRD (which deletes the test CR along with it)
-if [ -n "${KIALI_CRD_LOCATION:-}" ]; then
-  if ! ${CLIENT_EXE} delete --wait=true -f "${KIALI_CRD_LOCATION}" &> /dev/null ; then
-    echo "ERROR! Failed to delete the test CRD [${KIALI_CRD_LOCATION}]. You should remove it manually."
-  fi
-else
-  if ! echo "$(crd)" | ${CLIENT_EXE} delete --wait=true -f - &> /dev/null ; then
-    echo "ERROR! Failed to delete the test CRD"
-    exit 1
-  fi
+if ! echo "$(crd)" | ${CLIENT_EXE} delete --wait=true -f - &> /dev/null ; then
+  echo "ERROR! Failed to delete the test CRD. You should remove it manually."
+  exit 1
 fi
