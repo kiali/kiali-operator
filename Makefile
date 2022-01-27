@@ -93,6 +93,15 @@ validate: .ensure-operator-sdk-exists
 	@printf "==========\nValidating the latest version of kiali-upstream metadata\n==========\n"
 	@for d in $$(ls -1d manifests/kiali-upstream/* | sort -V | grep -v ci.yaml | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
 
+## validate-cr: Ensures the example CR is valid according to the CRD schema
+validate-cr:
+	${ROOTDIR}/crd-docs/bin/validate-kiali-cr.sh --kiali-cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_kiali.yaml
+
+## gen-crd-doc: Generates documentation for the Kiali CR configuration
+gen-crd-doc:
+	mkdir -p ${OUTDIR}/crd-docs
+	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output -v ${ROOTDIR}/crd-docs/config:/opt/crd-docs-generator/config quay.io/giantswarm/crd-docs-generator:0.9.0 --config /opt/crd-docs-generator/config/apigen-config.yaml
+
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:
 #  1. Makes sure docker is in PATH
