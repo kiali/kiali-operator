@@ -20,4 +20,6 @@ spec:
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   server:
     # start the test off with metrics disabled
-    metrics_enabled: false
+    observability:
+      metrics:
+        enabled: false
