@@ -39,4 +39,6 @@
       - kiali_configmap.kubernetes_config.burst == 200
       - kiali_configmap.kubernetes_config.excluded_workloads | length > 0
       - kiali_configmap.login_token.signing_key | length > 0
-      - kiali_configmap.server.metrics_port == 9090
+      - kiali_configmap.server.observability.metrics.port == 9090
+      - kiali_configmap.server.observability.metrics.enabled == true
+      - kiali_configmap.server.observability.tracing.enabled == false

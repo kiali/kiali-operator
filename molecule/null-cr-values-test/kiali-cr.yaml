@@ -137,8 +137,13 @@ spec:
     audit_log: null
     cors_allow_all: null
     gzip_enabled: null
-    metrics_enabled: null
-    metrics_port: null
+    observability:
+      metrics:
+        enabled: null
+        port: null
+      tracing:
+        collector_url: null
+        enabled: null
     port: null
     web_fqdn: null
     web_history_mode: null
