@@ -102,8 +102,8 @@ spec:
     ### Kiali Custom Resource Configuration Settings
 
     For quick descriptions of all the settings you can configure in the Kiali
-    Custom Resource (CR), see the file
-    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/v1.36/deploy/kiali/kiali_cr.yaml)
+    Custom Resource (CR), see
+    [the kiali.io docs](https://kiali.io/docs/configuration/kialis.kiali.io/).
 
     ## Prerequisites for enabling this Operator
 
