@@ -20,6 +20,10 @@ spec:
       openAPIV3Schema:
         type: object
         properties:
+          status:
+            description: "The processing status of this CR as reported by the Kiali operator."
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
           spec:
             description: "This is the CRD for the resources called Kiali CRs. The Kiali Operator will watch for resources of this type and when it detects a Kiali CR has been added, deleted, or modified, it will install, uninstall, and update the associated Kiali Server installation. The settings here will configure the Kiali Server as well as the Kiali Operator. All of these settings will be stored in the Kiali ConfigMap. Do not modify the ConfigMap; it will be managed by the Kiali Operator. Only modify the Kiali CR when you want to change a configuration setting."
             type: object
