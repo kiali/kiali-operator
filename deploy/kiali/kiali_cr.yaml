@@ -1016,14 +1016,16 @@ spec:
 #    ---
 #    gzip_enabled: true
 #
-# When true, the metrics endpoint will be available for Prometheus to scrape.
+# Observability section defines how you can observe Kiali itself. Metrics section defines how Prometheus
+# is to scrape the Kiali endpoint. Tracing defines how Kiali emits its own tracing data.
 #    ---
-#    metrics_enabled: true
-#
-# The port that the server will bind to in order to receive metric requests.
-# This is the port Prometheus will need to scrape when collecting metrics from Kiali.
-#    ---
-#    metrics_port: 9090
+#    observability:
+#      metrics:
+#        enabled: true
+#        port: 9090
+#      tracing:
+#        collector_url: "http://jaeger-collector.istio-system:14268/api/traces"
+#        enabled: false
 #
 # The port that the server will bind to in order to receive console and API requests.
 #    ---
