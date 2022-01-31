@@ -35,7 +35,7 @@
     uri:
       url: "{{ kiali_base_url }}/api/namespaces"
       headers:
-        Authorization: "{{ login_bearer_token }}"
+        Cookie: "{{ kiali_output.cookies_string }}"
       return_content: yes
       status_code: 401
       validate_certs: false
