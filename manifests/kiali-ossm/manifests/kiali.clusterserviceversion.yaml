@@ -102,8 +102,13 @@ spec:
     ### Kiali Custom Resource Configuration Settings
 
     For quick descriptions of all the settings you can configure in the Kiali
+<<<<<<< HEAD
     Custom Resource (CR), see
     [the kiali.io docs](https://kiali.io/docs/configuration/kialis.kiali.io/).
+=======
+    Custom Resource (CR), see the file
+    [kiali_cr.yaml](https://github.com/kiali/kiali-operator/blob/v1.46/deploy/kiali/kiali_cr.yaml)
+>>>>>>> c256fed (Add 1.46 role)
 
     ## Prerequisites for enabling this Operator
 
@@ -270,7 +275,9 @@ spec:
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_36_TAG}"
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_46_TAG}"
+                - name: RELATED_IMAGE_kiali_v1_46
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_46_TAG}"  
                 - name: RELATED_IMAGE_kiali_v1_36
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_36_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_24
