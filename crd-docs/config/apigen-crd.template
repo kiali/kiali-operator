@@ -18,7 +18,8 @@ source_repository_ref: {{ .SourceRepositoryRef }}
 <div class="crd-schema-version">
 
 {{with .ExampleCR}}
-<h3 id="crd-example-{{$versionName}}">Example CR (all values shown here are the defaults unless otherwise noted)</h3>
+<h3 id="crd-example-{{$versionName}}">Example CR</h3>
+<em>(all values shown here are the defaults unless otherwise noted)</em>
 
 ```yaml
 {{ .|raw -}}
