@@ -1,106 +1,52 @@
 ---
-title: {{ .Title }} CRD Schema Reference
-linkTitle: {{ .Title }} CRD Schema Reference
+title: {{ .Title }} CR Reference
+linkTitle: {{ .Title }} CR Reference
 description: |
 {{- if .Description }}
 {{ .Description | indent 2 }}
 {{- else }}
-  Custom resource definition (CRD) schema reference page for the {{ .Title }} CR (kind: {{ .NamePlural }}.{{ .Group }}).
+  Reference page for the {{ .Title }} CR.
   The Kiali Operator will watch for resources of this type and install Kiali according to those resources' configurations.
 {{- end }}
-weight: {{ .Weight }}
-crd:
-  name_camelcase: {{ .Title }}
-  name_plural: {{ .NamePlural }}
-  name_singular: {{ .NameSingular }}
-  group: {{ .Group }}
-  technical_name: {{ .NamePlural }}.{{ .Group }}
-  scope: {{ .Scope }}
-  source_repository: {{ .SourceRepository }}
-  source_repository_ref: {{ .SourceRepositoryRef }}
-  versions:
-{{- range .Versions }}
-    - {{ . -}}
-{{- end }}
-  topics:
-{{- with .Metadata.Topics }}
-{{- range . }}
-    - {{ . -}}
-{{- end }}
-{{- end }}
-{{- with .Metadata.Providers }}
-  providers:
-{{- range . }}
-    - {{ . -}}
-{{- end }}
-{{- end }}
-{{- with .Metadata.Deprecation }}
-  deprecation:
-{{- with .Info }}
-    info: {{ . }}
-{{- end }}
-{{- with .ReplacedBy }}
-    replaced_by:
-      full_name: {{ .FullName }}
-      short_name: {{ .ShortName }}
-{{- end }}
-{{- end }}
-layout: crd
-owner:
-{{- range .Metadata.Owners }}
-  - {{ . -}}
-{{- end }}
-aliases:
-  - /reference/cp-k8s-api/{{ .NamePlural }}.{{ .Group }}/
 technical_name: {{ .NamePlural }}.{{ .Group }}
 source_repository: {{ .SourceRepository }}
 source_repository_ref: {{ .SourceRepositoryRef }}
 ---
 
-# {{ .Title }}
-
-{{ with .Description }}
-<p class="crd-description">{{ . }}</p>
-{{ end -}}
-
-<dl class="crd-meta">
-<dt class="fullname">Full name:</dt>
-<dd class="fullname">{{ .NamePlural }}.{{ .Group }}</dd>
-<dt class="groupname">Group:</dt>
-<dd class="groupname">{{ .Group }}</dd>
-<dt class="singularname">Singular name:</dt>
-<dd class="singularname">{{ .NameSingular }}</dd>
-<dt class="pluralname">Plural name:</dt>
-<dd class="pluralname">{{ .NamePlural }}</dd>
-<dt class="scope">Scope:</dt>
-<dd class="scope">{{ .Scope }}</dd>
-<dt class="versions">Versions:</dt>
-<dd class="versions">
-{{- range .Versions -}}
-<a class="version" href="#{{.}}" title="Show schema for version {{.}}">{{.}}</a>
-{{- end -}}
-</dd>
-</dl>
-
 {{ if .VersionSchemas }}
 {{ range $versionName, $versionSchema := .VersionSchemas }}
 <div class="crd-schema-version">
-<h2 id="{{$versionName}}">Version {{$versionName}}</h2>
 
 {{with .ExampleCR}}
-<h3 id="crd-example-{{$versionName}}">Example CR (all values shown here are the defaults unless otherwise noted)</h3>
+<h3 id="example-cr">Example CR</h3>
+<em>(all values shown here are the defaults unless otherwise noted)</em>
 
 ```yaml
 {{ .|raw -}}
 ```
 {{end}}
 
-<h3 id="property-details-{{$versionName}}">Properties</h3>
+### Validating your Kiali CR
+
+A Kiali tool is available to allow you to check your own Kiali CR to ensure it is valid. Simply download [the validation script](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-kiali-cr.sh) and run it, passing in the location of the Kiali CRD you wish to validate with (e.g. the latest version is found [here](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_kialis.yaml)) and the location of your Kiali CR. You must be connected to/logged into a cluster for this validation tool to work.
+
+For example, to validate a Kiali CR named `kiali` in the namespace `istio-system` using the latest version of the Kiali CRD, run the following:
+<pre>
+bash <(curl -sL https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-kiali-cr.sh) \
+  -crd https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_kialis.yaml \
+  --kiali-cr-name kiali \
+  -n istio-system
+</pre>
+
+For additional help in using this validation tool, pass it the `--help` option.
+
+<h3 id="property-details">Properties</h3>
 
 {{ range $versionSchema.Properties }}
 <div class="property depth-{{.Depth}}">
 <div class="property-header">
-<h3 class="property-path" id="{{$versionName}}-{{.Path}}">{{.Path}}</h3>
+<hr/>
+<h3 class="property-path" id="{{.Path}}">{{.Path}}</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
@@ -121,7 +67,7 @@ source_repository_ref: {{ .SourceRepositoryRef }}
 
 
 {{ if .Annotations }}
-<h3 id="annotation-details-{{$versionName}}">Annotations</h3>
+<h3 id="annotation-details">Annotations</h3>
 
 {{ range $versionSchema.Annotations }}
 <div class="annotation">

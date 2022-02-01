@@ -182,7 +182,7 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 
 - [ ] Set the default value in link:./roles/default/kiali-deploy/defaults/main.yml[Operator default/main.yaml]
 - [ ] If adding a new top-level group or setting, add it to link:./roles/default/kiali-deploy/vars/main.yml[Operator vars/main.yaml]
-- [ ] Document the new value in the link:./crd-docs/crd/kiali.io_kialis.yaml[CRD schema] (and put the default values in the link:./crd-docs/cr/kiali.io_v1alpha1_kiali.yaml[example CR])
+- [ ] Document the new value in the link:./crd-docs/crd/kiali.io_kialis.yaml[CRD schema] (and put the default values in the link:./crd-docs/cr/kiali.io_v1alpha1_kiali.yaml[example CR]). Run `make validate-cr` in your local kiali-operator repo to ensure your changes are valid.
 - [ ] Only if appropriate (usually it is not) set the value in the `cr.spec` section of link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/values.yaml[Operator Helm Chart values.yaml]
 - [ ] Set the default value in the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/values.yaml[Server Helm Chart values.yaml]
 - [ ] Ensure each group of settings are alphabetically sorted in all the files where the new setting was added.
