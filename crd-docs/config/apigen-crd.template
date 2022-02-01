@@ -18,7 +18,7 @@ source_repository_ref: {{ .SourceRepositoryRef }}
 <div class="crd-schema-version">
 
 {{with .ExampleCR}}
-<h3 id="crd-example-{{$versionName}}">Example CR</h3>
+<h3 id="example-cr">Example CR</h3>
 <em>(all values shown here are the defaults unless otherwise noted)</em>
 
 ```yaml
@@ -40,13 +40,13 @@ bash <(curl -sL https://raw.githubusercontent.com/kiali/kiali-operator/master/cr
 
 For additional help in using this validation tool, pass it the `--help` option.
 
-<h3 id="property-details-{{$versionName}}">Properties</h3>
+<h3 id="property-details">Properties</h3>
 
 {{ range $versionSchema.Properties }}
 <div class="property depth-{{.Depth}}">
 <div class="property-header">
 <hr/>
-<h3 class="property-path" id="{{$versionName}}-{{.Path}}">{{.Path}}</h3>
+<h3 class="property-path" id="{{.Path}}">{{.Path}}</h3>
 </div>
 <div class="property-body">
 <div class="property-meta">
@@ -67,7 +67,7 @@ For additional help in using this validation tool, pass it the `--help` option.
 
 
 {{ if .Annotations }}
-<h3 id="annotation-details-{{$versionName}}">Annotations</h3>
+<h3 id="annotation-details">Annotations</h3>
 
 {{ range $versionSchema.Annotations }}
 <div class="annotation">
