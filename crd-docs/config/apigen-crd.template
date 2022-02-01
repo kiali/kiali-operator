@@ -45,6 +45,7 @@ For additional help in using this validation tool, pass it the `--help` option.
 {{ range $versionSchema.Properties }}
 <div class="property depth-{{.Depth}}">
 <div class="property-header">
+<hr/>
 <h3 class="property-path" id="{{$versionName}}-{{.Path}}">{{.Path}}</h3>
 </div>
 <div class="property-body">
