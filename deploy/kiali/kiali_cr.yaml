@@ -1,0 +1,5 @@
+# This example Kiali CR file has been replaced by:
+#   https://github.com/kiali/kiali-operator/blob/master/crd-docs/cr/kiali.io_v1alpha1_kiali.yaml
+#
+# For reference documentation on the Kiali CR, please see:
+#   https://kiali.io/docs/configuration/kialis.kiali.io/
