@@ -1,0 +1,21 @@
+- name: Switch Dex ConfigMap
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+  tasks:
+  - k8s:
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: dex
+          namespace: dex
+        spec:
+          template:
+            spec:
+              volumes:
+              - name: config
+                configMap:
+                  name: "{{ dex_configmap_name }}"

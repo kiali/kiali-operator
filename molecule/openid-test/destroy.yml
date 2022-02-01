@@ -1,0 +1,13 @@
+- name: Destroy OpenId test
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+- name: Include the base destroy play to destroy the first kiali install
+  import_playbook: ../default/destroy.yml
+
+- name: Destroy OpenId test (restore Dex configuration)
+  import_playbook: ./switch-dex-configmap.yml
+  vars:
+    dex_configmap_name: dex
