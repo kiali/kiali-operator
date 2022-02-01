@@ -25,6 +25,20 @@ source_repository_ref: {{ .SourceRepositoryRef }}
 ```
 {{end}}
 
+### Validating your Kiali CR
+
+A Kiali tool is available to allow you to check your own Kiali CR to ensure it is valid. Simply download [the validation script](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-kiali-cr.sh) and run it, passing in the location of the Kiali CRD you wish to validate with (e.g. the latest version is found [here](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_kialis.yaml)) and the location of your Kiali CR. You must be connected to/logged into a cluster for this validation tool to work.
+
+For example, to validate a Kiali CR named `kiali` in the namespace `istio-system` using the latest version of the Kiali CRD, run the following:
+<pre>
+bash <(curl -sL https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-kiali-cr.sh) \
+  -crd https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_kialis.yaml \
+  --kiali-cr-name kiali \
+  -n istio-system
+</pre>
+
+For additional help in using this validation tool, pass it the `--help` option.
+
 <h3 id="property-details-{{$versionName}}">Properties</h3>
 
 {{ range $versionSchema.Properties }}
