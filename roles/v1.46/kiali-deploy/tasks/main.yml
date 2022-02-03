@@ -78,6 +78,18 @@
 - debug:
     msg: "OPERATOR VERSION: [{{ operator_version }}]"
 
+# To remain backward compatible with some settings that have changed in later releases,
+# let's take some deprecated settings and set the current settings appropriately.
+
+- name: deployment.ingress_enabled is deprecated but if deployment.ingress.enabled is not set then use the old setting
+  set_fact:
+    kiali_vars: |
+      {% set ie=kiali_vars['deployment'].pop('ingress_enabled') %}
+      {{ kiali_vars | combine({'deployment': {'ingress': {'enabled': ie|bool }}}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.ingress_enabled is defined
+  - kiali_vars.deployment.ingress is not defined or kiali_vars.deployment.ingress.enabled is not defined
+
 # Because we are passing through some yaml directly to Kubernetes resources, we have to retain the camelCase keys.
 # All CR parameters are converted to snake_case, but the original yaml is found in the special _kiali_io_kiali param.
 # We need to copy that original yaml into our vars where appropriate to keep the camelCase.
@@ -139,14 +151,14 @@
   - kiali_vars.deployment.resources is defined
   - kiali_vars.deployment.resources | length > 0
 
-- name: Replace snake_case with camelCase in deployment.override_ingress_yaml
+- name: Replace snake_case with camelCase in deployment.ingress.override_yaml
   set_fact:
     kiali_vars: |
-      {% set a=kiali_vars['deployment'].pop('override_ingress_yaml') %}
-      {{ kiali_vars | combine({'deployment': {'override_ingress_yaml': current_cr.spec.deployment.override_ingress_yaml }}, recursive=True) }}
+      {% set a=kiali_vars['deployment']['ingress'].pop('override_yaml') %}
+      {{ kiali_vars | combine({'deployment': {'ingress': {'override_yaml': current_cr.spec.deployment.ingress.override_yaml }}}, recursive=True) }}
   when:
-  - kiali_vars.deployment.override_ingress_yaml is defined
-  - kiali_vars.deployment.override_ingress_yaml | length > 0
+  - kiali_vars.deployment.ingress.override_yaml is defined
+  - kiali_vars.deployment.ingress.override_yaml | length > 0
 
 - name: Replace snake_case with camelCase in deployment.pod_annotations
   set_fact:
@@ -193,6 +205,24 @@
   when:
   - kiali_vars.deployment.node_selector is defined
   - kiali_vars.deployment.node_selector | length > 0
+
+- name: Replace snake_case with camelCase in external_services.custom_dashboards.prometheus.custom_headers
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['custom_dashboards']['prometheus'].pop('custom_headers') %}
+      {{ kiali_vars | combine({'external_services': {'custom_dashboards': {'prometheus': {'custom_headers': current_cr.spec.external_services.custom_dashboards.prometheus.custom_headers }}}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.custom_dashboards.prometheus.custom_headers is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.custom_headers | length > 0
+
+- name: Replace snake_case with camelCase in external_services.prometheus.custom_headers
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['prometheus'].pop('custom_headers') %}
+      {{ kiali_vars | combine({'external_services': {'prometheus': {'custom_headers': current_cr.spec.external_services.prometheus.custom_headers }}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.prometheus.custom_headers is defined
+  - kiali_vars.external_services.prometheus.custom_headers | length > 0
 
 - name: Print some debug information
   vars:
@@ -276,11 +306,17 @@
   when:
   - kiali_vars.istio_namespace == ""
 
+- name: Set default root namespace
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'root_namespace': kiali_vars.istio_namespace}}}, recursive=True) }}"
+  when:
+  - kiali_vars.external_services.istio.root_namespace == ""
+
 - name: Set default Grafana in_cluster_url
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kiali_vars.istio_namespace + ':3000'}}}, recursive=True) }}"
   when:
-    kiali_vars.external_services.grafana.in_cluster_url == ""
+    kiali_vars.external_services.grafana.in_cluster_url is not defined
 
 - name: Set default Tracing in_cluster_url for Maistra
   set_fact:
@@ -288,11 +324,22 @@
   when:
     kiali_vars.external_services.tracing.in_cluster_url == "" and is_maistra
 
-- name: Set default Tracing in_cluster_url
+- name: Set default Tracing in_cluster_url for grpc consumption
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + ':16685/jaeger'}}}, recursive=True) }}"
+  when:
+  - is_maistra == False
+  - kiali_vars.external_services.tracing.in_cluster_url == ""
+  - kiali_vars.external_services.tracing.use_grpc is not defined or kiali_vars.external_services.tracing.use_grpc|bool == True
+
+- name: Set default Tracing in_cluster_url for http consumption
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + '/jaeger'}}}, recursive=True) }}"
   when:
-    kiali_vars.external_services.tracing.in_cluster_url == "" and is_maistra == False
+  - is_maistra == False
+  - kiali_vars.external_services.tracing.in_cluster_url == ""
+  - kiali_vars.external_services.tracing.use_grpc is defined
+  - kiali_vars.external_services.tracing.use_grpc|bool == False
 
 - name: Set default Istio service that provides version info (istiod service that was introduced in Istio 1.6)
   set_fact:
@@ -320,6 +367,12 @@
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'resources': res }}, recursive=True) }}"
   when:
   - kiali_vars.deployment.resources is not defined
+
+- name: Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift)
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.ingress.enabled is not defined or kiali_vars.deployment.ingress.enabled == ""
 
 - name: Set default tracing use_grpc setting
   set_fact:
@@ -368,9 +421,9 @@
 
 - name: Only allow ad-hoc kiali image when appropriate
   fail:
-    msg: "The operator is forbidden from accepting a Kiali CR that defines an ad hoc Kiali image [{{ kiali_vars.deployment.image_name }}:{{ kiali_vars.deployment.image_version }}]. Remove spec.deployment.image_name and spec.deployment.image_version from the Kiali CR."
+    msg: "The operator is forbidden from accepting a Kiali CR that defines an ad hoc Kiali image [{{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}]. Remove spec.deployment.image_name, spec.deployment.image_version, and spec.deployment.image_digest from the Kiali CR."
   when:
-  - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != ""
+  - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != "" or kiali_vars.deployment.image_digest != ""
   - lookup('env', 'ALLOW_AD_HOC_KIALI_IMAGE') | default('false', True) != "true"
 
 - name: Default the image name to a known supported image.
@@ -461,10 +514,10 @@
 # requires OAuth Client which requires a Route. So ingress must be enabled if strategy is openshift.
 - name: Ensure Ingress is Enabled if Auth Strategy is openshift
   fail:
-    msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress_enabled is false. Aborting."
+    msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress.enabled is false. Aborting."
   when:
   - kiali_vars.auth.strategy == "openshift"
-  - kiali_vars.deployment.ingress_enabled|bool == False
+  - kiali_vars.deployment.ingress.enabled|bool == False
 
 - name: Confirm the cluster can access github.com when it needs to determine the last release of Kiali
   uri:
@@ -534,13 +587,65 @@
     role_kind: "{{ 'ClusterRole' if '**' in kiali_vars.deployment.accessible_namespaces else 'Role' }}"
     role_binding_kind: "{{ 'ClusterRoleBinding' if '**' in kiali_vars.deployment.accessible_namespaces else 'RoleBinding' }}"
 
+- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterroles
+  register: can_i_create_clusterroles
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterroles
+          verb: create
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+
+- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterrolebindings
+  register: can_i_create_clusterrolebindings
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterrolebindings
+          verb: create
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+
+- fail:
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterroles"
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterroles is defined
+  - can_i_create_clusterroles.result is defined
+  - can_i_create_clusterroles.result.status is defined
+  - can_i_create_clusterroles.result.status.allowed is defined
+  - can_i_create_clusterroles.result.status.allowed == False
+
+- fail:
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterrolebindings"
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - can_i_create_clusterrolebindings is defined
+  - can_i_create_clusterrolebindings.result is defined
+  - can_i_create_clusterrolebindings.result.status is defined
+  - can_i_create_clusterrolebindings.result.status.allowed is defined
+  - can_i_create_clusterrolebindings.result.status.allowed == False
+
 - name: Find all namespaces (this is limited to what the operator has permission to see)
   set_fact:
     all_namespaces: "{{ lookup(k8s_plugin, api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
 
 - name: Determine all accessible namespaces, expanding regex expressions to matched namespaces
   set_fact:
-    all_accessible_namespaces: "{{ (all_namespaces | only_accessible_namespaces(accessible_namespaces=kiali_vars.deployment.accessible_namespaces) + [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace ]) | unique | sort }}"
+    all_accessible_namespaces: "{{ (all_namespaces | only_accessible_namespaces(accessible_namespaces=kiali_vars.deployment.accessible_namespaces) + [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
@@ -657,24 +762,28 @@
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'TRACING_PASSWORD': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
+  - kiali_vars.external_services.tracing.enabled|bool == True
   - kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for tracing token
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'TRACING_TOKEN': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
+  - kiali_vars.external_services.tracing.enabled|bool == True
   - kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for grafana password
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'GRAFANA_PASSWORD': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
+  - kiali_vars.external_services.grafana.enabled|bool == True
   - kiali_vars.external_services.grafana.auth.password | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for grafana token
   set_fact:
     kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'GRAFANA_TOKEN': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
+  - kiali_vars.external_services.grafana.enabled|bool == True
   - kiali_vars.external_services.grafana.auth.token | regex_search('secret:.+:.+')
 
 - name: Prepare environment variable for login token signing key
@@ -769,12 +878,11 @@
   vars:
     # everything to the left of the = is the name of the label we want to remove
     the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
-  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we check for its existence
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we use state=patched
   k8s:
-    state: present
+    state: patched
     definition: |
       {% for namespace in no_longer_accessible_namespaces %}
-      {% if namespace in all_namespaces %}
       ---
       apiVersion: v1
       kind: Namespace
@@ -783,7 +891,6 @@
         labels:
           {{ the_namespace_label_name }}: null
       ...
-      {% endif %}
       {% endfor %}
   when:
   - no_longer_accessible_namespaces is defined
@@ -796,7 +903,7 @@
     the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
     the_namespace_label_value: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^.*=(.*)$', '\\1') }}"
   k8s:
-    state: present
+    state: patched
     definition: |
       {% for namespace in namespaces %}
       ---
@@ -805,7 +912,7 @@
       metadata:
         name: "{{ namespace }}"
         labels:
-          {{ the_namespace_label_name }}: {{ the_namespace_label_value }}
+          {{ the_namespace_label_name }}: "{{ the_namespace_label_value }}"
       ...
       {% endfor %}
   when:

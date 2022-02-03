@@ -145,12 +145,11 @@
   vars:
     # everything to the left of the = is the name of the label we want to remove
     the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
-  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we check for its existence
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we use state=patched
   k8s:
-    state: present
+    state: patched
     definition: |
       {% for namespace in current_accessible_namespaces %}
-      {% if namespace in all_namespaces %}
       ---
       apiVersion: v1
       kind: Namespace
@@ -159,7 +158,6 @@
         labels:
           {{ the_namespace_label_name }}: null
       ...
-      {% endif %}
       {% endfor %}
   when:
   - current_accessible_namespaces is defined

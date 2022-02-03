@@ -15,9 +15,9 @@ spec:
       name: {{ kiali_vars.deployment.instance_name }}
       labels: {{ kiali_resource_metadata_labels | combine(kiali_vars.deployment.pod_labels) }}
       annotations:
-{% if kiali_vars.server.metrics_enabled|bool == True %}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
         prometheus.io/scrape: "true"
-        prometheus.io/port: "{{ kiali_vars.server.metrics_port }}"
+        prometheus.io/port: "{{ kiali_vars.server.observability.metrics.port }}"
 {% else %}
         prometheus.io/scrape: "false"
         prometheus.io/port: null
@@ -43,8 +43,12 @@ spec:
       - name: {{ n }}
 {% endfor %}
 {% endif %}
+{% if kiali_vars.deployment.host_aliases|length > 0 %}
+      hostAliases:
+        {{ kiali_vars.deployment.host_aliases | to_nice_yaml(indent=0) | trim | indent(8) }}
+{% endif %}
       containers:
-      - image: {{ kiali_vars.deployment.image_name }}:{{ kiali_vars.deployment.image_version }}
+      - image: {{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}
         imagePullPolicy: {{ kiali_vars.deployment.image_pull_policy }}
         name: kiali
         command:
@@ -59,9 +63,9 @@ spec:
         ports:
           - name: api-port
             containerPort: {{ kiali_vars.server.port }}
-{% if kiali_vars.server.metrics_enabled|bool == True %}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
           - name: http-metrics
-            containerPort: {{ kiali_vars.server.metrics_port }}
+            containerPort: {{ kiali_vars.server.observability.metrics.port }}
 {% endif %}
         readinessProbe:
           httpGet:
@@ -106,6 +110,10 @@ spec:
           mountPath: "/kiali-secret"
         - name: kiali-cabundle
           mountPath: "/kiali-cabundle"
+{% for secret in kiali_vars.deployment.custom_secrets %}
+        - name: {{ secret.name }}
+          mountPath: "{{ secret.mount }}"
+{% endfor %}
 {% if kiali_vars.deployment.resources|length > 0 %}
         resources:
           {{ kiali_vars.deployment.resources | to_nice_yaml(indent=0) | trim | indent(10) }}
@@ -129,6 +137,12 @@ spec:
       - name: kiali-cabundle
         configMap:
           name: {{ kiali_vars.deployment.instance_name }}-cabundle
+{% for secret in kiali_vars.deployment.custom_secrets %}
+      - name: {{ secret.name }}
+        secret:
+          secretName: {{ secret.name }}
+          optional: {{ secret.optional }}
+{% endfor %}
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:
 {% if kiali_vars.deployment.affinity.node|length > 0 %}

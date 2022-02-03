@@ -4,8 +4,8 @@ metadata:
   name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels: {{ kiali_vars.deployment.ingress.additional_labels | combine(kiali_resource_metadata_labels) }}
-{% if kiali_vars.deployment.override_ingress_yaml is defined and kiali_vars.deployment.override_ingress_yaml.metadata is defined and kiali_vars.deployment.override_ingress_yaml.metadata.annotations is defined %}
-  {{ kiali_vars.deployment.override_ingress_yaml.metadata | to_nice_yaml(indent=0) | trim | indent(2) }}
+{% if kiali_vars.deployment.ingress.override_yaml is defined and kiali_vars.deployment.ingress.override_yaml.metadata is defined and kiali_vars.deployment.ingress.override_yaml.metadata.annotations is defined %}
+  {{ kiali_vars.deployment.ingress.override_yaml.metadata | to_nice_yaml(indent=0) | trim | indent(2) }}
 {% else %}
   annotations:
     # For ingress-nginx versions older than 0.20.0
@@ -15,9 +15,12 @@ metadata:
     nginx.ingress.kubernetes.io/backend-protocol: "{{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}"
 {% endif %}
 spec:
-{% if kiali_vars.deployment.override_ingress_yaml is defined and kiali_vars.deployment.override_ingress_yaml.spec is defined %}
-  {{ kiali_vars.deployment.override_ingress_yaml.spec | to_nice_yaml(indent=0) | trim | indent(2) }}
+{% if kiali_vars.deployment.ingress.override_yaml is defined and kiali_vars.deployment.ingress.override_yaml.spec is defined %}
+  {{ kiali_vars.deployment.ingress.override_yaml.spec | to_nice_yaml(indent=0) | trim | indent(2) }}
 {% else %}
+{% if kiali_vars.deployment.ingress.class_name != "" %}
+  ingressClassName: {{ kiali_vars.deployment.ingress.class_name }}
+{% endif %}
   rules:
   - http:
       paths:

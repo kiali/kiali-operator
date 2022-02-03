@@ -12,7 +12,6 @@ rules:
   - configmaps
   - endpoints
   - pods/log
-  - pods/proxy
   verbs:
   - get
   - list
@@ -55,13 +54,6 @@ rules:
   - networking.istio.io
   - security.istio.io
   resources: ["*"]
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups: ["iter8.tools"]
-  resources:
-  - experiments
   verbs:
   - get
   - list
