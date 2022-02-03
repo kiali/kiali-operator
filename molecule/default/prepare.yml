@@ -100,6 +100,8 @@
       - "--set"
       - "image.pullPolicy={{ kiali.operator_image_pull_policy }}"
       - "--set"
+      - "image.pullSecrets={{ '{' + lookup('env', 'OPERATOR_IMAGE_PULL_SECRET_NAME') + '}' }}"
+      - "--set"
       - "watchNamespace={{ kiali.operator_watch_namespace }}"
       - "--set"
       - "clusterRoleCreator={{ kiali.operator_cluster_role_creator | default('true') }}"
