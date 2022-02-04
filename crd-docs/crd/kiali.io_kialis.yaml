@@ -1111,7 +1111,7 @@ spec:
                     description: "A user's login token expiration specified in seconds. This is applicable to token and header auth strategies only."
                     type: integer
                   signing_key:
-                    description: "The signing key used to generate tokens for user authentication. Because this is potentially sensitive, you have the option to store this value in a secret. If you store this signing key value in a secret, you must indicate what key in what secret by setting this value to a string in the form of `secret:<secretName>:<secretKey>`. If left as an empty string, a secret with a random signing key will be generated for you."
+                    description: "The signing key used to generate tokens for user authentication. Because this is potentially sensitive, you have the option to store this value in a secret. If you store this signing key value in a secret, you must indicate what key in what secret by setting this value to a string in the form of `secret:<secretName>:<secretKey>`. If left as an empty string, a secret with a random signing key will be generated for you. The signing key must be 16, 24 or 32 byte long."
                     type: string
 
               server:
