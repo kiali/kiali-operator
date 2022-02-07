@@ -20,11 +20,11 @@ kiali_defaults:
   api:
     namespaces:
       exclude:
-      - "istio-operator"
-      - "kube-.*"
-      - "openshift.*"
-      - "ibm.*"
-      - "kiali-operator"
+      - "^istio-operator"
+      - "^kube-.*"
+      - "^openshift.*"
+      - "^ibm.*"
+      - "^kiali-operator"
       #label_selector:
 
   auth:
