@@ -19,11 +19,11 @@ spec:
   api:
     namespaces:
       exclude:
-      - "istio-operator"
-      - "kube-.*"
-      - "openshift.*"
-      - "ibm.*"
-      - "kiali-operator"
+      - "^istio-operator"
+      - "^kube-.*"
+      - "^openshift.*"
+      - "^ibm.*"
+      - "^kiali-operator"
       # default: label_selector is undefined
       label_selector: "kiali.io/member-of=istio-system"
 
