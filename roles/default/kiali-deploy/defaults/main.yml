@@ -269,7 +269,7 @@ kiali_defaults:
       namespaces: []
       refresh_interval: "15s"
     validations:
-      ignore: []
+      ignore: ["KIA1201"]
 
   kubernetes_config:
     burst: 200
