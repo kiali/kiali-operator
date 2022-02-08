@@ -8,6 +8,7 @@ metadata:
     operatorframework.io/arch.s390x: supported
     operatorframework.io/arch.ppc64le: supported
   annotations:
+    olm.skipRange: '>=1.0.0 <${KIALI_OPERATOR_VERSION}'
     categories: Monitoring,Logging & Tracing
     certified: "false"
     containerImage: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8-operator:${KIALI_OPERATOR_VERSION}
