@@ -373,8 +373,7 @@ spec:
       namespaces: ["istio-system"]
       refresh_interval: "15s"
     validations:
-      # default: ignore is an empty list
-      ignore: ["KIA0101"]
+      ignore: ["KIA1201"]
 
   kubernetes_config:
     burst: 200
