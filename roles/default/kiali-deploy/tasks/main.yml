@@ -215,6 +215,15 @@
   - kiali_vars.external_services.custom_dashboards.prometheus.custom_headers is defined
   - kiali_vars.external_services.custom_dashboards.prometheus.custom_headers | length > 0
 
+- name: Replace snake_case with camelCase in external_services.custom_dashboards.prometheus.query_scope
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['custom_dashboards']['prometheus'].pop('query_scope') %}
+      {{ kiali_vars | combine({'external_services': {'custom_dashboards': {'prometheus': {'query_scope': current_cr.spec.external_services.custom_dashboards.prometheus.query_scope }}}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.custom_dashboards.prometheus.query_scope is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.query_scope | length > 0
+
 - name: Replace snake_case with camelCase in external_services.prometheus.custom_headers
   set_fact:
     kiali_vars: |
@@ -223,6 +232,15 @@
   when:
   - kiali_vars.external_services.prometheus.custom_headers is defined
   - kiali_vars.external_services.prometheus.custom_headers | length > 0
+
+- name: Replace snake_case with camelCase in external_services.prometheus.query_scope
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['prometheus'].pop('query_scope') %}
+      {{ kiali_vars | combine({'external_services': {'prometheus': {'query_scope': current_cr.spec.external_services.prometheus.query_scope }}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.prometheus.query_scope is defined
+  - kiali_vars.external_services.prometheus.query_scope | length > 0
 
 - name: Print some debug information
   vars:
