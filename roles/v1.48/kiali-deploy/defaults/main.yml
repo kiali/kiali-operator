@@ -1,0 +1,329 @@
+# Defaults for all user-facing Kiali settings. These are documented in kiali_cr.yaml.
+#
+# Note that these are under the main dictionary group "kiali_defaults".
+# The actual vars used by the role are found in the vars/ directory.
+# These defaults (the dictionaries under "kiali_defaults") are merged into the vars such that the values
+# below (e.g. deployment, server, etc.) are merged in rather than completely replaced by user-supplied values.
+#
+# If new groups are added to these defaults, you must remember to add the merge code to vars/main.yml.
+
+kiali_defaults:
+  installation_tag: ""
+  istio_namespace: ""
+  version: "default"
+
+  additional_display_details:
+  - title: "API Documentation"
+    annotation: "kiali.io/api-spec"
+    icon_annotation: "kiali.io/api-type"
+
+  api:
+    namespaces:
+      exclude:
+      - "^istio-operator"
+      - "^kube-.*"
+      - "^openshift.*"
+      - "^ibm.*"
+      - "^kiali-operator"
+      #label_selector:
+
+  auth:
+    openid:
+      additional_request_params: {}
+      allowed_domains: []
+      api_proxy: ""
+      api_proxy_ca_data: ""
+      api_token: "id_token"
+      authentication_timeout: 300
+      authorization_endpoint: ""
+      client_id: ""
+      disable_rbac: false
+      http_proxy: ""
+      https_proxy: ""
+      insecure_skip_verify_tls: false
+      issuer_uri: ""
+      scopes: ["openid", "profile", "email"]
+      username_claim: "sub"
+    openshift:
+      client_id_prefix: "kiali"
+    strategy: ""
+
+  custom_dashboards: []
+
+  deployment:
+    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    #additional_service_yaml:
+    affinity:
+      node: {}
+      pod: {}
+      pod_anti: {}
+    custom_secrets: []
+    host_aliases: []
+    hpa:
+      api_version: "autoscaling/v2beta2"
+      spec: {}
+    image_digest: ""
+    image_name: ""
+    image_pull_policy: "IfNotPresent"
+    image_pull_secrets: []
+    image_version: ""
+    ingress:
+      additional_labels: {}
+      class_name: "nginx"
+      #enabled:
+      #override_yaml:
+    instance_name: "kiali"
+    logger:
+      log_format: "text"
+      log_level: "info"
+      sampler_rate: "1"
+      time_field_format: "2006-01-02T15:04:05Z07:00"
+    namespace: ""
+    node_selector: {}
+    pod_annotations: {}
+    pod_labels: {}
+    priority_class_name: ""
+    replicas: 1
+    #resources:
+    secret_name: "kiali"
+    service_annotations: {}
+    #service_type: "NodePort"
+    tolerations: []
+    version_label: ""
+    view_only_mode: false
+
+  external_services:
+    custom_dashboards:
+      discovery_auto_threshold: 10
+      discovery_enabled: "auto"
+      enabled: true
+      is_core: false
+      namespace_label: ""
+      prometheus:
+        auth:
+          ca_file: ""
+          insecure_skip_verify: false
+          password: ""
+          token: ""
+          type: "none"
+          use_kiali_token: false
+          username: ""
+        cache_duration: 7
+        cache_enabled: true
+        cache_expiration: 300
+        custom_headers: {}
+        health_check_url: ""
+        is_core: true
+        thanos_proxy:
+          enabled: false
+          retention_period: "7d"
+          scrape_interval: "30s"
+        url: ""
+    grafana:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      dashboards:
+      - name: "Istio Service Dashboard"
+        variables:
+          namespace: "var-namespace"
+          service: "var-service"
+      - name: "Istio Workload Dashboard"
+        variables:
+          namespace: "var-namespace"
+          workload: "var-workload"
+      - name: "Istio Mesh Dashboard"
+      - name: "Istio Control Plane Dashboard"
+      - name: "Istio Performance Dashboard"
+      - name: "Istio Wasm Extension Dashboard"
+      enabled: true
+      health_check_url: ""
+      #in_cluster_url
+      is_core: false
+      url: ""
+    istio:
+      component_status:
+        components:
+        - app_label: "istiod"
+          is_core: true
+          is_proxy: false
+          namespace: ""
+        - app_label: "istio-ingressgateway"
+          is_core: true
+          is_proxy: true
+          namespace: ""
+        - app_label: "istio-egressgateway"
+          is_core: false
+          is_proxy: true
+          namespace: ""
+        enabled: true
+      config_map_name: "istio"
+      envoy_admin_local_port: 15000
+      #istio_canary_revision:
+        #current: prod
+        #upgrade: canary
+      istio_identity_domain: "svc.cluster.local"
+      istio_injection_annotation: "sidecar.istio.io/inject"
+      istio_sidecar_annotation: "sidecar.istio.io/status"
+      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
+      istiod_deployment_name: "istiod"
+      istiod_pod_monitoring_port: 15014
+      root_namespace: ""
+      url_service_version: ""
+    prometheus:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      cache_duration: 7
+      cache_enabled: true
+      cache_expiration: 300
+      custom_headers: {}
+      health_check_url: ""
+      is_core: true
+      thanos_proxy:
+        enabled: false
+        retention_period: "7d"
+        scrape_interval: "30s"
+      url: ""
+    tracing:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      enabled: true
+      in_cluster_url: ""
+      is_core: false
+      namespace_selector: true
+      url: ""
+      use_grpc: true
+      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
+
+  health_config:
+    rate: []
+
+  identity: {}
+    #cert_file:
+    #private_key_file:
+
+  istio_labels:
+    app_label_name: "app"
+    injection_label_name: "istio-injection"
+    injection_label_rev: "istio.io/rev"
+    version_label_name: "version"
+
+  kiali_feature_flags:
+    certificates_information_indicators:
+      enabled: true
+      secrets:
+      - cacerts
+      - istio-ca-secret
+    clustering:
+      enabled: true
+    istio_injection_action: true
+    istio_upgrade_action: false
+    ui_defaults:
+      graph:
+        find_options:
+        - description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+        - description: "Find: unhealthy nodes"
+          expression:  "! healthy"
+        - description: "Find: unknown nodes"
+          expression:  "name = unknown"
+        - description: "Find: nodes with the 2 top rankings"
+          expression:  "rank <= 2"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+        - description: "Hide: unknown nodes"
+          expression:  "name = unknown"
+        - description: "Hide: nodes ranked lower than the 2 top rankings"
+          expression:  "rank > 2"
+        settings:
+          font_label: 13
+          min_font_badge: 7
+          min_font_label: 10
+        traffic:
+          grpc: "requests"
+          http: "requests"
+          tcp: "sent"
+      metrics_inbound:
+        aggregations: []
+      metrics_outbound:
+        aggregations: []
+      metrics_per_refresh: "1m"
+      namespaces: []
+      refresh_interval: "15s"
+    validations:
+      ignore: ["KIA1201"]
+
+  kubernetes_config:
+    burst: 200
+    cache_duration: 300
+    cache_enabled: true
+    cache_istio_types:
+    - "AuthorizationPolicy"
+    - "DestinationRule"
+    - "EnvoyFilter"
+    - "Gateway"
+    - "PeerAuthentication"
+    - "RequestAuthentication"
+    - "ServiceEntry"
+    - "Sidecar"
+    - "VirtualService"
+    - "WorkloadEntry"
+    - "WorkloadGroup"
+
+    cache_namespaces:
+    - ".*"
+    cache_token_namespace_duration: 10
+    excluded_workloads:
+    - "CronJob"
+    - "DeploymentConfig"
+    - "Job"
+    - "ReplicationController"
+    qps: 175
+
+  login_token:
+    expiration_seconds: 86400
+    signing_key: ""
+
+  server:
+    address: ""
+    audit_log: true
+    cors_allow_all: false
+    gzip_enabled: true
+    observability:
+      metrics:
+        enabled: true
+        port: 9090
+      tracing:
+        collector_url: http://jaeger-collector.istio-system:14268/api/traces
+        enabled: false
+    port: 20001
+    web_fqdn: ""
+    web_history_mode: ""
+    web_port: ""
+    web_root: ""
+    web_schema: ""
+
+# These variables are outside of the kiali_defaults. Their values will be
+# auto-detected by the role and are not meant to be set by the user.
+# However, for debugging purposes you can change these.
+
+is_k8s: false
+is_openshift: false
