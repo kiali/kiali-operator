@@ -258,10 +258,10 @@ spec:
                       type: object
                       properties:
                         name:
-                          description: "The name of the secret that is to be mounted to the Kiali pod's file system."
+                          description: "The name of the secret that is to be mounted to the Kiali pod's file system. The name of the custom secret must not be the same name as one created by the operator. Names such as `kiali`, `kiali-cert-secret`, and `kiali-cabundle` should not be used as a custom secret name because the operator may want to create one with one of those names."
                           type: string
                         mount:
-                          description: "The file path location where the secret content will be mounted."
+                          description: "The file path location where the secret content will be mounted. The custom secret cannot be mounted on a path that the operator will use to mount its secrets. Make sure you set your custom secret mount path to a unique, unused path. Paths such as `/kiali-configuration`, `/kiali-cert`, `/kiali-cabundle`, and `/kiali-secret` should not be used as mount paths for custom secrets because the operator may want to use one of those paths."
                           type: string
                         optional:
                           description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This will default to 'false' if not specified."

@@ -104,8 +104,10 @@ spec:
         volumeMounts:
         - name: kiali-configuration
           mountPath: "/kiali-configuration"
+{% if kiali_vars.identity.cert_file == "/kiali-cert/tls.crt" %}
         - name: kiali-cert
           mountPath: "/kiali-cert"
+{% endif %}
         - name: kiali-secret
           mountPath: "/kiali-secret"
         - name: kiali-cabundle
@@ -124,11 +126,10 @@ spec:
       - name: kiali-configuration
         configMap:
           name: {{ kiali_vars.deployment.instance_name }}
+{% if kiali_vars.identity.cert_file == "/kiali-cert/tls.crt" %}
       - name: kiali-cert
         secret:
           secretName: {{ kiali_vars.deployment.instance_name }}-cert-secret
-{% if kiali_vars.identity.cert_file == "" %}
-          optional: true
 {% endif %}
       - name: kiali-secret
         secret:
@@ -141,7 +142,9 @@ spec:
       - name: {{ secret.name }}
         secret:
           secretName: {{ secret.name }}
+{% if secret.optional is defined %}
           optional: {{ secret.optional }}
+{% endif %}
 {% endfor %}
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:

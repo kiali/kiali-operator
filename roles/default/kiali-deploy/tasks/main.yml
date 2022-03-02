@@ -408,12 +408,12 @@
   - kiali_vars.server.web_history_mode != 'browser'
   - kiali_vars.server.web_history_mode != 'hash'
 
-- name: Set default identity cert_file based on cluster type
+- name: Set default identity cert_file based on cluster type (non-OpenShift clusters do not get a default identity)
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'identity': {'cert_file': '/kiali-cert/tls.crt' if is_openshift else ''}}, recursive=True) }}"
   when:
   - kiali_vars.identity.cert_file is not defined
-- name: Set default identity private_key_file based on cluster type
+- name: Set default identity private_key_file based on cluster type (non-OpenShift clusters do not get a default identity)
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'identity': {'private_key_file': '/kiali-cert/tls.key' if is_openshift else ''}}, recursive=True) }}"
   when:
