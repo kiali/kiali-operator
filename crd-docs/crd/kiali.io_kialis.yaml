@@ -533,7 +533,7 @@ spec:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
                       namespace_label:
-                        description: "The Prometheus label name used for identifying namespaces in metrics for custom dashboards. The default is `kubernetes_namespace` but it is quite common to use just `namespace` depending on your Prometheus configuration."
+                        description: "The Prometheus label name used for identifying namespaces in metrics for custom dashboards. The default is `namespace` but you may want to use `kubernetes_namespace` depending on your Prometheus configuration."
                         type: string
                       prometheus:
                         description: "The Prometheus configuration defined here refers to the Prometheus instance that is dedicated to fetching metrics for custom dashboards. This means you can obtain these metrics for the custom dashboards from a Prometheus instance that is different from the one that Istio uses. If this section is omitted, the same Prometheus that is used to obtain the Istio metrics will also be used for retrieving custom dashboard metrics."

@@ -184,7 +184,7 @@ spec:
       discovery_enabled: "auto"
       enabled: true
       is_core: false
-      namespace_label: "kubernetes_namespace"
+      namespace_label: "namespace"
       prometheus:
         auth:
           ca_file: ""
