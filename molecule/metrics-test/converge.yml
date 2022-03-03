@@ -21,7 +21,7 @@
       test_start_time: "{{ ansible_date_time.iso8601 }}"
 
   - set_fact:
-      prom_namespace_label: kubernetes_namespace
+      prom_namespace_label: namespace
       # This used to be needed for OSSM 2.0 but no longer for 2.1
       #prom_namespace_label: "{{ 'namespace' if is_maistra == True else 'kubernetes_namespace' }}"
 
