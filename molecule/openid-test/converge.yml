@@ -167,7 +167,7 @@
     register: kiali_output
 
   - set_fact:
-      new_kiali_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token=[^;]+).*', '\\1') }}"
+      new_kiali_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-aes=[^;]+).*', '\\1') }}"
 
   - name: With the updated login cookie, make a request that requires authentication (should now return 200)
     uri:
