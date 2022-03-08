@@ -202,6 +202,10 @@ spec:
           customHeader1: "customHeader1Value"
         health_check_url: ""
         is_core: true
+        # default: query_scope is empty
+        query_scope:
+          mesh_id: "mesh-1"
+          cluster: "cluster-east"
         thanos_proxy:
           enabled: false
           retention_period: "7d"
@@ -279,6 +283,10 @@ spec:
         customHeader1: "customHeader1Value"
       health_check_url: ""
       is_core: true
+      # default: query_scope is empty
+      query_scope:
+        mesh_id: "mesh-1"
+        cluster: "cluster-east"
       thanos_proxy:
         enabled: false
         retention_period: "7d"

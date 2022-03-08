@@ -583,6 +583,10 @@ spec:
                           is_core:
                             description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                             type: boolean
+                          query_scope:
+                            description: "A set of labelName/labelValue settings applied to every Prometheus query. Used to narrow unified metrics to only those scoped to the Kiali instance."
+                            type: object
+                            x-kubernetes-preserve-unknown-fields: true
                           thanos_proxy:
                             description: "Define this section if Prometheus is to be queried through a Thanos proxy. Kiali will still use the `url` setting to query for Prometheus metrics so make sure that is set appropriately."
                             type: object
@@ -784,6 +788,10 @@ spec:
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
+                      query_scope:
+                        description: "A set of labelName/labelValue settings applied to every Prometheus query. Used to narrow unified metrics to only those scoped to the Kiali instance."
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                       thanos_proxy:
                         description: "Define this section if Prometheus is to be queried through a Thanos proxy. Kiali will still use the `url` setting to query for Prometheus metrics so make sure that is set appropriately."
                         type: object
