@@ -135,9 +135,12 @@ spec:
           - http:
               paths:
               - path: "/kiali"
+                pathType: Prefix
                 backend:
-                  serviceName: "kiali"
-                  servicePort: 20001
+                  service:
+                    name: "kiali"
+                    port: 
+                      number: 20001
     instance_name: "kiali"
     logger:
       log_level: "info"
