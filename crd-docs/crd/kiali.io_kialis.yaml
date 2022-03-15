@@ -698,7 +698,7 @@ spec:
                                   description: "Whether the component is a native Envoy proxy."
                                   type: boolean
                                 namespace:
-                                  description: "The namespace where the component is installed. It defaults to the Istio control plane namespace (e.g. `istio_namespace` setting. Note that the Istio documentation suggests you install the ingress and egress to different namespaces, so you most likely will want to explicitly set this namespace value for the ingress and egress components."
+                                  description: "The namespace where the component is installed. It defaults to the Istio control plane namespace (e.g. `istio_namespace`) setting. Note that the Istio documentation suggests you install the ingress and egress to different namespaces, so you most likely will want to explicitly set this namespace value for the ingress and egress components."
                                   type: string
                           enabled:
                             description: "Determines if Istio component statuses will be displayed in the Kiali masthead indicator."
