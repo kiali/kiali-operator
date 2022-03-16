@@ -251,9 +251,13 @@ spec:
         - app_label: "istio-ingressgateway"
           is_core: true
           is_proxy: true
+          # default: namespace is undefined
+          namespace: istio-system
         - app_label: "istio-egressgateway"
           is_core: false
           is_proxy: true
+          # default: namespace is undefined
+          namespace: istio-system
         enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
