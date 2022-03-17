@@ -1,0 +1,17 @@
+{% for namespace in role_namespaces %}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ role_binding_kind }}
+metadata:
+  name: {{ kiali_vars.deployment.instance_name }}
+  namespace: {{ namespace }}
+  labels: {{ kiali_resource_metadata_labels }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ role_kind }}
+  name: {{ (kiali_vars.deployment.instance_name + '-viewer') if kiali_vars.deployment.view_only_mode|bool == True else kiali_vars.deployment.instance_name }}
+subjects:
+- kind: ServiceAccount
+  name: {{ kiali_vars.deployment.instance_name }}-service-account
+  namespace: {{ kiali_vars.deployment.namespace }}
+{% endfor %}
