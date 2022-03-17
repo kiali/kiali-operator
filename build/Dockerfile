@@ -2,6 +2,10 @@ ARG OPERATOR_BASE_IMAGE_VERSION
 ARG OPERATOR_BASE_IMAGE_REPO
 FROM ${OPERATOR_BASE_IMAGE_REPO}:${OPERATOR_BASE_IMAGE_VERSION}
 
+USER root
+RUN yum update -y && yum clean all
+USER ${USER_UID}
+
 COPY roles/ ${HOME}/roles/
 COPY playbooks/ ${HOME}/playbooks/
 COPY watches.yaml ${HOME}/watches.yaml
