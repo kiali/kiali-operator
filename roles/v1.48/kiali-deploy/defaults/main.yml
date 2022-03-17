@@ -114,6 +114,7 @@ kiali_defaults:
         custom_headers: {}
         health_check_url: ""
         is_core: true
+        query_scope: {}
         thanos_proxy:
           enabled: false
           retention_period: "7d"
@@ -190,6 +191,7 @@ kiali_defaults:
       custom_headers: {}
       health_check_url: ""
       is_core: true
+      query_scope: {}
       thanos_proxy:
         enabled: false
         retention_period: "7d"
