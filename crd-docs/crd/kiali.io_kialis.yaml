@@ -234,6 +234,10 @@ spec:
                       pod_anti:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                  configmap_annotations:
+                    description: "Custom annotations to be created on the Kiali ConfigMap."
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
                   custom_secrets:
                     description: |
                       Defines additional secrets that are to be mounted in the Kiali pod.

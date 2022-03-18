@@ -54,11 +54,11 @@
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
   set_fact:
-    kiali_configmap: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
+    kiali_configmap_resource: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
 
 - name: Format Configmap
   set_fact:
-    kiali_configmap: "{{ kiali_configmap.data['config.yaml'] | from_yaml }}"
+    kiali_configmap: "{{ kiali_configmap_resource.data['config.yaml'] | from_yaml }}"
 
 - name: Get Kiali Deployment
   vars:
