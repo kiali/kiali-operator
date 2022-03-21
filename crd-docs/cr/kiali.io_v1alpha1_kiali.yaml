@@ -93,6 +93,9 @@ spec:
                 values:
                 - S2
             topologyKey: topology.kubernetes.io/zone
+    # default: configmap_annotations is empty
+    configmap_annotations:
+      strategy.spinnaker.io/versioned: "false"
     # default: custom_secrets is an empty list
     custom_secrets:
     - name: "a-custom-secret"

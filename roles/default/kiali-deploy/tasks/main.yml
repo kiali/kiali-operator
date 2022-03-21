@@ -242,6 +242,15 @@
   - kiali_vars.external_services.prometheus.query_scope is defined
   - kiali_vars.external_services.prometheus.query_scope | length > 0
 
+- name: Replace snake_case with camelCase in deployment.configmap_annotations
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['deployment'].pop('configmap_annotations') %}
+      {{ kiali_vars | combine({'deployment': {'configmap_annotations': current_cr.spec.deployment.configmap_annotations }}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.configmap_annotations is defined
+  - kiali_vars.deployment.configmap_annotations | length > 0
+
 - name: Print some debug information
   vars:
     msg: |

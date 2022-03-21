@@ -4,6 +4,10 @@ metadata:
   name: {{ kiali_vars.deployment.instance_name }}
   namespace: {{ kiali_vars.deployment.namespace }}
   labels: {{ kiali_resource_metadata_labels }}
+{% if kiali_vars.deployment.configmap_annotations is defined and kiali_vars.deployment.configmap_annotations|length > 0 %}
+  annotations:
+    {{ kiali_vars.deployment.configmap_annotations | to_nice_yaml(indent=0) | trim | indent(4) }}
+{% endif %}
 data:
   config.yaml: |
     {{ kiali_vars | to_nice_yaml(indent=0) | trim | indent(4) }}
