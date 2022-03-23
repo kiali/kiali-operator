@@ -24,6 +24,22 @@
       - kiali_pod_spec.containers[0].resources.requests.memory == "64Mi"
       - kiali_pod_spec.containers[0].resources.limits.memory == "1Gi"
 
+  - name: Get Kiali Role
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: Role
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_role_raw
+
+  - name: Make sure Kiali Role has access to pods/log
+    assert:
+      that:
+      - kiali_role_raw.resources[0].rules | to_yaml is search('pods/log')
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config and deploy that new CR.
@@ -102,6 +118,10 @@
   - name: Add configmap annotation
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'configmap_annotations': {'aaa': 'bbb', 'camelCaseName': 'camelCaseValue'}}}}, recursive=True) }}"
+
+  - name: Disable log-view feature
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_feature_flags': {'disabled_features': ['log-view'] }}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -193,3 +213,19 @@
       - kiali_configmap_resource.metadata.annotations.aaa == 'bbb'
       - kiali_configmap_resource.metadata.annotations.camelCaseName == 'camelCaseValue'
       fail_msg: "Missing configmap annotations: {{ kiali_configmap_resource }}"
+
+  - name: Get Kiali Role
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: Role
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_role_raw
+
+  - name: Make sure Kiali Role has disabled access to pods/log
+    assert:
+      that:
+      - kiali_role_raw.resources[0].rules | to_yaml is not search('pods/log')

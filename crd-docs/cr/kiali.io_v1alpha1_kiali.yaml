@@ -352,6 +352,7 @@ spec:
       - "istio-ca-secret"
     clustering:
       enabled: true
+    disabled_features: []
     istio_injection_action: true
     istio_upgrade_action: false
     ui_defaults:
