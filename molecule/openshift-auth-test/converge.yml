@@ -197,19 +197,13 @@
     assert:
       that:
       - kiali_output.set_cookie is defined
-      - kiali_output.set_cookie is search("kiali-token")
+      - kiali_output.set_cookie is search("kiali-token-aes")
       - kiali_output.json.expiresOn is defined
-      - kiali_output.json.token is defined
       - kiali_output.json.username is defined
 
   - name: Get Kiali token from output
     set_fact:
-      kiali_token_from_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token=[^;]+).*', '\\1') }}"
-      kiali_token_from_json: "kiali-token={{ kiali_output.json.token }}"
-  - name: Make sure set-cookie and json Kiali tokens match
-    assert:
-      that:
-      - kiali_token_from_cookie == kiali_token_from_json
+      kiali_token_from_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-aes=[^;]+).*', '\\1') }}"
 
   - name: With the Kiali token, make a Kiali API request that requires authentication (should now return 200)
     uri:
