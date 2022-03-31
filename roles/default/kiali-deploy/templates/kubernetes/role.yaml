@@ -11,7 +11,9 @@ rules:
   resources:
   - configmaps
   - endpoints
+{% if 'logs-tab' not in kiali_vars.kiali_feature_flags.disabled_features %}
   - pods/log
+{% endif %}
   verbs:
   - get
   - list
