@@ -151,11 +151,25 @@
   - set_fact:
       bearer_token: "{{ kiali_output.authorization | regex_replace('.*Bearer (.*)', '\\1') }}"
 
+  - name: With the Bearer token, make a request to the kiali auth endpoint
+    uri:
+      url: "{{ kiali_base_url }}/api/authenticate"
+      headers:
+        Authorization: "Bearer {{ bearer_token }}"
+      method: POST
+      return_content: yes
+      validate_certs: false
+    register: kiali_output
+
+  - set_fact:
+      new_kiali_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-aes=[^;]+).*', '\\1') }}"
+
   - name: Make a request that requires authentication (should now return 200)
     uri:
       url: "{{ kiali_base_url }}/api/namespaces"
       headers:
         Authorization: "Bearer {{ bearer_token }}"
+        Cookie: "{{ new_kiali_cookie }}"
       return_content: yes
       validate_certs: false
     register: kiali_output
@@ -163,3 +177,12 @@
     assert:
       that:
       - kiali_output.json | length > 0
+
+  - name: Make a request that requires authentication without the cookie (should return 401 - unauthorized)
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      headers:
+        Authorization: "Bearer {{ bearer_token }}"
+      return_content: yes
+      validate_certs: false
+      status_code: 401
