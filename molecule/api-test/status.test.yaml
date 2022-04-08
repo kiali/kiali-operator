@@ -18,10 +18,9 @@
     - api_status_json is defined
     - api_status_json.externalServices is defined
     - api_status_json.status is defined
-    - api_status_json.status['Kiali console version'] is defined
     - api_status_json.status['Kiali container version'] is defined
-    - api_status_json.status['Kiali core commit hash'] is defined
-    - api_status_json.status['Kiali core version'] is defined
+    - api_status_json.status['Kiali commit hash'] is defined
+    - api_status_json.status['Kiali version'] is defined
     - api_status_json.status['Kiali state'] == 'running'
     - api_status_json.istioEnvironment is defined
     - api_status_json.istioEnvironment.isMaistra == is_maistra
