@@ -279,6 +279,8 @@ spec:
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_36_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_24
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_24_TAG}"
+                - name: RELATED_IMAGE_kiali_v1_12
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_12_TAG}"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
