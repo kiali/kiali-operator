@@ -506,7 +506,7 @@ spec:
               external_services:
                 description: |
                   These external service configuration settings define how to connect to the external services
-                  like Prometheus, Grafana, and Jaoeger.
+                  like Prometheus, Grafana, and Jaeger.
 
                   Regarding sensitive values in the external_services 'auth' sections:
                   Some external services configured below support an 'auth' sub-section in order to tell Kiali
