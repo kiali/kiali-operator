@@ -233,6 +233,7 @@ jobs:
         git push origin $(git rev-parse HEAD):refs/tags/$RELEASE_VERSION
         
     - name: Create release
+      if: ${{ needs.initialize.outputs.release_type != 'edge' }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
