@@ -51,7 +51,7 @@ spec:
     openshift:
       client_id_prefix: "kiali"
       redirect_url: ""
-      server_prefix: ""
+      server_prefix: "https://kubernetes.default.svc/"
       use_system_ca: false
 
   # default: custom_dashboards is an empty list
