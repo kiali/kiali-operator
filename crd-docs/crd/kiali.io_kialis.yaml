@@ -177,7 +177,15 @@ spec:
                       client_id_prefix:
                         description: "The Route resource name and OAuthClient resource name will have this value as its prefix. This value normally should never change. The installer will ensure this value is set correctly."
                         type: string
-
+                      redirect_url:
+                        description: "This URL overrides the auto-detected Kiali redirect URL which is sent to the authentication server. This is needed when Kiali is not running (and so not exposed from) the mesh cluster."
+                        type: string
+                      server_prefix:
+                        description: "The server prefix overrides the default in-cluster Openshift Kubernetes API URL. This is needed when Kiali is running outside of the mesh cluster that is used for authentication. Defaults to the in-cluster API server endpoint."
+                        type: string
+                      use_system_ca:
+                        description: "This disables the auto-detection of the cluster API CA and uses the system default CA certificates instead. Not needed when Kiali is running in the mesh cluster."
+                        type: bool
               custom_dashboards:
                 description: |
                   A list of user-defined custom monitoring dashboards that you can use to generate metrics charts
