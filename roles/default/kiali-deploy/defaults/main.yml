@@ -57,6 +57,7 @@ kiali_defaults:
 
   deployment:
     accessible_namespaces: ["**"]
+    additional_pod_containers_yaml: {}
     #additional_service_yaml:
     affinity:
       node: {}

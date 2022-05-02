@@ -236,6 +236,10 @@ spec:
                     type: array
                     items:
                       type: string
+                  additional_pod_containers_yaml:
+                    description: "Additional containers to add to the list of pod containers. Use this to add sidecar(s) to the Kiali pod. Use with care since sidecars may cause the Kiali container itself to operate incorrectly. It is up to the user who added the additional containers to ensure it works properly inside the Kiali pod; Kiali makes no guarantee additional containers will work. You can utilize container environment variables to pass data to the containers via mounted custom secrets (see spec.deployment.custom_secrets)."
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
                   additional_service_yaml:
                     description: "Additional custom yaml to add to the service definition. This is used mainly to customize the service type. For example, if the `deployment.service_type` is set to 'LoadBalancer' and you want to set the loadBalancerIP, you can do so here with: `additional_service_yaml: { 'loadBalancerIP': '78.11.24.19' }`. Another example would be if the `deployment.service_type` is set to 'ExternalName' you will need to configure the name via: `additional_service_yaml: { 'externalName': 'my.kiali.example.com' }`. A final example would be if external IPs need to be set: `additional_service_yaml: { 'externalIPs': ['80.11.12.10'] }`"
                     type: object

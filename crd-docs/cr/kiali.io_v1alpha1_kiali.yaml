@@ -62,6 +62,7 @@ spec:
   deployment:
     # default: accessible_namespaces is undefined
     accessible_namespaces: [ "my-mesh.*" ]
+    additional_pod_containers_yaml: {}
     # default: additional_service_yaml is empty
     additional_service_yaml:
       externalName: "kiali.example.com"
