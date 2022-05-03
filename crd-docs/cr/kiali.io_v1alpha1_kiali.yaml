@@ -50,6 +50,7 @@ spec:
       username_claim: "sub"
     openshift:
       client_id_prefix: "kiali"
+      custom_ca: ""
       redirect_url: ""
       server_prefix: "https://kubernetes.default.svc/"
       use_system_ca: false

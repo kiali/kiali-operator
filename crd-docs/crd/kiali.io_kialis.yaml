@@ -177,6 +177,9 @@ spec:
                       client_id_prefix:
                         description: "The Route resource name and OAuthClient resource name will have this value as its prefix. This value normally should never change. The installer will ensure this value is set correctly."
                         type: string
+                      custom_ca:
+                        description: "A custom certificate authority (in base64 encoded format) to validate the Openshift OAuth server identity. Has precedence over use_system_ca."
+                        type: string
                       redirect_url:
                         description: "This URL overrides the auto-detected Kiali redirect URL which is sent to the authentication server. This is needed when Kiali is not running (and so not exposed from) the mesh cluster."
                         type: string
