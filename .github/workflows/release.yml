@@ -65,6 +65,7 @@ jobs:
         cat <<-EOF > minor.py
         import datetime
 
+        # The base date can be any end of sprint from the past
         base = int(datetime.datetime.strptime("24/04/2022", "%d/%m/%Y").timestamp())
         now = int(datetime.datetime.now().timestamp())
 
