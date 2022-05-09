@@ -1,4 +1,4 @@
-- name: Wait for changes to take effect
+- name: Wait for Kiali CR changes to take effect
   k8s_info:
     api_version: kiali.io/v1alpha1
     kind: Kiali
@@ -9,6 +9,7 @@
   - kiali_cr_list is success
   - kiali_cr_list.resources is defined
   - kiali_cr_list.resources | length > 0
-  - kiali_cr_list | json_query('resources[*].status.conditions[?reason==`Successful`].status') | flatten | join == 'True'
+  - kiali_cr_list | json_query('resources[*].status.conditions[?message==`Awaiting next reconciliation`].status') | flatten | join == 'True'
+  - kiali_cr_list | json_query('resources[*].status.conditions[?message==`Awaiting next reconciliation`].reason') | flatten | join == 'Successful'
   retries: "{{ wait_retries }}"
   delay: 5
