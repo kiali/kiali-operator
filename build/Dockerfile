@@ -3,6 +3,8 @@ ARG OPERATOR_BASE_IMAGE_REPO
 FROM ${OPERATOR_BASE_IMAGE_REPO}:${OPERATOR_BASE_IMAGE_VERSION}
 
 USER root
+# see https://github.com/operator-framework/operator-sdk/issues/5745
+RUN yum remove -y subscription-manager python3-subscription-manager-rhsm
 RUN yum update -y && yum clean all
 USER ${USER_UID}
 
