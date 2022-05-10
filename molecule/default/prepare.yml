@@ -151,6 +151,7 @@
       tracing_config:
         in_cluster_url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
         url: "https://jaeger-query.{{ istio.control_plane_namespace }}.svc"
+        use_grpc: false # today, OSSM 2.2 and under cannot use gRPC
         auth:
           username: internal
           type: basic
