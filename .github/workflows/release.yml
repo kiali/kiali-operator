@@ -205,7 +205,7 @@ jobs:
         
         git config user.name 'kiali-bot'
 
-    - name: Update CSV information
+    - name: Create tag
       run: |
         VERSION_TO_RELEASE=${RELEASE_VERSION:1}
         DATETIME_NOW="$(date --utc +'%FT%TZ')"
@@ -222,9 +222,7 @@ jobs:
           fi
         done
 
-    - name: Create tag
-      run: |
-        git add Makefile
+        git add Makefile $CSV_UPSTREAM_FILE $CSV_COMMUNITY_FILE
         
         git commit -m "Release $RELEASE_VERSION"
         
