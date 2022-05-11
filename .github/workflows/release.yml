@@ -207,7 +207,22 @@ jobs:
 
     - name: Create tag
       run: |
-        git add Makefile
+        VERSION_TO_RELEASE=${RELEASE_VERSION:1}
+        DATETIME_NOW="$(date --utc +'%FT%TZ')"
+        CSV_UPSTREAM_FILE="./manifests/kiali-upstream/${VERSION_TO_RELEASE}/manifests/kiali.v${VERSION_TO_RELEASE}.clusterserviceversion.yaml"
+        CSV_COMMUNITY_FILE="./manifests/kiali-community/${VERSION_TO_RELEASE}/manifests/kiali.v${VERSION_TO_RELEASE}.clusterserviceversion.yaml"
+        for csv in ${CSV_UPSTREAM_FILE} ${CSV_COMMUNITY_FILE}
+        do
+          rm -f /tmp/kiali-csv-changes.txt
+          sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw /tmp/kiali-csv-changes.txt" ${csv}
+          if [ ! -s /tmp/kiali-csv-changes.txt ]; then
+            echo "It looks like 'createdAt' metadata was not changed in the new CSV file. Check the new CSV file for correctness."
+            echo CSV FILE: ${csv}
+            # we could abort the build here, but this would not be a blocker so we could just let the build keep going
+          fi
+        done
+
+        git add Makefile $CSV_UPSTREAM_FILE $CSV_COMMUNITY_FILE
         
         git commit -m "Release $RELEASE_VERSION"
         
