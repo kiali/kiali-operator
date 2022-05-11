@@ -213,7 +213,7 @@ jobs:
         CSV_COMMUNITY_FILE="./manifests/kiali-community/${VERSION_TO_RELEASE}/manifests/kiali.v${VERSION_TO_RELEASE}.clusterserviceversion.yaml"
         for csv in ${CSV_UPSTREAM_FILE} ${CSV_COMMUNITY_FILE}
         do
-          rm /tmp/kiali-csv-changes.txt
+          rm -f /tmp/kiali-csv-changes.txt
           sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw /tmp/kiali-csv-changes.txt" ${csv}
           if [ ! -s /tmp/kiali-csv-changes.txt ]; then
             echo "It looks like 'createdAt' metadata was not changed in the new CSV file. Check the new CSV file for correctness."
