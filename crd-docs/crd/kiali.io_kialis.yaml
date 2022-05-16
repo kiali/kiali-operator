@@ -276,11 +276,17 @@ spec:
                       A typical way to configure HPA for Kiali is,
                       ```
                       hpa:
-                        api_version: "autoscaling/v2beta2"
+                        api_version: "autoscaling/v2"
                         spec:
                           maxReplicas: 2
                           minReplicas: 1
-                          targetCPUUtilizationPercentage: 80
+                          metrics:
+                          - type: Resource
+                            resource:
+                              name: cpu
+                              target:
+                                type: Utilization
+                                averageUtilization: 50
                       ```
                     type: object
                     properties:
@@ -394,7 +400,7 @@ spec:
                                     backend:
                                       service
                                         name: "kiali"
-                                        port: 
+                                        port:
                                           number: 20001
                           ```
                         type: object

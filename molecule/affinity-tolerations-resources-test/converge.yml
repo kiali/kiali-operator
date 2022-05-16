@@ -64,7 +64,7 @@
       new_pod_labels:
         some.test.label/labelKeepCamelCaseFOO: labelCamelCaseValueFOO
       new_hpa:
-        api_version: autoscaling/v1
+        api_version: autoscaling/v2
         spec:
           minReplicas: 1
           maxReplicas: 1
@@ -123,7 +123,7 @@
 
   - name: Get the HPA resource that should now exist
     k8s_info:
-      api_version: autoscaling/v1
+      api_version: autoscaling/v2
       kind: HorizontalPodAutoscaler
       namespace: "{{ kiali.install_namespace }}"
       name: kiali
@@ -174,7 +174,7 @@
 
   - name: Try to obtain the HPA which should have been removed
     k8s_info:
-      api_version: autoscaling/v1
+      api_version: autoscaling/v2
       kind: HorizontalPodAutoscaler
       namespace: "{{ kiali.install_namespace }}"
       name: kiali
