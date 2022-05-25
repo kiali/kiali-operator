@@ -64,7 +64,6 @@
       new_pod_labels:
         some.test.label/labelKeepCamelCaseFOO: labelCamelCaseValueFOO
       new_hpa:
-        api_version: autoscaling/v2
         spec:
           minReplicas: 1
           maxReplicas: 1

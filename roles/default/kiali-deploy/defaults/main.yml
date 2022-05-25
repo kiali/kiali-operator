@@ -61,7 +61,7 @@ kiali_defaults:
     custom_secrets: []
     host_aliases: []
     hpa:
-      api_version: "autoscaling/v2"
+      api_version: ""
       spec: {}
     image_digest: ""
     image_name: ""
