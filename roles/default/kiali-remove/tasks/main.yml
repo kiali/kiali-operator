@@ -46,6 +46,13 @@
   debug:
     msg: "{{ msg.split('\n') }}"
 
+- name: Set default HPA api_version
+  ignore_errors: yes
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if lookup(k8s_plugin, api_version='autoscaling/v2', kind='horizontalpodautoscalers', errors='ignore') | type_debug == 'list' else 'autoscaling/v2beta2' }}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.hpa.api_version == ""
+
 # There is an edge case where a user installed Kiali with one instance name, then changed the instance name in the CR.
 # This is not allowed. When this happens, the operator will abort with an error message telling the user to uninstall Kiali.
 # The user will do this by deleting the Kiali CR, at which time this ansible role is executed.

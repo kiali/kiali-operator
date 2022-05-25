@@ -291,7 +291,7 @@ spec:
                     type: object
                     properties:
                       api_version:
-                        description: "A specific HPA API version that can be specified in case there is some HPA feature you want to use that is only supported in that specific version."
+                        description: "A specific HPA API version that can be specified in case there is some HPA feature you want to use that is only supported in that specific version. If value is an empty string, an attempt will be made to determine a valid version."
                         type: string
                       spec:
                         description: "The `spec` specified here will be placed in the created HPA resource's 'spec' section. If `spec` is left empty, no HPA resource will be created. Note that you must not specify the 'scaleTargetRef' section in `spec`; the Kiali Operator will populate that for you."

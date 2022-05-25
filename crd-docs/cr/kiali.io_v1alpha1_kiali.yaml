@@ -102,7 +102,7 @@ spec:
       mount: "/a-custom-secret-path"
       optional: true
     hpa:
-      api_version: "autoscaling/v2"
+      api_version: ""
       # default: spec is empty
       spec:
         maxReplicas: 2
