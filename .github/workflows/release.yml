@@ -76,7 +76,7 @@ jobs:
         weeks_mod3 = int(weeks_elapsed % 3)
 
         print(weeks_mod3)
-        EOF     
+        EOF
 
     - name: Determine release type
       id: release_type
@@ -238,7 +238,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release create $RELEASE_VERSION -t "Kiali $RELEASE_VERSION"
+        gh release create $RELEASE_VERSION -t "Kiali Operator $RELEASE_VERSION"
     
     - name: Create or update version branch      
       run: git push origin $(git rev-parse HEAD):refs/heads/$BRANCH_VERSION
