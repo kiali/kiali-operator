@@ -58,6 +58,14 @@ kiali_defaults:
       pod: {}
       pod_anti: {}
     configmap_annotations: {}
+    container_security_context:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop:
+          - ALL
     custom_secrets: []
     host_aliases: []
     hpa:

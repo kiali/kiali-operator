@@ -56,10 +56,7 @@ spec:
         - "-config"
         - "/kiali-configuration/config.yaml"
         securityContext:
-          allowPrivilegeEscalation: false
-          privileged: false
-          readOnlyRootFilesystem: true
-          runAsNonRoot: true
+          {{ kiali_vars.deployment.container_security_context | to_nice_yaml(indent=0) | trim | indent(10) }}
         ports:
           - name: api-port
             containerPort: {{ kiali_vars.server.port }}
