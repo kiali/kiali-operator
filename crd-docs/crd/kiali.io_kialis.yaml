@@ -1025,9 +1025,9 @@ spec:
                                 type: string
                                 enum: ["none","sent","received","total"]
                       metrics_per_refresh:
-                        description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
+                        description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
                         type: string
-                        enum: ["1m","5m","10m","30m","1h","3h","6h","12h","1d","7d","30d"]
+                        enum: ["1m","2m","5m","10m","30m","1h","3h","6h","12h","1d","7d","30d"]
                       metrics_inbound:
                         description: |
                           Additional label aggregation for inbound metric pages in detail pages.

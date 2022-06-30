@@ -271,7 +271,7 @@ kiali_defaults:
         aggregations: []
       metrics_per_refresh: "1m"
       namespaces: []
-      refresh_interval: "15s"
+      refresh_interval: "60s"
     validations:
       ignore: ["KIA1201"]
 
