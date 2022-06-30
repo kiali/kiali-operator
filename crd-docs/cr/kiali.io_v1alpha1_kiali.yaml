@@ -396,7 +396,7 @@ spec:
           label: "istio_io_rev"
       # default: namespaces is an empty list
       namespaces: ["istio-system"]
-      refresh_interval: "15s"
+      refresh_interval: "60s"
     validations:
       ignore: ["KIA1201"]
 
