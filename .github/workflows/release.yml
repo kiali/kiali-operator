@@ -38,7 +38,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.release_branch }}
+        ref: ${{ github.event.inputs.release_branch || github.ref_name }}
 
     - name: Prepare scripts
       run: |
@@ -182,13 +182,13 @@ jobs:
       RELEASE_VERSION: ${{ needs.initialize.outputs.release_version }}
       BRANCH_VERSION: ${{ needs.initialize.outputs.branch_version }}
       NEXT_VERSION: ${{ needs.initialize.outputs.next_version }}
-      RELEASE_BRANCH: ${{ github.event.inputs.release_branch }}
+      RELEASE_BRANCH: ${{ github.event.inputs.release_branch || github.ref_name }}
       OPERATOR_QUAY_TAG: ${{ needs.initialize.outputs.quay_tag }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
       with:
-        ref: ${{ github.event.inputs.release_branch }}  
+        ref: ${{ github.event.inputs.release_branch || github.ref_name }}
     
     - name: Set version to release
       run: sed -i -r "s/^VERSION \?= (.*)/VERSION \?= $RELEASE_VERSION/" Makefile
