@@ -115,10 +115,8 @@ spec:
     url: https://www.kiali.io
   - name: Blogs and Articles
     url: https://medium.com/kialiproject
-  - name: Server Source Code
+  - name: Server and UI Source Code
     url: https://github.com/kiali/kiali
-  - name: UI Source Code
-    url: https://github.com/kiali/kiali-ui
   - name: Operator Source Code
     url: https://github.com/kiali/kiali-operator
   installModes:
