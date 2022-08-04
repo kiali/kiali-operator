@@ -76,7 +76,7 @@ To get started, try to run `python -m pip install --user --upgrade -r operator/m
 
 You also must get the required Ansible collections installed. To find out the different versions of Ansible collections within the Kiali operator image, run the following:
 
-* for m in $(podman run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest find .ansible/collections/ansible_collections -name MANIFEST.json); do manifest=$(echo -n ${m} | tr --delete '\r'); echo -n "${manifest}-->"; podman run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest cat "${manifest}" | jq .collection_info.version; done
+`for m in $(podman run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest find .ansible/collections/ansible_collections -name MANIFEST.json); do manifest=$(echo -n ${m} | tr --delete '\r'); echo -n "${manifest}-->"; podman run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest cat "${manifest}" | jq .collection_info.version; done`
 
 To install these, run `ansible-galaxy collection install -r operator/requirements.yml --force-with-deps`
 
