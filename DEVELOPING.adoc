@@ -40,11 +40,25 @@ If, however, a developer needs to make changes to the operator, because the Kial
 
 ## Running the Kiali Operator
 
-### Installing the Operator in a Cluster
+### Installing the Operator in a Cluster Using The Helm Charts
 
 The link:https://github.com/kiali/kiali[Kiali git repo] has a link:https://github.com/kiali/kiali/blob/master/Makefile[Makefile] and a set of link:https://github.com/kiali/kiali/blob/master/make[Makefile targets] that are used in conjunction with the Kiali Operator so you can install and run the operator built from your local git clones. They use the Kiali Operator helm chart to install the operator, so you must link:https://github.com/kiali/kiali#building[clone the helm-chart git repo in the proper place as well].
 
 To install the operator that contains your local changes, run `make operator-create`. If you are using minikube, you will need to set the environment variable `CLUSTER_TYPE=minikube` and you need to also set `MINIKUBE_PROFILE` if your minikube profile name is not `minikube`. At this point you can create your own Kiali CR to trigger the operator to install Kiali, or use `make kiali-create` to install a sample Kiali CR for you.
+
+To remove the operator (and the Kiali CR that may have also been created), run `make operator-delete`.
+
+### Installing the Operator in a Cluster Using OLM
+
+If you have a cluster with OLM installed (e.g. OpenShift), you can test the Kiali OLM metadata by installing the Kiali operator using OLM via make.
+
+If you do not have OLM installed, you can easily install it. First determine what link:https://github.com/operator-framework/operator-lifecycle-manager/releases[OLM release] you want to install. Then simply run the command `curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s ${OLM_VERSION}`
+
+Once OLM is installed, you can install the Kiali Operator (and all the required resources such as the OLM catalog source and subscription) via `make olm-operator-create`.
+
+Once the operator is running, you can install a Kiali CR normally. One way to do this is to first create a kiali-operator namespace and run the `kiali-create` make target: `kubectl create ns kiali-operator && make kiali-create`.
+
+To remove the Kiali operator and all the other OLM resources that came with it (including the Kiali CR if you created one via the `kiali-create` target), run `make olm-operator-delete`.
 
 ### Running the Operator Playbook Without Installing in a Cluster
 
@@ -65,6 +79,10 @@ You also must get the required Ansible collections installed. To find out the di
 * for m in $(podman run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest find .ansible/collections/ansible_collections -name MANIFEST.json); do manifest=$(echo -n ${m} | tr --delete '\r'); echo -n "${manifest}-->"; podman run --rm -i -t --entrypoint "" quay.io/kiali/kiali-operator:latest cat "${manifest}" | jq .collection_info.version; done
 
 To install these, run `ansible-galaxy collection install -r operator/requirements.yml --force-with-deps`
+
+### Running the Operator Without Installing in a Cluster
+
+The previous section tells you how to run the Ansible playbook directly on your local machine. If you want to run the actual operator on your local machine in the same manner in which it runs inside the cluster (that is, within the `ansible-operator` shell process) then use the `make run-operator` make target. This will run the ansible-operator executable and point it to the operator's Ansible playbooks and roles. This operator will watch for Kiali CRs in the cluster - when it sees one, it will process it just as if it was running in the cluster. This will allow you to test the Ansible operator infrastructure as well as the operator's Ansible playbooks themselves.
 
 ### Running the Operator With the Ansible Profiler
 
