@@ -52,7 +52,7 @@ To remove the operator (and the Kiali CR that may have also been created), run `
 
 If you have a cluster with OLM installed (e.g. OpenShift), you can test the Kiali OLM metadata by installing the Kiali operator using OLM via make.
 
-If you do not have OLM installed, you can easily install it. First determine what link:https://github.com/operator-framework/operator-lifecycle-manager/releases[OLM release] you want to install. Then simply run the command `curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s ${OLM_VERSION}`. If you are running minikube, all you need to do it execute the command `hack/k8s-minikube.sh olm` and the hack script will install the latest OLM for you.
+If you do not have OLM installed, you can easily install it. First determine what link:https://github.com/operator-framework/operator-lifecycle-manager/releases[OLM release] you want to install. Then simply run the command `curl -sL https://github.com/operator-framework/operator-lifecycle-manager/releases/download/${OLM_VERSION}/install.sh | bash -s ${OLM_VERSION}`. If you are running minikube, all you need to do is execute the command `hack/k8s-minikube.sh olm` and the hack script will install the latest OLM for you.
 
 Once OLM is installed, you can install the Kiali Operator (and all the required resources such as the OLM catalog source and subscription) via `make olm-operator-create`.
 
