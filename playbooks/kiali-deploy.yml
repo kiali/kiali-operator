@@ -7,8 +7,15 @@
   - debug:
       msg: KIALI RECONCILIATION START
 
-  - debug:
+  - name: Kiali CR identification
+    debug:
       msg: "CR: name={{ ansible_operator_meta.name }}, namespace={{ ansible_operator_meta.namespace }}"
+
+  - name: Kiali CR status
+    debug:
+      msg: "{{ _kiali_io_kiali.status }}"
+    when:
+    - _kiali_io_kiali.status is defined
 
   - name: Playbook start time
     set_fact:
@@ -22,6 +29,15 @@
   - name: Determine the version that is to be installed
     set_fact:
       version: "{{ version | default(default_playbook.playbook) }}"
+
+  - name: If upgrade is in progress then run the old version-specific remove role to purge old install
+    include_role:
+      name: "{{ _kiali_io_kiali.status.specVersion }}/kiali-remove"
+    when:
+    - skip_reconciliation is not defined or skip_reconciliation == False
+    - _kiali_io_kiali.status is defined
+    - _kiali_io_kiali.status.specVersion is defined
+    - version != _kiali_io_kiali.status.specVersion
 
   - name: Determine the default supported images for all known versions
     include_vars:

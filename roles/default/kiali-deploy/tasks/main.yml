@@ -9,6 +9,7 @@
   vars:
     status_progress_message: "Initializing"
     status_vars:
+      specVersion: "{{ kiali_vars.version }}"
       deployment:
         accessibleNamespaces: null
 
@@ -101,7 +102,6 @@
         {{ kiali_vars | to_nice_yaml }}
   debug:
     msg: "{{ msg.split('\n') }}"
-  tags: test
 
 - name: Set default deployment namespace to the same namespace where the CR lives
   set_fact:
