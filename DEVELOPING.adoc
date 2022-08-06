@@ -60,6 +60,8 @@ Once the operator is running, you can install a Kiali CR normally. One way to do
 
 To remove the Kiali operator and all the other OLM resources that came with it (including the Kiali CR if you created one via the `kiali-create` target), run `make olm-operator-delete`.
 
+NOTE: By default, you will test with the latest version of the metadata. You can specify a different version by setting the `BUNDLE_VERSION` env var on the make command line. If the OC env var points to an `oc` binary, the metadata from the kiali-community will be used; otherwise, the metadata from the kiali-upstream will be used. If you instead want to test with the OSSM metadata, set the env var `OLM_BUNDLE_PACKAGE` to `kiali-ossm` on the make command line.
+
 ### Running the Operator Playbook Without Installing in a Cluster
 
 Sometimes you made simple changes to the operator playbook and roles that can be quickly tested by running the Ansible playbook on your local machine. This saves time because it doesn't require you to install the operator directly in your cluster. To do this, you must have Ansible installed (e.g. `ansible-playbook` must be in your $PATH). You can run the operator playbook via `make run-operator-playbook`. This will run both the kiali-deploy and kiali-remove playbooks so the operator will install and then immediately uninstall a Kiali Server. The operator playbook is configured via the files found in the link:dev-playbook-config[dev-playbook-config directory].
