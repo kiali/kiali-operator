@@ -9,6 +9,7 @@
   vars:
     status_progress_message: "Initializing"
     status_vars:
+      specVersion: "{{ kiali_vars.version }}"
       deployment:
         accessibleNamespaces: null
 
