@@ -38,6 +38,8 @@ bash <(curl -sL https://raw.githubusercontent.com/kiali/kiali-operator/master/cr
   -n istio-system
 </pre>
 
+If you wish to test your Kiali CR with an older version of Kiali, replace `master` in the above `-crd` option with the version you wish to test. For example, to test your Kiali CR with Kiali version v1.53.0, pass in the option `-crd https://raw.githubusercontent.com/kiali/kiali-operator/v1.53.0/crd-docs/crd/kiali.io_kialis.yaml` in the above command.
+
 For additional help in using this validation tool, pass it the `--help` option.
 
 <h3 id="property-details">Properties</h3>
