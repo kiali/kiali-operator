@@ -321,6 +321,10 @@ spec:
       in_cluster_url: ""
       is_core: false
       namespace_selector: true
+      # default: query_scope is empty
+      query_scope:
+        mesh_id: "mesh-1"
+        cluster: "cluster-east"
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]

@@ -211,6 +211,7 @@ kiali_defaults:
       in_cluster_url: ""
       is_core: false
       namespace_selector: true
+      query_scope: {}
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
