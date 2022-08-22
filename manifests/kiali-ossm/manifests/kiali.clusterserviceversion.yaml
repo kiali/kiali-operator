@@ -241,6 +241,9 @@ spec:
                   allowPrivilegeEscalation: false
                   privileged: false
                   runAsNonRoot: true
+                  capabilities:
+                    drop:
+                    - ALL
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner

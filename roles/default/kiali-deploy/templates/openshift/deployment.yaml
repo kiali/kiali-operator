@@ -60,6 +60,9 @@ spec:
           privileged: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
         ports:
           - name: api-port
             containerPort: {{ kiali_vars.server.port }}
