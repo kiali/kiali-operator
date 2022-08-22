@@ -241,6 +241,8 @@ spec:
                   allowPrivilegeEscalation: false
                   privileged: false
                   runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
                   capabilities:
                     drop:
                     - ALL
@@ -275,7 +277,7 @@ spec:
                 - name: RELATED_IMAGE_kiali_default
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_48_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_48
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_48_TAG}"  
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_48_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_36
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_36_TAG}"
                 - name: RELATED_IMAGE_kiali_v1_24
