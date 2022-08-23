@@ -862,6 +862,10 @@ spec:
                       namespace_selector:
                         description: "Kiali use this boolean to find traces with a namespace selector : service.namespace."
                         type: boolean
+                      query_scope:
+                        description: "A set of tagKey/tagValue settings applied to every Jaeger query. Used to narrow unified traces to only those scoped to the Kiali instance."
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                       url:
                         description: "The external URL that will be used to generate links to Jaeger. It must be accessible to clients external to the cluster (e.g: a browser) in order to generate valid links. If the tracing service is deployed with a QUERY_BASE_PATH set, set this URL like https://<hostname>/<QUERY_BASE_PATH>. For example, https://tracing-service:8080/jaeger"
                         type: string

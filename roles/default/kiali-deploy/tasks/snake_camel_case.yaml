@@ -158,3 +158,12 @@
   when:
   - kiali_vars.deployment.configmap_annotations is defined
   - kiali_vars.deployment.configmap_annotations | length > 0
+
+- name: Replace snake_case with camelCase in external_services.tracing.query_scope
+  set_fact:
+    kiali_vars: |
+      {% set a=kiali_vars['external_services']['tracing'].pop('query_scope') %}
+      {{ kiali_vars | combine({'external_services': {'tracing': {'query_scope': current_cr.spec.external_services.tracing.query_scope }}}, recursive=True) }}
+  when:
+  - kiali_vars.external_services.tracing.query_scope is defined
+  - kiali_vars.external_services.tracing.query_scope | length > 0
