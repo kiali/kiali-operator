@@ -125,6 +125,7 @@ spec:
     cache_istio_types: null
     cache_namespaces: null
     cache_token_namespace_duration: null
+    token_expire_duration: null
     excluded_workloads: null
     qps: null
 

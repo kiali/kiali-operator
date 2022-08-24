@@ -423,6 +423,7 @@ spec:
     cache_namespaces:
     - ".*"
     cache_token_namespace_duration: 10
+    token_expire_duration: 60
     excluded_workloads:
     - "CronJob"
     - "DeploymentConfig"
