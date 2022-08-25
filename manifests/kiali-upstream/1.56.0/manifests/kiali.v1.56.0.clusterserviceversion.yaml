@@ -207,6 +207,11 @@ spec:
                   allowPrivilegeEscalation: false
                   privileged: false
                   runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
+                  capabilities:
+                    drop:
+                    - ALL
                 volumeMounts:
                 - mountPath: /tmp/ansible-operator/runner
                   name: runner
