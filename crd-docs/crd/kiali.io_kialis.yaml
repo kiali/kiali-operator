@@ -1126,9 +1126,6 @@ spec:
                   cache_token_namespace_duration:
                     description: "This Kiali cache is a list of namespaces per user. This is typically a short-lived cache compared with the duration of the namespace cache defined by the `cache_duration` setting. This is specified in seconds."
                     type: integer
-                  token_expire_duration:
-                    description: "This is the time, in seconds, that the service account token will be refreshed"
-                    type: integer
                   excluded_workloads:
                     description: "List of controllers that won't be used for Workload calculation. Kiali queries Deployment, ReplicaSet, ReplicationController, DeploymentConfig, StatefulSet, Job and CronJob controllers. Deployment and ReplicaSet will be always queried, but ReplicationController, DeploymentConfig, StatefulSet, Job and CronJobs can be skipped from Kiali workloads queries if they are present in this list."
                     type: array
@@ -1136,6 +1133,9 @@ spec:
                       type: string
                   qps:
                     description: "The QPS value of the Kubernetes client."
+                    type: integer
+                  token_expire_duration:
+                    description: "This is the time, in seconds, that the service account token will be refreshed"
                     type: integer
 
               login_token:
