@@ -270,7 +270,9 @@ spec:
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_48_TAG}"
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_57_TAG}"
+                - name: RELATED_IMAGE_kiali_v1_57
+                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_57_TAG}"                   
                 - name: RELATED_IMAGE_kiali_v1_48
                   value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_48_TAG}"  
                 - name: RELATED_IMAGE_kiali_v1_36
