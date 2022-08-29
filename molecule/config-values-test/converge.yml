@@ -127,6 +127,10 @@
     debug:
       msg: "{{ current_kiali_cr }}"
 
+  - name: Update expire token duration to 2 minutes
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kubernetes_config': {'token_expire_duration': 120}}}, recursive=True) }}"
+
   # Deploy the new CR and wait for the CR change to take effect
 
   - import_tasks: ../common/set_kiali_cr.yml
@@ -213,6 +217,11 @@
       - kiali_configmap_resource.metadata.annotations.aaa == 'bbb'
       - kiali_configmap_resource.metadata.annotations.camelCaseName == 'camelCaseValue'
       fail_msg: "Missing configmap annotations: {{ kiali_configmap_resource }}"
+
+  - name: Make sure token expire duration is 2 minutes
+    assert:
+      that:
+        - kiali_configmap.kubernetes_config.token_expire_duration == 120
 
   - name: Get Kiali Role
     vars:
