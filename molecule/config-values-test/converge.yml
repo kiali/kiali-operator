@@ -123,6 +123,19 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_feature_flags': {'disabled_features': ['logs-tab'] }}}, recursive=True) }}"
 
+  - name: Change security context - turn off readOnlyRootFilesystem
+    vars:
+      security_context_override:
+        allowPrivilegeEscalation: false
+        privileged: false
+        readOnlyRootFilesystem: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+          - ALL
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'security_context_override': security_context_override}}}, recursive=True) }}"
+
   - name: The new Kiali CR to be tested
     debug:
       msg: "{{ current_kiali_cr }}"
@@ -229,3 +242,14 @@
     assert:
       that:
       - kiali_role_raw.resources[0].rules | to_yaml is not search('pods/log')
+
+  - name: Make sure the security context was overridden and as expected
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_pod_spec.containers[0].securityContext.readOnlyRootFilesystem == false
+      - kiali_pod_spec.containers[0].securityContext.allowPrivilegeEscalation == false
+      - kiali_pod_spec.containers[0].securityContext.privileged == false
+      - kiali_pod_spec.containers[0].securityContext.runAsNonRoot == true
+      - kiali_pod_spec.containers[0].securityContext.capabilities.drop | length > 0
