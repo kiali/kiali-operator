@@ -87,7 +87,7 @@ kiali_defaults:
     replicas: 1
     #resources:
     secret_name: "kiali"
-    security_context_override: {}
+    security_context: {}
     service_annotations: {}
     #service_type: "NodePort"
     tolerations: []

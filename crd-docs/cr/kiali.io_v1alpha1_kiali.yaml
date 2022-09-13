@@ -176,7 +176,7 @@ spec:
       limits:
         memory: "1Gi"
     secret_name: "kiali"
-    security_context_override: {}
+    security_context: {}
     # default: service_annotations is empty
     service_annotations:
       svcAnnotation: "svcAnnotationValue"

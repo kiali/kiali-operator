@@ -56,9 +56,10 @@ spec:
         - "-config"
         - "/kiali-configuration/config.yaml"
         securityContext:
-{% if kiali_vars.deployment.security_context_override|length > 0 %}
-          {{ kiali_vars.deployment.security_context_override | to_nice_yaml(indent=0) | trim | indent(10) }}
-{% else %}
+{% if kiali_vars.deployment.security_context|length > 0 %}
+          {{ kiali_vars.deployment.security_context | to_nice_yaml(indent=0) | trim | indent(10) }}
+{% endif %}
+{% if kiali_vars.deployment.security_context|length == 0 or lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') != "true" %}
           allowPrivilegeEscalation: false
           privileged: false
           readOnlyRootFilesystem: true

@@ -479,8 +479,8 @@ spec:
                   secret_name:
                     description: "The name of a secret used by the Kiali. This secret is optionally used when configuring the OpenID authentication strategy. Consult the OpenID docs for more information at https://kiali.io/docs/configuration/authentication/openid/"
                     type: string
-                  security_context_override:
-                    description: "Custom security context to be placed on the server pod. The entire security context on the pod will be the value of this setting."
+                  security_context:
+                    description: "Custom security context to be placed on the server container. The entire security context on the container will be the value of this setting if the operator is configured to allow it. Note that, as a security measure, a cluster admin may have configured the Kiali operator to not allow portions of this override setting - in this case you can specify additional security context settings but you cannot replace existing, default ones."
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   service_annotations:

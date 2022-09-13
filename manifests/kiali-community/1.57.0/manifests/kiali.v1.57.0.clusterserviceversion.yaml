@@ -230,6 +230,8 @@ spec:
                   value: "false"
                 - name: ALLOW_AD_HOC_KIALI_IMAGE
                   value: "false"
+                - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
+                  value: "false"
                 - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
                   value: "100"
                 - name: ANSIBLE_DEBUG_LOGS

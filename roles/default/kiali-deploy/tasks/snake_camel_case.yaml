@@ -168,11 +168,11 @@
   - kiali_vars.external_services.tracing.query_scope is defined
   - kiali_vars.external_services.tracing.query_scope | length > 0
 
-- name: Replace snake_case with camelCase in deployment.security_context_override
+- name: Replace snake_case with camelCase in deployment.security_context
   set_fact:
     kiali_vars: |
-      {% set a=kiali_vars['deployment'].pop('security_context_override') %}
-      {{ kiali_vars | combine({'deployment': {'security_context_override': current_cr.spec.deployment.security_context_override }}, recursive=True) }}
+      {% set a=kiali_vars['deployment'].pop('security_context') %}
+      {{ kiali_vars | combine({'deployment': {'security_context': current_cr.spec.deployment.security_context}}, recursive=True) }}
   when:
-  - kiali_vars.deployment.security_context_override is defined
-  - kiali_vars.deployment.security_context_override | length > 0
+  - kiali_vars.deployment.security_context is defined
+  - kiali_vars.deployment.security_context | length > 0
