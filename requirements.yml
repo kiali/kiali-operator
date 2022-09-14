@@ -9,19 +9,19 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.9 \
+#   quay.io/openshift/origin-ansible-operator:4.11 \
 #   ls /opt/ansible/.ansible/collections/ansible_collections
 #
 # To determine the version of a specific collection, look at the MANIFEST.json:
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.9 \
+#   quay.io/openshift/origin-ansible-operator:4.11 \
 #   cat /opt/ansible/.ansible/collections/ansible_collections/kubernetes/core/MANIFEST.json | grep version
 
 collections:
 - name: kubernetes.core
-  version: 2.1.1
+  version: 2.3.1
 - name: operator_sdk.util
-  version: 0.2.0
+  version: 0.4.0
 
