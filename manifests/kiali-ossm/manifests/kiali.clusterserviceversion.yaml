@@ -12,7 +12,7 @@ metadata:
     olm.skipRange: '>=1.0.0 <${KIALI_OPERATOR_VERSION}'
     categories: Monitoring,Logging & Tracing
     certified: "false"
-    containerImage: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-operator:${KIALI_OPERATOR_VERSION}
+    containerImage: ${KIALI_OPERATOR_REGISTRY}
     capabilities: Deep Insights
     support: Red Hat
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
@@ -232,7 +232,7 @@ spec:
               serviceAccountName: kiali-operator
               containers:
               - name: operator
-                image: registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-operator${KIALI_OPERATOR_TAG}
+                image: ${KIALI_OPERATOR_REGISTRY}
                 imagePullPolicy: "IfNotPresent"
                 args:
                 - "--zap-log-level=info"
@@ -275,15 +275,15 @@ spec:
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali${KIALI_1_57_TAG}"
+                  value: "${KIALI_1_57}"
                 - name: RELATED_IMAGE_kiali_v1_57
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali${KIALI_1_57_TAG}"   
+                  value: "${KIALI_1_57}"   
                 - name: RELATED_IMAGE_kiali_v1_48
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_48_TAG}"
+                  value: "${KIALI_1_48}"
                 - name: RELATED_IMAGE_kiali_v1_36
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_36_TAG}"
+                  value: "${KIALI_1_36}"
                 - name: RELATED_IMAGE_kiali_v1_24
-                  value: "registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-rhel8${KIALI_1_24_TAG}"
+                  value: "${KIALI_1_24}"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
