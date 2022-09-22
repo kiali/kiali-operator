@@ -30,6 +30,8 @@ spec:
       enabled: true
       in_cluster_url: https://grafana.${NAMESPACE}.svc:3000
       url: https://grafana-${NAMESPACE}.${ROUTER_HOSTNAME}
+    istio:
+      istiod_deployment_name: "istiod-custom"
     prometheus:
       auth:
         password: ${KIALI_EXTERNAL_SERVICES_PASSWORD}
