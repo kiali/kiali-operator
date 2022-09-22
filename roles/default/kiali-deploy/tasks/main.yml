@@ -212,7 +212,7 @@
 
 - name: Set default Istio service that provides version info (istiod service that was introduced in Istio 1.6)
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://istiod.' + kiali_vars.istio_namespace + ':15014/version'}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://' + kiali_vars.external_services.istio.istiod_deployment_name + '.' + kiali_vars.istio_namespace + ':15014/version'}}}, recursive=True) }}"
   when:
   - kiali_vars.external_services.istio.url_service_version == ""
 
