@@ -11,10 +11,10 @@
   - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
-  - name: Make sure label_selector is not set since its default is nil when accessible namespaces is **
+  - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector is not defined
+      - kiali_configmap.api.namespaces.label_selector_include is not defined
 
   # change to accessible_namespaces to a fixed list of namespaces
   - k8s:
@@ -46,16 +46,16 @@
   - import_tasks: ../asserts/accessible_namespaces_equals.yml
     vars:
       namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianothertestns' ]
-  - name: "Make sure label_selector is set properly"
+  - name: "Make sure label_selector_include is set properly"
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector == "kiali.io/member-of={{ istio.control_plane_namespace }}"
+      - kiali_configmap.api.namespaces.label_selector_include == "kiali.io/member-of={{ istio.control_plane_namespace }}"
 
   - name: Make sure the new label exists, but didn't overwrite any existing labels
     vars:
       # Use query - it is the only way to ensure a list is returned; for some reason, lookup/wantList=true is not working
       namespacesWithCustomLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector='customLabel=test') }}"
-      namespacesWithKialiLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector) }}"
+      namespacesWithKialiLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector_include) }}"
     assert:
       that:
       - namespacesWithCustomLabel | length == 1
@@ -87,7 +87,7 @@
   - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
-  - name: Make sure label_selector is not set since its default is nil when accessible namespaces is **
+  - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector is not defined
+      - kiali_configmap.api.namespaces.label_selector_include is not defined
