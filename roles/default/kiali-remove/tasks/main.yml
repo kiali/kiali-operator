@@ -141,7 +141,7 @@
 - name: Find currently configured label selector
   ignore_errors: yes
   set_fact:
-    current_label_selector: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('api.namespaces.label_selector') }}"
+    current_label_selector_include: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('api.namespaces.label_selector_include') }}"
   when:
   - current_configmap is defined
   - current_configmap.data is defined
@@ -151,7 +151,7 @@
   ignore_errors: yes
   vars:
     # everything to the left of the = is the name of the label we want to remove
-    the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
+    the_namespace_label_name: "{{ current_label_selector_include | regex_replace('^(.*)=.*$', '\\1') }}"
   # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we use state=patched
   k8s:
     state: patched
@@ -169,7 +169,7 @@
   when:
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
-  - current_label_selector is defined
+  - current_label_selector_include is defined
 
 - name: Delete Kiali cluster roles
   ignore_errors: yes
