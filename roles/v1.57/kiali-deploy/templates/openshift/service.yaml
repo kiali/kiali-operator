@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ kiali_vars.deployment.instance_name }}
+  namespace: {{ kiali_vars.deployment.namespace }}
+  labels: {{ kiali_resource_metadata_labels }}
+  annotations:
+    service.beta.openshift.io/serving-cert-secret-name: {{ kiali_vars.deployment.instance_name }}-cert-secret
+{% if kiali_vars.deployment.service_annotations|length > 0 %}
+    {{ kiali_vars.deployment.service_annotations | to_nice_yaml(indent=0) | trim | indent(4) }}
+{% endif %}
+spec:
+{% if kiali_vars.deployment.service_type is defined %}
+  type: {{ kiali_vars.deployment.service_type }}
+{% endif %}
+  ports:
+  - name: {{ 'http' if kiali_vars.identity.cert_file == "" else 'tcp' }}
+    protocol: TCP
+    port: {{ kiali_vars.server.port }}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
+  - name: http-metrics
+    protocol: TCP
+    port: {{ kiali_vars.server.observability.metrics.port }}
+{% endif %}
+  selector:
+{% if query(k8s_plugin, kind='Service', resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace) | length > 0 %}
+    app: null
+    version: null
+{% endif %}
+    app.kubernetes.io/name: kiali
+    app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
+  {% if kiali_vars.deployment.additional_service_yaml is defined %}{{ kiali_vars.deployment.additional_service_yaml | to_nice_yaml(indent=0) | trim | indent(2) }}{% endif %}
