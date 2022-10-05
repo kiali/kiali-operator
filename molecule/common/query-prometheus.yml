@@ -4,10 +4,11 @@
   when:
   - is_minikube == True
 
-- name: Query Prometheus from Kiali Pod
+# We cannot use the Kiali Pod because its container is distroless and does not have curl. Use the operator pod instead.
+- name: Query Prometheus from Kiali Operator Pod
   k8s_exec:
-    namespace: "{{ kiali_pod.resources[0].metadata.namespace }}"
-    pod: "{{ kiali_pod.resources[0].metadata.name}}"
+    namespace: "{{ kiali_operator_pod.resources[0].metadata.namespace }}"
+    pod: "{{ kiali_operator_pod.resources[0].metadata.name}}"
     command: "curl -skL {{ credentials_arg }} -d query={{ prometheus_request.query}} -d time={{ prometheus_request.time }} {{ url }}"
   register: prometheus_query_results_raw
   ignore_errors: yes # TODO why is this returning a rc=3? We are getting back good results
