@@ -31,9 +31,12 @@
   - debug: msg="test that include filter works when AN=**; also tests exclude filter"
   - import_tasks: ./set-api-namespaces.yml
     vars:
+      # include kialitest* and kialianother* but we exclude kialianother* and exclude takes precedence.
+      # Also, trying to exclude the control plane namespace is ignored - the control plane namespace is always returned.
+      # So this will return the two kialitest* namespaces and the control plane namespace.
       api_namespaces:
-        include: [ "{{ istio.control_plane_namespace }}", "kialitest.*", "kialianother.*" ]
-        exclude: [ "kialianother.*" ]
+        include: [ "kialitest.*", "kialianother.*" ]
+        exclude: [ "{{ istio.control_plane_namespace }}", "kialianother.*" ]
         label_selector_include: null
         label_selector_exclude: null
 
@@ -50,7 +53,7 @@
   - import_tasks: ./set-api-namespaces.yml
     vars:
       api_namespaces:
-        include: [ "{{ istio.control_plane_namespace }}", "kialitest.*", "kialianother.*" ]
+        include: [ "kialitest.*", "kialianother.*" ]
         exclude: [ "kialianother.*" ]
         label_selector_include: null
         label_selector_exclude: "customLabel=test"
