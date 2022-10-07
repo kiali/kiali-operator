@@ -11,31 +11,99 @@
   - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
-  - name: Make sure label_selector is not set since its default is nil when accessible namespaces is **
+  - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector is not defined
+      - kiali_configmap.api.namespaces.label_selector_include is not defined
 
-  # change to accessible_namespaces to a fixed list of namespaces
-  - k8s:
-      state: present
-      definition:
-        apiVersion: v1
-        kind: Namespace
-        metadata:
-          name: kialitestns
-          labels:
-            customLabel: test
-  - k8s:
-      state: present
-      api_version: v1
-      kind: Namespace
-      name: kialitestns2
-  - k8s:
-      state: present
-      api_version: v1
-      kind: Namespace
-      name: kialianothertestns
+  - debug: msg="test to make sure the default AN=** behavior works (default include/exclude filters are in effect)"
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 4
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kialitestns
+      - kialitestns2
+      - kialianothertestns
+      namespaces_not_expected:
+      - kiali-operator
+
+  - debug: msg="test that include filter works when AN=**; also tests exclude filter"
+  - import_tasks: ./set-api-namespaces.yml
+    vars:
+      # include kialitest* and kialianother* but we exclude kialianother* and exclude takes precedence.
+      # Also, trying to exclude the control plane namespace is ignored - the control plane namespace is always returned.
+      # So this will return the two kialitest* namespaces and the control plane namespace.
+      api_namespaces:
+        include: [ "kialitest.*", "kialianother.*" ]
+        exclude: [ "{{ istio.control_plane_namespace }}", "kialianother.*" ]
+        label_selector_include: null
+        label_selector_exclude: null
+
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 3
+      max_namespaces_expected: 3
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kialitestns
+      - kialitestns2
+
+  - debug: msg="test both exclude filters (both exclude list and label selector) works"
+  - import_tasks: ./set-api-namespaces.yml
+    vars:
+      api_namespaces:
+        include: [ "kialitest.*", "kialianother.*" ]
+        exclude: [ "kialianother.*" ]
+        label_selector_include: null
+        label_selector_exclude: "customLabel=test"
+
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 2
+      max_namespaces_expected: 2
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kialitestns2
+
+  - debug: msg="test include label selector works when AN=**"
+  - import_tasks: ./set-api-namespaces.yml
+    vars:
+      api_namespaces:
+        include: ["{{ istio.control_plane_namespace }}"]
+        exclude: null
+        label_selector_include: "customLabel=test"
+        label_selector_exclude: null
+
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 2
+      max_namespaces_expected: 2
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kialitestns
+
+  - debug: msg="reset the api.namespaces so it goes back to all defaults"
+  - import_tasks: ./set-api-namespaces.yml
+    vars:
+      api_namespaces:
+        include: null
+        exclude: null
+        label_selector_include: null
+        label_selector_exclude: null
+
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 4
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kialitestns
+      - kialitestns2
+      - kialianothertestns
+      namespaces_not_expected:
+      - kiali-operator
+
+  - debug: msg="change to accessible_namespaces to a fixed list of namespaces"
   - import_tasks: ../common/set_accessible_namespaces_to_list.yml
     vars:
       namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianother.*' ]
@@ -46,37 +114,47 @@
   - import_tasks: ../asserts/accessible_namespaces_equals.yml
     vars:
       namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianothertestns' ]
-  - name: "Make sure label_selector is set properly"
+  - name: "Make sure label_selector_include is set properly"
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector == "kiali.io/member-of={{ istio.control_plane_namespace }}"
+      - kiali_configmap.api.namespaces.label_selector_include == "kiali.io/member-of={{ istio.control_plane_namespace }}"
 
   - name: Make sure the new label exists, but didn't overwrite any existing labels
     vars:
       # Use query - it is the only way to ensure a list is returned; for some reason, lookup/wantList=true is not working
       namespacesWithCustomLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector='customLabel=test') }}"
-      namespacesWithKialiLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector) }}"
+      namespacesWithKialiLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector_include) }}"
     assert:
       that:
       - namespacesWithCustomLabel | length == 1
       - namespacesWithCustomLabel[0].metadata.name == "kialitestns"
       - namespacesWithKialiLabel | length == 3
 
-  - k8s:
-      state: absent
-      api_version: v1
-      kind: Namespace
-      name: kialitestns
-  - k8s:
-      state: absent
-      api_version: v1
-      kind: Namespace
-      name: kialitestns2
-  - k8s:
-      state: absent
-      api_version: v1
-      kind: Namespace
-      name: kialianothertestns
+  - debug: msg="test the normal accessible namespaces (without custom include/exclude filters defined)"
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 3
+      max_namespaces_expected: 3
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kialitestns
+      - kialianothertestns
+
+  - debug: msg="test to show include is ignored when AN is not ** but exclude filters are still applied"
+  - import_tasks: ./set-api-namespaces.yml
+    vars:
+      api_namespaces:
+        include: [ ".*" ]
+        exclude: [ "kialianother.*" ]
+        label_selector_include: null
+        label_selector_exclude: "customLabel=test"
+
+  - import_tasks: ./assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 1
+      max_namespaces_expected: 1
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
 
   # change to accessible_namespaces back to **
   - import_tasks: ../common/set_accessible_namespaces_to_all.yml
@@ -87,7 +165,7 @@
   - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
-  - name: Make sure label_selector is not set since its default is nil when accessible namespaces is **
+  - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector is not defined
+      - kiali_configmap.api.namespaces.label_selector_include is not defined

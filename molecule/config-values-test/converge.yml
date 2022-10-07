@@ -10,6 +10,10 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
+  - name: The initial Kiali ConfigMap
+    debug:
+      msg: "{{ kiali_configmap }}"
+
   - name: Test the default deployment.resources is what we expect
     vars:
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
@@ -39,6 +43,12 @@
     assert:
       that:
       - kiali_role_raw.resources[0].rules | to_yaml is search('pods/log')
+
+  - name: Test the deprecated api.namespaces.label_selector was renamed api.namespaces.label_selector_include
+    assert:
+      that:
+      - kiali_configmap.api.namespaces.label_selector is not defined
+      - kiali_configmap.api.namespaces.label_selector_include == "kiali.io/member-of=istio-system"
 
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
@@ -149,6 +159,10 @@
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: The new Kiali ConfigMap
+    debug:
+      msg: "{{ kiali_configmap }}"
 
   # Assert the new config
 

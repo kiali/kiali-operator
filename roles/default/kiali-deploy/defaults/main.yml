@@ -1,4 +1,4 @@
-# Defaults for all user-facing Kiali settings. These are documented in kiali_cr.yaml.
+# Defaults for all user-facing Kiali settings.
 #
 # Note that these are under the main dictionary group "kiali_defaults".
 # The actual vars used by the role are found in the vars/ directory.
@@ -25,7 +25,9 @@ kiali_defaults:
       - "^openshift.*"
       - "^ibm.*"
       - "^kiali-operator"
-      #label_selector:
+      include: []
+      label_selector_exclude: ""
+      #label_selector_include:
 
   auth:
     openid:

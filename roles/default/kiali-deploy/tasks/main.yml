@@ -91,6 +91,15 @@
   - kiali_vars.deployment.ingress_enabled is defined
   - kiali_vars.deployment.ingress is not defined or kiali_vars.deployment.ingress.enabled is not defined
 
+- name: api.namespaces.label_selector is deprecated but if api.namespaces.label_selector_include is not set then use the old setting
+  set_fact:
+    kiali_vars: |
+      {% set ls=kiali_vars['api']['namespaces'].pop('label_selector') %}
+      {{ kiali_vars | combine({'api': {'namespaces': {'label_selector_include': ls|bool }}}, recursive=True) }}
+  when:
+  - kiali_vars.api.namespaces.label_selector is defined
+  - kiali_vars.api.namespaces.label_selector_include is not defined
+
 # convert snake case to camelCase where appropriate
 - include_tasks: snake_camel_case.yaml
 
@@ -540,20 +549,20 @@
 
 # Note that we add the instance name to the member-of key name only if the instance name is not the default 'kiali'.
 # This is for backward compatibility, and for simplicity when deploying under normal default conditions.
-- name: When accessible namespaces are specified, ensure label selector is set
+- name: When accessible namespaces are specified, ensure label_selector_include is set
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector': ('kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector_include': ('kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
-  - kiali_vars.api.namespaces.label_selector is not defined
+  - kiali_vars.api.namespaces.label_selector_include is not defined
 
-- name: Make sure label selector is in the valid format name=value
+- name: Make sure label_selector_include is in the valid format name=value
   fail:
-    msg: "The api.namespaces.label_selector is not valid [{{ kiali_vars.api.namespaces.label_selector }}] - it must be in the form of 'name=value' following Kubernetes syntax rules for label names and values."
+    msg: "The api.namespaces.label_selector_include is not valid [{{ kiali_vars.api.namespaces.label_selector_include }}] - it must be in the form of 'name=value' following Kubernetes syntax rules for label names and values."
   when:
-  - kiali_vars.api.namespaces.label_selector is defined
+  - kiali_vars.api.namespaces.label_selector_include is defined
   # this regex is not 100% accurate, but we want to at least catch obvious errors
-  - kiali_vars.api.namespaces.label_selector is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
+  - kiali_vars.api.namespaces.label_selector_include is not regex('^[a-zA-Z0-9/_.-]+=[a-zA-Z0-9_.-]+$')
 
 # If the signing key is not empty string, and is not of the special value secret:name:key,
 # do some validation on it's length
@@ -691,7 +700,7 @@
 - name: Find some current configuration settings
   set_fact:
     current_accessible_namespaces: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.accessible_namespaces') }}"
-    current_label_selector: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('api.namespaces.label_selector') }}"
+    current_label_selector_include: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('api.namespaces.label_selector_include') }}"
     current_view_only_mode: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.view_only_mode') }}"
     current_image_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_name') }}"
     current_image_version: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_version') }}"
@@ -702,18 +711,18 @@
   - current_configmap.data['config.yaml'] is defined
 
 # Because we need to remove the labels that were created before, we must not allow the user to change
-# the label_selector. So if the current accessible_namespaces is not ** but the label_select is being changed,
+# the label_selector_include. So if the current accessible_namespaces is not ** but the label_selector_include is being changed,
 # we need to abort since we won't know what the old labels were. If current accessible_namespaces is ** then
-# we know we didn't create labels before so we can allow label_selector to change.
-- name: Do not allow user to change label selector
+# we know we didn't create labels before so we can allow label_selector_include to change.
+- name: Do not allow user to change label_selector_include
   fail:
-    msg: "The api.namespaces.label_selector cannot be changed to a different value. It was [{{ current_label_selector }}] but is now configured to be [{{ kiali_vars.api.namespaces.label_selector }}]. In order to install Kiali with a different label selector than what was used before, please uninstall Kiali first."
+    msg: "The api.namespaces.label_selector_include cannot be changed to a different value. It was [{{ current_label_selector_include }}] but is now configured to be [{{ kiali_vars.api.namespaces.label_selector_include }}]. In order to install Kiali with a different label selector than what was used before, please uninstall Kiali first."
   when:
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
-  - current_label_selector is defined
-  - kiali_vars.api.namespaces.label_selector is defined
-  - current_label_selector != kiali_vars.api.namespaces.label_selector
+  - current_label_selector_include is defined
+  - kiali_vars.api.namespaces.label_selector_include is defined
+  - current_label_selector_include != kiali_vars.api.namespaces.label_selector_include
 
 - name: Determine the namespaces that were previously accessible but are now inaccessible
   set_fact:
@@ -765,7 +774,7 @@
 - name: Remove Kiali label from namespaces that Kiali no longer has access to
   vars:
     # everything to the left of the = is the name of the label we want to remove
-    the_namespace_label_name: "{{ current_label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
+    the_namespace_label_name: "{{ current_label_selector_include | regex_replace('^(.*)=.*$', '\\1') }}"
   # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we use state=patched
   k8s:
     state: patched
@@ -782,14 +791,14 @@
       {% endfor %}
   when:
   - no_longer_accessible_namespaces is defined
-  - current_label_selector is defined
+  - current_label_selector_include is defined
 
 - name: Create additional Kiali label on all accessible namespaces
   vars:
     namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
     # everything to the left of the = is the label name; to the right is the label value
-    the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^(.*)=.*$', '\\1') }}"
-    the_namespace_label_value: "{{ kiali_vars.api.namespaces.label_selector | regex_replace('^.*=(.*)$', '\\1') }}"
+    the_namespace_label_name: "{{ kiali_vars.api.namespaces.label_selector_include | regex_replace('^(.*)=.*$', '\\1') }}"
+    the_namespace_label_value: "{{ kiali_vars.api.namespaces.label_selector_include | regex_replace('^.*=(.*)$', '\\1') }}"
   k8s:
     state: patched
     definition: |

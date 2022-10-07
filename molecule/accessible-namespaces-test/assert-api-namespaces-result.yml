@@ -1,0 +1,46 @@
+# pass in:
+# - namespaces_expected: a list of namespaces expected to be returned (if known)
+# - namespaces_not_expected: a list of namespaces that should not have been returned (if known)
+# - min_namespaces_expected: the minimum number of namespaces that are expected to be returned (if known)
+# - max_namespaces_expected: the maximum number of namespaces that are expected to be returned (if known)
+
+- name: "Call /namespaces API"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces"
+    return_content: yes
+    validate_certs: false
+  register: api_results_raw
+
+- name: "Results of /namespaces API"
+  debug:
+    msg: "{{ api_results_raw }}"
+
+- name: Assert that we got no less than the minimum number of namespaces expected
+  assert:
+    that:
+    - api_results_raw.json | length >= min_namespaces_expected
+  when:
+  - min_namespaces_expected is defined
+
+- name: Assert that we got no more than the maximum number of namespaces expected
+  assert:
+    that:
+    - api_results_raw.json | length <= max_namespaces_expected
+  when:
+  - max_namespaces_expected is defined
+
+- name: Assert that we got the namespaces expected
+  assert:
+    that:
+    - api_results_raw.json | selectattr('name', 'equalto', item) | list | length == 1
+  loop: "{{ namespaces_expected }}"
+  when:
+  - namespaces_expected is defined
+
+- name: Assert that we did not get namespaces that were not expected
+  assert:
+    that:
+    - api_results_raw.json | selectattr('name', 'equalto', item) | list | length == 0
+  loop: "{{ namespaces_not_expected }}"
+  when:
+  - namespaces_not_expected is defined

@@ -9,13 +9,24 @@
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
 
+  - name: The Kiali ConfigMap
+    debug:
+      msg: "{{ kiali_configmap }}"
+
   # Assert that we have defaults since the CR set most settings to null.
   # The defaults come from the operator's roles/kiali-deploy/defaults/main.yaml
   # This just checks some of the settings to see that defaults are getting set.
+  # Note that accessible namespaces is being set to "[**]" so some settings depend on that.
   - assert:
       that:
+      - kiali_configmap.deployment.accessible_namespaces[0] == "**"
       - kiali_configmap.installation_tag == ""
       - kiali_configmap.additional_display_details | length == 1
+      - kiali_configmap.api.namespaces.label_selector_exclude == ""
+      - kiali_configmap.api.namespaces.label_selector_include is not defined
+      - kiali_configmap.api.namespaces.exclude | length > 0
+      - kiali_configmap.api.namespaces.include | length == 0
+      - kiali_configmap.api.namespaces.label_selector is not defined
       - kiali_configmap.custom_dashboards | length == 0
       - kiali_configmap.deployment.replicas == 1
       - kiali_configmap.deployment.secret_name == "kiali"
