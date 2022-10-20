@@ -232,6 +232,10 @@ spec:
                   value: "false"
                 - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
                   value: "false"
+                - name: ALLOW_ALL_ACCESSIBLE_NAMESPACES
+                  value: "true"
+                - name: ACCESSIBLE_NAMESPACES_LABEL
+                  value: ""
                 - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
                   value: "100"
                 - name: ANSIBLE_DEBUG_LOGS
