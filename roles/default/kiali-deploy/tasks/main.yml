@@ -547,6 +547,34 @@
   debug:
     msg: "{{ kiali_vars.deployment.accessible_namespaces }}"
 
+# do some security checks - abort if the operator is forbidden from allowing certain accessible_namespace values
+- name: Abort if all namespace access is not allowed
+  fail:
+    msg: "The operator is forbidden from installing Kiali with deployment.accessible_namespaces set to ['**']"
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - lookup('env', 'ALLOW_ALL_ACCESSIBLE_NAMESPACES') | default('false', True) != "true"
+
+- name: Get labeled accessible namespaces
+  vars:
+    label: "{{ lookup('env', 'ACCESSIBLE_NAMESPACES_LABEL') | default('', True) }}"
+    label_selector: "{{ label + ('' if label is regex('^.+=.+$') else ('=' + kiali_vars.istio_namespace)) }}"
+  set_fact:
+    only_allowed_labeled_namespaces: "{{ query(k8s_plugin, kind='Namespace', api_version='v1', label_selector=label_selector) | json_query('[*].metadata.name') }}"
+  when:
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - label != ""
+
+- name: Abort if accessible namespaces contains namespaces not labeled
+  vars:
+    ns_diff: "{{ kiali_vars.deployment.accessible_namespaces | difference(only_allowed_labeled_namespaces) }}"
+  fail:
+    msg: "Operator is forbidden to allow Kiali CR to specify one or more accessible namespaces that were not labeled: {{ ('Number of rejected namespaces=' + (ns_diff | length | string)) if (ns_diff | length > 10) else (ns_diff) }}"
+  when:
+  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - only_allowed_labeled_namespaces is defined
+  - ns_diff | length > 0
+
 # Note that we add the instance name to the member-of key name only if the instance name is not the default 'kiali'.
 # This is for backward compatibility, and for simplicity when deploying under normal default conditions.
 - name: When accessible namespaces are specified, ensure label_selector_include is set
