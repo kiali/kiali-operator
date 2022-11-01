@@ -657,54 +657,55 @@
   when:
   - kiali_vars.login_token.signing_key == ""
 
-# Prepare any additional environment variables that need to be defined in the deployment
+# Some credentials in the config can be overridden by secrets that are to be mounted on the file system.
+# Prepare these overrides that need to be defined as volumes in the deployment.
 
 - set_fact:
-    kiali_deployment_environment_variables: {}
+    kiali_deployment_secret_volumes: {}
 
-- name: Prepare environment variable for prometheus password
+- name: Prepare the secret volume for prometheus password
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'PROMETHEUS_PASSWORD': {'secret_name': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'prometheus-password': {'secret_name': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.external_services.prometheus.auth.password | regex_search('secret:.+:.+')
 
-- name: Prepare environment variable for prometheus token
+- name: Prepare the secret volume for prometheus token
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'PROMETHEUS_TOKEN': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'prometheus-token': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.external_services.prometheus.auth.token | regex_search('secret:.+:.+')
 
-- name: Prepare environment variable for tracing password
+- name: Prepare the secret volume for tracing password
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'TRACING_PASSWORD': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'tracing-password': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.external_services.tracing.enabled|bool == True
   - kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+')
 
-- name: Prepare environment variable for tracing token
+- name: Prepare the secret volume for tracing token
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'TRACING_TOKEN': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'tracing-token': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.external_services.tracing.enabled|bool == True
   - kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+')
 
-- name: Prepare environment variable for grafana password
+- name: Prepare the secret volume for grafana password
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'GRAFANA_PASSWORD': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'grafana-password': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.external_services.grafana.enabled|bool == True
   - kiali_vars.external_services.grafana.auth.password | regex_search('secret:.+:.+')
 
-- name: Prepare environment variable for grafana token
+- name: Prepare the secret volume for grafana token
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'GRAFANA_TOKEN': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'grafana-token': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.external_services.grafana.enabled|bool == True
   - kiali_vars.external_services.grafana.auth.token | regex_search('secret:.+:.+')
 
-- name: Prepare environment variable for login token signing key
+- name: Prepare the secret volume for login token signing key
   set_fact:
-    kiali_deployment_environment_variables: "{{ kiali_deployment_environment_variables | combine({'LOGIN_TOKEN_SIGNING_KEY': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
   when:
   - kiali_vars.login_token.signing_key | regex_search('secret:.+:.+')
 
