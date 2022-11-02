@@ -102,13 +102,6 @@ spec:
           value: "{{ kiali_vars.deployment.logger.sampler_rate }}"
         - name: LOG_TIME_FIELD_FORMAT
           value: "{{ kiali_vars.deployment.logger.time_field_format }}"
-{% for env in kiali_deployment_environment_variables %}
-        - name: {{ env }}
-          valueFrom:
-            secretKeyRef:
-              name: {{ kiali_deployment_environment_variables[env].secret_name }}
-              key: {{ kiali_deployment_environment_variables[env].secret_key }}
-{% endfor %}
         volumeMounts:
         - name: kiali-configuration
           mountPath: "/kiali-configuration"
@@ -120,6 +113,11 @@ spec:
           mountPath: "/kiali-secret"
         - name: kiali-cabundle
           mountPath: "/kiali-cabundle"
+{% for sec in kiali_deployment_secret_volumes %}
+        - name: {{ sec }}
+          mountPath: "/kiali-override-secrets/{{ sec }}"
+          readOnly: true
+{% endfor %}
 {% for secret in kiali_vars.deployment.custom_secrets %}
         - name: {{ secret.name }}
           mountPath: "{{ secret.mount }}"
@@ -146,6 +144,15 @@ spec:
       - name: kiali-cabundle
         configMap:
           name: {{ kiali_vars.deployment.instance_name }}-cabundle
+{% for sec in kiali_deployment_secret_volumes %}
+      - name: {{ sec }}
+        secret:
+          secretName: {{ kiali_deployment_secret_volumes[sec].secret_name }}
+          items:
+          - key: {{ kiali_deployment_secret_volumes[sec].secret_key }}
+            path: value.txt
+          optional: false
+{% endfor %}
 {% for secret in kiali_vars.deployment.custom_secrets %}
       - name: {{ secret.name }}
         secret:
