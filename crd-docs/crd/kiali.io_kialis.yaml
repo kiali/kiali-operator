@@ -733,6 +733,9 @@ spec:
                       envoy_admin_local_port:
                         description: "The port which kiali will open to fetch envoy config data information."
                         type: integer
+                      gateway_api_class_name:
+                        description: "The K8s Gateway API GatewayClass's Name used in Istio. If empty, the default value 'istio' is used."
+                        type: string
                       istio_canary_revision:
                         description: "These values are used in Canary upgrade/downgrade functionality when `istio_upgrade_action` is true."
                         type: object
@@ -766,9 +769,6 @@ spec:
                         type: string
                       url_service_version:
                         description: "The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint."
-                        type: string
-                      gateway_api_class_name:
-                        description: "The K8s Gateway API GatewayClass's Name used in Istio. If empty, the default value 'istio' is used."
                         type: string
                   prometheus:
                     description: "The Prometheus configuration defined here refers to the Prometheus instance that is used by Istio to store its telemetry."

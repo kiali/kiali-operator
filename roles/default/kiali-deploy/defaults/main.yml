@@ -169,6 +169,7 @@ kiali_defaults:
         enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
+      gateway_api_class_name: ""
       #istio_canary_revision:
         #current: prod
         #upgrade: canary
@@ -180,7 +181,6 @@ kiali_defaults:
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
       url_service_version: ""
-      gateway_api_class_name: ""
     prometheus:
       auth:
         ca_file: ""
