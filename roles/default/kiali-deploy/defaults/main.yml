@@ -180,6 +180,7 @@ kiali_defaults:
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
       url_service_version: ""
+      gateway_api_class_name: ""
     prometheus:
       auth:
         ca_file: ""
