@@ -42,7 +42,7 @@ jobs:
         
         QUAY_TAG="$QUAY_REPO:latest"
 
-        echo "::set-output name=quay_tag::$QUAY_TAG"
+        echo "quay_tag=$QUAY_TAG" >> $GITHUB_OUTPUT
 
     - name: Log information
       run: |
