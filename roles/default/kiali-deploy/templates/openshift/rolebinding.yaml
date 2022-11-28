@@ -9,7 +9,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: {{ role_kind }}
-  name: {{ (kiali_vars.deployment.instance_name + '-viewer') if kiali_vars.deployment.view_only_mode|bool == True else kiali_vars.deployment.instance_name }}
+  name: {{ (kiali_vars.deployment.instance_name + '-viewer') if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else kiali_vars.deployment.instance_name }}
 subjects:
 - kind: ServiceAccount
   name: {{ kiali_vars.deployment.instance_name }}-service-account

@@ -28,6 +28,7 @@
       - kiali_pod_spec.containers[0].resources.requests.memory == "64Mi"
       - kiali_pod_spec.containers[0].resources.limits.memory == "1Gi"
 
+  # default auth strategy for both openshift or non-openshift (openshift or token) will always result in the kiali-viewer role
   - name: Get Kiali Role
     vars:
       instance_name: "{{ kiali.instance_name | default('kiali') }}"
@@ -35,8 +36,7 @@
       api_version: rbac.authorization.k8s.io/v1
       kind: Role
       namespace: "{{ kiali.install_namespace }}"
-      label_selectors:
-      - "app.kubernetes.io/instance={{ instance_name }}"
+      name: "{{ instance_name + '-viewer' }}"
     register: kiali_role_raw
 
   - name: Make sure Kiali Role has access to pods/log

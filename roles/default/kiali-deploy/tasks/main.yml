@@ -734,6 +734,7 @@
     current_image_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_name') }}"
     current_image_version: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_version') }}"
     current_instance_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.instance_name') }}"
+    current_auth_strategy: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('auth.strategy') }}"
   when:
   - current_configmap is defined
   - current_configmap.data is defined
@@ -778,21 +779,25 @@
   - '"**" in current_accessible_namespaces'
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
 
-- name: Delete all Kiali roles from namespaces if view_only_mode is changing since role bindings are immutable
+# Role Bindings are always "view-only" unless auth.strategy is anonymous and view_only_mode is false.
+# If the view_only_mode or auth.strategy changes, we'll delete the roles to make sure we create the correct ones.
+- name: Delete all Kiali roles from namespaces if view_only_mode or auth.strategy is changing since role bindings are immutable
   include_tasks: remove-roles.yml
   vars:
     role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
   when:
   - current_view_only_mode is defined
-  - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
+  - current_auth_strategy is defined
+  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy)
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
 
-- name: Delete Kiali cluster roles if view_only_mode is changing since role bindings are immutable
+- name: Delete Kiali cluster roles if view_only_mode or auth.strategy is changing since role bindings are immutable
   include_tasks: remove-clusterroles.yml
   when:
   - current_view_only_mode is defined
-  - current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool
+  - current_auth_strategy is defined
+  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy)
   - current_accessible_namespaces is defined
   - '"**" in current_accessible_namespaces'
 
