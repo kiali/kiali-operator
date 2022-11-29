@@ -7,3 +7,9 @@ redirectURIs:
   - {{ kiali_route_url }}
 grantMethod: auto
 allowAnyScope: true
+{% if kiali_vars.auth.openshift.token_inactivity_timeout is defined %}
+accessTokenInactivityTimeoutSeconds: {{ kiali_vars.auth.openshift.token_inactivity_timeout }}
+{% endif %}
+{% if kiali_vars.auth.openshift.token_max_age is defined %}
+accessTokenMaxAgeSeconds: {{ kiali_vars.auth.openshift.token_max_age }}
+{% endif %}
