@@ -10,6 +10,30 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
+  - name: The initial Kiali ConfigMap
+    debug:
+      msg: "{{ kiali_configmap }}"
+
+  - name: Get Kiali OAuthClient if on OpenShift
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: oauth.openshift.io/v1
+      kind: OAuthClient
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_oauth_client_raw
+    when:
+    - is_openshift == True
+
+  - name: Test the OAuthClient does not have customized timeouts
+    assert:
+      that:
+      - kiali_oauth_client_raw.resources[0].accessTokenInactivityTimeoutSeconds is not defined
+      - kiali_oauth_client_raw.resources[0].accessTokenMaxAgeSeconds is not defined
+    when:
+    - is_openshift == True
+
   - name: Test the default deployment.resources is what we expect
     vars:
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
@@ -136,6 +160,10 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'security_context': security_context}}}, recursive=True) }}"
 
+  - name: Add timeouts to the OpenShift OAuthClient
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'auth': {'openshift': {'token_inactivity_timeout': 9876, 'token_max_age': 8765}}}}, recursive=True) }}"
+
   - name: The new Kiali CR to be tested
     debug:
       msg: "{{ current_kiali_cr }}"
@@ -253,3 +281,23 @@
       - kiali_pod_spec.containers[0].securityContext.privileged == false
       - kiali_pod_spec.containers[0].securityContext.runAsNonRoot == true
       - kiali_pod_spec.containers[0].securityContext.capabilities.drop | length > 0
+
+  - name: Get the new Kiali OAuthClient if on OpenShift
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: oauth.openshift.io/v1
+      kind: OAuthClient
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_oauth_client_raw
+    when:
+    - is_openshift == True
+
+  - name: Test the OAuthClient now has the new customized timeouts
+    assert:
+      that:
+      - kiali_oauth_client_raw.resources[0].accessTokenInactivityTimeoutSeconds == 9876
+      - kiali_oauth_client_raw.resources[0].accessTokenMaxAgeSeconds == 8765
+    when:
+    - is_openshift == True
