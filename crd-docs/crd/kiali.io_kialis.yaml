@@ -184,6 +184,9 @@ spec:
                     description: "To learn more about these settings and how to configure the OpenShift authentication strategy, read the documentation at https://kiali.io/docs/configuration/authentication/openshift/"
                     type: object
                     properties:
+                      auth_timeout:
+                        description: "The amount of time in seconds Kiali will wait for a response from the OpenShift API server when requesting authentication results."
+                        type: integer
                       client_id_prefix:
                         description: "The Route resource name and OAuthClient resource name will have this value as its prefix. This value normally should never change. The installer will ensure this value is set correctly."
                         type: string
