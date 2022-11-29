@@ -7,6 +7,10 @@ spec:
   istio_namespace: {{ istio.control_plane_namespace }}
   auth:
     strategy: openshift
+    openshift:
+      auth_timeout: 15
+      token_inactivity_timeout: 3600
+      token_max_age: 7200
   deployment:
     ingress:
       enabled: true
