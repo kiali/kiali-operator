@@ -50,7 +50,10 @@ spec:
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
     openshift:
+      auth_timeout: 10
       client_id_prefix: "kiali"
+      #token_inactivity_timeout:
+      #token_max_age:
 
   # default: custom_dashboards is an empty list
   custom_dashboards:
@@ -149,7 +152,7 @@ spec:
                 backend:
                   service:
                     name: "kiali"
-                    port: 
+                    port:
                       number: 20001
     instance_name: "kiali"
     logger:
