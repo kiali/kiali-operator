@@ -230,6 +230,8 @@ kiali_defaults:
     #cert_file:
     #private_key_file:
 
+  istio_api_enabled: "true"
+
   istio_labels:
     app_label_name: "app"
     injection_label_name: "istio-injection"

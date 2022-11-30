@@ -956,6 +956,10 @@ spec:
                     description: "Private key file used to identify the Kiali server. If set, you must go over https to access Kiali. When left undefined, the Kiali operator will attempt to generate a cluster-specific private key file that provides https by default (today, this auto-generation of a cluster-specific private key is only supported on OpenShift). When set to an empty string, https will be disabled."
                     type: string
 
+              istio_api_enabled:
+                description: "Indicates if Kiali has access to istiod. true by default."
+                type: boolean
+
               istio_labels:
                 description: "Defines specific labels used by Istio that Kiali needs to know about."
                 type: object
