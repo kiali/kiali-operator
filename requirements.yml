@@ -9,15 +9,26 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.11 \
+#   quay.io/openshift/origin-ansible-operator:4.12 \
 #   ls /opt/ansible/.ansible/collections/ansible_collections
 #
 # To determine the version of a specific collection, look at the MANIFEST.json:
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.11 \
+#   quay.io/openshift/origin-ansible-operator:4.12 \
 #   cat /opt/ansible/.ansible/collections/ansible_collections/kubernetes/core/MANIFEST.json | grep version
+#
+# It is best if you have the same version of Ansible installed locally as found in the base image. You can determine
+# the version of Ansible in the base image via:
+#
+# podman run \
+#   -it --rm --entrypoint '' \
+#   quay.io/openshift/origin-ansible-operator:4.12 \
+#   ansible --version
+#
+# To install that version locally, you can git clone the source via:
+#   git clone -b v<ansible version> --depth 1 https://github.com/ansible/ansible.git
 
 collections:
 - name: kubernetes.core
