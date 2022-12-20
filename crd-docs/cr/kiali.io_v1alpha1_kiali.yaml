@@ -276,8 +276,8 @@ spec:
       config_map_name: "istio"
       envoy_admin_local_port: 15000
       gateway_api_class_name: ""
-      # default: istio_canary_revision is undefined
       istio_api_enabled: true
+      # default: istio_canary_revision is undefined
       istio_canary_revision:
         current: "1-9-9"
         upgrade: "1-10-2"
