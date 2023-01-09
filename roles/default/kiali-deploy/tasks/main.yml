@@ -781,6 +781,13 @@
 
 # Role Bindings are always "view-only" unless auth.strategy is anonymous and view_only_mode is false.
 # If the view_only_mode or auth.strategy changes, we'll delete the roles to make sure we create the correct ones.
+# We need to see if the currently installed role binding is view-only - this is used to not break upgrades. See: https://github.com/kiali/kiali/issues/5695
+- name: Determine if the currently installed role binding in the deployment namespace is view-only
+  vars:
+    current_rolebinding: "{{ query(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='rbac.authorization.k8s.io/v1', kind=role_binding_kind, errors='ignore') }}"
+  set_fact:
+    current_rolebinding_view_only: "{{ (current_rolebinding | length == 1) and (current_rolebinding[0].roleRef.name is regex('^.*-viewer$')) }}"
+
 - name: Delete all Kiali roles from namespaces if view_only_mode or auth.strategy is changing since role bindings are immutable
   include_tasks: remove-roles.yml
   vars:
@@ -788,7 +795,7 @@
   when:
   - current_view_only_mode is defined
   - current_auth_strategy is defined
-  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy)
+  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy) or (current_rolebinding_view_only|bool == False and kiali_vars.auth.strategy != 'anonymous')
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
 
@@ -797,7 +804,7 @@
   when:
   - current_view_only_mode is defined
   - current_auth_strategy is defined
-  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy)
+  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy) or (current_rolebinding_view_only|bool == False and kiali_vars.auth.strategy != 'anonymous')
   - current_accessible_namespaces is defined
   - '"**" in current_accessible_namespaces'
 
