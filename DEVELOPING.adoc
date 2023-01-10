@@ -220,3 +220,9 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 
 - [ ] Changes made to the link:./roles/default[`default`] Ansible role should be duplicated to the versioned Ansible role (e.g. link:./roles/v1.24[`v1.24`])
 - [ ] Cherry-pick changes you made in the link:./roles/default[`default`] Ansible role and versioned Ansible roles (e.g. link:./roles/v1.24[`v1.24`]) to the appropriate git branch.
+
+### Are You Removing Support For an Old Ansible Role Version?
+
+- [ ] Delete the role directory (link:./roles/[one of these])
+- [ ] Remove the RELATED_IMAGE reference for the version being removed from link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml/[the CSV]
+- [ ] Remove the version from link:./playbooks/default-supported-images.yml[default-supported-images.yml]
