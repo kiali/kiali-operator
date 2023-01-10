@@ -286,8 +286,6 @@ spec:
                   value: "${KIALI_1_48}"
                 - name: RELATED_IMAGE_kiali_v1_36
                   value: "${KIALI_1_36}"
-                - name: RELATED_IMAGE_kiali_v1_24
-                  value: "${KIALI_1_24}"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
