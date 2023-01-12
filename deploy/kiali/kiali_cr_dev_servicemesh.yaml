@@ -31,7 +31,10 @@ spec:
       in_cluster_url: https://grafana.${NAMESPACE}.svc:3000
       url: https://grafana-${NAMESPACE}.${ROUTER_HOSTNAME}
     istio:
+      config_map_name: "istio-custom"
+      istio_sidecar_injector_config_map_name: "istio-sidecar-injector-custom"
       istiod_deployment_name: "istiod-custom"
+      url_service_version: http://istiod-custom.${NAMESPACE}:15014/version
     prometheus:
       auth:
         password: ${KIALI_EXTERNAL_SERVICES_PASSWORD}
@@ -46,7 +49,8 @@ spec:
         use_kiali_token: false
         username: internal
       enabled: true
-      in_cluster_url: https://tracing.${NAMESPACE}.svc:16686
+      in_cluster_url: https://jaeger-query.${NAMESPACE}.svc
       url: https://jaeger-${NAMESPACE}.${ROUTER_HOSTNAME}
+      use_grpc: false
   installation_tag: Kiali [${NAMESPACE}]
   istio_namespace: ${NAMESPACE}
