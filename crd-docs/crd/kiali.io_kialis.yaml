@@ -745,6 +745,9 @@ spec:
                       gateway_api_class_name:
                         description: "The K8s Gateway API GatewayClass's Name used in Istio. If empty, the default value 'istio' is used."
                         type: string
+                      istio_api_enabled:
+                        description: "Indicates if Kiali has access to istiod. true by default."
+                        type: boolean
                       istio_canary_revision:
                         description: "These values are used in Canary upgrade/downgrade functionality when `istio_upgrade_action` is true."
                         type: object
