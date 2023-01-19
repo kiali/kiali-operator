@@ -30,22 +30,12 @@
       status_code: 401
       validate_certs: false
 
-  - name: Attempt login with invalid credentials
-    uri:
-      url: "{{ kiali_base_url }}/api/authenticate"
-      user: invalid
-      password: invalid
-      status_code: 400
-      return_content: yes
-      validate_certs: false
-    register: kiali_output
-
-  - name: Attempt login with good credentials but not logging in via OpenID
+  - name: Attempt login with good credentials using implicit flow (should be rejected, because support for implicit flow was removed)
     uri:
       url: "{{ kiali_base_url }}/api/authenticate"
       user: "{{ openid.username }}"
       password: "{{ openid.password }}"
-      status_code: 400
+      status_code: 500
       return_content: yes
       validate_certs: false
     register: kiali_output
@@ -136,38 +126,22 @@
       - kiali_output.location is defined
   - set_fact:
       final_kiali_endpoint: "{{ kiali_output.location }}"
-      access_token: "{{ kiali_output.location | regex_replace('.*access_token=([^&]+).*', '\\1') }}"
-      expires_in: "{{ kiali_output.location | regex_replace('.*expires_in=([^&]+).*', '\\1') }}"
-      id_token: "{{ kiali_output.location | regex_replace('.*id_token=([^&]+).*', '\\1') }}"
-      token_type: "{{ kiali_output.location | regex_replace('.*token_type=([^&]+).*', '\\1') }}"
+      code: "{{ kiali_output.location | regex_replace('.*code=([^&]+).*', '\\1') }}"
       state: "{{ kiali_output.location | regex_replace('.*state=([^&]+).*', '\\1') }}"
 
   - name: Send request to final Kiali endpoint with a valid session
     uri:
       url: "{{ final_kiali_endpoint }}"
+      headers:
+        Cookie: "{{ nonce_cookie }}"
       return_content: yes
       validate_certs: false
       follow_redirects: all
       status_code: 200
     register: kiali_output
 
-  - name: With the login cookie and nonce code, make a request to the kiali auth endpoint
-    uri:
-      url: "{{ kiali_base_url }}/api/authenticate"
-      headers:
-        Cookie: "{{ nonce_cookie }}"
-      method: POST
-      body_format: form-urlencoded
-      body:
-        id_token: "{{ id_token }}"
-        token_type: "{{ token_type }}"
-        state: "{{ state }}"
-      return_content: yes
-      validate_certs: false
-    register: kiali_output
-
   - set_fact:
-      new_kiali_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-aes=[^;]+).*', '\\1') }}"
+      new_kiali_cookie: "{{ kiali_output.cookies_string | regex_replace('.*(kiali-token-aes=[^;]+).*', '\\1') }}"
 
   - name: With the updated login cookie, make a request that requires authentication (should now return 200)
     uri:
