@@ -1003,6 +1003,9 @@ spec:
                     items:
                       type: string
                       enum: ["logs-tab"]
+                  istio_annotation_action:
+                    description: "Flag to enable/disable an Action to edit annotations."
+                    type: boolean     
                   istio_injection_action:
                     description: "Flag to enable/disable an Action to label a namespace for automatic Istio Sidecar injection."
                     type: boolean
