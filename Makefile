@@ -23,13 +23,13 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 DORP ?= docker
 
 # The version of the SDK this Makefile will download if needed, and the corresponding base image
-OPERATOR_SDK_VERSION ?= 1.22.0
+OPERATOR_SDK_VERSION ?= 1.25.0
 OPERATOR_BASE_IMAGE_VERSION ?= v${OPERATOR_SDK_VERSION}
 OPERATOR_BASE_IMAGE_REPO ?= quay.io/operator-framework/ansible-operator
 # These are what we really want - but origin-ansible-operator does not support multiarch today.
 # When that is fixed, we want to use this image instead of the image above.
-# See: https://issues.redhat.com/browse/DPTP-2630
-#OPERATOR_BASE_IMAGE_VERSION ?= 4.11
+# See: https://issues.redhat.com/browse/DPTP-2946
+#OPERATOR_BASE_IMAGE_VERSION ?= 4.12
 #OPERATOR_BASE_IMAGE_REPO ?= quay.io/openshift/origin-ansible-operator
 
 .PHONY: help
