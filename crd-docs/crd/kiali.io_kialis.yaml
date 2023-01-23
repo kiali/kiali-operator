@@ -991,12 +991,30 @@ spec:
                         items:
                           type: string
                   clustering:
-                    description: "Clustering and federation related features."
+                    description: "Multi-cluster related features."
                     type: object
                     properties:
-                      enabled:
-                        description: "Flag to enable/disable clustering and federation related features."
-                        type: boolean
+                      autodetect_secrets:
+                        description: "Settings to allow cluster secrets to be auto-detected. Secrets must exist in the Kiali deployment namespace."
+                        type: object
+                          enabled:
+                            description: "If true then remote cluster secrets will be autodetected during the installation of the Kiali Server Deployment. Any remote cluster secrets found in the Kiali deployment namespace will be mounted to the Kiali Server's file system. If false, you can still manually specify the remote cluster secret information in the 'clusters' setting if you wish to utilize multicluster features."
+                            type: boolean
+                          label:
+                            description: "The name and value of a label that exists on all remote cluster secrets. Default is 'istio/multiCluster=true'."
+                            type: string
+                      clusters:
+                        description: "A list of clusters that the Kiali Server can access. You need to specify the remote clusters here if 'autodetect_secrets.enabled' is false."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              description: "The name of the cluster."
+                              type: string
+                            secret_name:
+                              description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace."
+                              type: string
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array

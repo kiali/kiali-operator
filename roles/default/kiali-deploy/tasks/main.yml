@@ -718,6 +718,26 @@
   when:
   - kiali_vars.login_token.signing_key | regex_search('secret:.+:.+')
 
+# Prepare to mount remote cluster secrets. These must exist in the Kiali deployment namespace because that is required in order to mount them to the pod.
+- set_fact:
+    kiali_deployment_remote_cluster_secret_volumes: {}
+
+- name: Autodetect remote cluster secrets within the Kiali deployment namespace
+  vars:
+    all_remote_cluster_secrets: "{{ query(k8s_plugin, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='Secret', label_selector=kiali_vars.kiali_feature_flags.clustering.autodetect_secrets.label) }}"
+  loop: "{{ all_remote_cluster_secrets }}"
+  set_fact:
+    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.metadata.annotations['networking.istio.io/cluster']|default(item.metadata.name): {'secret_name': item.metadata.name }}) }}"
+  when:
+  - kiali_vars.kiali_feature_flags.clustering.autodetect_secrets.enabled
+
+- name: Prepare the manually declared remote clusters
+  loop: "{{ kiali_vars.kiali_feature_flags.clustering.clusters }}"
+  set_fact:
+    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.name: {'secret_name': item.secret_name }}) }}"
+  when:
+  - kiali_vars.kiali_feature_flags.clustering.clusters | length > 0
+
 # The following few tasks read the current Kiali configmap (if one exists) in order to figure out what
 # namespaces are no longer accessible. Those namespaces will have their Kiali roles removed.
 # They will also have the Kiali labels removed.
