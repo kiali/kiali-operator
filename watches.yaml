@@ -6,6 +6,7 @@
   reconcilePeriod: "0s"
   watchDependentResources: False
   watchClusterScopedResources: False
+  watchAnnotationsChanges: True
   finalizer:
     name: kiali.io/finalizer
     playbook: playbooks/kiali-remove.yml
