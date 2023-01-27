@@ -244,7 +244,10 @@ kiali_defaults:
       - cacerts
       - istio-ca-secret
     clustering:
-      enabled: true
+      autodetect_secrets:
+        enabled: true
+        label: "istio/multiCluster=true"
+      clusters: []
     disabled_features: []
     istio_injection_action: true
     istio_upgrade_action: false

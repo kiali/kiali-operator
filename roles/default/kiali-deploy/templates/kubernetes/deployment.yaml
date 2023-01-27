@@ -118,6 +118,11 @@ spec:
         - name: {{ secret.name }}
           mountPath: "{{ secret.mount }}"
 {% endfor %}
+{% for sec in kiali_deployment_remote_cluster_secret_volumes %}
+        - name: {{ sec }}
+          mountPath: "/kiali-remote-cluster-secrets/{{ sec }}"
+          readOnly: true
+{% endfor %}
 {% if kiali_vars.deployment.resources|length > 0 %}
         resources:
           {{ kiali_vars.deployment.resources | to_nice_yaml(indent=0) | trim | indent(10) }}
@@ -152,6 +157,11 @@ spec:
 {% if secret.optional is defined %}
           optional: {{ secret.optional }}
 {% endif %}
+{% endfor %}
+{% for sec in kiali_deployment_remote_cluster_secret_volumes %}
+      - name: {{ sec }}
+        secret:
+          secretName: {{ kiali_deployment_remote_cluster_secret_volumes[sec].secret_name }}
 {% endfor %}
 {% if kiali_vars.deployment.affinity.node|length > 0 or kiali_vars.deployment.affinity.pod|length > 0 or kiali_vars.deployment.affinity.pod_anti|length > 0 %}
       affinity:
