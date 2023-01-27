@@ -332,6 +332,7 @@ spec:
       query_scope:
         mesh_id: "mesh-1"
         cluster: "cluster-east"
+      query_timeout: 5
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]

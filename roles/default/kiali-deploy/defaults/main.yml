@@ -220,6 +220,7 @@ kiali_defaults:
       is_core: false
       namespace_selector: true
       query_scope: {}
+      query_timeout: 5
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
