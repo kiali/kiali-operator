@@ -246,7 +246,7 @@ kiali_defaults:
       - istio-ca-secret
     clustering:
       autodetect_secrets:
-        enabled: true
+        enabled: false
         label: "istio/multiCluster=true"
       clusters: []
     disabled_features: []

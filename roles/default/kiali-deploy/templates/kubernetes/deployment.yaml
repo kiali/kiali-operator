@@ -120,7 +120,7 @@ spec:
 {% endfor %}
 {% for sec in kiali_deployment_remote_cluster_secret_volumes %}
         - name: {{ sec }}
-          mountPath: "/kiali-remote-cluster-secrets/{{ sec }}"
+          mountPath: "/kiali-remote-cluster-secrets/{{ kiali_deployment_remote_cluster_secret_volumes[sec].secret_name }}"
           readOnly: true
 {% endfor %}
 {% if kiali_vars.deployment.resources|length > 0 %}
