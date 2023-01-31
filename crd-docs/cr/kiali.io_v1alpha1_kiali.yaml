@@ -417,7 +417,6 @@ spec:
   kubernetes_config:
     burst: 200
     cache_duration: 300
-    cache_enabled: true
     cache_istio_types:
     - "AuthorizationPolicy"
     - "DestinationRule"
