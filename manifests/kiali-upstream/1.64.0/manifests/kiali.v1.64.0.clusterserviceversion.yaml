@@ -12,7 +12,7 @@ metadata:
     support: Kiali
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: 2023-01-30T07:16:47Z
+    createdAt: 2023-01-30T18:03:15Z
     alm-examples: |-
       [
         {
@@ -37,7 +37,7 @@ metadata:
 spec:
   version: 1.64.0
   maturity: stable
-  replaces: kiali-operator.v1.63.0
+  replaces: kiali-operator.v1.63.1
   displayName: Kiali Operator
   description: |-
     ## About the managed application
