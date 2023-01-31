@@ -1157,9 +1157,6 @@ spec:
                   cache_duration:
                     description: "The ratio interval (expressed in seconds) used for the cache to perform a full refresh. Only used when `cache_enabled` is true."
                     type: integer
-                  cache_enabled:
-                    description: "Flag to use a Kubernetes cache for watching changes and updating pods and controllers data asynchronously."
-                    type: boolean
                   cache_istio_types:
                     description: "Kiali can cache VirtualService, DestinationRule, Gateway and ServiceEntry Istio resources if they are present on this list of Istio types. Other Istio types are not yet supported."
                     type: array
