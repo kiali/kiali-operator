@@ -895,6 +895,9 @@ spec:
                         description: "A set of tagKey/tagValue settings applied to every Jaeger query. Used to narrow unified traces to only those scoped to the Kiali instance."
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      query_timeout:
+                        description: "The amount of time in seconds Kiali will wait for a response from 'jaeger-query' service when fetching traces."
+                        type: integer
                       url:
                         description: "The external URL that will be used to generate links to Jaeger. It must be accessible to clients external to the cluster (e.g: a browser) in order to generate valid links. If the tracing service is deployed with a QUERY_BASE_PATH set, set this URL like https://<hostname>/<QUERY_BASE_PATH>. For example, https://tracing-service:8080/jaeger"
                         type: string
