@@ -997,6 +997,7 @@ spec:
                       autodetect_secrets:
                         description: "Settings to allow cluster secrets to be auto-detected. Secrets must exist in the Kiali deployment namespace."
                         type: object
+                        properties:
                           enabled:
                             description: "If true then remote cluster secrets will be autodetected during the installation of the Kiali Server Deployment. Any remote cluster secrets found in the Kiali deployment namespace will be mounted to the Kiali Server's file system. If false, you can still manually specify the remote cluster secret information in the 'clusters' setting if you wish to utilize multicluster features."
                             type: boolean
