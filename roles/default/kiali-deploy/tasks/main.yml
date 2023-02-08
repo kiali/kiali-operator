@@ -727,7 +727,7 @@
     all_remote_cluster_secrets: "{{ query(k8s_plugin, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='Secret', label_selector=kiali_vars.kiali_feature_flags.clustering.autodetect_secrets.label) }}"
   loop: "{{ all_remote_cluster_secrets }}"
   set_fact:
-    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.metadata.annotations['networking.istio.io/cluster']|default(item.metadata.name): {'secret_name': item.metadata.name }}) }}"
+    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.metadata.annotations['kiali.io/cluster']|default(item.metadata.name): {'secret_name': item.metadata.name }}) }}"
   when:
   - kiali_vars.kiali_feature_flags.clustering.autodetect_secrets.enabled
 
