@@ -246,8 +246,8 @@ kiali_defaults:
       - istio-ca-secret
     clustering:
       autodetect_secrets:
-        enabled: false
-        label: "istio/multiCluster=true"
+        enabled: true
+        label: "kiali.io/multiCluster=true"
       clusters: []
     disabled_features: []
     istio_injection_action: true
