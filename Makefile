@@ -9,7 +9,7 @@ OUTDIR=${ROOTDIR}/_output
 TARGET_ARCHS ?= amd64 arm64 s390x ppc64le
 
 # Identifies the current build.
-VERSION ?= v1.57.5
+VERSION ?= v1.57.6
 COMMIT_HASH ?= $(shell git rev-parse HEAD)
 
 # Identifies the Kiali operator container image that will be built
