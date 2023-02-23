@@ -779,6 +779,9 @@ spec:
                       root_namespace:
                         description: "The namespace to treat as the administrative root namespace for Istio configuration."
                         type: string
+                      skip_wildcard_gateway_hosts:
+                        description: "To skip KIA0301 validation for Gateways with wildcards in hosts."
+                        type: boolean
                       url_service_version:
                         description: "The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint."
                         type: string

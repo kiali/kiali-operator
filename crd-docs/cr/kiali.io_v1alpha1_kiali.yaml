@@ -415,6 +415,7 @@ spec:
       refresh_interval: "60s"
     validations:
       ignore: ["KIA1201"]
+      skip_wildcard_gateway_hosts: false
 
   kubernetes_config:
     burst: 200
