@@ -780,7 +780,7 @@ spec:
                         description: "The namespace to treat as the administrative root namespace for Istio configuration."
                         type: string
                       skip_wildcard_gateway_hosts:
-                        description: "To skip KIA0301 validation for Gateways with wildcards in hosts."
+                        description: "The KIA0301 validation checks duplicity of host and port combinations across all Istio Gateways. This includes also Gateways with '*' in hosts. But Istio considers such a Gateway with a wildcard in hosts as the last in order, after the Gateways with FQDN in hosts. This option is to skip Gateways with wildcards in hosts from the KIA0301 validations but still keep Gateways with FQDN hosts."
                         type: boolean
                       url_service_version:
                         description: "The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint."
