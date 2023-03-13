@@ -239,13 +239,13 @@ spec:
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "${KIALI_1_57}"
+                  value: "${KIALI_1_65}"
+                - name: RELATED_IMAGE_kiali_v1_65
+                  value: "${KIALI_1_65}"  
                 - name: RELATED_IMAGE_kiali_v1_57
                   value: "${KIALI_1_57}"
                 - name: RELATED_IMAGE_kiali_v1_48
                   value: "${KIALI_1_48}"
-                - name: RELATED_IMAGE_kiali_v1_36
-                  value: "${KIALI_1_36}"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
