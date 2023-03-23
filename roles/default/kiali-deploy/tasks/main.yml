@@ -471,6 +471,13 @@
 # NOTE: there is a special value of accessible_namespaces - two asterisks ("**") means Kiali is to be given access to all
 # namespaces via a single cluster role (as opposed to individual roles in each accessible namespace).
 
+# Before we do anything, see if the user wants to use the Istio discoverySelectors to determine accessible_namespaces.
+# This is denoted with "++" as the value of accessible_namespaces. If so, see if discoverySelectors are defined in the
+# Istio ConfigMap meshConfig settings. If not, then fallback to "**" (that is, give access cluster-wide). If so,
+# then change accessible_namespaces to be only those namespaces that are discovered via the discoverySelectors.
+
+- include_tasks: get-discovery-selector-namespaces.yml
+
 - name: Determine the Role and RoleBinding kinds that the operator will create and that the role templates will use
   set_fact:
     role_kind: "{{ 'ClusterRole' if '**' in kiali_vars.deployment.accessible_namespaces else 'Role' }}"
