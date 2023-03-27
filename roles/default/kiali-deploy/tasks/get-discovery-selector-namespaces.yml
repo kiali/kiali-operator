@@ -1,53 +1,48 @@
 # This will use the Istio ConfigMap meshConfig.discoverSelectors to discover namespaces that Kiali should be given access to.
-# If the discoverySelectors are not defined, Kiali will be given cluster-wide access (as if accessible_namespaces was set to ['**']).
+# If the discoverySelectors are not defined, Kiali will be given cluster-wide access (i.e. the normal behavior with accessible_namespaces set to ['**']).
 # If the discoverySelectors are defined but result in 0 namespaces discovered, then Kiali will ultimately only be given access to the control plane namespace.
-# All of this is done iff the user specified accessible_namespaces with the value of ['++']. Otherwise, these tasks are one big no-op.
 
-- name: Read the Istio ConfigMap and get meshConfig
+- name: If we need the discoverySelectors, read the Istio ConfigMap and get meshConfig
   vars:
-    istio_config_map_resource: "{{ lookup(k8s_plugin, api_version='v1', kind='ConfigMap', namespace=kiali_vars.istio_namespace, resource_name=kiali_vars.external_services.istio.config_map_name) | default({}) }}"
+    istio_config_map_resource: "{{ ({'data': {'mesh': {}}}) if '**' not in kiali_vars.deployment.accessible_namespaces else (lookup(k8s_plugin, api_version='v1', kind='ConfigMap', namespace=kiali_vars.istio_namespace, resource_name=kiali_vars.external_services.istio.config_map_name, errors='warn') | default({})) }}"
   set_fact:
     istio_config_map_meshconfig: "{{ istio_config_map_resource.data.mesh | from_yaml }}"
   when:
-  - istio_config_map_resource | length > 0
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - istio_config_map_resource.data is defined
+  - istio_config_map_resource.data.mesh is defined
 - fail:
     msg: "Cannot read the Istio ConfigMap named [{{ kiali_vars.external_services.istio.config_map_name }}] from namespace [{{ kiali_vars.istio_namespace }}]."
   when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
   - istio_config_map_meshconfig is not defined
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
-
-- name: If Istio meshConfig discoverySelectors is empty, assume cluster-wide access is to be given to Kiali (accessible_namespaces=[**])
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'accessible_namespaces': ['**']}}, recursive=True) }}"
-  when:
-  - (istio_config_map_meshconfig.discoverySelectors is not defined) or (istio_config_map_meshconfig.discoverySelectors | length == 0)
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
 
 - name: Find namespaces selected by the discovery selectors
+  vars:
+    discovery_selectors: "{{ istio_config_map_meshconfig.discoverySelectors|default([]) | parse_selectors }}"
   set_fact:
     discovery_selector_namespaces: "{{ (discovery_selector_namespaces|default([]) + query(k8s_plugin, kind='Namespace', label_selector=(item|join(',')))) | unique }}"
-  vars:
-    discovery_selectors: "{{ istio_config_map_meshconfig.discoverySelectors | parse_selectors }}"
   loop: "{{ discovery_selectors }}"
   when:
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
 
 - name: Get just the names of the discovered namespaces
   set_fact:
     discovery_selector_namespaces_names: "{{ discovery_selector_namespaces_names|default([]) + [item.metadata.name] }}"
-  loop: "{{ discovery_selector_namespaces }}"
+  loop: "{{ discovery_selector_namespaces|default([]) }}"
   when:
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
 
 - name: Garbage collect discovered namespaces to free up space
   set_fact:
     discovery_selector_namespaces: []
   when:
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - discovery_selector_namespaces is defined
 
 - name: Use discovered namespaces for accessible_namespaces
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'accessible_namespaces': (discovery_selector_namespaces_names|default([]))}}, recursive=True) }}"
   when:
-  - '"++" in kiali_vars.deployment.accessible_namespaces'
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - istio_config_map_meshconfig.discoverySelectors | default([]) | length > 0
