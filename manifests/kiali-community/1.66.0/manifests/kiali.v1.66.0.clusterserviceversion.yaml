@@ -194,6 +194,8 @@ spec:
                 app.kubernetes.io/part-of: kiali-operator
               annotations:
                 prometheus.io/scrape: "true"
+                prometheus.io/path: /metrics
+                prometheus.io/port: "8080"
             spec:
               serviceAccountName: kiali-operator
               containers:
