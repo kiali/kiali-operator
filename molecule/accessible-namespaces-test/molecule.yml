@@ -11,7 +11,7 @@ provisioner:
   name: ansible
   config_options:
     defaults:
-      callback_enabled: junit
+      callbacks_enabled: junit
   playbooks:
     destroy: ./destroy-accessible-namespaces-test.yml
     prepare: ./prepare-accessible-namespaces-test.yml

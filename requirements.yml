@@ -29,6 +29,9 @@
 #
 # To install that version locally, you can git clone the source via:
 #   git clone -b v<ansible version> --depth 1 https://github.com/ansible/ansible.git
+# and then set up your environment via:
+#   source ./ansible/hacking/env-setup -q
+
 
 collections:
 - name: kubernetes.core
