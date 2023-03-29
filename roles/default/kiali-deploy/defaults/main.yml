@@ -62,6 +62,7 @@ kiali_defaults:
       node: {}
       pod: {}
       pod_anti: {}
+    #cluster_wide_access:
     configmap_annotations: {}
     custom_secrets: []
     host_aliases: []

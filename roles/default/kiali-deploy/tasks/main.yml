@@ -366,6 +366,18 @@
   - kiali_vars.auth.strategy == 'openshift'
   - kiali_vars.auth.openshift.client_id_prefix != kiali_vars.deployment.instance_name
 
+- name: The default cluster_wide_access setting is determined by deployment.accessible_namespaces
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'cluster_wide_access': ('**' in kiali_vars.deployment.accessible_namespaces)}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.cluster_wide_access is not defined
+- name: Make sure cluster_wide_access does not erroneously restrict access when all namespaces are to be accessible.
+  fail:
+    msg: "deployment.cluster_wide_access must be enabled (i.e. 'true') when deployment.accessible_namespaces has '**'' (i.e. all namespaces are to be accessible). Aborting."
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == False
+
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
     msg: "AUTH STRATEGY={{ kiali_vars.auth.strategy }}"
@@ -471,19 +483,20 @@
 # NOTE: there is a special value of accessible_namespaces - two asterisks ("**") means Kiali is to be given access to all
 # namespaces via a single cluster role (as opposed to individual roles in each accessible namespace).
 
-# Before we do anything, see if the user wants to use the Istio discoverySelectors to determine accessible_namespaces.
-# This is denoted with "++" as the value of accessible_namespaces. If so, see if discoverySelectors are defined in the
-# Istio ConfigMap meshConfig settings. If not, then fallback to "**" (that is, give access cluster-wide). If so,
-# then change accessible_namespaces to be only those namespaces that are discovered via the discoverySelectors.
+# Before we do anything, process the Istio discoverySelectors to determine accessible_namespaces when applicable.
+# (discoverySelectors are defined in the Istio ConfigMap meshConfig settings.) If discovery selectors are used,
+# then accessible_namespaces will be changed so it contains only those namespaces that are discovered by the selectors.
+
+# Note that we look at deployment.cluster_wide_access to see if ClusterRoles are to be created or not.
 
 - include_tasks: get-discovery-selector-namespaces.yml
 
 - name: Determine the Role and RoleBinding kinds that the operator will create and that the role templates will use
   set_fact:
-    role_kind: "{{ 'ClusterRole' if '**' in kiali_vars.deployment.accessible_namespaces else 'Role' }}"
-    role_binding_kind: "{{ 'ClusterRoleBinding' if '**' in kiali_vars.deployment.accessible_namespaces else 'RoleBinding' }}"
+    role_kind: "{{ 'ClusterRole' if kiali_vars.deployment.cluster_wide_access == True else 'Role' }}"
+    role_binding_kind: "{{ 'ClusterRoleBinding' if kiali_vars.deployment.cluster_wide_access == True else 'RoleBinding' }}"
 
-- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterroles
+- name: Determine if the operator can support cluster wide access - can_i create clusterroles
   register: can_i_create_clusterroles
   ignore_errors: yes
   k8s:
@@ -497,9 +510,9 @@
           resource: clusterroles
           verb: create
   when:
-  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == True
 
-- name: Determine if the operator can support accessible_namespaces=** - can_i create clusterrolebindings
+- name: Determine if the operator can support cluster wide access - can_i create clusterrolebindings
   register: can_i_create_clusterrolebindings
   ignore_errors: yes
   k8s:
@@ -513,12 +526,12 @@
           resource: clusterrolebindings
           verb: create
   when:
-  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == True
 
 - fail:
-    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterroles"
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] or cluster_wide_access set to true because it does not have permissions to create clusterroles"
   when:
-  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == True
   - can_i_create_clusterroles is defined
   - can_i_create_clusterroles.result is defined
   - can_i_create_clusterroles.result.status is defined
@@ -526,9 +539,9 @@
   - can_i_create_clusterroles.result.status.allowed == False
 
 - fail:
-    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] because it does not have permissions to create clusterrolebindings"
+    msg: "The operator cannot support deployment.accessible_namespaces set to ['**'] or cluster_wide_access set to true because it does not have permissions to create clusterrolebindings"
   when:
-  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == True
   - can_i_create_clusterrolebindings is defined
   - can_i_create_clusterrolebindings.result is defined
   - can_i_create_clusterrolebindings.result.status is defined
@@ -562,9 +575,9 @@
 # do some security checks - abort if the operator is forbidden from allowing certain accessible_namespace values
 - name: Abort if all namespace access is not allowed
   fail:
-    msg: "The operator is forbidden from installing Kiali with deployment.accessible_namespaces set to ['**']"
+    msg: "The operator is forbidden from installing Kiali with deployment.accessible_namespaces set to ['**'] or deployment.cluster_wide_access set to 'true'"
   when:
-  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == True
   - lookup('env', 'ALLOW_ALL_ACCESSIBLE_NAMESPACES') | default('false', True) != "true"
 
 - name: Get labeled accessible namespaces
@@ -574,7 +587,7 @@
   set_fact:
     only_allowed_labeled_namespaces: "{{ query(k8s_plugin, kind='Namespace', api_version='v1', label_selector=label_selector) | json_query('[*].metadata.name') }}"
   when:
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access != True
   - label != ""
 
 - name: Abort if accessible namespaces contains namespaces not labeled
@@ -583,17 +596,17 @@
   fail:
     msg: "Operator is forbidden to allow Kiali CR to specify one or more accessible namespaces that were not labeled: {{ ('Number of rejected namespaces=' + (ns_diff | length | string)) if (ns_diff | length > 10) else (ns_diff) }}"
   when:
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access != True
   - only_allowed_labeled_namespaces is defined
   - ns_diff | length > 0
 
 # Note that we add the instance name to the member-of key name only if the instance name is not the default 'kiali'.
 # This is for backward compatibility, and for simplicity when deploying under normal default conditions.
-- name: When accessible namespaces are specified, ensure label_selector_include is set
+- name: When accessible namespaces are specified and we are not to give cluster wide access, ensure label_selector_include is set
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'api': {'namespaces': {'label_selector_include': ('kiali.io/' + ((kiali_vars.deployment.instance_name + '.') if kiali_vars.deployment.instance_name != 'kiali' else '') + 'member-of=' + kiali_vars.deployment.namespace)}}}, recursive=True) }}"
   when:
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access != True
   - kiali_vars.api.namespaces.label_selector_include is not defined
 
 - name: Make sure label_selector_include is in the valid format name=value
@@ -767,21 +780,35 @@
     current_image_version: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_version') }}"
     current_instance_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.instance_name') }}"
     current_auth_strategy: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('auth.strategy') }}"
+    current_cluster_wide_access: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.cluster_wide_access') }}"
   when:
   - current_configmap is defined
   - current_configmap.data is defined
   - current_configmap.data['config.yaml'] is defined
 
-# Because we need to remove the labels that were created before, we must not allow the user to change
-# the label_selector_include. So if the current accessible_namespaces is not ** but the label_selector_include is being changed,
-# we need to abort since we won't know what the old labels were. If current accessible_namespaces is ** then
-# we know we didn't create labels before so we can allow label_selector_include to change.
+# Because we need to remove the labels that were created before (this only happens when cluster wide access was not given),
+# we must not allow the user to change the label_selector_include. So if cluster wide access is not given but the
+# label_selector_include is being changed, we need to abort since we won't know what the old labels were. If current
+# accessible_namespaces is ** or the cluster wide access is currently True then we know we didn't create labels before so
+# we can allow label_selector_include to change.
+#
+# Now that there is an independent cluster_wide_access setting introduced, we have to remember it did not exist in older Kiali versions.
+# If current_cluster_wide_access is defined, that does not mean it was set - in older versions that setting never existed.
+# If current_cluster_wide_access == "", that means the value was not set in the ConfigMap - so consider that as "undefined" or "not set".
+# Therefore, current_cluster_wide_access|bool != True is only significant if current_cluster_wide_access != "".
+# Cluster wide access was given to the current installation if current_accessible_namespaces == '**' [to take into account older versions] OR
+# current_cluster_wide_access|bool == True.
+# Cluster wide access was not given to the current installation if current_accessible_namespaces != '**'
+# AND (current_cluster_wide_access == "" [to take into account older versions] OR current_cluster_wide_access|bool != True).
+
 - name: Do not allow user to change label_selector_include
   fail:
     msg: "The api.namespaces.label_selector_include cannot be changed to a different value. It was [{{ current_label_selector_include }}] but is now configured to be [{{ kiali_vars.api.namespaces.label_selector_include }}]. In order to install Kiali with a different label selector than what was used before, please uninstall Kiali first."
   when:
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access == "" or current_cluster_wide_access|bool != True
   - current_label_selector_include is defined
   - kiali_vars.api.namespaces.label_selector_include is defined
   - current_label_selector_include != kiali_vars.api.namespaces.label_selector_include
@@ -792,6 +819,8 @@
   when:
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access == "" or current_cluster_wide_access|bool != True
 
 - include_tasks: update-status-progress.yml
   vars:
@@ -807,9 +836,9 @@
 - name: Delete Kiali cluster roles if no longer given special access to all namespaces
   include_tasks: remove-clusterroles.yml
   when:
-  - current_accessible_namespaces is defined
-  - '"**" in current_accessible_namespaces'
+  - (current_accessible_namespaces is defined and '**' in current_accessible_namespaces) or (current_cluster_wide_access is defined and current_cluster_wide_access|bool == True)
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access != True
 
 # Role Bindings are always "view-only" unless auth.strategy is anonymous and view_only_mode is false.
 # If the view_only_mode or auth.strategy changes, we'll delete the roles to make sure we create the correct ones.
@@ -830,6 +859,8 @@
   - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy) or (current_rolebinding_view_only|bool == False and kiali_vars.auth.strategy != 'anonymous')
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access == "" or current_cluster_wide_access|bool != True
 
 - name: Delete Kiali cluster roles if view_only_mode or auth.strategy is changing since role bindings are immutable
   include_tasks: remove-clusterroles.yml
@@ -837,8 +868,7 @@
   - current_view_only_mode is defined
   - current_auth_strategy is defined
   - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy) or (current_rolebinding_view_only|bool == False and kiali_vars.auth.strategy != 'anonymous')
-  - current_accessible_namespaces is defined
-  - '"**" in current_accessible_namespaces'
+  - (current_accessible_namespaces is defined and '**' in current_accessible_namespaces) or (current_cluster_wide_access is defined and current_cluster_wide_access|bool == True)
 
 - include_tasks: update-status-progress.yml
   vars:
@@ -887,6 +917,7 @@
       {% endfor %}
   when:
   - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access != True
 
 - name: Delete Kiali deployment if image is changing - this uninstalled any old version of Kiali that might be running
   k8s:

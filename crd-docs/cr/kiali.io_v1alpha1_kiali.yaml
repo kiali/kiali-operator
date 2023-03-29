@@ -97,6 +97,8 @@ spec:
                 values:
                 - S2
             topologyKey: topology.kubernetes.io/zone
+    # default: cluster_wide_access is undefined
+    cluster_wide_access: false
     # default: configmap_annotations is empty
     configmap_annotations:
       strategy.spinnaker.io/versioned: "false"
