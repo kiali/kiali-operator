@@ -282,6 +282,7 @@ kiali_defaults:
       list:
         include_health: true
         include_istio_resources: true
+        include_validations: true
       metrics_inbound:
         aggregations: []
       metrics_outbound:
