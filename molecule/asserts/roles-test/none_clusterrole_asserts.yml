@@ -1,0 +1,45 @@
+# Confirms there are no cluster roles defined
+- name: Get cluster roles
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: ClusterRole
+   name: "{{ instance_name }}"
+  register: empty_clusterroles
+
+- name: Get viewer cluster roles
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: ClusterRole
+   name: "{{ instance_name }}-viewer"
+  register: empty_clusterroles_viewer
+
+- name: Assert that no cluster roles exist
+  assert:
+    that: "{{ empty_clusterroles.resources | length == 0 }}"
+    fail_msg: "The kiali-viewer cluster role still exists"
+
+- name: Assert that no viewer cluster roles exist
+  assert:
+    that: "{{ empty_clusterroles_viewer.resources | length == 0 }}"
+    fail_msg: "The kiali-viewer cluster role still exists"
+
+- name: Get cluster role binding
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: ClusterRoleBinding
+   name: "{{ instance_name }}"
+  register: empty_clusterrolebindings
+
+- name: Assert that no cluster role binding exists
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  assert:
+    that:
+    - "{{ empty_clusterrolebindings.resources | length == 0 }}"
+    fail_msg: "The kiali cluster role binding still exists"

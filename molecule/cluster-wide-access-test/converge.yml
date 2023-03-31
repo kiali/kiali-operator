@@ -19,6 +19,13 @@
 
   # assert that we have clusterroles since we have been given cluster wide access
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
+      - cluster-wide-access-test-2
+      - cluster-wide-access-test-x
 
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
@@ -51,6 +58,13 @@
 
   # assert that we have clusterroles since we have been given cluster wide access
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
+      - cluster-wide-access-test-2
+      - cluster-wide-access-test-x
 
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
@@ -89,6 +103,13 @@
 
   # assert that we have clusterroles since we have been given cluster wide access
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
+      - cluster-wide-access-test-2
+      - cluster-wide-access-test-x
 
   # Turn off cluster wide access
   - include_tasks: ../common/set_kiali_cr.yml
@@ -108,9 +129,39 @@
   # assert that we have roles since we have NOT been given cluster wide access
   - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
     vars:
-      role_namespaces_to_test: [ "{{ istio.control_plane_namespace }}", 'cluster-wide-access-test-1', 'cluster-wide-access-test-2' ]
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
+      - cluster-wide-access-test-2
+  - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
 
   - name: Remove the discovery selectors
     include_tasks: ./set-istio-configmap-discovery-selectors.yml
     vars:
       discovery_selectors: []
+
+  # put back AN=** and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'accessible_namespaces': ['**'], 'cluster_wide_access': True }}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list: [ '**' ]
+
+  - debug: msg="test to make sure we are back to cluster-wide-access is True"
+  - assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == True
+
+  - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
+      - cluster-wide-access-test-2
+      - cluster-wide-access-test-x

@@ -1,0 +1,64 @@
+# pass in var "role_namespaces_to_test" to check Roles in those namespaces.
+# If you do not set that var, the default will be the namespaces in kiali.accessible_namespaces.
+
+- name: Get roles
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: Role
+   namespace: "{{ item[0] }}"
+   name: "{{ item[1] }}"
+  register: empty_roles
+  with_nested:
+  - "{{ role_namespaces_to_test | default(kiali.accessible_namespaces) }}"
+  - "{{ instance_name}}"
+
+- name: Assert that namespaces do not have the roles
+  assert:
+    that: "{{ item.resources | length == 0 }}"
+    fail_msg: "The kiali roles still exist"
+  with_items:
+  - "{{ empty_roles.results }}"
+
+- name: Get viewer roles
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: Role
+   namespace: "{{ item[0] }}"
+   name: "{{ item[1] }}"
+  register: empty_roles
+  with_nested:
+  - "{{ role_namespaces_to_test | default(kiali.accessible_namespaces) }}"
+  - "{{ instance_name}}-viewer"
+
+- name: Assert that namespaces do not have the viewer roles
+  assert:
+    that: "{{ item.resources | length == 0 }}"
+    fail_msg: "The kiali-viewer roles still exist"
+  with_items:
+  - "{{ empty_roles.results }}"
+
+- name: Get role bindings
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: RoleBinding
+   namespace: "{{ item[0] }}"
+   name: "{{ item[1] }}"
+  register: empty_rolebindings
+  with_nested:
+  - "{{ role_namespaces_to_test | default(kiali.accessible_namespaces) }}"
+  - "{{ instance_name}}"
+
+- name: Assert the role bindings do not exist
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  assert:
+    that: "{{ item.resources | length == 0 }}"
+    fail_msg: "The kiali role bindings still exist"
+  with_items:
+  - "{{ empty_rolebindings.results }}"
