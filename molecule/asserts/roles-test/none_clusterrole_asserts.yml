@@ -20,7 +20,7 @@
 - name: Assert that no cluster roles exist
   assert:
     that: "{{ empty_clusterroles.resources | length == 0 }}"
-    fail_msg: "The kiali-viewer cluster role still exists"
+    fail_msg: "The kiali cluster role still exists"
 
 - name: Assert that no viewer cluster roles exist
   assert:
@@ -40,6 +40,5 @@
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
   assert:
-    that:
-    - "{{ empty_clusterrolebindings.resources | length == 0 }}"
+    that: "{{ empty_clusterrolebindings.resources | length == 0 }}"
     fail_msg: "The kiali cluster role binding still exists"
