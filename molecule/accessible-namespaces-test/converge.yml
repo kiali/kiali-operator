@@ -17,7 +17,7 @@
       - kiali_configmap.api.namespaces.label_selector_include is not defined
 
   - debug: msg="test to make sure the default AN=** behavior works (default include/exclude filters are in effect)"
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
       namespaces_expected:
@@ -40,7 +40,7 @@
         label_selector_include: null
         label_selector_exclude: null
 
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
       max_namespaces_expected: 3
@@ -58,7 +58,7 @@
         label_selector_include: null
         label_selector_exclude: "customLabel=test"
 
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 2
       max_namespaces_expected: 2
@@ -75,7 +75,7 @@
         label_selector_include: "customLabel=test"
         label_selector_exclude: null
 
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 2
       max_namespaces_expected: 2
@@ -92,7 +92,7 @@
         label_selector_include: null
         label_selector_exclude: null
 
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
       namespaces_expected:
@@ -131,7 +131,7 @@
       - namespacesWithKialiLabel | length == 3
 
   - debug: msg="test the normal accessible namespaces (without custom include/exclude filters defined)"
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
       max_namespaces_expected: 3
@@ -149,7 +149,7 @@
         label_selector_include: null
         label_selector_exclude: "customLabel=test"
 
-  - import_tasks: ./assert-api-namespaces-result.yml
+  - import_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 1
       max_namespaces_expected: 1

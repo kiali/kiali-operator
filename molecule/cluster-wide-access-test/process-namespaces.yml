@@ -1,0 +1,31 @@
+- name: "Process Test Namespaces [state={{ state }}]"
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+  tasks:
+  - k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: cluster-wide-access-test-1
+          labels:
+            discoverySelectorLabel1: test
+  - k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: cluster-wide-access-test-2
+          labels:
+            discoverySelectorLabel2: matchme
+  - k8s:
+      state: "{{ state }}"
+      api_version: v1
+      kind: Namespace
+      name: cluster-wide-access-test-x
+

@@ -1,0 +1,37 @@
+# This will set discoverySelectors in the Istio ConfigMap. You either provide the array of matches like this:
+#    discovery_selectors:
+#    - matchLabels: { "foo": "bar" } (and any other ones you want to set)
+# or set it to an empty list to delete discoverySelectors from the Istio ConfigMap, like this:
+#    discovery_selectors: []
+
+- fail:
+    msg: "Test needs to set 'discovery_selectors'"
+  when:
+  - discovery_selectors is not defined
+
+- name: Get the Istio ConfigMap data.mesh configuration
+  set_fact:
+    original_istio_configmap_data_mesh_yaml: "{{ (istio_configmap.data.mesh | from_yaml) if (istio_configmap.data is defined and istio_configmap.data.mesh is defined) else {} }}"
+  vars:
+    query_results: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='istio', namespace=istio.control_plane_namespace) }}"
+    istio_configmap: "{{ (query_results[0]) if query_results|length == 1 else {} }}"
+  when:
+  - original_istio_configmap_data_mesh_yaml is not defined
+
+- fail:
+    msg: "Failed to read the Istio ConfigMap 'istio' in namespace [{{ istio.control_plane_namespace }}] or it is missing data.mesh settings."
+  when:
+  - original_istio_configmap_data_mesh_yaml is not defined or original_istio_configmap_data_mesh_yaml | length == 0
+
+- name: "Setting discoverySelectors in Istio ConfigMap data.mesh"
+  vars:
+    istio_configmap_data_mesh_yaml_with_discovery_selectors: "{{ original_istio_configmap_data_mesh_yaml | combine(({'discoverySelectors': discovery_selectors}) if discovery_selectors|length > 0 else {}, recursive=True) }}"
+    data_mesh: "{{ istio_configmap_data_mesh_yaml_with_discovery_selectors | to_yaml(default_flow_style=False) }}"
+  k8s:
+    state: patched
+    kind: ConfigMap
+    namespace: "{{ istio.control_plane_namespace }}"
+    name: "istio"
+    definition:
+      data:
+        mesh: "{{ data_mesh }}"

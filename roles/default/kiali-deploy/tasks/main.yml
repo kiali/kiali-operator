@@ -371,12 +371,6 @@
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'cluster_wide_access': ('**' in kiali_vars.deployment.accessible_namespaces)}}, recursive=True) }}"
   when:
   - kiali_vars.deployment.cluster_wide_access is not defined
-- name: Make sure cluster_wide_access does not erroneously restrict access when all namespaces are to be accessible.
-  fail:
-    msg: "deployment.cluster_wide_access must be enabled (i.e. 'true') when deployment.accessible_namespaces has '**'' (i.e. all namespaces are to be accessible). Aborting."
-  when:
-  - '"**" in kiali_vars.deployment.accessible_namespaces'
-  - kiali_vars.deployment.cluster_wide_access == False
 
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
@@ -490,6 +484,14 @@
 # Note that we look at deployment.cluster_wide_access to see if ClusterRoles are to be created or not.
 
 - include_tasks: get-discovery-selector-namespaces.yml
+
+# if there are no discovery selectors, and accessible_namespaces is still "**" we must have cluster-wide-access, it is an error otherwise.
+- name: Make sure cluster_wide_access does not erroneously restrict access when all namespaces are to be accessible.
+  fail:
+    msg: "deployment.cluster_wide_access must be enabled (i.e. 'true') when deployment.accessible_namespaces has '**'' (i.e. all namespaces are to be accessible) and there are no discovery selectors defined. Aborting."
+  when:
+  - '"**" in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == False
 
 - name: Determine the Role and RoleBinding kinds that the operator will create and that the role templates will use
   set_fact:

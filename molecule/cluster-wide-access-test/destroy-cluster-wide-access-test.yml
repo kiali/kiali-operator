@@ -1,0 +1,13 @@
+- name: Destroy
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+- name: Include the base destroy play to destroy the first kiali install
+  import_playbook: ../default/destroy.yml
+
+- name: Delete the test namespaces
+  import_playbook: ./process-namespaces.yml
+  vars:
+    state: absent
