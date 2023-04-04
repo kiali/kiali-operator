@@ -93,7 +93,7 @@
   - is_openshift == True
 
 - name: Get the Kiali Route URL
-  include: openshift/os-get-kiali-route-url.yml
+  include_tasks: openshift/os-get-kiali-route-url.yml
   when:
   - is_openshift == True
 

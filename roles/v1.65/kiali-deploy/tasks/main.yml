@@ -888,14 +888,14 @@
 # Now deploy all resources for the specific cluster environment
 
 - name: Execute for OpenShift environment
-  include: openshift/os-main.yml
+  include_tasks: openshift/os-main.yml
   vars:
     deployment_last_updated: "{{ current_deployment_last_updated }}"
   when:
   - is_openshift == True
 
 - name: Execute for Kubernetes environment
-  include: kubernetes/k8s-main.yml
+  include_tasks: kubernetes/k8s-main.yml
   vars:
     deployment_last_updated: "{{ current_deployment_last_updated }}"
   when:
