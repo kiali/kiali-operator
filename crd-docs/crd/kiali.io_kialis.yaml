@@ -1096,6 +1096,8 @@ spec:
                           include_validations:
                             description: "Include Configuration validation column (by default) for applicable list views. Setting to false can improve performance."
                             type: boolean
+                          show_include_toggles:
+                            description: "If true list pages display checkbox toggles for the include options, Otherwise the configured settings are applied but can not be changed by the user. Default is false."
                       metrics_per_refresh:
                         description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
                         type: string
