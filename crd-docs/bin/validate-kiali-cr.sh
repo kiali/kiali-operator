@@ -140,6 +140,8 @@ fi
 # install the test CRD with the schema
 if ! echo "$(crd)" | ${CLIENT_EXE} apply --validate=true --wait=true -f - &> /dev/null ; then
   echo "ERROR! Failed to install the test CRD"
+  # run it again to show the errors
+  echo "$(crd)" | ${CLIENT_EXE} apply --validate=true --wait=true -f -
   exit 1
 fi
 
