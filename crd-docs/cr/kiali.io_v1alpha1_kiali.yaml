@@ -412,7 +412,7 @@ spec:
           label: "istio_io_rev"
       # default: namespaces is an empty list
       namespaces: ["istio-system"]
-      refresh_interval: "60s"
+      refresh_interval: "1m"
     validations:
       ignore: ["KIA1201"]
       skip_wildcard_gateway_hosts: false
