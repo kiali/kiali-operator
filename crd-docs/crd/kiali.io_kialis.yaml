@@ -1087,6 +1087,8 @@ spec:
                                 enum: ["none","sent","received","total"]
                       list:
                         description: "Default settings for the List views (Apps, Workloads, etc)."
+                        type: object
+                        properties:
                           include_health:
                             description: "Include Health column (by default) for applicable list views. Setting to false can improve performance."
                             type: boolean
