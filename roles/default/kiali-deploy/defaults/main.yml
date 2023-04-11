@@ -56,7 +56,7 @@ kiali_defaults:
   custom_dashboards: []
 
   deployment:
-    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    accessible_namespaces: ["**"]
     #additional_service_yaml:
     affinity:
       node: {}

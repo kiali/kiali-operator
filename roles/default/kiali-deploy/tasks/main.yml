@@ -477,15 +477,9 @@
 # NOTE: there is a special value of accessible_namespaces - two asterisks ("**") means Kiali is to be given access to all
 # namespaces via a single cluster role (as opposed to individual roles in each accessible namespace).
 
-# Before we do anything, process the Istio discoverySelectors to determine accessible_namespaces when applicable.
-# (discoverySelectors are defined in the Istio ConfigMap meshConfig settings.) If discovery selectors are used,
-# then accessible_namespaces will be changed so it contains only those namespaces that are discovered by the selectors.
-
 # Note that we look at deployment.cluster_wide_access to see if ClusterRoles are to be created or not.
 
-- include_tasks: get-discovery-selector-namespaces.yml
-
-# if there are no discovery selectors, and accessible_namespaces is still "**" we must have cluster-wide-access, it is an error otherwise.
+# if accessible_namespaces is "**", we must have cluster-wide-access, it is an error otherwise.
 - name: Make sure cluster_wide_access does not erroneously restrict access when all namespaces are to be accessible.
   fail:
     msg: "deployment.cluster_wide_access must be enabled (i.e. 'true') when deployment.accessible_namespaces has '**'' (i.e. all namespaces are to be accessible) and there are no discovery selectors defined. Aborting."

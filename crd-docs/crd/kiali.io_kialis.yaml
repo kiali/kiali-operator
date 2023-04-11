@@ -232,7 +232,7 @@ spec:
                 type: object
                 properties:
                   accessible_namespaces:
-                    description: "A list of namespaces Kiali is to be given access to. These namespaces have service mesh components that are to be observed by Kiali. You can provide names using regex expressions matched against all namespaces the operator can see. The default makes all namespaces accessible except for some internal namespaces that typically should be ignored. NOTE! If this has an entry with the special value of `'**'` (two asterisks), that will denote you want Kiali to be given access to all namespaces via a single cluster role (if using this special value of `'**'`, you are required to have already granted the operator permissions to create cluster roles and cluster role bindings). Note, however, if discovery selectors are in use, the `**` will only include those namespaces selected by the discovery selectors."
+                    description: "A list of namespaces Kiali is to be given access to. These namespaces have service mesh components that can be observed by Kiali. You can provide names using regex expressions matched against all namespaces the operator can see. The default makes all namespaces accessible. NOTE! If this has an entry with the special value of `'**'` (two asterisks), that will denote you want Kiali to be given access to all namespaces via a single cluster role (if using this special value of `'**'`, you are required to have already granted the operator permissions to create cluster roles and cluster role bindings)."
                     type: array
                     items:
                       type: string
@@ -254,7 +254,7 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                   cluster_wide_access:
-                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces, regardless of the value of `deployment.accessible_namespaces`. When true, this provides more efficient caching within the Kiali server. When not specified, this value will be `false` if `deployment.accessible_namespaces` does not have the special value of `'**'` otherwise this will be `true`. Note that you cannot explicitly set this to `false` if `deployment.accessible_namespaces` has the special value of `'**'` and discovery selectors are not in use - this special condition requires cluster-wide access and thus will always be enabled."
+                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces, regardless of the value of `deployment.accessible_namespaces`. When true, this provides more efficient caching within the Kiali server. When not specified, this value will be `false` if `deployment.accessible_namespaces` does not have the special value of `'**'` otherwise this will be `true`. Note that you cannot explicitly set this to `false` if `deployment.accessible_namespaces` has the special value of `'**'` - this special condition requires cluster-wide access and thus will always be enabled."
                     type: boolean
                   configmap_annotations:
                     description: "Custom annotations to be created on the Kiali ConfigMap."
