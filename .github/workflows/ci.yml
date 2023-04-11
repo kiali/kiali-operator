@@ -15,5 +15,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Validate OLM metadata
         run: make validate
+      - name: Validate CR
+        run: |
+          kind create cluster
+          CLIENT_EXE=kubectl make validate-cr
+          kind delete cluster
       - name: Build operator
         run: make build

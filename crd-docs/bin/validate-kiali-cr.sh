@@ -159,6 +159,7 @@ if [ -n "${KIALI_CR_FILE:-}" ]; then
   if ! cat "${KIALI_CR_FILE}" | sed 's/kind: Kiali/kind: TestKiali/g' | sed 's/- kiali.io\/finalizer//g' | kubectl apply -n ${NAMESPACE} -f - ; then
     echo "----------"
     echo "ERROR! Validation failed for Kiali CR [${KIALI_CR_FILE}]"
+    exit 1
   else
     echo "----------"
     echo "Kiali CR [${KIALI_CR_FILE}] is valid."
@@ -167,6 +168,7 @@ else
   if ! ${CLIENT_EXE} get -n "${NAMESPACE}" kiali "${KIALI_CR_NAME}" -o yaml | sed 's/kind: Kiali/kind: TestKiali/g' | sed 's/- kiali.io\/finalizer//g' | kubectl apply -n "${NAMESPACE}" -f - ; then
     echo "----------"
     echo "ERROR! Validation failed for Kiali CR [${KIALI_CR_NAME}] in namespace [${NAMESPACE}]"
+    exit 1
   else
     echo "----------"
     echo "Kiali CR [${KIALI_CR_NAME}] in namespace [${NAMESPACE}] is valid."
