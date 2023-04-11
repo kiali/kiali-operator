@@ -279,6 +279,11 @@ kiali_defaults:
           grpc: "requests"
           http: "requests"
           tcp: "sent"
+      list:
+        include_health: true
+        include_istio_resources: true
+        include_validations: true
+        show_include_toggles: false
       metrics_inbound:
         aggregations: []
       metrics_outbound:
