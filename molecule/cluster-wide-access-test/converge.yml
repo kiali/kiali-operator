@@ -13,9 +13,6 @@
     vars:
       namespace_list: [ '**' ]
 
-  - set_fact:
-      MAZZ: "DELETEME"
-
   - debug: msg="test to make sure the default AN=** behavior works (cluster-wide-access is True)"
   - assert:
       that:
@@ -116,8 +113,6 @@
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
       - cluster-wide-access-test-2
-    when:
-    - MAZZ == 'NOT MAZZ'
 
   # assert that we have clusterroles since we have been given cluster wide access
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
@@ -164,8 +159,6 @@
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
       - cluster-wide-access-test-2
-    when:
-    - MAZZ == 'NOT MAZZ'
 
   - name: Remove the discovery selectors
     include_tasks: ./set-istio-configmap-discovery-selectors.yml
@@ -181,8 +174,6 @@
       - "{{ istio.control_plane_namespace }}"
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
-    when:
-    - MAZZ == 'NOT MAZZ'
 
   # put back AN=** and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles
   - include_tasks: ../common/set_kiali_cr.yml
