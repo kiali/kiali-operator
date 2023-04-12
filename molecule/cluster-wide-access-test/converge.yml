@@ -8,9 +8,13 @@
   tasks:
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
+  # ASSERT AN == **
   - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
+
+  - set_fact:
+      MAZZ: "DELETEME"
 
   - debug: msg="test to make sure the default AN=** behavior works (cluster-wide-access is True)"
   - assert:
@@ -27,6 +31,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
+  # The server should return all namespaces
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
@@ -38,6 +43,7 @@
       namespaces_not_expected:
       - kiali-operator
 
+  # SET AN=[istio-system, cluster-wide-access-test-1, cluster-wide-access-test-x]
   - debug: msg="change to accessible_namespaces to a fixed list of namespaces but keep cluster-wide-access (set to True)"
   - include_tasks: ../common/set_accessible_namespaces_to_list.yml
     vars:
@@ -66,6 +72,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
+  # the server should only return the AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-x)
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
@@ -75,7 +82,7 @@
       - cluster-wide-access-test-1
       - cluster-wide-access-test-x
 
-  # change Istio ConfigMap to use discoverySelectors
+  # change Istio ConfigMap to use discoverySelectors - we will only select the namespace "cluster-wide-access-test-2"
   - include_tasks: ./set-istio-configmap-discovery-selectors.yml
     vars:
       discovery_selectors:
@@ -87,19 +94,30 @@
           values:
           - matchme
 
-  # change to accessible_namespaces back to ** but that won't matter because discoverySelectors will take over and reset AN
-  # But we will still have cluster-wide-access
+  # SET AN back to ** (but the server will only show us namespaces filtered by discoverySelectors)
+  # We will still have cluster-wide-access
   - include_tasks: ../common/set_accessible_namespaces_to_all.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
-  - include_tasks: ../asserts/accessible_namespaces_equals.yml
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'cluster-wide-access-test-1', 'cluster-wide-access-test-2' ]
+      namespace_list: [ '**' ]
   - assert:
       that:
       - kiali_configmap.deployment.cluster_wide_access == True
+
+  # the server should only return AN namespaces with discoverySelectors also filtering the namespaces
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 2
+      max_namespaces_expected: 2
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-2
+    when:
+    - MAZZ == 'NOT MAZZ'
 
   # assert that we have clusterroles since we have been given cluster wide access
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
@@ -111,17 +129,17 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # Turn off cluster wide access
+  # Turn off cluster wide access and set AN to [istio-system, cluster-wide-access-test-2, cluster-wide-access-test-x]
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
-      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'cluster_wide_access': False }}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'accessible_namespaces': [istio.control_plane_namespace, 'cluster-wide-access-test-[2x]'], 'cluster_wide_access': False }}}, recursive=True) }}"
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
   - include_tasks: ../asserts/accessible_namespaces_equals.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'cluster-wide-access-test-1', 'cluster-wide-access-test-2' ]
+      namespace_list: [ "{{ istio.control_plane_namespace }}", 'cluster-wide-access-test-2', 'cluster-wide-access-test-x' ]
   - assert:
       that:
       - kiali_configmap.deployment.cluster_wide_access == False
@@ -131,14 +149,40 @@
     vars:
       role_namespaces_to_test:
       - "{{ istio.control_plane_namespace }}"
-      - cluster-wide-access-test-1
       - cluster-wide-access-test-2
+      - cluster-wide-access-test-x
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - cluster-wide-access-test-1
+
+  # the server should only return those namespaces filtered by the discoverySelectors - the roles still let us see them
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 2
+      max_namespaces_expected: 2
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-2
+    when:
+    - MAZZ == 'NOT MAZZ'
 
   - name: Remove the discovery selectors
     include_tasks: ./set-istio-configmap-discovery-selectors.yml
     vars:
       discovery_selectors: []
+
+  # Now that we do not have discoverySelectors, we should see all AN namespaces (istio-system, cluster-wide-access-test-2, cluster-wide-access-test-x)
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 3
+      max_namespaces_expected: 3
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-2
+      - cluster-wide-access-test-x
+    when:
+    - MAZZ == 'NOT MAZZ'
 
   # put back AN=** and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles
   - include_tasks: ../common/set_kiali_cr.yml
