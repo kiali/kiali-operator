@@ -79,7 +79,9 @@
       - cluster-wide-access-test-1
       - cluster-wide-access-test-x
 
-  # change Istio ConfigMap to use discoverySelectors - we will only select the namespace "cluster-wide-access-test-2"
+  # change Istio ConfigMap to use discoverySelectors
+  # matchLabels selects the namespace "cluster-wide-access-test-1"
+  # matchExpressions selects the namespace "cluster-wide-access-test-2"
   - include_tasks: ./set-istio-configmap-discovery-selectors.yml
     vars:
       discovery_selectors:
@@ -108,10 +110,11 @@
   # the server should only return AN namespaces with discoverySelectors also filtering the namespaces
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
-      min_namespaces_expected: 2
-      max_namespaces_expected: 2
+      min_namespaces_expected: 3
+      max_namespaces_expected: 3
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
       - cluster-wide-access-test-2
 
   # assert that we have clusterroles since we have been given cluster wide access
@@ -124,17 +127,17 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # Turn off cluster wide access and set AN to [istio-system, cluster-wide-access-test-2, cluster-wide-access-test-x]
+  # Turn off cluster wide access and set AN to [istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x]
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
-      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'accessible_namespaces': [istio.control_plane_namespace, 'cluster-wide-access-test-[2x]'], 'cluster_wide_access': False }}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'accessible_namespaces': ['cluster-wide-access-test-[12x]'], 'cluster_wide_access': False }}}, recursive=True) }}"
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
   - include_tasks: ../asserts/accessible_namespaces_equals.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'cluster-wide-access-test-2', 'cluster-wide-access-test-x' ]
+      namespace_list: [ "{{ istio.control_plane_namespace }}", 'cluster-wide-access-test-1', 'cluster-wide-access-test-2', 'cluster-wide-access-test-x' ]
   - assert:
       that:
       - kiali_configmap.deployment.cluster_wide_access == False
@@ -144,20 +147,19 @@
     vars:
       role_namespaces_to_test:
       - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
-    vars:
-      role_namespaces_to_test:
-      - cluster-wide-access-test-1
 
   # the server should only return those namespaces filtered by the discoverySelectors - the roles still let us see them
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
-      min_namespaces_expected: 2
-      max_namespaces_expected: 2
+      min_namespaces_expected: 3
+      max_namespaces_expected: 3
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
       - cluster-wide-access-test-2
 
   - name: Remove the discovery selectors
@@ -165,13 +167,18 @@
     vars:
       discovery_selectors: []
 
-  # Now that we do not have discoverySelectors, we should see all AN namespaces (istio-system, cluster-wide-access-test-2, cluster-wide-access-test-x)
+  - name: Pause for a few seconds to ensure the server gets notified of the change to the Istio ConfigMap
+    pause:
+      seconds: 15
+
+  # Now that we do not have discoverySelectors, we should see all AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x)
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
-      min_namespaces_expected: 3
-      max_namespaces_expected: 3
+      min_namespaces_expected: 4
+      max_namespaces_expected: 4
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
+      - cluster-wide-access-test-1
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 

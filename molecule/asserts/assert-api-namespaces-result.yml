@@ -19,6 +19,7 @@
   assert:
     that:
     - api_results_raw.json | length >= min_namespaces_expected
+    fail_msg: "FAILED: [{{ api_results_raw.json | length }}] >= [{{ min_namespaces_expected }}]: [{{ api_results_raw.json | json_query('[*].name') }}]"
   when:
   - min_namespaces_expected is defined
 
@@ -26,6 +27,7 @@
   assert:
     that:
     - api_results_raw.json | length <= max_namespaces_expected
+    fail_msg: "FAILED: [{{ api_results_raw.json | length }}] <= [{{ max_namespaces_expected }}]: [{{ api_results_raw.json | json_query('[*].name') }}]"
   when:
   - max_namespaces_expected is defined
 
@@ -33,6 +35,7 @@
   assert:
     that:
     - api_results_raw.json | selectattr('name', 'equalto', item) | list | length == 1
+    fail_msg: "Missing: [{{ item }}]"
   loop: "{{ namespaces_expected }}"
   when:
   - namespaces_expected is defined
@@ -41,6 +44,7 @@
   assert:
     that:
     - api_results_raw.json | selectattr('name', 'equalto', item) | list | length == 0
+    fail_msg: "Contained: [{{ item }}]"
   loop: "{{ namespaces_not_expected }}"
   when:
   - namespaces_not_expected is defined
