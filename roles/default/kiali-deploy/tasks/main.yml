@@ -482,7 +482,7 @@
 # if accessible_namespaces is "**", we must have cluster-wide-access, it is an error otherwise.
 - name: Make sure cluster_wide_access does not erroneously restrict access when all namespaces are to be accessible.
   fail:
-    msg: "deployment.cluster_wide_access must be enabled (i.e. 'true') when deployment.accessible_namespaces has '**'' (i.e. all namespaces are to be accessible) and there are no discovery selectors defined. Aborting."
+    msg: "deployment.cluster_wide_access must be enabled (i.e. 'true') when deployment.accessible_namespaces has '**'' (i.e. all namespaces are to be accessible). Aborting."
   when:
   - '"**" in kiali_vars.deployment.accessible_namespaces'
   - kiali_vars.deployment.cluster_wide_access == False
