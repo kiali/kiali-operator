@@ -7,6 +7,7 @@ spec:
   # this test will try to use as many defaults as we can
   istio_namespace: {{ istio.control_plane_namespace }}
   deployment:
+    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
     ingress:
       enabled: true
     logger:
