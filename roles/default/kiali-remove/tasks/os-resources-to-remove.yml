@@ -1,0 +1,17 @@
+---
+apiVersion: oauth.openshift.io/v1
+kind: OAuthClient
+metadata:
+  name: {{ kiali_vars.deployment.instance_name + '-' + kiali_vars.deployment.namespace }}
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  namespace: {{ kiali_vars.deployment.namespace }}
+  name: {{ kiali_vars.deployment.instance_name }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: {{ kiali_vars.deployment.namespace }}
+  name: {{ kiali_vars.deployment.instance_name }}-cabundle
