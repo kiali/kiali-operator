@@ -1,15 +1,31 @@
-- name: "Create resource [{{ process_resource_item }}] on [{{ process_resource_cluster }}]"
+# process all template names found in process_resource_templates - any empty strings in the list are ignored.
+# This will keep a running tally of all processed resources in "processed_resources_dict".
+- name: "Create Kiali resources from templates"
   k8s:
     state: "present"
-    definition: "{{ lookup('template', 'templates/' + process_resource_cluster + '/' + process_resource_item + '.yaml') }}"
-  register: process_resource_result
-  until:
-  - process_resource_result.error is not defined
-  - process_resource_result.result is defined
-  - process_resource_result.result.metadata is defined
+    continue_on_error: false
+    template: "{{ process_resource_templates | select() | list }}"
+  register: process_resource_templates_result
   retries: 6
   delay: 10
 
-# Store the results of the processed resource so they can be examined later (e.g. to know if something changed or stayed the same)
-- set_fact:
-    processed_resources: "{{ processed_resources | default({}) | combine( { process_resource_item: { 'changed': process_resource_result.changed, 'method': process_resource_result.method } } ) }}"
+# Store the results of the processed resources so they can be examined later (e.g. to know if something changed or stayed the same)
+- vars:
+    kinds: "{{ process_resource_templates_result.result.results | map(attribute='result.kind') | list }}"
+    names: "{{ process_resource_templates_result.result.results | map(attribute='result.metadata.name') | list }}"
+    changed: "{{ process_resource_templates_result.result.results | map(attribute='changed') | list }}"
+    method: "{{ process_resource_templates_result.result.results | map(attribute='method') | list }}"
+    thedict: "{{ processed_resources_dict | default({}) }}"
+  set_fact:
+    processed_resources_dict: |
+      {% for kind in kinds %}
+      {%   set _ = thedict.update({ kind: {'name': names[loop.index0], 'changed': changed[loop.index0], 'method': method[loop.index0]}}) %}
+      {% endfor %}
+      {{ thedict }}
+  when:
+  - process_resource_templates_result is defined
+  - process_resource_templates_result | length > 0
+
+- name: "Kiali resource creation results"
+  debug:
+    msg: "{{ processed_resources_dict }}"

@@ -156,7 +156,8 @@
   # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
   - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
 
-- set_fact:
+- name: "Determine environment to store in status"
+  set_fact:
     status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
   loop: "{{ data[0] | zip(data[1]) | list }}"
   vars:
@@ -941,9 +942,10 @@
     definition: "{{ updated_deployment }}"
   when:
   - deployment_is_new == False
-  - processed_resources.configmap is defined
-  - processed_resources.configmap.changed == True
-  - processed_resources.configmap.method == "patch"
+  - processed_resources_dict is defined
+  - processed_resources_dict['ConfigMap'] is defined
+  - processed_resources_dict['ConfigMap'].changed == True
+  - processed_resources_dict['ConfigMap'].method == "patch"
 
 # Can't just populate with the list of namespaces - see https://github.com/operator-framework/operator-sdk-ansible-util/issues/12
 # So instead - if the list of namespaces is manageable, store them in a comma-separate list.
