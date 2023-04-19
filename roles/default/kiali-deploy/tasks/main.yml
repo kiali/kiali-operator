@@ -156,7 +156,8 @@
   # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
   - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
 
-- set_fact:
+- name: "Determine environment to store in status"
+  set_fact:
     status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
   loop: "{{ data[0] | zip(data[1]) | list }}"
   vars:
@@ -933,17 +934,22 @@
   - is_k8s == True
 
 # If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
+# We do this by checking the processed_resources_dict created by process-resources.yml task. If there is a map key
+# with the kind (ConfigMap) with the name of our config map appended to it ("-" + the kiali instanance name) see if that config map changed.
+# If it did, we need to restart the kiali pod so it can re-read the new config.
 - name: Force the Kiali pod to restart if necessary
   vars:
+    keyname: "{{ 'ConfigMap-' + kiali_vars.deployment.instance_name }}"
     updated_deployment: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
     definition: "{{ updated_deployment }}"
   when:
   - deployment_is_new == False
-  - processed_resources.configmap is defined
-  - processed_resources.configmap.changed == True
-  - processed_resources.configmap.method == "patch"
+  - processed_resources_dict is defined
+  - processed_resources_dict[keyname] is defined
+  - processed_resources_dict[keyname].changed == True
+  - processed_resources_dict[keyname].method == "patch"
 
 # Can't just populate with the list of namespaces - see https://github.com/operator-framework/operator-sdk-ansible-util/issues/12
 # So instead - if the list of namespaces is manageable, store them in a comma-separate list.
