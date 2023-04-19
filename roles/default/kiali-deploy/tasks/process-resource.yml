@@ -19,7 +19,7 @@
   set_fact:
     processed_resources_dict: |
       {% for kind in kinds %}
-      {%   set _ = thedict.update({ kind: {'name': names[loop.index0], 'changed': changed[loop.index0], 'method': method[loop.index0]}}) %}
+      {%   set _ = thedict.update({ (kind + '-' + names[loop.index0]): {'name': names[loop.index0], 'changed': changed[loop.index0], 'method': method[loop.index0]}}) %}
       {% endfor %}
       {{ thedict }}
   when:
