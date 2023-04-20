@@ -60,7 +60,8 @@ spec:
   - name: "envoy"
 
   deployment:
-    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    # default: accessible_namespaces is undefined
+    accessible_namespaces: [ "my-mesh.*" ]
     # default: additional_service_yaml is empty
     additional_service_yaml:
       externalName: "kiali.example.com"
