@@ -232,7 +232,7 @@ spec:
                 type: object
                 properties:
                   accessible_namespaces:
-                    description: "A list of namespaces Kiali is to be given access to. These namespaces have service mesh components that can be observed by Kiali. You can provide names using regex expressions matched against all namespaces the operator can see. The default makes all namespaces accessible. NOTE! If this has an entry with the special value of `'**'` (two asterisks), that will denote you want Kiali to be given access to all namespaces via a single cluster role (if using this special value of `'**'`, you are required to have already granted the operator permissions to create cluster roles and cluster role bindings)."
+                    description: "When `cluster_wide_access=false` this must be set to the list of namespaces to which Kiali is to be given permissions.  You can provide names using regex expressions matched against all namespaces the operator can see.  If left unset it is required that `cluster_wide_access=true`, and Kiali will have permissions to all namespaces.  The list of namespaces that a user can access is a subset of these namespaces, given that user's RBAC settings.
                     type: array
                     items:
                       type: string
