@@ -16,5 +16,7 @@ spec:
     image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
+{% if kiali.accessible_namespaces is defined and (kiali.accessible_namespaces | length != 1 or kiali.accessible_namespaces[0] != "**") %}
     accessible_namespaces: {{ kiali.accessible_namespaces }}
+{% endif %}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}

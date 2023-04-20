@@ -6,9 +6,9 @@
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
-  - import_tasks: ../common/tasks.yml
-  - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../asserts/accessible_namespaces_contains.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
   - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
@@ -17,7 +17,7 @@
       - kiali_configmap.api.namespaces.label_selector_include is not defined
 
   - debug: msg="test to make sure the default AN=** behavior works (default include/exclude filters are in effect)"
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
       namespaces_expected:
@@ -29,7 +29,7 @@
       - kiali-operator
 
   - debug: msg="test that include filter works when AN=**; also tests exclude filter"
-  - import_tasks: ./set-api-namespaces.yml
+  - include_tasks: ./set-api-namespaces.yml
     vars:
       # include kialitest* and kialianother* but we exclude kialianother* and exclude takes precedence.
       # Also, trying to exclude the control plane namespace is ignored - the control plane namespace is always returned.
@@ -40,7 +40,7 @@
         label_selector_include: null
         label_selector_exclude: null
 
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
       max_namespaces_expected: 3
@@ -50,7 +50,7 @@
       - kialitestns2
 
   - debug: msg="test both exclude filters (both exclude list and label selector) works"
-  - import_tasks: ./set-api-namespaces.yml
+  - include_tasks: ./set-api-namespaces.yml
     vars:
       api_namespaces:
         include: [ "kialitest.*", "kialianother.*" ]
@@ -58,7 +58,7 @@
         label_selector_include: null
         label_selector_exclude: "customLabel=test"
 
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 2
       max_namespaces_expected: 2
@@ -67,7 +67,7 @@
       - kialitestns2
 
   - debug: msg="test include label selector works when AN=**"
-  - import_tasks: ./set-api-namespaces.yml
+  - include_tasks: ./set-api-namespaces.yml
     vars:
       api_namespaces:
         include: ["{{ istio.control_plane_namespace }}"]
@@ -75,7 +75,7 @@
         label_selector_include: "customLabel=test"
         label_selector_exclude: null
 
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 2
       max_namespaces_expected: 2
@@ -84,7 +84,7 @@
       - kialitestns
 
   - debug: msg="reset the api.namespaces so it goes back to all defaults"
-  - import_tasks: ./set-api-namespaces.yml
+  - include_tasks: ./set-api-namespaces.yml
     vars:
       api_namespaces:
         include: null
@@ -92,7 +92,7 @@
         label_selector_include: null
         label_selector_exclude: null
 
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
       namespaces_expected:
@@ -104,14 +104,14 @@
       - kiali-operator
 
   - debug: msg="change to accessible_namespaces to a fixed list of namespaces"
-  - import_tasks: ../common/set_accessible_namespaces_to_list.yml
+  - include_tasks: ../common/set_accessible_namespaces_to_list.yml
     vars:
       namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianother.*' ]
-  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
-  - import_tasks: ../common/wait_for_kiali_running.yml
-  - import_tasks: ../common/tasks.yml
-  - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../asserts/accessible_namespaces_equals.yml
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+  - include_tasks: ../asserts/accessible_namespaces_equals.yml
     vars:
       namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianothertestns' ]
   - name: "Make sure label_selector_include is set properly"
@@ -131,7 +131,7 @@
       - namespacesWithKialiLabel | length == 3
 
   - debug: msg="test the normal accessible namespaces (without custom include/exclude filters defined)"
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
       max_namespaces_expected: 3
@@ -141,7 +141,7 @@
       - kialianothertestns
 
   - debug: msg="test to show include is ignored when AN is not ** but exclude filters are still applied"
-  - import_tasks: ./set-api-namespaces.yml
+  - include_tasks: ./set-api-namespaces.yml
     vars:
       api_namespaces:
         include: [ ".*" ]
@@ -149,7 +149,7 @@
         label_selector_include: null
         label_selector_exclude: "customLabel=test"
 
-  - import_tasks: ../asserts/assert-api-namespaces-result.yml
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 1
       max_namespaces_expected: 1
@@ -157,12 +157,12 @@
       - "{{ istio.control_plane_namespace }}"
 
   # change to accessible_namespaces back to **
-  - import_tasks: ../common/set_accessible_namespaces_to_all.yml
-  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
-  - import_tasks: ../common/wait_for_kiali_running.yml
-  - import_tasks: ../common/tasks.yml
-  - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../asserts/accessible_namespaces_contains.yml
+  - include_tasks: ../common/set_accessible_namespaces_to_all.yml
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
       namespace_list: [ '**' ]
   - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
