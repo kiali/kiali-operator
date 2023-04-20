@@ -232,7 +232,7 @@ spec:
                 type: object
                 properties:
                   accessible_namespaces:
-                    description: "When `cluster_wide_access=false` this must be set to the list of namespaces to which Kiali is to be given permissions.  You can provide names using regex expressions matched against all namespaces the operator can see.  If left unset it is required that `cluster_wide_access=true`, and Kiali will have permissions to all namespaces.  The list of namespaces that a user can access is a subset of these namespaces, given that user's RBAC settings."
+                    description: "When `cluster_wide_access=false` this must be set to the list of namespaces to which Kiali is to be given permissions.  You can provide names using regex expressions matched against all namespaces the operator can see.  If left unset it is required that `cluster_wide_access` be `true`, and Kiali will have permissions to all namespaces.  The list of namespaces that a user can access is a subset of these namespaces, given that user's RBAC settings."
                     type: array
                     items:
                       type: string
