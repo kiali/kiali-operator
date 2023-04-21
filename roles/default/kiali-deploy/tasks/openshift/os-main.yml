@@ -50,7 +50,7 @@
     status_progress_message: "Creating additional roles"
   when:
   - is_openshift == True
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == False
 
 - name: Create additional Kiali roles/bindings on all accessible namespaces on OpenShift
   vars:
@@ -61,7 +61,7 @@
     - "templates/openshift/rolebinding.yaml"
   when:
   - is_openshift == True
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == False
 
 - include_tasks: update-status-progress.yml
   vars:

@@ -49,7 +49,7 @@
     status_progress_message: "Creating additional roles"
   when:
   - is_k8s == True
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == False
 
 - name: Create additional Kiali roles/bindings on all accessible namespaces on Kubernetes
   vars:
@@ -60,4 +60,4 @@
     - "templates/kubernetes/rolebinding.yaml"
   when:
   - is_k8s == True
-  - '"**" not in kiali_vars.deployment.accessible_namespaces'
+  - kiali_vars.deployment.cluster_wide_access == False

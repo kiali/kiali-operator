@@ -18,7 +18,7 @@
       that:
       - kiali_configmap.deployment.cluster_wide_access == True
 
-  # assert that we have clusterroles since we have been given cluster wide access
+  - debug: msg="assert that we have clusterroles since we have been given cluster wide access"
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
   - include_tasks: ../asserts/roles-test/none_role_asserts.yml
     vars:
@@ -28,7 +28,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # The server should return all namespaces
+  - debug: msg="The server should return all namespaces"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
@@ -59,7 +59,7 @@
       that:
       - kiali_configmap.deployment.cluster_wide_access == True
 
-  # assert that we have clusterroles since we have been given cluster wide access
+  - debug: msg="assert that we have clusterroles since we have been given cluster wide access"
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
   - include_tasks: ../asserts/roles-test/none_role_asserts.yml
     vars:
@@ -69,7 +69,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # the server should only return the AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-x)
+  - debug: msg="the server should only return the AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-x)"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
@@ -93,7 +93,7 @@
           values:
           - matchme
 
-  # SET AN back to ** (but the server will only show us namespaces filtered by discoverySelectors)
+  - debug: msg="SET AN back to ** (but the server will only show us namespaces filtered by discoverySelectors)"
   # We will still have cluster-wide-access
   - include_tasks: ../common/set_accessible_namespaces_to_all.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
@@ -107,7 +107,7 @@
       that:
       - kiali_configmap.deployment.cluster_wide_access == True
 
-  # the server should only return AN namespaces with discoverySelectors also filtering the namespaces
+  - debug: msg="the server should only return AN namespaces with discoverySelectors also filtering the namespaces"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
@@ -117,7 +117,7 @@
       - cluster-wide-access-test-1
       - cluster-wide-access-test-2
 
-  # assert that we have clusterroles since we have been given cluster wide access
+  - debug: msg="assert that we have clusterroles since we have been given cluster wide access"
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
   - include_tasks: ../asserts/roles-test/none_role_asserts.yml
     vars:
@@ -127,7 +127,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # Turn off cluster wide access and set AN to [istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x]
+  - debug: msg="Turn off cluster wide access and set AN to [istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x]"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
       new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'accessible_namespaces': ['cluster-wide-access-test-[12x]'], 'cluster_wide_access': False }}}, recursive=True) }}"
@@ -142,7 +142,7 @@
       that:
       - kiali_configmap.deployment.cluster_wide_access == False
 
-  # assert that we have roles since we have NOT been given cluster wide access
+  - debug: msg="assert that we have roles since we have NOT been given cluster wide access"
   - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
     vars:
       role_namespaces_to_test:
@@ -152,7 +152,7 @@
       - cluster-wide-access-test-x
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
 
-  # the server should only return those namespaces filtered by the discoverySelectors - the roles still let us see them
+  - debug: msg="the server should only return those namespaces filtered by the discoverySelectors - the roles still let us see them"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
@@ -171,7 +171,7 @@
     pause:
       seconds: 15
 
-  # Now that we do not have discoverySelectors, we should see all AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x)
+  - debug: msg="Now that we do not have discoverySelectors, we should see all AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x)"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 4
@@ -182,7 +182,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # We have AN=list and CWA=false. Now let's set CWA=true and see the roles get removed and cluster roles added
+  - debug: msg="We have AN=list and CWA=false. Now let's set CWA=true and see the roles get removed and cluster roles added"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
       new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'cluster_wide_access': True }}}, recursive=True) }}"
@@ -200,7 +200,7 @@
       - cluster-wide-access-test-2
       - cluster-wide-access-test-x
 
-  # We have AN=list and CWA=true. Now let's set CWA back to false and see the roles get added and cluster roles removed
+  - debug: msg="We have AN=list and CWA=true. Now let's set CWA back to false and see the roles get added and cluster roles removed"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
       new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'cluster_wide_access': False }}}, recursive=True) }}"
@@ -218,7 +218,7 @@
       - cluster-wide-access-test-x
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
 
-  # put back AN=** and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles
+  - debug: msg="put back AN=** and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
       new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'accessible_namespaces': ['**'], 'cluster_wide_access': True }}}, recursive=True) }}"

@@ -175,6 +175,7 @@
   - current_accessible_namespaces is defined
   - '"**" not in current_accessible_namespaces'
   - current_label_selector_include is defined
+  - current_label_selector_include != ""
 
 - name: Delete Kiali cluster roles
   ignore_errors: yes
@@ -185,9 +186,6 @@
     - clusterroles-to-remove.yml
   retries: 6
   delay: 10
-  when:
-  - current_accessible_namespaces is defined
-  - '"**" in current_accessible_namespaces'
 
 - name: Delete Kiali resources
   ignore_errors: yes
