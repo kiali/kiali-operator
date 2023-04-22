@@ -60,7 +60,8 @@ spec:
   - name: "envoy"
 
   deployment:
-    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
+    # default: accessible_namespaces is undefined
+    accessible_namespaces: [ "my-mesh.*" ]
     # default: additional_service_yaml is empty
     additional_service_yaml:
       externalName: "kiali.example.com"
@@ -97,6 +98,8 @@ spec:
                 values:
                 - S2
             topologyKey: topology.kubernetes.io/zone
+    # default: cluster_wide_access is undefined
+    cluster_wide_access: false
     # default: configmap_annotations is empty
     configmap_annotations:
       strategy.spinnaker.io/versioned: "false"

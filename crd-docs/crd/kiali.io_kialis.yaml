@@ -232,7 +232,7 @@ spec:
                 type: object
                 properties:
                   accessible_namespaces:
-                    description: "A list of namespaces Kiali is to be given access to. These namespaces have service mesh components that are to be observed by Kiali. You can provide names using regex expressions matched against all namespaces the operator can see. The default makes all namespaces accessible except for some internal namespaces that typically should be ignored. NOTE! If this has an entry with the special value of `'**'` (two asterisks), that will denote you want Kiali to be given access to all namespaces via a single cluster role (if using this special value of `'**'`, you are required to have already granted the operator permissions to create cluster roles and cluster role bindings)."
+                    description: "When `cluster_wide_access=false` this must be set to the list of namespaces to which Kiali is to be given permissions.  You can provide names using regex expressions matched against all namespaces the operator can see.  If left unset it is required that `cluster_wide_access` be `true`, and Kiali will have permissions to all namespaces.  The list of namespaces that a user can access is a subset of these namespaces, given that user's RBAC settings."
                     type: array
                     items:
                       type: string
@@ -253,6 +253,9 @@ spec:
                       pod_anti:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                  cluster_wide_access:
+                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces. When true, this provides more efficient caching within the Kiali server. It must be `true` if `deployment.accessible_namespaces` is left unset. To limit the namespaces for which Kiali has permissions, set to `false` and list the desired namespaces in `deployment.accessible_namespaces`. When not set, this value will default to `false` if `deployment.accessible_namespaces` is set to a list of namespaces; otherwise this will be `true`."
+                    type: boolean
                   configmap_annotations:
                     description: "Custom annotations to be created on the Kiali ConfigMap."
                     type: object
@@ -1027,7 +1030,7 @@ spec:
                       enum: ["logs-tab"]
                   istio_annotation_action:
                     description: "Flag to enable/disable an Action to edit annotations."
-                    type: boolean     
+                    type: boolean
                   istio_injection_action:
                     description: "Flag to enable/disable an Action to label a namespace for automatic Istio Sidecar injection."
                     type: boolean

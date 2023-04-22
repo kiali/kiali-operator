@@ -1,5 +1,5 @@
 # Wait for the operator to finish any reconciliation currently ongoing
-- import_tasks: ../common/wait_for_kiali_cr_changes.yml
+- include_tasks: ../common/wait_for_kiali_cr_changes.yml
 
 - name: "Set accessible namespace to {{ namespace_list }} in current Kiali CR"
   vars:
@@ -7,4 +7,4 @@
   set_fact:
     new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'accessible_namespaces': namespace_list }}}, recursive=True) }}"
 
-- import_tasks: ../common/set_kiali_cr.yml
+- include_tasks: ../common/set_kiali_cr.yml

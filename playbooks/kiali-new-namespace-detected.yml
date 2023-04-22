@@ -1,0 +1,45 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # This playbook will process new namespaces. The idea is to get the Kiali CRs in the cluster
+  # to reconcile on every new namespace in case a Kiali server needs to be given access to it.
+  #
+  # This playbook behaves the same regardless of the number of Kiali CR resources installed
+  # in the cluster. Each Kiali CR will be "touched" (an annotation modified) thus causing
+  # the operator to reconcile the Kiali CRs which enables the operator to determine if a
+  # Kiali instance should be given access to the new namespace. The Kiali CR will only
+  # be touched if the namespace was created after the Kiali CR was created.
+  #
+  # This playbook is essentially a no-op when there are no Kiali CRs installed in the cluster.
+
+  - name: Get all Kiali CRs
+    ignore_errors: yes
+    k8s_info:
+      api_version: kiali.io/v1alpha1
+      kind: Kiali
+    register: kiali_cr_list
+
+  # end very quickly and quietly if there are no Kiali CRs in the cluster - there is nothing for us to do in that case
+  - meta: end_play
+    when:
+    - kiali_cr_list is not defined or kiali_cr_list.resources is not defined or kiali_cr_list.resources | length == 0
+
+  - name: "Touch the Kiali CRs that were created before the new namespace [{{ __namespace.metadata.name }}]"
+    vars:
+      current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:00Z') }}"
+    k8s:
+      definition:
+        apiVersion: "{{ item.apiVersion }}"
+        kind: "{{ item.kind }}"
+        metadata:
+          name: "{{ item.metadata.name }}"
+          namespace: "{{ item.metadata.namespace }}"
+          annotations:
+            kiali.io/reconcile: "{{ current_timestamp_string }}"
+    loop: "{{ kiali_cr_list.resources }}"
+    when:
+    - (item.metadata.creationTimestamp|to_datetime('%Y-%m-%dT%H:%M:%SZ')) < (__namespace.metadata.creationTimestamp|to_datetime('%Y-%m-%dT%H:%M:%SZ'))
+    - (item.metadata.annotations['kiali.io/reconcile'] is not defined or item.metadata.annotations['kiali.io/reconcile'] != current_timestamp_string)

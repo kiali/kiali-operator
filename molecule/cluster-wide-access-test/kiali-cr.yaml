@@ -4,10 +4,10 @@ metadata:
   name: kiali
 spec:
   version: {{ kiali.spec_version }}
-  # this test will try to use as many defaults as we can
   istio_namespace: {{ istio.control_plane_namespace }}
+  auth:
+    strategy: {{ kiali.auth_strategy }}
   deployment:
-    accessible_namespaces: ["^((?!(istio-operator|kube-.*|openshift.*|ibm.*|kiali-operator)).)*$"]
     ingress:
       enabled: true
     logger:
@@ -16,4 +16,6 @@ spec:
     image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
+    accessible_namespaces: {{ kiali.accessible_namespaces }}
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}

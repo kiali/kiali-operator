@@ -1,10 +1,16 @@
 # Wait for the operator to finish any reconciliation currently ongoing
-- import_tasks: ../common/wait_for_kiali_cr_changes.yml
+- include_tasks: ../common/wait_for_kiali_cr_changes.yml
 
-- name: "Set accessible namespace to ** in current Kiali CR"
+# We used to set the accessible namespaces to ** explicitly but now that is the default when left unset.
+# To test this default behavior, just make sure accessible_namespaces is left unset.
+- name: "Unset accessible namespace (defaults to ** behavior) in current Kiali CR"
   vars:
     current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
-  set_fact:
-    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'accessible_namespaces': ['**'] }}}, recursive=True) }}"
-
-- import_tasks: ../common/set_kiali_cr.yml
+  k8s_json_patch:
+    api_version: "{{ current_kiali_cr.apiVersion }}"
+    kind: "{{ current_kiali_cr.kind }}"
+    namespace: "{{ current_kiali_cr.metadata.namespace }}"
+    name: "{{ current_kiali_cr.metadata.name }}"
+    patch:
+    - op: remove
+      path: /spec/deployment/accessible_namespaces
