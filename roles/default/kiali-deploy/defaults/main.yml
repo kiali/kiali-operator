@@ -315,6 +315,7 @@ kiali_defaults:
     cache_namespaces:
     - ".*"
     cache_token_namespace_duration: 10
+    cluster_name: ""
     excluded_workloads:
     - "CronJob"
     - "DeploymentConfig"
