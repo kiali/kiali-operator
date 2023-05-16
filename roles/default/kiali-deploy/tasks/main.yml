@@ -178,109 +178,6 @@
         instanceName: "{{ kiali_vars.deployment.instance_name }}"
         namespace: "{{ kiali_vars.deployment.namespace }}"
 
-# We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
-# provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
-# values accordingly.
-# We determine the default Istio namespace var first, and the rest will use it for their default as appropriate.
-
-- name: Set default istio namespace
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'istio_namespace': kiali_vars.deployment.namespace}, recursive=True) }}"
-  when:
-  - kiali_vars.istio_namespace == ""
-
-- name: Set default root namespace
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'root_namespace': kiali_vars.istio_namespace}}}, recursive=True) }}"
-  when:
-  - kiali_vars.external_services.istio.root_namespace == ""
-
-- name: Set default Grafana in_cluster_url
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kiali_vars.istio_namespace + ':3000'}}}, recursive=True) }}"
-  when:
-    kiali_vars.external_services.grafana.in_cluster_url is not defined
-
-- name: Set default Tracing in_cluster_url for Maistra
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + ':16686'}}}, recursive=True) }}"
-  when:
-    kiali_vars.external_services.tracing.in_cluster_url == "" and is_maistra
-
-- name: Set default Tracing in_cluster_url for grpc consumption
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + ':16685/jaeger'}}}, recursive=True) }}"
-  when:
-  - is_maistra == False
-  - kiali_vars.external_services.tracing.in_cluster_url == ""
-  - kiali_vars.external_services.tracing.use_grpc is not defined or kiali_vars.external_services.tracing.use_grpc|bool == True
-
-- name: Set default Tracing in_cluster_url for http consumption
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kiali_vars.istio_namespace + '/jaeger'}}}, recursive=True) }}"
-  when:
-  - is_maistra == False
-  - kiali_vars.external_services.tracing.in_cluster_url == ""
-  - kiali_vars.external_services.tracing.use_grpc is defined
-  - kiali_vars.external_services.tracing.use_grpc|bool == False
-
-- name: Set default Istio service that provides version info (istiod service that was introduced in Istio 1.6)
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'istio': {'url_service_version': 'http://' + kiali_vars.external_services.istio.istiod_deployment_name + '.' + kiali_vars.istio_namespace + ':15014/version'}}}, recursive=True) }}"
-  when:
-  - kiali_vars.external_services.istio.url_service_version == ""
-
-- name: Set default Prometheus URL
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kiali_vars.istio_namespace + ':9090'}}}, recursive=True) }}"
-  when:
-  - kiali_vars.external_services.prometheus.url == ""
-
-# Determine some more defaults.
-
-- name: Set default HPA api_version
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if (api_status.apis['autoscaling/v2'] is defined) else 'autoscaling/v2beta2' }}}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.hpa.api_version == ""
-
-- name: Provide some default resource limits
-  vars:
-    res:
-      requests:
-        cpu: "10m"
-        memory: "64Mi"
-      limits:
-        memory: "1Gi"
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'resources': res }}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.resources is not defined
-
-- name: Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift)
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.ingress.enabled is not defined or kiali_vars.deployment.ingress.enabled == ""
-
-- name: Set default tracing use_grpc setting
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': { 'use_grpc': False if is_maistra else True }}}, recursive=True) }}"
-  when:
-  - kiali_vars.external_services.tracing.use_grpc is not defined
-
-- name: Set default web root based on cluster type
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'server': {'web_root': '/' if is_openshift else '/kiali'}}, recursive=True) }}"
-  when:
-  - kiali_vars.server.web_root == ""
-- name: Make sure web root never ends with a slash
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'server': {'web_root': kiali_vars.server.web_root | regex_replace('\\/$', '')}}, recursive=True) }}"
-  when:
-  - kiali_vars.server.web_root != "/"
-  - kiali_vars.server.web_root is match(".*/$")
-
 - name: Validate web_schema configuration
   fail:
     msg: "Invalid server.web_schema [{{ kiali_vars.server.web_schema }}]! Must be empty, or one of either 'http' or 'https'"
@@ -297,17 +194,6 @@
   - kiali_vars.server.web_history_mode != 'browser'
   - kiali_vars.server.web_history_mode != 'hash'
 
-- name: Set default identity cert_file based on cluster type (non-OpenShift clusters do not get a default identity)
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'identity': {'cert_file': '/kiali-cert/tls.crt' if is_openshift else ''}}, recursive=True) }}"
-  when:
-  - kiali_vars.identity.cert_file is not defined
-- name: Set default identity private_key_file based on cluster type (non-OpenShift clusters do not get a default identity)
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'identity': {'private_key_file': '/kiali-cert/tls.key' if is_openshift else ''}}, recursive=True) }}"
-  when:
-  - kiali_vars.identity.private_key_file is not defined
-
 - name: Only allow ad-hoc kiali image when appropriate
   fail:
     msg: "The operator is forbidden from accepting a Kiali CR that defines an ad hoc Kiali image [{{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}]. Remove spec.deployment.image_name, spec.deployment.image_version, and spec.deployment.image_digest from the Kiali CR."
@@ -315,62 +201,152 @@
   - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != "" or kiali_vars.deployment.image_digest != ""
   - lookup('env', 'ALLOW_AD_HOC_KIALI_IMAGE') | default('false', True) != "true"
 
-- name: Default the image name to a known supported image.
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_name': supported_kiali_images[kiali_vars.version].image_name}}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.image_name == ""
-- name: Default the image version to a known supported image.
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_version': ('latest' if operator_version == 'master' else operator_version) if supported_kiali_images[kiali_vars.version].image_version == 'operator_version' else supported_kiali_images[kiali_vars.version].image_version}}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.image_version == ""
+# We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
+# provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
+# values accordingly.
+# We determine the default Istio namespace var first, and the rest will use it for their default as appropriate.
 
-- name: If image version is latest then we will want to always pull
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_pull_policy': 'Always'}}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.image_version == "latest"
+- name: Set configuration defaults
+  vars:
+    resource_limits_default:
+      requests:
+        cpu: "10m"
+        memory: "64Mi"
+      limits:
+        memory: "1Gi"
+    kiali_vars_yaml: |
+      {# Initialize #}
+      {% set kv = kiali_vars %}
 
-- name: Set default auth strategy based on cluster type
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'auth': {'strategy': 'openshift' if is_openshift else 'token'}}, recursive=True) }}"
-  when:
-  - kiali_vars.auth.strategy == ""
+      {# Set default istio namespace #}
+      {% if kv.istio_namespace == "" %}
+      {% set kv = kv | combine({'istio_namespace': kv.deployment.namespace}, recursive=True) %}
+      {% endif %}
 
-- name: Use OpenShift service CA file for Grafana
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'grafana': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) }}"
-  when:
-  - is_openshift == True
-  - kiali_vars.external_services.grafana.auth.ca_file is not defined or kiali_vars.external_services.grafana.auth.ca_file == ''
+      {# Set default root namespace #}
+      {% if kv.external_services.istio.root_namespace == "" %}
+      {% set kv = kv | combine({'external_services': {'istio': {'root_namespace': kv.istio_namespace}}}, recursive=True) %}
+      {% endif %}
 
-- name: Use OpenShift service CA file for Prometheus
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'prometheus': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) }}"
-  when:
-  - is_openshift == True
-  - kiali_vars.external_services.prometheus.auth.ca_file is not defined or kiali_vars.external_services.prometheus.auth.ca_file == ''
+      {# Set default Grafana in_cluster_url #}
+      {% if kv.external_services.grafana.in_cluster_url is not defined %}
+      {% set kv = kv | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kv.istio_namespace + ':3000'}}}, recursive=True) %}
+      {% endif %}
 
-- name: Use OpenShift service CA file for Tracing
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'external_services': {'tracing': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) }}"
-  when:
-  - is_openshift == True
-  - kiali_vars.external_services.tracing.auth.ca_file is not defined or kiali_vars.external_services.tracing.auth.ca_file == ''
+      {# Set default Tracing in_cluster_url for Maistra #}
+      {% if kv.external_services.tracing.in_cluster_url == "" and is_maistra %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + ':16686'}}}, recursive=True) %}
+      {% endif %}
 
-- name: Make sure the correct auth.openshift.client_id_prefix is defined when using openshift auth strategy
-  set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'auth': {'openshift': {'client_id_prefix': kiali_vars.deployment.instance_name }}}, recursive=True) }}"
-  when:
-  - kiali_vars.auth.strategy == 'openshift'
-  - kiali_vars.auth.openshift.client_id_prefix != kiali_vars.deployment.instance_name
+      {# Set default Tracing in_cluster_url for grpc consumption #}
+      {% if is_maistra == False and kv.external_services.tracing.in_cluster_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + ':16685/jaeger'}}}, recursive=True) %}
+      {% endif %}
 
-- name: The default cluster_wide_access setting is determined by deployment.accessible_namespaces
+      {# Set default Tracing in_cluster_url for http consumption #}
+      {% if is_maistra == False and kv.external_services.tracing.in_cluster_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default Istio service that provides version info (istiod service that was introduced in Istio 1.6) #}
+      {% if kv.external_services.istio.url_service_version == "" %}
+      {% set kv = kv | combine({'external_services': {'istio': {'url_service_version': 'http://' + kv.external_services.istio.istiod_deployment_name + '.' + kv.istio_namespace + ':15014/version'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default Prometheus URL #}
+      {% if kv.external_services.prometheus.url == "" %}
+      {% set kv = kv | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kv.istio_namespace + ':9090'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default HPA api_version #}
+      {% if kv.deployment.hpa.api_version == "" %}
+      {% set kv = kv | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if (api_status.apis['autoscaling/v2'] is defined) else 'autoscaling/v2beta2' }}}, recursive=True) %}
+      {% endif %}
+
+      {# Provide some default resource limits #}
+      {% if kv.deployment.resources is not defined %}
+      {% set kv = kv | combine({'deployment': {'resources': resource_limits_default }}, recursive=True) %}
+      {% endif %}
+
+      {# Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift) #}
+      {% if kv.deployment.ingress.enabled is not defined or kv.deployment.ingress.enabled == "" %}
+      {% set kv = kv | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default tracing use_grpc setting #}
+      {% if kv.external_services.tracing.use_grpc is not defined %}
+      {% set kv = kv | combine({'external_services': {'tracing': { 'use_grpc': False if is_maistra else True }}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default web root based on cluster type #}
+      {% if kv.server.web_root == "" %}
+      {% set kv = kv | combine({'server': {'web_root': '/' if is_openshift else '/kiali'}}, recursive=True) %}
+      {% endif %}
+
+      {# Make sure web root never ends with a slash #}
+      {% if kv.server.web_root != "/" and kv.server.web_root is match(".*/$") %}
+      {% set kv = kv | combine({'server': {'web_root': kv.server.web_root | regex_replace('\\/$', '')}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default identity cert_file based on cluster type (non-OpenShift clusters do not get a default identity) #}
+      {% if kv.identity.cert_file is not defined %}
+      {% set kv = kv | combine({'identity': {'cert_file': '/kiali-cert/tls.crt' if is_openshift else ''}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default identity private_key_file based on cluster type (non-OpenShift clusters do not get a default identity) #}
+      {% if kv.identity.private_key_file is not defined %}
+      {% set kv = kv | combine({'identity': {'private_key_file': '/kiali-cert/tls.key' if is_openshift else ''}}, recursive=True) %}
+      {% endif %}
+
+      {# Default the image name to a known supported image. #}
+      {% if kv.deployment.image_name == "" %}
+      {% set kv = kv | combine({'deployment': {'image_name': supported_kiali_images[kv.version].image_name}}, recursive=True) %}
+      {% endif %}
+
+      {# Default the image version to a known supported image. #}
+      {% if kv.deployment.image_version == "" %}
+      {% set kv = kv | combine({'deployment': {'image_version': ('latest' if operator_version == 'master' else operator_version) if supported_kiali_images[kv.version].image_version == 'operator_version' else supported_kiali_images[kv.version].image_version}}, recursive=True) %}
+      {% endif %}
+
+      {# If image version is latest then we will want to always pull #}
+      {% if kv.deployment.image_version == "latest" %}
+      {% set kv = kv | combine({'deployment': {'image_pull_policy': 'Always'}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default auth strategy based on cluster type #}
+      {% if kv.auth.strategy == "" %}
+      {% set kv = kv | combine({'auth': {'strategy': 'openshift' if is_openshift else 'token'}}, recursive=True) %}
+      {% endif %}
+
+      {# Use OpenShift service CA file for Grafana #}
+      {% if is_openshift == True and (kv.external_services.grafana.auth.ca_file is not defined or kv.external_services.grafana.auth.ca_file == '') %}
+      {% set kv = kv | combine({'external_services': {'grafana': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
+      {% endif %}
+
+      {# Use OpenShift service CA file for Prometheus #}
+      {% if is_openshift == True and (kv.external_services.prometheus.auth.ca_file is not defined or kv.external_services.prometheus.auth.ca_file == '') %}
+      {% set kv = kv | combine({'external_services': {'prometheus': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
+      {% endif %}
+
+      {# Use OpenShift service CA file for Tracing #}
+      {% if is_openshift == True and (kv.external_services.tracing.auth.ca_file is not defined or kv.external_services.tracing.auth.ca_file == '') %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
+      {% endif %}
+
+      {# Make sure the correct auth.openshift.client_id_prefix is defined when using openshift auth strategy #}
+      {% if kv.auth.strategy == 'openshift' and kv.auth.openshift.client_id_prefix != kv.deployment.instance_name %}
+      {% set kv = kv | combine({'auth': {'openshift': {'client_id_prefix': kv.deployment.instance_name }}}, recursive=True) %}
+      {% endif %}
+
+      {# The default cluster_wide_access setting is determined by deployment.accessible_namespaces #}
+      {% if kv.deployment.cluster_wide_access is not defined %}
+      {% set kv = kv | combine({'deployment': {'cluster_wide_access': ('**' in kv.deployment.accessible_namespaces)}}, recursive=True) %}
+      {% endif %}
+
+      {# Set the yaml to the new kv dict #}
+      {{ kv | to_nice_yaml }}
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'cluster_wide_access': ('**' in kiali_vars.deployment.accessible_namespaces)}}, recursive=True) }}"
-  when:
-  - kiali_vars.deployment.cluster_wide_access is not defined
+    kiali_vars: "{{ kiali_vars_yaml | from_yaml }}"
 
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
@@ -693,54 +669,51 @@
 # Some credentials in the config can be overridden by secrets that are to be mounted on the file system.
 # Prepare these overrides that need to be defined as volumes in the deployment.
 
-- set_fact:
-    kiali_deployment_secret_volumes: {}
+- name: Prepare secret volumes for external services
+  vars:
+    kiali_deployment_secret_volumes_yaml: |-
+      {# Initialize #}
+      {% set d = {} %}
 
-- name: Prepare the secret volume for prometheus password
-  set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'prometheus-password': {'secret_name': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.external_services.prometheus.auth.password | regex_search('secret:.+:.+')
+      {# Prepare the secret volume for prometheus password #}
+      {% if kiali_vars.external_services.prometheus.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-password': {'secret_name': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
 
-- name: Prepare the secret volume for prometheus token
-  set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'prometheus-token': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.external_services.prometheus.auth.token | regex_search('secret:.+:.+')
+      {# Prepare the secret volume for prometheus token #}
+      {% if kiali_vars.external_services.prometheus.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-token': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
 
-- name: Prepare the secret volume for tracing password
-  set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'tracing-password': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.external_services.tracing.enabled|bool == True
-  - kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+')
+      {# Prepare the secret volume for tracing password #}
+      {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-password': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
 
-- name: Prepare the secret volume for tracing token
-  set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'tracing-token': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.external_services.tracing.enabled|bool == True
-  - kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+')
+      {# Prepare the secret volume for tracing token #}
+      {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-token': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
 
-- name: Prepare the secret volume for grafana password
-  set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'grafana-password': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.external_services.grafana.enabled|bool == True
-  - kiali_vars.external_services.grafana.auth.password | regex_search('secret:.+:.+')
+      {# Prepare the secret volume for grafana password #}
+      {% if kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-password': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
 
-- name: Prepare the secret volume for grafana token
-  set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'grafana-token': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.external_services.grafana.enabled|bool == True
-  - kiali_vars.external_services.grafana.auth.token | regex_search('secret:.+:.+')
+      {# Prepare the secret volume for grafana token #}
+      {% if kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-token': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
 
-- name: Prepare the secret volume for login token signing key
+      {# Prepare the secret volume for login token signing key #}
+      {% if kiali_vars.login_token.signing_key | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Set the yaml to the new dict #}
+      {{ d | to_nice_yaml }}
   set_fact:
-    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) }}"
-  when:
-  - kiali_vars.login_token.signing_key | regex_search('secret:.+:.+')
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes_yaml | from_yaml }}"
 
 # Prepare to mount remote cluster secrets. These must exist in the Kiali deployment namespace because that is required in order to mount them to the pod.
 - set_fact:
