@@ -417,7 +417,7 @@ spec:
       namespaces: ["istio-system"]
       refresh_interval: "1m"
     validations:
-      ignore: ["KIA1201"]
+      ignore: ["KIA1301"]
       skip_wildcard_gateway_hosts: false
 
   kubernetes_config:
