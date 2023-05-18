@@ -293,7 +293,7 @@ kiali_defaults:
       namespaces: []
       refresh_interval: "60s"
     validations:
-      ignore: ["KIA1201"]
+      ignore: ["KIA1301"]
       skip_wildcard_gateway_hosts: false
 
   kubernetes_config:
