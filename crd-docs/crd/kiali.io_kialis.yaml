@@ -1200,7 +1200,7 @@ spec:
                     description: "This Kiali cache is a list of namespaces per user. This is typically a short-lived cache compared with the duration of the namespace cache defined by the `cache_duration` setting. This is specified in seconds."
                     type: integer
                   cluster_name:
-                    description: "The cluster name. It is usually set up in multi cluster environments. By default, it will try to auto detect the cluster name from the Istiod deployment."
+                    description: "The name of the cluster Kiali is deployed in. This is only used in multi cluster environments. If not set, Kiali will try to auto detect the cluster name from the Istiod deployment or use the default 'Kubernetes'."
                     type: string
                   excluded_workloads:
                     description: "List of controllers that won't be used for Workload calculation. Kiali queries Deployment, ReplicaSet, ReplicationController, DeploymentConfig, StatefulSet, Job and CronJob controllers. Deployment and ReplicaSet will be always queried, but ReplicationController, DeploymentConfig, StatefulSet, Job and CronJobs can be skipped from Kiali workloads queries if they are present in this list."
