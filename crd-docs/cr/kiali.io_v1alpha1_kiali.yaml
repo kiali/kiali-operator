@@ -51,9 +51,13 @@ spec:
       username_claim: "sub"
     openshift:
       auth_timeout: 10
+      #client_id:
       client_id_prefix: "kiali"
+      #custom_ca:
+      server_prefix: "https://kubernetes.default.svc/"
       #token_inactivity_timeout:
       #token_max_age:
+      use_system_ca: false
 
   # default: custom_dashboards is an empty list
   custom_dashboards:
