@@ -14,13 +14,18 @@
   set_fact:
     current_cr: "{{ _kiali_io_kiali }}"
 
-- name: Get information about the cluster
+- name: Get api group information from the cluster
   ignore_errors: yes
   set_fact:
     api_groups: "{{ lookup(k8s_plugin, cluster_info='api_groups') }}"
   when:
   - is_openshift == False
   - is_k8s == False
+
+- name: Get api version information from the cluster
+  ignore_errors: yes
+  k8s_cluster_info:
+  register: api_status
 
 - name: Determine the cluster type
   ignore_errors: yes
@@ -49,7 +54,7 @@
 - name: Set default HPA api_version
   ignore_errors: yes
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if lookup(k8s_plugin, api_version='autoscaling/v2', kind='horizontalpodautoscalers', errors='ignore') | type_debug == 'list' else 'autoscaling/v2beta2' }}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if (api_status.apis['autoscaling/v2'] is defined) else 'autoscaling/v2beta2' }}}, recursive=True) }}"
   when:
   - kiali_vars.deployment.hpa.api_version == ""
 
