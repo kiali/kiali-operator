@@ -1,4 +1,4 @@
-kiali_defaults:
+kiali_defaults_remove:
   istio_namespace: ""
 
   deployment:
