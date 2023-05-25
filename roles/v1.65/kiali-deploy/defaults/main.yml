@@ -220,6 +220,7 @@ kiali_defaults:
       is_core: false
       namespace_selector: true
       query_scope: {}
+      query_timeout: 5
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
@@ -244,8 +245,12 @@ kiali_defaults:
       - cacerts
       - istio-ca-secret
     clustering:
-      enabled: true
+      autodetect_secrets:
+        enabled: true
+        label: "kiali.io/multiCluster=true"
+      clusters: []
     disabled_features: []
+    istio_annotation_action: true
     istio_injection_action: true
     istio_upgrade_action: false
     ui_defaults:
@@ -283,11 +288,11 @@ kiali_defaults:
       refresh_interval: "60s"
     validations:
       ignore: ["KIA1201"]
+      skip_wildcard_gateway_hosts: false
 
   kubernetes_config:
     burst: 200
     cache_duration: 300
-    cache_enabled: true
     cache_istio_types:
     - "AuthorizationPolicy"
     - "DestinationRule"
