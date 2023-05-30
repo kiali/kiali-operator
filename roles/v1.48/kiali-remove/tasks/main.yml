@@ -271,7 +271,7 @@
   k8s:
     state: absent
     definition: |
-      {% for cl in lookup(k8s_plugin, kind='ConsoleLink', label_selector='kiali.io/home=' + ((kiali_vars_remove.deployment.instance_name + '.') if kiali_vars_remove.deployment.instance_name != 'kiali' else '') + kiali_vars_remove.deployment.namespace) %}
+      {% for cl in query(k8s_plugin, kind='ConsoleLink', label_selector='kiali.io/home=' + ((kiali_vars_remove.deployment.instance_name + '.') if kiali_vars_remove.deployment.instance_name != 'kiali' else '') + kiali_vars_remove.deployment.namespace) %}
       ---
       apiVersion: "{{ cl.apiVersion }}"
       kind: "{{ cl.kind }}"
