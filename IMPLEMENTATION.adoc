@@ -66,7 +66,7 @@ The publishing of the Kubernetes Community ("kiali-upstream") and OpenShift Comm
 
 === Manual Steps To Publish OLM Metadata
 
-NOTE: You must first have forked the two community github repos before doing the steps below. So ensure these are forked and checked out on your local machine: +
+NOTE: You must first have forked the two community github repos before performing the steps below.  Ensure these are forked and checked out on your local machine: +
 - https://github.com/k8s-operatorhub/community-operators +
 - https://github.com/redhat-openshift-ecosystem/community-operators-prod
 
