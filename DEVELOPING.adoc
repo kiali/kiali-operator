@@ -221,7 +221,7 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 - [ ] Changes made to the link:./roles/default[`default`] Ansible role should be duplicated to the versioned Ansible role (e.g. link:./roles/v1.24[`v1.24`])
 - [ ] Cherry-pick changes you made in the link:./roles/default[`default`] Ansible role and versioned Ansible roles (e.g. link:./roles/v1.24[`v1.24`]) to the appropriate git branch.
 
-### Are You Adding Support For an New Ansible Role Version?
+### Are You Adding Support For a New Ansible Role Version?
 
 - [ ] Add the new role directory by copying the link:./roles[default] role and naming the new role with the form `vX.Y`.
 - [ ] Add the new RELATED_IMAGE reference for the version being added to the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml/[the CSV]
