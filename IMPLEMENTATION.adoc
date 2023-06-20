@@ -14,7 +14,7 @@ NOTE: The KO needs to periodically update its Ansible Operator SDK base image. T
 
 == Multiple Version Support
 
-The KO can support installing multiple versions of the Kiali server by invoking different versions of the Ansible roles. The versions the KO supports is defined in link:https://github.com/kiali/kiali-operator/blob/v1.69.0/playbooks/default-supported-images.yml[default-supported-images.yml]. For each version supported, there is an link:https://github.com/kiali/kiali-operator/tree/v1.69.0/roles[Ansible role] that the KO executes when it needs to install or remove Kiali of that version.
+The KO can support installing multiple versions of the Kiali server by invoking different versions of the Ansible roles. The versions the KO supports are defined in link:https://github.com/kiali/kiali-operator/blob/v1.69.0/playbooks/default-supported-images.yml[default-supported-images.yml]. For each version supported, there is an link:https://github.com/kiali/kiali-operator/tree/v1.69.0/roles[Ansible role] that the KO executes when it needs to install or remove that Kiali version.
 
 NOTE: If you need to add support for a new version or remove support for an obsolete version, see link:./DEVELOPING.adoc[DEVELOPING.adoc] for those instructions.
 
