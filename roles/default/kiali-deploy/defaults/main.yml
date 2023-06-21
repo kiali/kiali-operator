@@ -256,8 +256,6 @@ kiali_defaults:
     istio_upgrade_action: false
     ui_defaults:
       graph:
-        enable_cytoscape: true
-        enable_patternfly: false
         find_options:
         - description: "Find: slow edges (> 1s)"
           expression: "rt > 1000"
@@ -274,6 +272,7 @@ kiali_defaults:
           expression:  "name = unknown"
         - description: "Hide: nodes ranked lower than the 2 top rankings"
           expression:  "rank > 2"
+        impl: "cy"
         settings:
           font_label: 13
           min_font_badge: 7
