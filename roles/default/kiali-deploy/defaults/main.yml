@@ -256,6 +256,8 @@ kiali_defaults:
     istio_upgrade_action: false
     ui_defaults:
       graph:
+        enable_cytoscape: true
+        enable_patternfly: false
         find_options:
         - description: "Find: slow edges (> 1s)"
           expression: "rt > 1000"
