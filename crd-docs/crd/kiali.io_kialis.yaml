@@ -1051,30 +1051,30 @@ spec:
                             items:
                               type: object
                               properties:
+                                auto_enable:
+                                  description: "Enabled option by default"
+                                  type: boolean
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
                                   type: string
                                 expression:
                                   description: "The find expression."
                                   type: string
-                                auto_enable:
-                                  description: "Enabled option by default"
-                                  type: boolean
                           hide_options:
                             description: "A list of commonly used and useful hide expressions that will be provided to the user out-of-box."
                             type: array
                             items:
                               type: object
                               properties:
+                                auto_enable:
+                                  description: "Enabled option by default"
+                                  type: boolean
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
                                   type: string
                                 expression:
                                   type: string
                                   description: "The hide expression."
-                                auto_enable:
-                                  description: "Enabled option by default"
-                                  type: boolean
                           traffic:
                             description: "These settings determine which rates are used to determine graph traffic."
                             type: object
