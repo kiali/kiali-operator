@@ -1066,8 +1066,8 @@ spec:
                             items:
                               type: object
                               properties:
-                                auto_enable:
-                                  description: "Enabled option by default"
+                                auto_select:
+                                  description: "If true this option will be selected and take effect automatically. Note that only one option in the list can have this value be set to true."
                                   type: boolean
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
