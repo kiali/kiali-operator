@@ -257,20 +257,27 @@ kiali_defaults:
     ui_defaults:
       graph:
         find_options:
-        - description: "Find: slow edges (> 1s)"
+        - auto_select: false
+          description: "Find: slow edges (> 1s)"
           expression: "rt > 1000"
-        - description: "Find: unhealthy nodes"
+        - auto_select: false
+          description: "Find: unhealthy nodes"
           expression:  "! healthy"
-        - description: "Find: unknown nodes"
+        - auto_select: false
+          description: "Find: unknown nodes"
           expression:  "name = unknown"
-        - description: "Find: nodes with the 2 top rankings"
+        - auto_select: false
+          description: "Find: nodes with the 2 top rankings"
           expression:  "rank <= 2"
         hide_options:
-        - description: "Hide: healthy nodes"
+        - auto_select: false
+          description: "Hide: healthy nodes"
           expression: "healthy"
-        - description: "Hide: unknown nodes"
+        - auto_select: false
+          description: "Hide: unknown nodes"
           expression:  "name = unknown"
-        - description: "Hide: nodes ranked lower than the 2 top rankings"
+        - auto_select: false
+          description: "Hide: nodes ranked lower than the 2 top rankings"
           expression:  "rank > 2"
         settings:
           font_label: 13
