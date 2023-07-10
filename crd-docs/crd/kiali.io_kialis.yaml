@@ -1008,7 +1008,7 @@ spec:
                             description: "If true then remote cluster secrets will be autodetected during the installation of the Kiali Server Deployment. Any remote cluster secrets found in the Kiali deployment namespace will be mounted to the Kiali Server's file system. If false, you can still manually specify the remote cluster secret information in the 'clusters' setting if you wish to utilize multicluster features."
                             type: boolean
                           label:
-                            description: "The name and value of a label that exists on all remote cluster secrets. Default is 'istio/multiCluster=true'."
+                            description: "The name and value of a label that exists on all remote cluster secrets. Default is 'kiali.io/multiCluster=true'."
                             type: string
                       clusters:
                         description: "A list of clusters that the Kiali Server can access. You need to specify the remote clusters here if 'autodetect_secrets.enabled' is false."
