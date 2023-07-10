@@ -374,7 +374,7 @@ spec:
     clustering:
       autodetect_secrets:
         enabled: true
-        label: "istio/multiCluster=true"
+        label: "kiali.io/multiCluster=true"
       clusters: []
     disabled_features: []
     istio_annotation_action: true
