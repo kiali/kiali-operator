@@ -121,8 +121,6 @@ spec:
   kubernetes_config:
     burst: null
     cache_duration: null
-    cache_istio_types: null
-    cache_namespaces: null
     cache_token_namespace_duration: null
     excluded_workloads: null
     qps: null

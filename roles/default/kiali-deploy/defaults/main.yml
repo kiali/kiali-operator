@@ -306,21 +306,6 @@ kiali_defaults:
   kubernetes_config:
     burst: 200
     cache_duration: 300
-    cache_istio_types:
-    - "AuthorizationPolicy"
-    - "DestinationRule"
-    - "EnvoyFilter"
-    - "Gateway"
-    - "PeerAuthentication"
-    - "RequestAuthentication"
-    - "ServiceEntry"
-    - "Sidecar"
-    - "VirtualService"
-    - "WorkloadEntry"
-    - "WorkloadGroup"
-
-    cache_namespaces:
-    - ".*"
     cache_token_namespace_duration: 10
     cluster_name: ""
     excluded_workloads:
