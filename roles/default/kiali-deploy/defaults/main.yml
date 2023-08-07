@@ -250,6 +250,7 @@ kiali_defaults:
         enabled: true
         label: "kiali.io/multiCluster=true"
       clusters: []
+      kiali_urls: []
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true
