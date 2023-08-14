@@ -1023,13 +1023,19 @@ spec:
                               description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace."
                               type: string
                       kiali_urls:
-                        description: "A map between cluster name and a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation has a priority over this."
+                        description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
                         type: array
                         items:
                           type: object
                           properties:
                             cluster_name:
                               description: "The name of the cluster."
+                              type: string
+                            instance_name:
+                              description: "The instance name of this Kiali installation."
+                              type: string
+                            namespace:
+                              description: "The namespace into which Kiali is installed."
                               type: string
                             url:
                               description: "The URL of Kiali in the cluster."
