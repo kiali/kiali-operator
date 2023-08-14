@@ -1032,7 +1032,7 @@ spec:
                               description: "The name of the cluster."
                               type: string
                             instance_name:
-                              description: "The instance name of this Kiali installation."
+                              description: "The instance name of this Kiali installation. This should be the value used in `deployment.instance_name` for Kiali resource name."
                               type: string
                             namespace:
                               description: "The namespace into which Kiali is installed."
