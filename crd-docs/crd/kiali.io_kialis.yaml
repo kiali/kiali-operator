@@ -1269,12 +1269,22 @@ spec:
                         description: "Settings that control how the Kiali server itself emits its own tracing data."
                         type: object
                         properties:
+                          collector_type:
+                            description: "The collector type to use. Value must be one of: `jaeger` or `otel`."
+                            type: string
                           collector_url:
                             description: "The URL used to determine where the Kiali server tracing data will be stored."
                             type: string
                           enabled:
                             description: "When true, the Kiali server itself will product its own tracing data."
                             type: boolean
+                          otel:
+                            description: "Specific properties when the collector type is `otel`."
+                            type: object
+                            properties:
+                              protocol:
+                                description: "Protocol. Supported values are: `http`, `https` or `grpc`."
+                                type: string
                   port:
                     description: "The port that the server will bind to in order to receive console and API requests."
                     type: integer
