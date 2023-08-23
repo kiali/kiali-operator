@@ -330,8 +330,11 @@ kiali_defaults:
         enabled: true
         port: 9090
       tracing:
+        collector_type: "jaeger"
         collector_url: http://jaeger-collector.istio-system:14268/api/traces
         enabled: false
+        otel:
+          protocol: "http"
     port: 20001
     web_fqdn: ""
     web_history_mode: ""
