@@ -3,6 +3,11 @@ kind: ClusterServiceVersion
 metadata:
   name: kiali-operator.v1.74.0
   namespace: placeholder
+  labels:
+    operatorframework.io/arch.amd64: supported
+    operatorframework.io/arch.s390x: supported
+    operatorframework.io/arch.ppc64le: supported
+    operatorframework.io/arch.arm64: supported
   annotations:
     olm.skipRange: '>=1.0.0 <1.74.0'
     categories: Monitoring,Logging & Tracing
