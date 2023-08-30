@@ -220,6 +220,7 @@ kiali_defaults:
       in_cluster_url: ""
       is_core: false
       namespace_selector: true
+      provider: "jaeger"
       query_scope: {}
       query_timeout: 5
       url: ""
