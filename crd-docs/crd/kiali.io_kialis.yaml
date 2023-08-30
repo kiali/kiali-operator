@@ -894,7 +894,7 @@ spec:
                       namespace_selector:
                         description: "Kiali use this boolean to find traces with a namespace selector : service.namespace."
                         type: boolean
-                      provide:
+                      provider:
                         description: "The trace provider to get the traces from. Value must be one of: `jaeger` or `tempo`."
                         type: string
                       query_scope:
