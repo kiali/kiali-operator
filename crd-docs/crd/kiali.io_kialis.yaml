@@ -745,9 +745,18 @@ spec:
                       envoy_admin_local_port:
                         description: "The port which kiali will open to fetch envoy config data information."
                         type: integer
-                      gateway_api_class_name:
-                        description: "The K8s Gateway API GatewayClass's Name used in Istio. If empty, the default value 'istio' is used."
-                        type: string
+                      gateway_api_classes:
+                        description: "The K8s Gateway API GatewayClass's implementation name and class name used in Istio. If empty, the default value 'Istio/istio' is used."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              description: "The name of the Gateway API implementation."
+                              type: string
+                            class_name:
+                              description: "The name of the GatewayClass."
+                              type: string
                       istio_api_enabled:
                         description: "Indicates if Kiali has access to istiod. true by default."
                         type: boolean

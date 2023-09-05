@@ -173,7 +173,7 @@ kiali_defaults:
         enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
-      gateway_api_class_name: ""
+      gateway_api_classes: []
       istio_api_enabled: true
       #istio_canary_revision:
         #current: prod
