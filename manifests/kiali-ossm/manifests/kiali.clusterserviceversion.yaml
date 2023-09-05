@@ -10,6 +10,17 @@ metadata:
     operatorframework.io/arch.arm64: supported
   annotations:
     operators.openshift.io/valid-subscription: '["OpenShift Container Platform", "OpenShift Platform Plus"]'
+    operators.openshift.io/infrastructure-features: '["disconnected", "fips"]'
+    features.operators.openshift.io/disconnected: "true"
+    features.operators.openshift.io/fips-compliant: "true"
+    features.operators.openshift.io/proxy-aware: "false"
+    features.operators.openshift.io/cnf: "false"
+    features.operators.openshift.io/cni: "false"
+    features.operators.openshift.io/csi: "false"
+    features.operators.openshift.io/tls-profiles: "false"
+    features.operators.openshift.io/token-auth-aws: "false"
+    features.operators.openshift.io/token-auth-azure: "false"
+    features.operators.openshift.io/token-auth-gcp: "false"
     olm.skipRange: '>=1.0.0 <${KIALI_OPERATOR_VERSION}'
     categories: Monitoring,Logging & Tracing
     certified: "false"
@@ -19,7 +30,6 @@ metadata:
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
     createdAt: ${CREATED_AT}
-    operators.openshift.io/infrastructure-features: '["disconnected", "fips"]'
     alm-examples: |-
       [
         {
