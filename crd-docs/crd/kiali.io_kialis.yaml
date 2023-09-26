@@ -863,7 +863,7 @@ spec:
                         description: "The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod. If empty, the default will assume Prometheus is in the Istio control plane namespace; e.g. `http://prometheus.<istio_namespace>:9090`."
                         type: string
                   tracing:
-                    description: "Configuration used to access the Tracing (Jaeger) dashboards."
+                    description: "Configuration used to access the Tracing (Jaeger or Tempo) dashboards."
                     type: object
                     properties:
                       auth:
@@ -903,6 +903,9 @@ spec:
                       namespace_selector:
                         description: "Kiali use this boolean to find traces with a namespace selector : service.namespace."
                         type: boolean
+                      provider:
+                        description: "The trace provider to get the traces from. Value must be one of: `jaeger` or `tempo`."
+                        type: string
                       query_scope:
                         description: "A set of tagKey/tagValue settings applied to every Jaeger query. Used to narrow unified traces to only those scoped to the Kiali instance."
                         type: object

@@ -331,6 +331,7 @@ spec:
       in_cluster_url: ""
       is_core: false
       namespace_selector: true
+      provider: "jaeger"
       # default: query_scope is empty
       query_scope:
         mesh_id: "mesh-1"
