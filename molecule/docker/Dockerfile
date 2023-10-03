@@ -1,8 +1,4 @@
-FROM quay.io/ansible/creator-ee:v0.5.2
-ENV PACKAGES="\
-openssl \
-"
-RUN dnf install -y ${PACKAGES}
-RUN pip install jmespath
-RUN ansible-galaxy collection install community.general kubernetes.core
-RUN curl -L https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash && helm version
+FROM quay.io/ansible/creator-ee:v0.20.0
+RUN pip install jmespath kubernetes
+RUN ansible-galaxy collection install -p /usr/share/ansible/collections community.general kubernetes.core
+RUN curl -L https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | VERIFY_CHECKSUM=false bash && helm version
