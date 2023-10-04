@@ -1,0 +1,1 @@
+default: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "operator_version"}

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev-ossmconsole
+---
+apiVersion: kiali.io/v1alpha1
+kind: OSSMConsole
+metadata:
+  name: ossmconsole
+  namespace: dev-ossmconsole
+  annotations:
+    ansible.sdk.operatorframework.io/verbosity: "1"
+  labels:
+    kiali.dev: "run-operator-playbook"
+spec:
+
+  # Make sure the values below also match those in dev-hosts.yaml
+
+  version: "default"
+
+  deployment:
+    imageVersion: "dev"
+
+  kiali:
+    graph:
+      impl: "pf"
+    serviceName: ""
+    serviceNamespace: ""
+    servicePort: 0

@@ -1,0 +1,11 @@
+apiVersion: kiali.io/v1alpha1
+kind: OSSMConsole
+metadata:
+  name: ossmconsole
+spec:
+  version: "{{ ossmconsole.spec_version }}"
+  deployment:
+    imageName: "{{ ossmconsole.image_name }}"
+    imageVersion: "{{ ossmconsole.image_version }}"
+    imagePullPolicy: "{{ ossmconsole.image_pull_policy }}"
+    imagePullSecrets: [ {{ plugin_image_pull_secret_name | default('') }} ]

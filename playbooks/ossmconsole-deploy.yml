@@ -1,0 +1,70 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - debug:
+      msg: OSSMCONSOLE RECONCILIATION START
+
+  - debug:
+      msg: "CR: name={{ ansible_operator_meta.name }}, namespace={{ ansible_operator_meta.namespace }}"
+
+  - name: Playbook start time
+    set_fact:
+      playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - name: Determine the default playbook
+    include_vars:
+      file: "default-playbook.yml"
+      name: default_playbook
+
+  - name: Determine the version that is to be installed
+    set_fact:
+      version: "{{ version | default(default_playbook.playbook) }}"
+
+  - name: Determine the default supported images for all known versions
+    include_vars:
+      file: "ossmconsole-default-supported-images.yml"
+      name: supported_ossmconsole_images
+
+  - name: Override the supported images if found in the environment
+    set_fact:
+      supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({item.key: {'image_name': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('(.+):.+', '\\1'), 'image_version': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
+    loop: "{{ supported_ossmconsole_images | default({}) | dict2items }}"
+    when:
+    - lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_')))
+
+  - name: Examine environment and determine if supported image for the requested version is overridden even if no default is known
+    vars:
+      supported_image_env: "{{ lookup('env', 'RELATED_IMAGE_ossmconsole_' + (version | replace('.','_'))) }}"
+    set_fact:
+      supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({version: {'image_name': supported_image_env | regex_replace('(.+):.+', '\\1'), 'image_version': supported_image_env | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
+    when:
+    - supported_image_env is defined
+    - supported_image_env != ""
+
+  - name: Make sure a default supported image or an override image is known
+    fail:
+      msg: "Asked to install a version [{{ version }}] that does not have a known supported image."
+    when:
+    - supported_ossmconsole_images[version] is not defined
+
+  - name: Run the version-specific deploy role
+    include_role:
+      name: "{{ version }}/ossmconsole-deploy"
+    when:
+    - skip_reconciliation is not defined or skip_reconciliation == False
+
+  - name: Playbook end time
+    set_fact:
+      playbook_time_end: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - name: Log reconciliation processing time
+    ignore_errors: yes
+    debug:
+      msg: "Processing time: [{{ (playbook_time_end|to_datetime - playbook_time_start|to_datetime).total_seconds() | int }}] seconds"
+
+  - debug:
+      msg: OSSMCONSOLE RECONCILIATION IS DONE.
+

@@ -1,0 +1,24 @@
+apiVersion: kiali.io/v1alpha1
+kind: OSSMConsole
+metadata:
+  name: ossmconsole
+  annotations:
+    ansible.sdk.operatorframework.io/verbosity: "1"
+spec:
+  version: "default"
+
+  deployment:
+    imageDigest: ""
+    imageName: ""
+    imagePullPolicy: "IfNotPresent"
+    # default: image_pull_secrets is an empty list
+    imagePullSecrets: ["image.pull.secret"]
+    imageVersion: ""
+    namespace: ""
+
+  kiali:
+    graph:
+      impl: "pf"
+    serviceName: ""
+    serviceNamespace: ""
+    servicePort: 0

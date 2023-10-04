@@ -41,7 +41,7 @@
 
   - name: Determine the default supported images for all known versions
     include_vars:
-      file: "default-supported-images.yml"
+      file: "kiali-default-supported-images.yml"
       name: supported_kiali_images
 
   - name: Override the supported images if found in the environment
