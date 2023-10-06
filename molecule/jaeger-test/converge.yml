@@ -25,14 +25,14 @@
   # If Jaeger is in the list, it means that there is an error (Unreacheable)
   - name: Check if Jaeger status is present
     set_fact:
-      jaeger_error: "{{ item.status }}"     
+      tracing_error: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'jaeger'"
+    when: "item.name == 'tracing'"
   
   - name: Assert that there is no error related to Jaeger
     assert:
       that:
-      - jaeger_error is not defined
+      - tracing_error is not defined
 
   # Update Jaeger URL to a bad URL just to test a bad integration
   - import_tasks: update-jaeger-url.yml
@@ -57,11 +57,11 @@
 
   - name: Check if Jaeger status is present
     set_fact:
-      jaeger_error: "{{ item.status }}"     
+      tracing_error: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'jaeger'"
+    when: "item.name == 'tracing'"
   
   - name: Assert that there is an error related to Jaeger
     assert:
       that:
-      - jaeger_error is defined
+      - tracing_error is defined
