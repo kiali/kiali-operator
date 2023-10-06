@@ -27,7 +27,7 @@
     set_fact:
       tracing_error: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'jaeger'"
+    when: "item.name == 'tracing'"
   
   - name: Assert that there is no error related to Jaeger
     assert:
