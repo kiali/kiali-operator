@@ -1,0 +1,122 @@
+# Because we are passing through some yaml directly to Kubernetes resources, we have to retain the camelCase keys.
+# All CR parameters are converted to snake_case, but the original yaml is found in the special _kiali_io_kiali param.
+# We need to copy that original yaml into our vars where appropriate to keep the camelCase.
+
+- name: Replace snake_case with camelCase in all appropriate fields
+  set_fact:
+    kiali_vars: |
+      {# deployment.affinity.node #}
+      {% if kiali_vars.deployment.affinity is defined and kiali_vars.deployment.affinity.node is defined and kiali_vars.deployment.affinity.node | length > 0 %}
+      {%   set _=kiali_vars['deployment']['affinity'].pop('node') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'affinity': {'node': current_cr.spec.deployment.affinity.node }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.affinity.pod #}
+      {% if kiali_vars.deployment.affinity is defined and kiali_vars.deployment.affinity.pod is defined and kiali_vars.deployment.affinity.pod | length > 0 %}
+      {%   set _=kiali_vars['deployment']['affinity'].pop('pod') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'affinity': {'pod': current_cr.spec.deployment.affinity.pod }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.affinity.pod_anti #}
+      {% if kiali_vars.deployment.affinity is defined and kiali_vars.deployment.affinity.pod_anti is defined and kiali_vars.deployment.affinity.pod_anti | length > 0 %}
+      {%   set _=kiali_vars['deployment']['affinity'].pop('pod_anti') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'affinity': {'pod_anti': current_cr.spec.deployment.affinity.pod_anti }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.tolerations #}
+      {% if kiali_vars.deployment.tolerations is defined and kiali_vars.deployment.tolerations | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('tolerations') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'tolerations': current_cr.spec.deployment.tolerations }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.additional_service_yaml #}
+      {% if kiali_vars.deployment.additional_service_yaml is defined and kiali_vars.deployment.additional_service_yaml | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('additional_service_yaml') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'additional_service_yaml': current_cr.spec.deployment.additional_service_yaml }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.resources #}
+      {% if kiali_vars.deployment.resources is defined and kiali_vars.deployment.resources | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('resources') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'resources': current_cr.spec.deployment.resources }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.ingress.override_yaml #}
+      {% if kiali_vars.deployment.ingress.override_yaml is defined and kiali_vars.deployment.ingress.override_yaml | length > 0 %}
+      {%   set _=kiali_vars['deployment']['ingress'].pop('override_yaml') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'ingress': {'override_yaml': current_cr.spec.deployment.ingress.override_yaml }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.pod_annotations #}
+      {% if kiali_vars.deployment.pod_annotations is defined and kiali_vars.deployment.pod_annotations | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('pod_annotations') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'pod_annotations': current_cr.spec.deployment.pod_annotations }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.pod_labels #}
+      {% if kiali_vars.deployment.pod_labels is defined and kiali_vars.deployment.pod_labels | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('pod_labels') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'pod_labels': current_cr.spec.deployment.pod_labels }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.service_annotations #}
+      {% if kiali_vars.deployment.service_annotations is defined and kiali_vars.deployment.service_annotations | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('service_annotations') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'service_annotations': current_cr.spec.deployment.service_annotations }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.hpa.spec #}
+      {% if kiali_vars.deployment.hpa is defined and kiali_vars.deployment.hpa.spec is defined and kiali_vars.deployment.hpa.spec | length > 0 %}
+      {%   set _=kiali_vars['deployment']['hpa'].pop('spec') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'hpa': {'spec': current_cr.spec.deployment.hpa.spec }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.node_selector #}
+      {% if kiali_vars.deployment.node_selector is defined and kiali_vars.deployment.node_selector | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('node_selector') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'node_selector': current_cr.spec.deployment.node_selector }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# external_services.custom_dashboards.prometheus.custom_headers #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.custom_headers is defined and kiali_vars.external_services.custom_dashboards.prometheus.custom_headers | length > 0 %}
+      {%   set _=kiali_vars['external_services']['custom_dashboards']['prometheus'].pop('custom_headers') %}
+      {%   set kiali_vars=kiali_vars | combine({'external_services': {'custom_dashboards': {'prometheus': {'custom_headers': current_cr.spec.external_services.custom_dashboards.prometheus.custom_headers }}}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# external_services.custom_dashboards.prometheus.query_scope #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.query_scope is defined and kiali_vars.external_services.custom_dashboards.prometheus.query_scope | length > 0 %}
+      {%   set _=kiali_vars['external_services']['custom_dashboards']['prometheus'].pop('query_scope') %}
+      {%   set kiali_vars=kiali_vars | combine({'external_services': {'custom_dashboards': {'prometheus': {'query_scope': current_cr.spec.external_services.custom_dashboards.prometheus.query_scope }}}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# external_services.prometheus.custom_headers #}
+      {% if kiali_vars.external_services.prometheus.custom_headers is defined and kiali_vars.external_services.prometheus.custom_headers | length > 0 %}
+      {%   set _=kiali_vars['external_services']['prometheus'].pop('custom_headers') %}
+      {%   set kiali_vars=kiali_vars | combine({'external_services': {'prometheus': {'custom_headers': current_cr.spec.external_services.prometheus.custom_headers }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# external_services.prometheus.query_scope #}
+      {% if kiali_vars.external_services.prometheus.query_scope is defined and kiali_vars.external_services.prometheus.query_scope | length > 0 %}
+      {%   set _=kiali_vars['external_services']['prometheus'].pop('query_scope') %}
+      {%   set kiali_vars=kiali_vars | combine({'external_services': {'prometheus': {'query_scope': current_cr.spec.external_services.prometheus.query_scope }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.configmap_annotations #}
+      {% if kiali_vars.deployment.configmap_annotations is defined and kiali_vars.deployment.configmap_annotations | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('configmap_annotations') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'configmap_annotations': current_cr.spec.deployment.configmap_annotations }}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# external_services.tracing.query_scope #}
+      {% if kiali_vars.external_services.tracing.query_scope is defined and kiali_vars.external_services.tracing.query_scope | length > 0 %}
+      {%   set _=kiali_vars['external_services']['tracing'].pop('query_scope') %}
+      {%   set kiali_vars=kiali_vars | combine({'external_services': {'tracing': {'query_scope': current_cr.spec.external_services.tracing.query_scope }}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {# deployment.security_context #}
+      {% if kiali_vars.deployment.security_context is defined and kiali_vars.deployment.security_context | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('security_context') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'security_context': current_cr.spec.deployment.security_context}}, recursive=True) %}
+      {% endif %}
+      {# #}
+      {{ kiali_vars }}

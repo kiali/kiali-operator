@@ -1,0 +1,256 @@
+# These tasks remove all Kiali resources such that no remnants of Kiali will remain.
+#
+# Note that we ignore_errors everywhere - we do not want these tasks to ever abort with a failure.
+# This is because these are run within a finalizer and if a failure aborts any task here
+# the user will never be able to delete the Kiali CR - in fact, the delete will hang indefinitely
+# and the user will need to do an ugly hack to fix it.
+
+- ignore_errors: yes
+  set_fact:
+    k8s_plugin: kubernetes.core.k8s
+
+- name: Get the original CR that was deleted
+  ignore_errors: yes
+  set_fact:
+    current_cr: "{{ _kiali_io_kiali }}"
+
+- name: Get api group information from the cluster
+  ignore_errors: yes
+  set_fact:
+    api_groups: "{{ lookup(k8s_plugin, cluster_info='api_groups') }}"
+  when:
+  - is_openshift == False
+  - is_k8s == False
+
+- name: Get api version information from the cluster
+  ignore_errors: yes
+  k8s_cluster_info:
+  register: api_status
+
+- name: Determine the cluster type
+  ignore_errors: yes
+  set_fact:
+    is_openshift: "{{ True if 'route.openshift.io' in api_groups else False }}"
+    is_k8s: "{{ False if 'route.openshift.io' in api_groups else True }}"
+  when:
+  - is_openshift == False
+  - is_k8s == False
+
+# Indicate what kind of cluster we are in (OpenShift or Kubernetes).
+- ignore_errors: yes
+  debug:
+    msg: "CLUSTER TYPE: is_openshift={{ is_openshift }}; is_k8s={{ is_k8s }}"
+
+- name: Print some debug information
+  ignore_errors: yes
+  vars:
+    msg: |
+        Kiali Variables:
+        --------------------------------
+        {{ kiali_vars_remove | to_nice_yaml }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: Set default HPA api_version
+  ignore_errors: yes
+  set_fact:
+    kiali_vars_remove: "{{ kiali_vars_remove | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if (api_status.apis['autoscaling/v2'] is defined) else 'autoscaling/v2beta2' }}}, recursive=True) }}"
+  when:
+  - kiali_vars_remove.deployment.hpa.api_version == ""
+
+# There is an edge case where a user installed Kiali with one instance name, then changed the instance name in the CR.
+# This is not allowed. When this happens, the operator will abort with an error message telling the user to uninstall Kiali.
+# The user will do this by deleting the Kiali CR, at which time this ansible role is executed.
+# In this case we must use the instance name stored in the status not the spec because the spec will have the bad name
+# and the status will have the correct name that was used to initially install Kiali.
+- name: Ensure the correct instance_name is used
+  ignore_errors: yes
+  set_fact:
+    kiali_vars_remove: "{{ kiali_vars_remove | combine({'deployment': {'instance_name': current_cr.status.deployment.instanceName}}, recursive=True) }}"
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.instanceName is defined
+  - current_cr.status.deployment.instanceName != kiali_vars_remove.deployment.instance_name
+
+- name: Set default deployment namespace to the same namespace where the CR lives
+  ignore_errors: yes
+  set_fact:
+    kiali_vars_remove: "{{ kiali_vars_remove | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
+  when:
+  - kiali_vars_remove.deployment.namespace is not defined or kiali_vars_remove.deployment.namespace == ""
+
+- name: Set default istio namespace
+  ignore_errors: yes
+  set_fact:
+    kiali_vars_remove: "{{ kiali_vars_remove | combine({'istio_namespace': kiali_vars_remove.deployment.namespace}, recursive=True) }}"
+  when:
+  - kiali_vars_remove.istio_namespace == ""
+
+- name: Find all namespaces (this is limited to what the operator has permission to see)
+  ignore_errors: yes
+  set_fact:
+    all_namespaces: "{{ lookup(k8s_plugin, api_version='v1', kind='Namespace') | default({}) | json_query('[].metadata.name') }}"
+
+# When the Operator installed Kiali, the configmap has accessible_namespaces set.
+# There are no regexes in the configmap; they are all full namespace names.
+# NOTE: there is a special value of accessible_namespaces of two asterisks ("**")
+# which indicates Kiali is given access to all namespaces via a single cluster role
+# not individual roles in each accessible namespace.
+
+- name: Find current configmap, if it exists
+  ignore_errors: yes
+  set_fact:
+    current_configmap: "{{ lookup(k8s_plugin, resource_name=kiali_vars_remove.deployment.instance_name, namespace=kiali_vars_remove.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
+- name: Find currently accessible namespaces
+  ignore_errors: yes
+  set_fact:
+    current_accessible_namespaces: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.accessible_namespaces') }}"
+  when:
+  - current_configmap is defined
+  - current_configmap.data is defined
+  - current_configmap.data['config.yaml'] is defined
+
+- name: Delete all additional Kiali roles in current accessible namespaces
+  ignore_errors: yes
+  k8s:
+    state: absent
+    definition: |
+      {% for namespace in current_accessible_namespaces %}
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ kiali_vars_remove.deployment.instance_name }}"
+        namespace: "{{ namespace }}"
+      ...
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: "{{ kiali_vars_remove.deployment.instance_name }}"
+        namespace: "{{ namespace }}"
+      ...
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: "{{ kiali_vars_remove.deployment.instance_name }}-viewer"
+        namespace: "{{ namespace }}"
+      ...
+      {% endfor %}
+  when:
+  - current_accessible_namespaces is defined
+  - '"**" not in current_accessible_namespaces'
+
+- name: Find currently configured label selector
+  ignore_errors: yes
+  set_fact:
+    current_label_selector_include: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('api.namespaces.label_selector_include') }}"
+  when:
+  - current_configmap is defined
+  - current_configmap.data is defined
+  - current_configmap.data['config.yaml'] is defined
+
+- name: Remove Kiali label from namespaces found in current accessible namespaces
+  ignore_errors: yes
+  vars:
+    # everything to the left of the = is the name of the label we want to remove
+    the_namespace_label_name: "{{ current_label_selector_include | regex_replace('^(.*)=.*$', '\\1') }}"
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we use state=patched
+  k8s:
+    state: patched
+    definition: |
+      {% for namespace in current_accessible_namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ the_namespace_label_name }}: null
+      ...
+      {% endfor %}
+  when:
+  - current_accessible_namespaces is defined
+  - '"**" not in current_accessible_namespaces'
+  - current_label_selector_include is defined
+  - current_label_selector_include != ""
+
+- name: Delete Kiali cluster roles
+  ignore_errors: yes
+  k8s:
+    state: absent
+    continue_on_error: false
+    template:
+    - clusterroles-to-remove.yml
+  retries: 6
+  delay: 10
+
+- name: Delete Kiali resources
+  ignore_errors: yes
+  k8s:
+    state: absent
+    continue_on_error: false
+    template:
+    - resources-to-remove.yml
+  retries: 6
+  delay: 10
+
+- name: Unlabel the signing key secret if it exists to indicate this Kiali instance no longer uses it
+  ignore_errors: yes
+  vars:
+    doomed_label: "{{ 'kiali.io/' + ((kiali_vars_remove.deployment.instance_name + '.') if kiali_vars_remove.deployment.instance_name != 'kiali' else '') + 'member-of' }}"
+  k8s:
+    state: present
+    definition: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "kiali-signing-key"
+        namespace: "{{ kiali_vars_remove.deployment.namespace }}"
+        labels:
+          {{ doomed_label }}: null
+
+- name: Delete the signing key secret if no other Kiali installation is using it
+  ignore_errors: yes
+  vars:
+    signing_key_secret_labels: "{{ lookup(k8s_plugin, namespace=kiali_vars_remove.deployment.namespace, kind='Secret', resource_name='kiali-signing-key', api_version='v1') | default({}) | json_query('metadata.labels') }}"
+  k8s:
+    state: absent
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: kiali-signing-key
+        namespace: "{{ kiali_vars_remove.deployment.namespace }}"
+  when:
+  - (signing_key_secret_labels is not defined) or (signing_key_secret_labels | length == 0) or (signing_key_secret_labels | dict2items | selectattr('key', 'match', 'kiali.io/.*member-of') | list | length == 0)
+
+- name: Delete OpenShift-specific Kiali resources
+  ignore_errors: yes
+  k8s:
+    state: absent
+    continue_on_error: false
+    template:
+    - os-resources-to-remove.yml
+  retries: 6
+  delay: 10
+  when:
+  - is_openshift == True
+
+- name: Delete OpenShift-specific Kiali ConsoleLinks
+  ignore_errors: yes
+  k8s:
+    state: absent
+    definition: |
+      {% for cl in query(k8s_plugin, kind='ConsoleLink', label_selector='kiali.io/home=' + ((kiali_vars_remove.deployment.instance_name + '.') if kiali_vars_remove.deployment.instance_name != 'kiali' else '') + kiali_vars_remove.deployment.namespace) %}
+      ---
+      apiVersion: "{{ cl.apiVersion }}"
+      kind: "{{ cl.kind }}"
+      metadata:
+        name: "{{ cl.metadata.name }}"
+      ...
+      {% endfor %}
+  when:
+  - is_openshift == True
