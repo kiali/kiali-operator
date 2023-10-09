@@ -1,1 +1,2 @@
 default: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "operator_version"}
+v1.73: {"image_name": "quay.io/kiali/ossmconsole", "image_version": "v1.73"}
