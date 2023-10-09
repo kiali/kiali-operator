@@ -1,0 +1,26 @@
+# Defaults for all user-facing OSSM Console settings.
+#
+# Note that these are under the main dictionary group "ossmconsole_defaults".
+# The actual vars used by the role are found in the vars/ directory.
+# These defaults (the dictionaries under "ossmconsole_defaults") are merged into the vars such that the values
+# below (e.g. deployment) are merged in rather than completely replaced by user-supplied values.
+#
+# If new groups are added to these defaults, you must remember to add the merge code to vars/main.yml.
+
+ossmconsole_defaults:
+  version: "default"
+
+  deployment:
+    imageDigest: ""
+    imageName: ""
+    imagePullPolicy: "IfNotPresent"
+    imagePullSecrets: []
+    imageVersion: ""
+    namespace: ""
+
+  kiali:
+    graph:
+      impl: "pf"
+    serviceName: ""
+    serviceNamespace: ""
+    servicePort: 0
