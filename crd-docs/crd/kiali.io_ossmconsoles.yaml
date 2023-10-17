@@ -1,0 +1,102 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ossmconsoles.kiali.io
+spec:
+  group: kiali.io
+  names:
+    kind: OSSMConsole
+    listKind: OSSMConsoleList
+    plural: ossmconsoles
+    singular: ossmconsole
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          status:
+            description: "The processing status of this CR as reported by the OpenShift Service Mesh Console Operator."
+            type: object
+            x-kubernetes-preserve-unknown-fields: true
+          spec:
+            description: "This is the CRD for the resources called OSSMConsole CRs. The OpenShift Service Mesh Console Operator will watch for resources of this type and when it detects an OSSMConsole CR has been added, deleted, or modified, it will install, uninstall, and update the associated OSSM Console installation."
+            type: object
+            properties:
+              version:
+                description: |
+                  The version of the Ansible playbook to execute in order to install that version of OSSM Console.
+                  It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
+                  The only supported value today is `default`.
+                  If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
+                  Refer to this file to see where these values are defined in the master branch,
+                  https://github.com/kiali/kiali-operator/tree/main/operator/playbooks/ossmconsole-default-supported-images.yml
+                  This version setting affects the defaults of the deployment.imageName and
+                  deployment.imageVersion settings. See the comments for those settings
+                  below for additional details. But in short, this version setting will
+                  dictate which version of the OSSM Console image will be deployed by default.
+                  Note that if you explicitly set deployment.imageName and/or
+                  deployment.imageVersion you are responsible for ensuring those settings
+                  are compatible with this setting (i.e. the image must be compatible
+                  with the rest of the configuration and resources the operator will install).
+                type: string
+              deployment:
+                type: object
+                properties:
+                  imageDigest:
+                    description: "If `deployment.imageVersion` is a digest hash, this value indicates what type of digest it is. A typical value would be 'sha256'. Note: do NOT prefix this value with a '@'."
+                    type: string
+                  imageName:
+                    description: "Determines which OSSM Console image to download and install. If you set this to a specific name (i.e. you do not leave it as the default empty string), you must make sure that image is supported by the operator. If empty, the operator will use a known supported image name based on which `version` was defined. Note that, as a security measure, a cluster admin may have configured the OSSM Console operator to ignore this setting. A cluster admin may do this to ensure the OSSM Console operator only installs a single, specific OSSM Console version, thus this setting may have no effect depending on how the operator itself was configured."
+                    type: string
+                  imagePullPolicy:
+                    description: "The Kubernetes pull policy for the OSSM Console deployment. This is overridden to be 'Always' if `deployment.imageVersion` is set to 'latest'."
+                    type: string
+                  imagePullSecrets:
+                    description: "The names of the secrets to be used when container images are to be pulled."
+                    type: array
+                    items:
+                      type: string
+                  imageVersion:
+                    description: |
+                      Determines which version of OSSM Console to install.
+                      Choose 'lastrelease' to use the last OSSM Console release.
+                      Choose 'latest' to use the latest image (which may or may not be a released version of the OSSM Console).
+                      Choose 'operator_version' to use the image whose version is the same as the operator version.
+                      Otherwise, you can set this to any valid OSSM Console version (such as 'v1.0') or any valid OSSM Console
+                      digest hash (if you set this to a digest hash, you must indicate the digest in `deployment.imageDigest`).
+                      Note that if this is set to 'latest' then the `deployment.imagePullPolicy` will be set to 'Always'.
+                      If you set this to a specific version (i.e. you do not leave it as the default empty string),
+                      you must make sure that image is supported by the operator.
+                      If empty, the operator will use a known supported image version based on which 'version' was defined.
+                      Note that, as a security measure, a cluster admin may have configured the OSSM Console operator to
+                      ignore this setting. A cluster admin may do this to ensure the OSSM Console operator only installs
+                      a single, specific OSSM Console version, thus this setting may have no effect depending on how the
+                      operator itself was configured.
+                    type: string
+                  namespace:
+                    description: "The namespace into which OSSM Console is to be installed. If this is empty or not defined, the default will be the namespace where the OSSMConsole CR is located. Currently the only namespace supported is the namespace where the OSSMConsole CR is located."
+                    type: string
+              kiali:
+                type: object
+                properties:
+                  graph:
+                    type: object
+                    properties:
+                      impl:
+                        description: "The graph implementation used by OSSMC. Possible values are 'cy' (Cytoscape) and 'pf' (Patternfly). By default the patternfly graph is used."
+                        type: string
+                  serviceName:
+                    description: "The internal Kiali service that the OpenShift Console will use to proxy API calls. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
+                    type: string
+                  serviceNamespace:
+                    description: "The namespace where the Kiali service is deployed. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route. It will assume that the OpenShift Route and the Kiali service are deployed in the same namespace."
+                    type: string
+                  servicePort:
+                    description: "The internal port used by the Kiali service for the API. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
+                    type: integer

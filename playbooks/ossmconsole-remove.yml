@@ -1,0 +1,42 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - ignore_errors: yes
+    debug:
+      msg: REMOVING OSSMCONSOLE
+
+  - ignore_errors: yes
+    debug:
+      msg: "CR: name={{ ansible_operator_meta.name }}, namespace={{ ansible_operator_meta.namespace }}"
+
+  - ignore_errors: yes
+    name: Playbook start time
+    set_fact:
+      playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - ignore_errors: yes
+    name: Determine the default playbook
+    include_vars:
+      file: "default-playbook.yml"
+      name: default_playbook
+
+  - ignore_errors: yes
+    include_role:
+      name: "{{ version | default(default_playbook.playbook) }}/ossmconsole-remove"
+
+  - ignore_errors: yes
+    name: Playbook end time
+    set_fact:
+      playbook_time_end: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
+
+  - ignore_errors: yes
+    name: Log removal processing time
+    debug:
+      msg: "Processing time: [{{ (playbook_time_end|to_datetime - playbook_time_start|to_datetime).total_seconds() | int }}] seconds"
+
+  - ignore_errors: yes
+    debug:
+      msg: OSSMCONSOLE REMOVAL IS DONE.

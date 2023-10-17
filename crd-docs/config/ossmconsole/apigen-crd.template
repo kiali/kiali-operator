@@ -1,0 +1,99 @@
+---
+title: {{ .Title }} CR Reference
+linkTitle: {{ .Title }} CR Reference
+description: |
+{{- if .Description }}
+{{ .Description | indent 2 }}
+{{- else }}
+  Reference page for the {{ .Title }} CR.
+  The Kiali Operator will watch for a resource of this type and install the OSSM Console plugin according to that resource's configuration. Only one resource of this type should exist at any one time.
+{{- end }}
+technical_name: {{ .NamePlural }}.{{ .Group }}
+source_repository: {{ .SourceRepository }}
+source_repository_ref: {{ .SourceRepositoryRef }}
+---
+
+{{ if .VersionSchemas }}
+{{ range $versionName, $versionSchema := .VersionSchemas }}
+<div class="crd-schema-version">
+
+{{with .ExampleCR}}
+<h3 id="example-cr">Example CR</h3>
+<em>(all values shown here are the defaults unless otherwise noted)</em>
+
+```yaml
+{{ .|raw -}}
+```
+{{end}}
+
+### Validating your OSSMConsole CR
+
+A tool is available to allow you to check your own OSSMConsole CR to ensure it is valid. Simply download [the validation script](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-ossmconsole-cr.sh) and run it, passing in the location of the OSSMConsole CRD you wish to validate with (e.g. the latest version is found [here](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_ossmconsoles.yaml)) and the location of your OSSMConsole CR. You must be connected to/logged into a cluster for this validation tool to work.
+
+For example, to validate an OSSMConsole CR named `ossmconsole` in the namespace `istio-system` using the latest version of the OSSMConsole CRD, run the following:
+<pre>
+bash <(curl -sL https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-ossmconsole-cr.sh) \
+  -crd https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_ossmconsoles.yaml \
+  --cr-name ossmconsole \
+  -n istio-system
+</pre>
+
+For additional help in using this validation tool, pass it the `--help` option.
+
+<h3 id="property-details">Properties</h3>
+
+{{ range $versionSchema.Properties }}
+<div class="property depth-{{.Depth}}">
+<div class="property-header">
+<hr/>
+<h3 class="property-path" id="{{.Path}}">{{.Path}}</h3>
+</div>
+<div class="property-body">
+<div class="property-meta">
+{{with .Type}}<span class="property-type">({{.}})</span>{{end}}
+{{ if not .Required }}
+{{ else -}}
+<span class="property-required">*Required*</span>
+{{ end -}}
+</div>
+{{with .Description}}
+<div class="property-description">
+{{.|markdown}}
+</div>
+{{end}}
+</div>
+</div>
+{{ end }}
+
+
+{{ if .Annotations }}
+<h3 id="annotation-details">Annotations</h3>
+
+{{ range $versionSchema.Annotations }}
+<div class="annotation">
+<div class="annotation-header">
+<h3 class="annotation-path" id="{{.CRDVersion}}-{{.Annotation}}">{{.Annotation}}</h3>
+</div>
+<div class="annotation-body">
+<div class="annotation-meta">
+{{with .Release}}<span class="annotation-release">{{.}}</span>{{end}}
+</div>
+{{with .Documentation}}
+<div class="annotation-description">
+{{.|markdown}}
+</div>
+{{end}}
+</div>
+</div>
+{{ end }}
+{{ end }}
+
+</div>
+{{end}}
+
+{{ else }}
+<div class="crd-noversions">
+<p>We currently cannot show any schema information on this <abbr title="custom resource definition">CRD</abbr>. Sorry for the inconvenience!</p>
+<p>Please refer to <a href="https://kiali.io">Kiali Documentation</a>.</p>
+</div>
+{{ end }}
