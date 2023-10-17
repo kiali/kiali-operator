@@ -44,9 +44,9 @@ If, however, a developer needs to make changes to the operator, because the Kial
 
 The link:https://github.com/kiali/kiali[Kiali git repo] has a link:https://github.com/kiali/kiali/blob/master/Makefile[Makefile] and a set of link:https://github.com/kiali/kiali/blob/master/make[Makefile targets] that are used in conjunction with the Kiali Operator so you can install and run the operator built from your local git clones. They use the Kiali Operator helm chart to install the operator, so you must link:https://github.com/kiali/kiali#building[clone the helm-chart git repo in the proper place as well].
 
-To install the operator that contains your local changes, run `make operator-create`. If you are using minikube, you will need to set the environment variable `CLUSTER_TYPE=minikube` and you need to also set `MINIKUBE_PROFILE` if your minikube profile name is not `minikube`. At this point you can create your own Kiali CR to trigger the operator to install Kiali, or use `make kiali-create` to install a sample Kiali CR for you.
+To install the operator that contains your local changes, run `make operator-create`. If you are using minikube, you will need to set the environment variable `CLUSTER_TYPE=minikube` and you need to also set `MINIKUBE_PROFILE` if your minikube profile name is not `minikube`. At this point you can create your own Kiali CR to trigger the operator to install Kiali, or use `make kiali-create` to install a sample Kiali CR for you. Similarly, `make ossmconsole-create` will create an OSSMConsole CR to install the OSSMC OpenShift Console plugin.
 
-To remove the operator (and the Kiali CR that may have also been created), run `make operator-delete`.
+To remove the operator (and any CRs that may have also been created), run `make operator-delete`.
 
 ### Installing the Operator in a Cluster Using OLM
 
@@ -56,17 +56,17 @@ If you do not have OLM installed, you can easily install it. First determine wha
 
 Once OLM is installed, you can install the Kiali Operator (and all the required resources such as the OLM catalog source and subscription) via `make olm-operator-create`.
 
-Once the operator is running, you can install a Kiali CR normally. One way to do this is to first create a kiali-operator namespace and run the `kiali-create` make target: `kubectl create ns kiali-operator && make kiali-create`.
+Once the operator is running, you can install a Kiali CR normally. One way to do this is to first create a kiali-operator namespace and run the `kiali-create` make target: `kubectl create ns kiali-operator && make kiali-create`. Similarly with the `ossmconsole-create` target for installing OSSMC.
 
-To remove the Kiali operator and all the other OLM resources that came with it (including the Kiali CR if you created one via the `kiali-create` target), run `make olm-operator-delete`.
+To remove the Kiali operator and all the other OLM resources that came with it (including the CRs if you created some via the `kiali-create` target or the `ossmconsole-create` target), run `make olm-operator-delete`.
 
-NOTE: By default, you will test with the latest version of the metadata. You can specify a different version by setting the `BUNDLE_VERSION` env var on the make command line. If the OC env var points to an `oc` binary, the metadata from the kiali-community will be used; otherwise, the metadata from the kiali-upstream will be used. If you instead want to test with the OSSM metadata, set the env var `OLM_BUNDLE_PACKAGE` to `kiali-ossm` on the make command line.
+NOTE: By default, you will test with the latest version of the "kiali-ossm" metadata. You can specify a different version by setting the `BUNDLE_VERSION` env var on the make command line. If the OC env var points to an `oc` binary, the metadata from the kiali-community will be used; otherwise, the metadata from the kiali-upstream will be used. If you want to do this, you also must set the env var `OLM_BUNDLE_PACKAGE` to `kiali` on the make command line.
 
 ### Running the Operator Playbook Without Installing in a Cluster
 
-Sometimes you made simple changes to the operator playbook and roles that can be quickly tested by running the Ansible playbook on your local machine. This saves time because it doesn't require you to install the operator directly in your cluster. To do this, you must have Ansible installed (e.g. `ansible-playbook` must be in your $PATH). You can run the operator playbook via `make run-operator-playbook`. This will run both the kiali-deploy and kiali-remove playbooks so the operator will install and then immediately uninstall a Kiali Server. The operator playbook is configured via the files found in the link:dev-playbook-config[dev-playbook-config directory].
+Sometimes you made simple changes to the operator playbook and roles that can be quickly tested by running the Ansible playbook on your local machine. This saves time because it doesn't require you to install the operator directly in your cluster. To do this, you must have Ansible installed (e.g. `ansible-playbook` must be in your $PATH). You can run the operator playbook via `make run-operator-playbook-kiali` (to test the Kiali playbooks) or `make run-operator-playbook-ossmconsole` (to test the OSSMC playbooks). `run-operator-playbook-kiali` will run both the kiali-deploy and kiali-remove playbooks so the operator will install and then immediately uninstall a Kiali Server. `run-operator-playbook-ossmconsole` will run both the ossmconsole-deploy and ossmconsole-remove playbooks so the operator will install and then immediately uninstall a OSSMC plugin. The operator playbooks are configured via the files found in the link:dev-playbook-config[dev-playbook-config directory].
 
-In order to use this `run-operator-playbook` target, you must have Python3 in your PATH (having an alias is not enough).
+In order to use these "run-operator-playbook" targets, you must have Python3 in your PATH (having an alias is not enough).
 
 You also must make sure your local Python and Ansible environment matches as closely as possible to the environment of the Kiali operator. To find out the different versions of software within the Kiali operator image, run the following:
 
@@ -84,7 +84,7 @@ To install these, run `ansible-galaxy collection install -r operator/requirement
 
 ### Running the Operator Without Installing in a Cluster
 
-The previous section tells you how to run the Ansible playbook directly on your local machine. If you want to run the actual operator on your local machine in the same manner in which it runs inside the cluster (that is, within the `ansible-operator` shell process) then use the `make run-operator` make target. This will run the ansible-operator executable and point it to the operator's Ansible playbooks and roles. This operator will watch for Kiali CRs in the cluster - when it sees one, it will process it just as if it was running in the cluster. This will allow you to test the Ansible operator infrastructure as well as the operator's Ansible playbooks themselves.
+The previous section tells you how to run the Ansible playbook directly on your local machine. If you want to run the actual operator on your local machine in the same manner in which it runs inside the cluster (that is, within the `ansible-operator` shell process) then use the `make run-operator` make target. This will run the ansible-operator executable and point it to the operator's Ansible playbooks and roles. This operator will watch for Kiali CRs and OSSMConsole CRs in the cluster - when it sees one, it will process it just as if it was running in the cluster. This will allow you to test the Ansible operator infrastructure as well as the operator's Ansible playbooks themselves.
 
 ### Running the Operator With the Ansible Profiler
 

@@ -1,0 +1,38 @@
+- name: Get OSSMConsole CR if present
+  set_fact:
+    ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+- name: Get OSSMConsole Pod
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ ossmconsole.install_namespace }}"
+    label_selectors:
+    - "app.kubernetes.io/name=ossmconsole"
+  register: ossmconsole_pod
+
+- name: Get OSSMConsole Deployment
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ ossmconsole.install_namespace }}"
+    label_selectors:
+    - "app.kubernetes.io/name=ossmconsole"
+  register: ossmconsole_deployment
+
+- name: Get OSSMConsole ConfigMap
+  set_fact:
+    ossmconsole_configmap_resource: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=ossmconsole.install_namespace, resource_name='plugin-conf') }}"
+- name: Format OSSMConsole ConfigMap
+  set_fact:
+    ossmconsole_configmap: "{{ ossmconsole_configmap_resource.data['plugin-config.json'] | from_json }}"
+- name: Dump OSSMConsole ConfigMap
+  debug:
+    msg: "{{ ossmconsole_configmap }}"
+
+- name: Get OSSMConsole ConsolePlugin
+  set_fact:
+    ossmconsole_consoleplugin: "{{ lookup('kubernetes.core.k8s', api_version='console.openshift.io/v1alpha1', kind='ConsolePlugin', namespace=ossmconsole.install_namespace, resource_name='ossmconsole') }}"
+- name: Dump OSSMConsole ConsolePlugin
+  debug:
+    msg: "{{ ossmconsole_consoleplugin }}"

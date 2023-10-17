@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-conf
+  namespace: {{ ossmconsole_vars.deployment.namespace }}
+  labels: {{ ossmconsole_resource_metadata_labels }}
+data:
+  nginx.conf: |
+    error_log /dev/stdout;
+    events {}
+    http {
+      access_log         /dev/stdout;
+      include            /etc/nginx/mime.types;
+      default_type       application/octet-stream;
+      keepalive_timeout  65;
+      server {
+        listen              9443 ssl;
+        ssl_certificate     /var/serving-cert/tls.crt;
+        ssl_certificate_key /var/serving-cert/tls.key;
+
+        add_header oauth_token "$http_Authorization";
+
+        location / {
+          root                /usr/share/nginx/html;
+        }
+      }
+    }

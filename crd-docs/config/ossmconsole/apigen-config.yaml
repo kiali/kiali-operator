@@ -1,0 +1,15 @@
+template_path: ./apigen-crd.template
+
+source_repositories:
+- url: https://github.com/kiali/kiali-operator
+  organization: kiali
+  short_name: kiali-operator
+  commit_reference: master
+  crd_paths:
+  - crd-docs/crd
+  cr_paths:
+  - crd-docs/cr
+  metadata:
+    ossmconsoles.kiali.io:
+      owner:
+      - https://github.com/orgs/kiali/teams/maintainers

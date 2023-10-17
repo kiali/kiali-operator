@@ -95,12 +95,21 @@ validate: .ensure-operator-sdk-exists
 
 ## validate-cr: Ensures the example CR is valid according to the CRD schema
 validate-cr:
+	@printf "\n========== Validating the Kiali CR ==========\n"
 	${ROOTDIR}/crd-docs/bin/validate-kiali-cr.sh --kiali-cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_kiali.yaml
+	@printf "\n========== Validating the OSSMConsole CR ==========\n"
+	${ROOTDIR}/crd-docs/bin/validate-ossmconsole-cr.sh --cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_ossmconsole.yaml
 
-## gen-crd-doc: Generates documentation for the Kiali CR configuration
-gen-crd-doc:
+.gen-crd-doc-kiali:
 	mkdir -p ${OUTDIR}/crd-docs
-	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output -v ${ROOTDIR}/crd-docs/config:/opt/crd-docs-generator/config quay.io/giantswarm/crd-docs-generator:0.9.0 --config /opt/crd-docs-generator/config/apigen-config.yaml
+	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output:z -v ${ROOTDIR}/crd-docs/config/kiali:/opt/crd-docs-generator/config:z quay.io/giantswarm/crd-docs-generator:0.9.0 --config /opt/crd-docs-generator/config/apigen-config.yaml
+
+.gen-crd-doc-ossmconsole:
+	mkdir -p ${OUTDIR}/crd-docs
+	${DORP} run -v ${OUTDIR}/crd-docs:/opt/crd-docs-generator/output:z -v ${ROOTDIR}/crd-docs/config/ossmconsole:/opt/crd-docs-generator/config:z quay.io/giantswarm/crd-docs-generator:0.9.0 --config /opt/crd-docs-generator/config/apigen-config.yaml
+
+## gen-crd-doc: Generates documentation for the Kiali CR and OSSMConsole CR configuration
+gen-crd-doc: .gen-crd-doc-kiali .gen-crd-doc-ossmconsole
 
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:

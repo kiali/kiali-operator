@@ -1,0 +1,11 @@
+- name: Get information about the cluster
+  set_fact:
+    api_groups: "{{ lookup('kubernetes.core.k8s', cluster_info='api_groups') }}"
+
+- name: Determine the cluster type
+  set_fact:
+    is_openshift: "{{ True if 'route.openshift.io' in api_groups else False }}"
+
+# OSSM Console is only usable on OpenShift, skip the test if not on OpenShift platform
+- meta: end_play
+  when: is_openshift == False

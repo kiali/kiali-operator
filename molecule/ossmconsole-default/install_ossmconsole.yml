@@ -1,0 +1,79 @@
+- name: Install OSSMConsole
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+
+  - name: Make sure the OSSMConsole CR namespace exists
+    k8s:
+      state: present
+      api_version: v1
+      kind: Namespace
+      name: "{{ ossmconsole_cr_namespace }}"
+
+  # This is really a no-op because today we know the CR namespace will always be the same as the install namespace
+  - name: Make sure the OSSMConsole install namespace exists
+    k8s:
+      state: present
+      api_version: v1
+      kind: Namespace
+      name: "{{ ossmconsole.install_namespace }}"
+    when:
+    - ossmconsole.install_namespace != ossmconsole_cr_namespace
+
+  - name: Define the name of the pull secret if a secret is needed to pull the plugin image from the internal image registry
+    set_fact:
+      plugin_image_pull_secret_name: "ossmconsole-pull-secret"
+    when:
+    - plugin_image_pull_secret_json != ""
+
+  - name: Create the secret that will be used by the plugin pod to pull the image from the internal registry when needed
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: "{{ plugin_image_pull_secret_name }}"
+          namespace: "{{ ossmconsole.install_namespace }}"
+        type: kubernetes.io/dockerconfigjson
+        data:
+          .dockerconfigjson: "{{ plugin_image_pull_secret_json }}"
+    when:
+    - plugin_image_pull_secret_name is defined
+
+  - name: Wait for the OSSMConsole CRD to be established
+    k8s_info:
+      api_version: apiextensions.k8s.io/v1
+      kind: CustomResourceDefinition
+      name: ossmconsoles.kiali.io
+      wait: yes
+      wait_condition:
+        type: Established
+
+  - name: Prepare initial OSSMConsole CR definition based solely on the template
+    set_fact:
+      ossmconsole_cr_definition: "{{ lookup('template', ossmconsole_cr_file_path) }}"
+
+  - name: Create OSSMConsole CR
+    k8s:
+      namespace: "{{ ossmconsole_cr_namespace }}"
+      definition: "{{ ossmconsole_cr_definition }}"
+
+  - name: Asserting that OSSMConsole plugin is Deployed
+    k8s_info:
+      api_version: v1
+      kind: Deployment
+      namespace: "{{ ossmconsole.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/name=ossmconsole"
+    register: ossmconsole_deployment
+    until:
+    - ossmconsole_deployment is success
+    - ossmconsole_deployment.resources | length == 1
+    - ossmconsole_deployment.resources[0].status.availableReplicas is defined
+    - ossmconsole_deployment.resources[0].status.availableReplicas == 1
+    retries: "{{ wait_retries }}"
+    delay: 5

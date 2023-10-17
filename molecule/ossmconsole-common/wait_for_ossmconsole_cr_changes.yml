@@ -1,0 +1,15 @@
+- name: Wait for OSSMConsole CR changes to take effect
+  k8s_info:
+    api_version: kiali.io/v1alpha1
+    kind: OSSMConsole
+    name: "{{ custom_resource.metadata.name }}"
+    namespace: "{{ ossmconsole_cr_namespace }}"
+  register: ossmconsole_cr_list
+  until:
+  - ossmconsole_cr_list is success
+  - ossmconsole_cr_list.resources is defined
+  - ossmconsole_cr_list.resources | length > 0
+  - ossmconsole_cr_list | json_query('resources[*].status.conditions[?message==`Awaiting next reconciliation`].status') | flatten | join == 'True'
+  - ossmconsole_cr_list | json_query('resources[*].status.conditions[?message==`Awaiting next reconciliation`].reason') | flatten | join == 'Successful'
+  retries: "{{ wait_retries }}"
+  delay: 5

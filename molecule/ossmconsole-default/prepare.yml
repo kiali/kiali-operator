@@ -1,0 +1,14 @@
+- name: Prepare
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - name: Skip test if not on OpenShift
+    import_tasks: ../ossmconsole-common/confirm_openshift.yml
+
+- name: Include the base prepare play to create the kiali install
+  import_playbook: ../default/prepare.yml
+
+- name: Install OSSM Console
+  import_playbook: install_ossmconsole.yml

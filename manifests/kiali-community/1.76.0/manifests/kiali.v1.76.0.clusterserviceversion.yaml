@@ -37,6 +37,20 @@ metadata:
               "web_root": "/mykiali"
             }
           }
+        },
+        {
+          "apiVersion": "kiali.io/v1alpha1",
+          "kind": "OSSMConsole",
+          "metadata": {
+            "name": "ossmconsole"
+          },
+          "spec": {
+            "kiali": {
+              "serviceName": "",
+              "serviceNamespace": "",
+              "servicePort": 0
+            }
+          }
         }
       ]
 spec:
@@ -72,6 +86,10 @@ spec:
     On OpenShift, the default root context path is '/' and on Kubernetes it is
     '/kiali' though you can change this by configuring the 'web_root' setting in
     the Kiali CR.
+
+    If on OpenShift, you can create an OSSMConsole CR to have the operator
+    install the OpenShift ServiceMesh Console plugin to the OpenShift Console
+    thus providing an interface directly integrated with the OpenShift Console.
 
     ## About this Operator
 
@@ -175,6 +193,35 @@ spec:
         path: server.web_root
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:label'
+    - name: ossmconsoles.kiali.io
+      group: kiali.io
+      description: A configuration file for a OpenShift Service Mesh Console installation.
+      displayName: OpenShift Service Mesh Console
+      kind: OSSMConsole
+      version: v1alpha1
+      resources:
+      - kind: Deployment
+        version: apps/v1
+      - kind: Pod
+        version: v1
+      - kind: ConfigMap
+        version: v1
+      specDescriptors:
+      - displayName: Kiali Service Name
+        description: "The internal Kiali service that the OS Console will use to proxy API calls. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
+        path: kiali.serviceName
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - displayName: Kiali Service Namespace
+        description: "The namespace where the Kiali service is deployed. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route. It will assume that the OpenShift Route and the Kiali service are deployed in the same namespace."
+        path: kiali.serviceNamespace
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - displayName: Kiali Service Port
+        description: "The internal port used by the Kiali service for the API. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
+        path: kiali.servicePort
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
   apiservicedefinitions: {}
   install:
     strategy: deployment
@@ -237,6 +284,8 @@ spec:
                   value: "false"
                 - name: ALLOW_AD_HOC_KIALI_IMAGE
                   value: "false"
+                - name: ALLOW_AD_HOC_OSSMCONSOLE_IMAGE
+                  value: "false"
                 - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
                   value: "false"
                 - name: ALLOW_ALL_ACCESSIBLE_NAMESPACES
@@ -248,6 +297,8 @@ spec:
                 - name: ANSIBLE_DEBUG_LOGS
                   value: "True"
                 - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
+                  value: "1"
+                - name: ANSIBLE_VERBOSITY_OSSMCONSOLE_KIALI_IO
                   value: "1"
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
@@ -439,6 +490,27 @@ spec:
           verbs:
           - create
           - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        # The permissions below are for OSSMC operator capabilities
+        - apiGroups: ["console.openshift.io"]
+          resources:
+          - consoleplugins
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups: ["operator.openshift.io"]
+          resources:
+          - consoles
+          verbs:
           - get
           - list
           - patch
