@@ -1,0 +1,10 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml

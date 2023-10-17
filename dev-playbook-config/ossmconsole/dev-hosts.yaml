@@ -1,0 +1,37 @@
+all:
+  vars:
+
+    # Mimic OSSMConsole CR settings found in dev-ossmconsole-cr.yaml
+
+    version: "default"
+
+    deployment:
+      imageVersion: "dev"
+
+    kiali:
+      graph:
+        impl: "pf"
+      serviceName: ""
+      serviceNamespace: ""
+      servicePort: 0
+
+    # The Operator SDK creates a "ansible_operator_meta" variable
+    # that contains the name and namespace of the CR.
+    # Most times you can just run with these defaults.
+    # Make sure these match those in dev-ossmconsole-cr.yaml.
+
+    ansible_operator_meta:
+      name: ossmconsole
+      namespace: dev-ossmconsole
+
+    # The Operator SDK creates a "_kiali_io_ossmconsole" variable that
+    # mimics the OSSMConsole CR but maintains camelCase in key names.
+    # The operator playbook expects this defined.
+    # Make sure these match those in dev-ossmconsole-cr.yaml.
+
+    _kiali_io_ossmconsole:
+      apiVersion: kiali.io/v1alpha1
+      kind: OSSMConsole
+      metadata:
+        name: ossmconsole
+        namespace: dev-ossmconsole

@@ -21,3 +21,15 @@
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: False
+# The normal processing for the OpenShift ServiceMesh Console plugin playbook
+- version: v1alpha1
+  group: kiali.io
+  kind: OSSMConsole
+  playbook: playbooks/ossmconsole-deploy.yml
+  reconcilePeriod: "0s"
+  watchDependentResources: False
+  watchClusterScopedResources: False
+  snakeCaseParameters: False
+  finalizer:
+    name: kiali.io/finalizer
+    playbook: playbooks/ossmconsole-remove.yml

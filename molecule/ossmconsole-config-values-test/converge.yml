@@ -1,0 +1,61 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+
+  - set_fact:
+      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: The current CR to be used as the base of the test
+    debug:
+      msg: "{{ current_ossmconsole_cr }}"
+
+  - name: Confirm the Kiali Service Name is as expected
+    assert:
+      that: "{{ ossmconsole_consoleplugin.spec.proxy[0].service.name == current_ossmconsole_cr.status.kiali.serviceName }}"
+
+  - name: Confirm the Kiali Service Namespace is as expected
+    assert:
+      that: "{{ ossmconsole_consoleplugin.spec.proxy[0].service.namespace == current_ossmconsole_cr.status.kiali.serviceNamespace }}"
+
+  - name: Confirm the Kiali Service Port is as expected
+    assert:
+      that: "{{ ossmconsole_consoleplugin.spec.proxy[0].service.port == (current_ossmconsole_cr.status.kiali.servicePort | int) }}"
+
+  - name: Confirm the Kiali Graph Impl is the expected default in the ConfigMap
+    assert:
+      that: "{{ ossmconsole_configmap.graph.impl == 'pf' }}"
+
+  # This test will change some config settings to make sure things work like we expect.
+  # We alter the current CR with new config and deploy that new CR.
+
+  # Change the existing CR to get a new config
+
+  - name: Set to use cy graph impl
+    vars:
+      new_graph_impl: "cy"
+    set_fact:
+      current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'graph': {'impl': new_graph_impl }}}}, recursive=True) }}"
+
+  # Deploy the new CR and wait for the CR change to take effect
+
+  - name: The new CR to be applied and tested
+    debug:
+      msg: "{{ current_ossmconsole_cr }}"
+
+  - import_tasks: ../ossmconsole-common/set_ossmconsole_cr.yml
+    vars:
+      new_ossmconsole_cr: "{{ current_ossmconsole_cr }}"
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+
+  - name: Confirm the Kiali Graph Impl is now changed to use the "cy" impl
+    assert:
+      that: "{{ ossmconsole_configmap.graph.impl == 'cy' }}"

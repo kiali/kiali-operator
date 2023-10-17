@@ -1,0 +1,4 @@
+- name: Change OSSMConsole CR with new OSSMConsole CR
+  k8s:
+    namespace: '{{ ossmconsole_cr_namespace }}'
+    definition: "{{ new_ossmconsole_cr }}"

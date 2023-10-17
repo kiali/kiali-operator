@@ -1,0 +1,41 @@
+- name: Remove OSSMConsole
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+
+  - name: Remove OSSMConsole CR
+    vars:
+      custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
+    k8s:
+      state: absent
+      api_version: kiali.io/v1alpha1
+      kind: OSSMConsole
+      namespace: "{{ ossmconsole_cr_namespace }}"
+      name: "{{ custom_resource.metadata.name }}"
+      wait: yes
+      wait_timeout: 600
+    ignore_errors: yes
+
+# NOTE: because we know the CR is placed in the same namespace as the Kiali Operator or the
+# control plane namespace, we do not want to remove the namespace here. If in the future the
+# tests will put the CR in a separate namespace, we can uncomment this to delete that namespace.
+#  - name: Remove the cr namespace
+#    k8s:
+#      state: absent
+#      api_version: v1
+#      kind: Namespace
+#      name: "{{ ossmconsole_cr_namespace }}"
+#
+# NOTE: because we know the install namespace is always the same as the CR namespace, there is nothing to do.
+# If in the future the plugin will be installed in a different namespace than where the CR is, we can uncomment this.
+#  - name: Remove the install namespace
+#    k8s:
+#      state: absent
+#      api_version: v1
+#      kind: Namespace
+#      name: "{{ ossmconsole.install_namespace }}"
+#    when:
+#    - ossmconsole.install_namespace != ossmconsole_cr_namespace
