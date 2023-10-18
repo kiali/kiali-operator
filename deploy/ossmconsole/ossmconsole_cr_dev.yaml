@@ -5,7 +5,7 @@ metadata:
   annotations:
     ansible.sdk.operatorframework.io/verbosity: "1"
 spec:
-  version: "default"
+  version: "${OSSMCONSOLE_CR_SPEC_VERSION}"
   deployment:
     imageName: ${DEPLOYMENT_IMAGE_NAME}
     imageVersion: ${DEPLOYMENT_IMAGE_VERSION}
