@@ -225,10 +225,10 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 
 - [ ] Add the new role directory by copying the link:./roles[default] role and naming the new role with the form `vX.Y`.
 - [ ] Add the new RELATED_IMAGE reference for the version being added to the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml/[the CSV]
-- [ ] Add the new version to link:./playbooks/default-supported-images.yml[default-supported-images.yml]
+- [ ] Add the new version to link:./playbooks/kiali-default-supported-images.yml[kiali-default-supported-images.yml]
 
 ### Are You Removing Support For an Old Ansible Role Version?
 
 - [ ] Delete the role directory (link:./roles/[one of these])
 - [ ] Remove the RELATED_IMAGE reference for the version being removed from link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml/[the CSV]
-- [ ] Remove the version from link:./playbooks/default-supported-images.yml[default-supported-images.yml]
+- [ ] Remove the version from link:./playbooks/kiali-default-supported-images.yml[kiali-default-supported-images.yml]
