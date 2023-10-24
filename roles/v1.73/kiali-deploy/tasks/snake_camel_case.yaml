@@ -17,6 +17,12 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'affinity': {'pod': current_cr.spec.deployment.affinity.pod }}}, recursive=True) %}
       {% endif %}
       {# #}
+      {# custom_dashboards #}
+      {% if kiali_vars.custom_dashboards is defined and kiali_vars.custom_dashboards | length > 0 %}
+      {%   set _=kiali_vars.pop('custom_dashboards') %}
+      {%   set kiali_vars=kiali_vars | combine({'custom_dashboards': current_cr.spec.custom_dashboards }, recursive=True) %}
+      {% endif %}
+      {# #}
       {# deployment.affinity.pod_anti #}
       {% if kiali_vars.deployment.affinity is defined and kiali_vars.deployment.affinity.pod_anti is defined and kiali_vars.deployment.affinity.pod_anti | length > 0 %}
       {%   set _=kiali_vars['deployment']['affinity'].pop('pod_anti') %}
