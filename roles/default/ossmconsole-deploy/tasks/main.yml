@@ -17,6 +17,17 @@
         serviceNamespace: null
         servicePort: null
 
+# There are three possible values for the console managementState: Managed, Unmanaged, and Removed.
+# If it is Removed, the web console is disabled and thus we cannot install OSSMC so abort immediately.
+# See: https://docs.openshift.com/container-platform/4.13/web_console/disabling-web-console.html
+- name: Ensure OpenShift Console is installed and enabled
+  vars:
+    console_res: "{{ query(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console', errors='ignore') }}"
+  fail:
+    msg: "The OpenShift Console is not installed and enabled. Cannot install OSSMC."
+  when:
+  - console_res | length == 0 or console_res[0].spec.managementState == "Removed"
+
 - name: Get information about the cluster
   set_fact:
     api_groups: "{{ lookup(k8s_plugin, cluster_info='api_groups') }}"
