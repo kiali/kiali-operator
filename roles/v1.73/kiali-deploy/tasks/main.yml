@@ -788,6 +788,7 @@
   - current_cluster_wide_access is defined
   - current_cluster_wide_access|bool == False
   - current_label_selector_include is defined
+  - current_label_selector_include != ""
   - kiali_vars.api.namespaces.label_selector_include is defined
   - current_label_selector_include != kiali_vars.api.namespaces.label_selector_include
 
@@ -884,6 +885,7 @@
   when:
   - no_longer_accessible_namespaces is defined
   - current_label_selector_include is defined
+  - current_label_selector_include != ""
 
 - name: Create additional Kiali label on all accessible namespaces
   vars:
