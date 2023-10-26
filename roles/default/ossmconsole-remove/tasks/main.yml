@@ -34,7 +34,7 @@
 - name: Disable plugin by ensuring the OSSM Console is removed from the Console list of plugins
   ignore_errors: yes
   vars:
-    existing_plugins: "{{ lookup('kubernetes.core.k8s', resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console').spec.plugins | default([]) }}"
+    existing_plugins: "{{ lookup(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console').spec.plugins | default([]) }}"
   k8s:
     state: patched
     api_version: operator.openshift.io/v1

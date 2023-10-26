@@ -239,6 +239,17 @@
   when:
   - is_openshift == True
 
+# If it is Removed, the web console is disabled.
+# See: https://docs.openshift.com/container-platform/4.13/web_console/disabling-web-console.html
+- name: Determine if OpenShift Console is installed and enabled
+  ignore_errors: yes
+  vars:
+    console_res: "{{ query(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console', errors='ignore') }}" 
+  set_fact:
+    has_openshift_console: "{{ console_res | length > 0 and console_res[0].spec.managementState != 'Removed' }}"
+  when:
+  - is_openshift == True
+
 - name: Delete OpenShift-specific Kiali ConsoleLinks
   ignore_errors: yes
   k8s:
@@ -254,3 +265,5 @@
       {% endfor %}
   when:
   - is_openshift == True
+  - has_openshift_console is defined
+  - has_openshift_console == True

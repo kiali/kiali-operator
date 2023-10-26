@@ -4,6 +4,16 @@
   when:
   - is_openshift == True
 
+# If it is Removed, the web console is disabled.
+# See: https://docs.openshift.com/container-platform/4.13/web_console/disabling-web-console.html
+- name: Determine if OpenShift Console is installed and enabled
+  vars:
+    console_res: "{{ query(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console', errors='ignore') }}"
+  set_fact:
+    has_openshift_console: "{{ console_res | length > 0 and console_res[0].spec.managementState != 'Removed' }}"
+  when:
+  - is_openshift == True
+
 - name: Create Kiali objects on OpenShift
   include_tasks: process-resource.yml
   vars:
@@ -95,6 +105,8 @@
       {% endfor %}
   when:
   - is_openshift == True
+  - has_openshift_console is defined
+  - has_openshift_console == True
   - no_longer_accessible_namespaces is defined
 
 - name: Process OpenShift Console Links
