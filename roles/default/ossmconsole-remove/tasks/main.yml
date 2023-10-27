@@ -14,6 +14,22 @@
   set_fact:
     current_cr: "{{ _kiali_io_ossmconsole }}"
 
+- name: Find oldest CR
+  vars:
+    crs: "{{ query(k8s_plugin, kind=current_cr.kind, api_version=current_cr.apiVersion) | sort(attribute='metadata.creationTimestamp') }}"
+  set_fact:
+    oldest_ossmconsole_cr: "{{ crs[0] }}"
+  when:
+  - crs | length > 0
+
+- block:
+  - debug:
+      msg: "Ignoring this CR [{{ current_cr.metadata.namespace }}/{{ current_cr.metadata.name }}]. The CR in control of OSSMC is [{{ oldest_ossmconsole_cr.metadata.namespace }}/{{ oldest_ossmconsole_cr.metadata.name }}]."
+  - meta: end_play
+  when:
+  - oldest_ossmconsole_cr is defined
+  - oldest_ossmconsole_cr.metadata.name != current_cr.metadata.name or oldest_ossmconsole_cr.metadata.namespace != current_cr.metadata.namespace
+
 - name: Print some debug information
   ignore_errors: yes
   vars:
