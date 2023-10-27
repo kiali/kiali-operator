@@ -1,3 +1,4 @@
+# OPENSHIFT WATCHES YAML
 ---
 # The normal Kiali CR processing playbook
 - version: v1alpha1
