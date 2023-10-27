@@ -1,0 +1,24 @@
+# KUBERNETES/NON-OPENSHIFT WATCHES YAML
+---
+# The normal Kiali CR processing playbook
+- version: v1alpha1
+  group: kiali.io
+  kind: Kiali
+  playbook: playbooks/kiali-deploy.yml
+  reconcilePeriod: "0s"
+  watchDependentResources: False
+  watchClusterScopedResources: False
+  watchAnnotationsChanges: True
+  finalizer:
+    name: kiali.io/finalizer
+    playbook: playbooks/kiali-remove.yml
+# Watching new namespaces so the operator can determine if they should be accessible to Kiali
+- version: v1
+  group: ""
+  kind: Namespace
+  playbook: playbooks/kiali-new-namespace-detected.yml
+  reconcilePeriod: "0s"
+  manageStatus: False
+  watchDependentResources: False
+  watchClusterScopedResources: False
+  watchAnnotationsChanges: False
