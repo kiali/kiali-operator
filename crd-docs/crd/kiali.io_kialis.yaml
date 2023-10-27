@@ -68,7 +68,7 @@ spec:
 
                   If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
                   Refer to this file to see where these values are defined in the master branch,
-                  https://github.com/kiali/kiali-operator/tree/master/playbooks/kiali-default-supported-images.yml
+                  https://github.com/kiali/kiali-operator/blob/master/playbooks/kiali-default-supported-images.yml
 
                   This version setting affects the defaults of the deployment.image_name and
                   deployment.image_version settings. See the comments for those settings

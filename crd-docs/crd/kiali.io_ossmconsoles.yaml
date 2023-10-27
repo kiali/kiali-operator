@@ -33,9 +33,11 @@ spec:
                   The version of the Ansible playbook to execute in order to install that version of OSSM Console.
                   It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
                   The only supported value today is `default`.
-                  If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
+
+                  If not specified, a default version of OSSMC will be installed which will be the most recent release of OSSMC.
                   Refer to this file to see where these values are defined in the master branch,
-                  https://github.com/kiali/kiali-operator/tree/main/operator/playbooks/ossmconsole-default-supported-images.yml
+                  https://github.com/kiali/kiali-operator/blob/master/playbooks/ossmconsole-default-supported-images.yml
+
                   This version setting affects the defaults of the deployment.imageName and
                   deployment.imageVersion settings. See the comments for those settings
                   below for additional details. But in short, this version setting will
