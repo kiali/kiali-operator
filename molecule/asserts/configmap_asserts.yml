@@ -29,22 +29,16 @@
   assert:
     that:
     - kiali_configmap.external_services.prometheus.url == "http://prometheus.{{ istio.control_plane_namespace }}:9090"
-  when:
-    is_maistra == False
 
 - name: Assert Kiali Configmap has the correct Grafana Url for Upstream Istio installs
   assert:
     that:
     - kiali_configmap.external_services.grafana.in_cluster_url == "http://grafana.{{ istio.control_plane_namespace }}:3000"
-  when:
-    is_maistra == False
 
 - name: Assert Kiali Configmap has correct Version Url for Upstream Istio installs
   assert:
     that:
     - kiali_configmap.external_services.istio.url_service_version == "http://istiod.{{ istio.control_plane_namespace }}:15014/version"
-  when:
-    is_maistra == False
 
 - name: Actual Kiali Accessible namespace list should be the same as the CR
   assert:

@@ -14,9 +14,6 @@
       is_k8s: "{{ False if 'route.openshift.io' in api_groups else True }}"
       is_minikube: "{{ True if lookup('env', 'MOLECULE_CLUSTER_TYPE') == 'minikube' else False }}"
       is_kind: "{{ True if lookup('env', 'MOLECULE_CLUSTER_TYPE') == 'kind' else False }}"
-  - name: Determine the Istio implementation
-    set_fact:
-      is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
 
   - name: Determine if the operator installation is managed externally or not
     set_fact:
@@ -50,12 +47,6 @@
     - doomed_list | json_query("resources[*]") | length == 0
     retries: "{{ wait_retries }}"
     delay: 5
-
-  - name: Delete any NetworkPolicy that was created
-    import_tasks: process-network-policy.yml
-    vars:
-      network_policy_state: "absent"
-      network_policy_namespace: "{{ kiali.install_namespace }}"
 
   - name: Uninstall Operator via Helm
     command:
