@@ -39,13 +39,12 @@ metadata:
             "name": "kiali"
           },
           "spec": {
-            "installation_tag": "My Kiali",
+            "version": "default",
             "istio_namespace": "istio-system",
             "deployment": {
               "logger": {
-                "log_level": "debug"
+                "log_level": "info"
               },
-              "namespace": "istio-system",
               "view_only_mode": false
             }
           }
@@ -57,10 +56,10 @@ metadata:
             "name": "ossmconsole"
           },
           "spec": {
+            "version": "default",
             "kiali": {
               "serviceName": "",
-              "serviceNamespace": "",
-              "servicePort": 0
+              "serviceNamespace": ""
             }
           }
         }
@@ -93,9 +92,6 @@ spec:
     ### Accessing the UI
 
     By default, the Kiali operator exposes the Kiali UI as an OpenShift Route.
-
-    The default root context path is '/' though you can change
-    this by configuring the 'web_root' setting in the Kiali CR.
 
     If on OpenShift, you can create an OSSMConsole CR to have the operator
     install the OpenShift ServiceMesh Console plugin to the OpenShift Console
@@ -140,6 +136,8 @@ spec:
     url: https://github.com/kiali/kiali
   - name: Operator Source Code
     url: https://github.com/kiali/kiali-operator
+  - name: OpenShift Service Mesh Console Code
+    url: https://github.com/kiali/openshift-servicemesh-plugin
   installModes:
   - type: OwnNamespace
     supported: false
@@ -173,26 +171,30 @@ spec:
       - kind: ConsoleLink
         version: consolelinks.console.openshift.io/v1
       specDescriptors:
-      - displayName: Kiali Namespace
-        description: "The namespace where Kiali and its associated resources will be created. Default: istio-system"
-        path: deployment.namespace
+      - displayName: Version
+        description: "The version of the Kiali Server to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When not specified, or when set to the string 'default', the latest supported version of the Kiali Server will be installed. Default: default"
+        path: version
         x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
-      - displayName: Verbose Mode
-        description: "Determines the priority levels of log messages Kiali will output. Typical values are '3' for INFO and higher priority messages, '4' for DEBUG and higher priority messages (this makes the logs more noisy). Default: 3"
-        path: deployment.verbose_mode
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - displayName: Istio Namespace
+        description: "The namespace where the Istio control plane is installed. Default: istio-system"
+        path: deployment.istio_namespace
         x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+      - displayName: Log Level
+        description: "Determines the priority levels of log messages Kiali will output. Typical values are 'info', 'debug', or 'trace'. Default: info"
+        path: deployment.logger.log_level
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:select:info'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:debug'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:trace'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:warn'
+        - 'urn:alm:descriptor:com.tectonic.ui:select:error'
       - displayName: View Only Mode
         description: "When true, Kiali will be in 'view only' mode, allowing the user to view and retrieve management and monitoring data for the service mesh, but not allow the user to modify the service mesh. Default: false"
         path: deployment.view_only_mode
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:booleanSwitch'
-      - displayName: Web Root
-        description: "Defines the root context path for the Kiali console, API endpoints and readiness/liveness probes. Default: /"
-        path: server.web_root
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
     - name: ossmconsoles.kiali.io
       group: kiali.io
       description: A configuration file for a OpenShift Service Mesh Console installation.
@@ -207,6 +209,11 @@ spec:
       - kind: ConfigMap
         version: v1
       specDescriptors:
+      - displayName: Version
+        description: "The version of OSSMC to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When not specified, or when set to the string 'default', the latest supported version of OSSMC will be installed. You must ensure this value is the same as the spec.version field in the Kiali CR that was used to install the Kiali Server, otherwise you are not guaranteed OSSMC will work properly. Default: default"
+        path: version
+        x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
       - displayName: Kiali Service Name
         description: "The internal Kiali service that the OS Console will use to proxy API calls. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
         path: kiali.serviceName
@@ -215,11 +222,6 @@ spec:
       - displayName: Kiali Service Namespace
         description: "The namespace where the Kiali service is deployed. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route. It will assume that the OpenShift Route and the Kiali service are deployed in the same namespace."
         path: kiali.serviceNamespace
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'
-      - displayName: Kiali Service Port
-        description: "The internal port used by the Kiali service for the API. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
-        path: kiali.servicePort
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
   apiservicedefinitions: {}
@@ -535,7 +537,6 @@ spec:
           - configmaps
           - endpoints
           - pods/log
-          - pods/proxy
           verbs:
           - get
           - list
