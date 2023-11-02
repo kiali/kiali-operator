@@ -30,7 +30,7 @@
 
   - name: Override the supported images if found in the environment
     set_fact:
-      supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({item.key: {'image_name': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('(.+):.+', '\\1'), 'image_version': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
+      supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({item.key: {'imageName': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('(.+):.+', '\\1'), 'imageVersion': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
     loop: "{{ supported_ossmconsole_images | default({}) | dict2items }}"
     when:
     - lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_')))
@@ -39,7 +39,7 @@
     vars:
       supported_image_env: "{{ lookup('env', 'RELATED_IMAGE_ossmconsole_' + (version | replace('.','_'))) }}"
     set_fact:
-      supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({version: {'image_name': supported_image_env | regex_replace('(.+):.+', '\\1'), 'image_version': supported_image_env | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
+      supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({version: {'imageName': supported_image_env | regex_replace('(.+):.+', '\\1'), 'imageVersion': supported_image_env | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"
     when:
     - supported_image_env is defined
     - supported_image_env != ""
