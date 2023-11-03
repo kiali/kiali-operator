@@ -55,10 +55,6 @@
   when:
   - is_openshift == True
 
-- name: Determine the Istio implementation
-  set_fact:
-    is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
-
 - name: Get information about the operator
   k8s_info:
     api_version: v1
@@ -162,8 +158,8 @@
   loop: "{{ data[0] | zip(data[1]) | list }}"
   vars:
     data:
-    - ['isKubernetes', 'isOpenshift', 'isMaistra', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
-    - ["{{is_k8s}}", "{{is_openshift}}", "{{is_maistra}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
+    - ['isKubernetes', 'isOpenshift', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
+    - ["{{is_k8s}}", "{{is_openshift}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
   when:
   - item.1 != ""
   - item.1 != "false"
@@ -233,18 +229,13 @@
       {% set kv = kv | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kv.istio_namespace + ':3000'}}}, recursive=True) %}
       {% endif %}
 
-      {# Set default Tracing in_cluster_url for Maistra #}
-      {% if kv.external_services.tracing.in_cluster_url == "" and is_maistra %}
-      {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + ':16686'}}}, recursive=True) %}
-      {% endif %}
-
       {# Set default Tracing in_cluster_url for grpc consumption #}
-      {% if is_maistra == False and kv.external_services.tracing.in_cluster_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
+      {% if kv.external_services.tracing.in_cluster_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
       {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + ':16685/jaeger'}}}, recursive=True) %}
       {% endif %}
 
       {# Set default Tracing in_cluster_url for http consumption #}
-      {% if is_maistra == False and kv.external_services.tracing.in_cluster_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
+      {% if kv.external_services.tracing.in_cluster_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
       {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
       {% endif %}
 
@@ -275,7 +266,7 @@
 
       {# Set default tracing use_grpc setting #}
       {% if kv.external_services.tracing.use_grpc is not defined %}
-      {% set kv = kv | combine({'external_services': {'tracing': { 'use_grpc': False if is_maistra else True }}}, recursive=True) %}
+      {% set kv = kv | combine({'external_services': {'tracing': { 'use_grpc': True }}}, recursive=True) %}
       {% endif %}
 
       {# Set default web root based on cluster type #}
