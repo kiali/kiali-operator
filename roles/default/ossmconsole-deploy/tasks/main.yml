@@ -261,12 +261,14 @@
     msg: "IMAGE_NAME={{ ossmconsole_vars.deployment.imageName }}; IMAGE VERSION={{ ossmconsole_vars.deployment.imageVersion }}"
 
 - name: Determine what metadata labels to apply to all created resources
+  vars:
+    version_label: "{{ (ossmconsole_vars.deployment.imageVersion) if (ossmconsole_vars.deployment.imageVersion | length <= 63) else (ossmconsole_vars.deployment.imageVersion[:60] + 'XXX') }}"
   set_fact:
     ossmconsole_resource_metadata_labels:
       app: ossmconsole
-      version: "{{ ossmconsole_vars.deployment.imageVersion }}"
+      version: "{{ version_label }}"
       app.kubernetes.io/name: ossmconsole
-      app.kubernetes.io/version: "{{ ossmconsole_vars.deployment.imageVersion }}"
+      app.kubernetes.io/version: "{{ version_label }}"
       app.kubernetes.io/instance: ossmconsole
       app.kubernetes.io/part-of: ossmconsole
 
