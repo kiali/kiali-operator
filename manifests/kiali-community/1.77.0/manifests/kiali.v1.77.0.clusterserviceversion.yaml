@@ -15,7 +15,7 @@ metadata:
     containerImage: quay.io/kiali/kiali-operator:v1.77.0
     capabilities: Deep Insights
     support: Kiali
-    description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
+    description: "This community operator provides Kiali and OSSMC. Kiali is the Istio observability and management Console. OSSMC is the OpenShift Service Mesh Console plugin, powered by Kiali."
     repository: https://github.com/kiali/kiali
     createdAt: 2023-10-30T07:15:01Z
     alm-examples: |-
@@ -56,7 +56,7 @@ spec:
   version: 1.77.0
   maturity: stable
   replaces: kiali-operator.v1.76.0
-  displayName: Kiali Operator
+  displayName: Kiali Community Operator
   description: |-
     ## About the managed application
 
