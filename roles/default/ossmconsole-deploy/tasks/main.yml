@@ -63,10 +63,6 @@
   set_fact:
     openshift_version: "{{ kube_apiserver_cluster_op_raw | json_query(ri_query) | join }}"
 
-- name: Determine the Istio implementation
-  set_fact:
-    is_maistra: "{{ True if 'maistra.io' in api_groups else False }}"
-
 - name: Get information about the operator
   k8s_info:
     api_version: v1
@@ -206,8 +202,8 @@
   loop: "{{ data[0] | zip(data[1]) | list }}"
   vars:
     data:
-    - ['isMaistra', 'kialiVersion', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
-    - ["{{is_maistra}}", "{{kiali_version|default('unknown')}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
+    - ['kialiVersion', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
+    - ["{{kiali_version|default('unknown')}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
   when:
   - item.1 != ""
   - item.1 != "false"
