@@ -217,6 +217,7 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       enabled: true
+      grpc_port: 9095
       in_cluster_url: ""
       is_core: false
       namespace_selector: true
