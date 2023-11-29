@@ -258,8 +258,8 @@ spec:
                     drop:
                     - ALL
                 volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
+                - mountPath: /tmp
+                  name: tmp
                 env:
                 - name: WATCH_NAMESPACE
                   valueFrom:
@@ -295,6 +295,8 @@ spec:
                   value: "1"
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
+                - name: ANSIBLE_LOCAL_TEMP
+                  value: "/tmp/ansible/tmp"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
@@ -303,7 +305,7 @@ spec:
                     cpu: "10m"
                     memory: "64Mi"
               volumes:
-              - name: runner
+              - name: tmp
                 emptyDir: {}
       clusterPermissions:
       - rules:
