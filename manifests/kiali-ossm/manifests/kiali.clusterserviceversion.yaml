@@ -264,12 +264,13 @@ spec:
                   allowPrivilegeEscalation: false
                   privileged: false
                   runAsNonRoot: true
+                  readOnlyRootFilesystem: true
                   capabilities:
                     drop:
                     - ALL
                 volumeMounts:
-                - mountPath: /tmp/ansible-operator/runner
-                  name: runner
+                - mountPath: /tmp
+                  name: tmp
                 env:
                 - name: WATCH_NAMESPACE
                   valueFrom:
@@ -305,6 +306,10 @@ spec:
                   value: "1"
                 - name: ANSIBLE_CONFIG
                   value: "/etc/ansible/ansible.cfg"
+                - name: ANSIBLE_LOCAL_TEMP
+                  value: "/tmp/ansible/tmp"
+                - name: ANSIBLE_REMOTE_TEMP
+                  value: "/tmp/ansible/tmp"
                 - name: RELATED_IMAGE_kiali_default
                   value: "${KIALI_1_73}"
                 - name: RELATED_IMAGE_kiali_v1_73
@@ -325,7 +330,7 @@ spec:
                     cpu: "10m"
                     memory: "64Mi"
               volumes:
-              - name: runner
+              - name: tmp
                 emptyDir: {}
       clusterPermissions:
       - rules:
