@@ -245,6 +245,8 @@ spec:
                   value: "/etc/ansible/ansible.cfg"
                 - name: ANSIBLE_LOCAL_TEMP
                   value: "/tmp/ansible/tmp"
+                - name: ANSIBLE_REMOTE_TEMP
+                  value: "/tmp/ansible/tmp"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
