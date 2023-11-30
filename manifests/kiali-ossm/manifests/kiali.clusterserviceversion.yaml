@@ -308,6 +308,8 @@ spec:
                   value: "/etc/ansible/ansible.cfg"
                 - name: ANSIBLE_LOCAL_TEMP
                   value: "/tmp/ansible/tmp"
+                - name: ANSIBLE_REMOTE_TEMP
+                  value: "/tmp/ansible/tmp"
                 - name: RELATED_IMAGE_kiali_default
                   value: "${KIALI_1_73}"
                 - name: RELATED_IMAGE_kiali_v1_73
