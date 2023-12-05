@@ -1304,7 +1304,7 @@ spec:
                                 description: "Protocol. Supported values are: `http`, `https` or `grpc`."
                                 type: string
                               skip_verify:
-                                description: "Skip tls verification when using self signed certificates. Insecure option recommended just for testing."
+                                description: "If true, TLS certificate verification will not be performed. This is an unsecure option and is recommended only for testing."
                                 type: boolean
                               tls_enabled:
                                 description: "Enable tls for the collector. It must be used when `protocol` is `https` or `grpc`. It needs to set `ca_name` or `skip_verify`."
