@@ -1298,7 +1298,7 @@ spec:
                             type: object
                             properties:
                               ca_name:
-                                description: "The name of the ca name containing when `tls_enabled` is `true` and `skip_verify` is `false`."
+                                description: "The name of the CA cert; this is used when `tls_enabled` is `true` and `skip_verify` is `false`."
                                 type: string
                               protocol:
                                 description: "Protocol. Supported values are: `http`, `https` or `grpc`."
