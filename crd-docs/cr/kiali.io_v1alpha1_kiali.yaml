@@ -452,7 +452,10 @@ spec:
         collector_url: "http://jaeger-collector.istio-system:14268/api/traces"
         enabled: false
         otel:
+          ca_name: ""
           protocol: "http"
+          skip_verify: false
+          tls_enabled: false
     port: 20001
     web_fqdn: ""
     web_history_mode: ""
