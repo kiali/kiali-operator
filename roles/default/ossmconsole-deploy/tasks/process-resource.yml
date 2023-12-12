@@ -1,6 +1,6 @@
 # process all template names found in process_resource_templates - any empty strings in the list are ignored.
 # This will keep a running tally of all processed resources in "processed_resources_dict".
-- name: "Create Kiali resources from templates"
+- name: "Create OSSMConsole resources from templates"
   k8s:
     state: "present"
     continue_on_error: false
