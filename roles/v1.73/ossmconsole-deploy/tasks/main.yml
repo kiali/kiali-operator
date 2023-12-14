@@ -192,12 +192,31 @@
   when:
   - ossmconsole_vars.kiali.servicePort == 0
 
+- name: Ask Kiali for information about itself
+  vars:
+    version_url: "{{ 'https://' + ossmconsole_vars.kiali.serviceName + '.' + ossmconsole_vars.kiali.serviceNamespace + '.svc.cluster.local:' + ossmconsole_vars.kiali.servicePort + '/api' }}"
+  uri:
+    url: "{{ version_url }}"
+    status_code: 200
+    validate_certs: false
+    return_content: true
+  register: kiali_info_results
+  until:
+  - kiali_info_results is defined
+  - kiali_info_results.status is defined
+  - kiali_info_results.status == 200
+  retries: 60
+  delay: 5
+  ignore_errors: yes
+
 - name: Determine Kiali version
-  set_fact:
-    kiali_version: "{{ lookup('url', version_url, split_lines='no', validate_certs='no') | from_json | json_query(q) }}"
   vars:
     q: status."Kiali version"
-    version_url: "{{ 'https://' + ossmconsole_vars.kiali.serviceName + '.' + ossmconsole_vars.kiali.serviceNamespace + '.svc.cluster.local:' + ossmconsole_vars.kiali.servicePort + '/api' }}"
+  set_fact:
+    kiali_version: "{{ kiali_info_results.json | json_query(q) }}"
+  when:
+  - kiali_info_results is defined
+  - kiali_info_results.json is defined
   ignore_errors: yes
 
 - name: "Determine environment to store in status"
