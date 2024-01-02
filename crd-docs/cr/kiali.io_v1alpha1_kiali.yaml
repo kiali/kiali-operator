@@ -448,14 +448,13 @@ spec:
         enabled: true
         port: 9090
       tracing:
-        collector_type: "jaeger"
-        collector_url: "http://jaeger-collector.istio-system:14268/api/traces"
+        collector_url: "jaeger-collector.istio-system:4318"
         enabled: false
-        otel:
+        protocol: "http"
+        tls_config:
           ca_name: ""
-          protocol: "http"
           skip_verify: false
-          tls_enabled: false
+        tls_enabled: false
     port: 20001
     web_fqdn: ""
     web_history_mode: ""
