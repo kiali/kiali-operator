@@ -1300,12 +1300,12 @@ spec:
                               ca_name:
                                 description: "The name of the CA cert; this is used when `tls_enabled` is `true` and `skip_verify` is `false`."
                                 type: string
+                              enabled:
+                                description: "Enable TLS for the collector. This must be specified when `protocol` is `https` or `grpc`. When you set this to `true`, you must also set a `ca_name` or set `skip_verify` to true."
+                                type: boolean
                               skip_verify:
                                 description: "If true, TLS certificate verification will not be performed. This is an unsecure option and is recommended only for testing."
                                 type: boolean
-                          tls_enabled:
-                            description: "Enable TLS for the collector. This must be specified when `protocol` is `https` or `grpc`. When you set this to `true`, you must also set a `ca_name` or set `skip_verify` to true."
-                            type: boolean
                   port:
                     description: "The port that the server will bind to in order to receive console and API requests."
                     type: integer

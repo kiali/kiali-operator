@@ -337,8 +337,8 @@ kiali_defaults:
         protocol: "http"
         tls_config:
           ca_name: ""
+          enabled: false
           skip_verify: false
-        tls_enabled: false
     port: 20001
     web_fqdn: ""
     web_history_mode: ""
