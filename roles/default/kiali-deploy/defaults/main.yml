@@ -53,6 +53,13 @@ kiali_defaults:
       #token_max_age:
     strategy: ""
 
+  clustering:
+    autodetect_secrets:
+      enabled: true
+      label: "kiali.io/multiCluster=true"
+    clusters: []
+    kiali_urls: []
+
   custom_dashboards: []
 
   deployment:

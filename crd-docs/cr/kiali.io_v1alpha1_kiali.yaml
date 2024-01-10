@@ -55,6 +55,13 @@ spec:
       #token_inactivity_timeout:
       #token_max_age:
 
+  clustering:
+    autodetect_secrets:
+      enabled: true
+      label: "kiali.io/multiCluster=true"
+    clusters: []
+    kiali_urls: []
+
   # default: custom_dashboards is an empty list
   custom_dashboards:
   - name: "envoy"
