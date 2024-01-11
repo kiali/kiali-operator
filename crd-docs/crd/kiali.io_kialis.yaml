@@ -221,11 +221,8 @@ spec:
                           description: "The name of the cluster."
                           type: string
                         secret_name:
-                          description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace."
+                          description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
                           type: string
-                        accessible:
-                          description: "Indicates whether the cluster is accessible by the Kiali server. If no secret is found for a cluster, either through auto-detection or through manually specificying the secret info, then it is not accessible. Kiali can still provide links to inaccessible clusters by manually specifying them here and marking them as inaccessible."
-                          type: boolean
                   kiali_urls:
                     description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
                     type: array
@@ -1080,11 +1077,8 @@ spec:
                               description: "The name of the cluster."
                               type: string
                             secret_name:
-                              description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace."
+                              description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
                               type: string
-                            accessible:
-                              description: "Indicates whether the cluster is accessible by the Kiali server. If no secret is found for a cluster, either through auto-detection or through manually specificying the secret info, then it is not accessible. Kiali can still provide links to inaccessible clusters by manually specifying them here and marking them as inaccessible."
-                              type: boolean
                       kiali_urls:
                         description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
                         type: array
