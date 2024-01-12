@@ -197,6 +197,51 @@ spec:
                         description: "A time duration in seconds that overrides the default OpenShift access token max age. If 0 then there will be no expiration of tokens."
                         type: integer
 
+              clustering:
+                description: "Multi-cluster related features."
+                type: object
+                properties:
+                  autodetect_secrets:
+                    description: "Settings to allow cluster secrets to be auto-detected. Secrets must exist in the Kiali deployment namespace."
+                    type: object
+                    properties:
+                      enabled:
+                        description: "If true then remote cluster secrets will be autodetected during the installation of the Kiali Server Deployment. Any remote cluster secrets found in the Kiali deployment namespace will be mounted to the Kiali Server's file system. If false, you can still manually specify the remote cluster secret information in the 'clusters' setting if you wish to utilize multicluster features."
+                        type: boolean
+                      label:
+                        description: "The name and value of a label that exists on all remote cluster secrets. Default is 'kiali.io/multiCluster=true'."
+                        type: string
+                  clusters:
+                    description: "A list of clusters that the Kiali Server can access. You need to specify the remote clusters here if 'autodetect_secrets.enabled' is false."
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          description: "The name of the cluster."
+                          type: string
+                        secret_name:
+                          description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
+                          type: string
+                  kiali_urls:
+                    description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        cluster_name:
+                          description: "The name of the cluster."
+                          type: string
+                        instance_name:
+                          description: "The instance name of this Kiali installation. This should be the value used in `deployment.instance_name` for Kiali resource name."
+                          type: string
+                        namespace:
+                          description: "The namespace into which Kiali is installed."
+                          type: string
+                        url:
+                          description: "The URL of Kiali in the cluster."
+                          type: string
+
               custom_dashboards:
                 description: |
                   A list of user-defined custom monitoring dashboards that you can use to generate metrics charts
@@ -1035,7 +1080,7 @@ spec:
                               description: "The name of the cluster."
                               type: string
                             secret_name:
-                              description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace."
+                              description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
                               type: string
                       kiali_urls:
                         description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
