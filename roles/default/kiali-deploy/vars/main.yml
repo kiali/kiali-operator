@@ -40,7 +40,7 @@ kiali_vars:
 
   clustering: |
     {%- if clustering is defined and clustering is iterable -%}
-    {{ kiali_defaults.clustering | combine((clustering| stripnone), recursive=True) }}
+    {{ kiali_defaults.clustering | combine((clustering | stripnone), recursive=True) }}
     {%- else -%}
     {{ kiali_defaults.clustering }}
     {%- endif -%}
