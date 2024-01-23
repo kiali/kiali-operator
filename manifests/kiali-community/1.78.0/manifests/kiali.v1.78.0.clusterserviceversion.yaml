@@ -17,7 +17,7 @@ metadata:
     support: Kiali
     description: "This community operator provides Kiali and OSSMC. Kiali is the Istio observability and management Console. OSSMC is the OpenShift Service Mesh Console plugin, powered by Kiali."
     repository: https://github.com/kiali/kiali
-    createdAt: 2023-12-11T07:13:40Z
+    createdAt: 2023-11-20T07:13:42Z
     alm-examples: |-
       [
         {
