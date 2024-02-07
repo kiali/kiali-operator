@@ -348,6 +348,8 @@ kiali_defaults:
           skip_verify: false
           tls_enabled: false
     port: 20001
+    profiler:
+      enabled: false
     web_fqdn: ""
     web_history_mode: ""
     web_port: ""

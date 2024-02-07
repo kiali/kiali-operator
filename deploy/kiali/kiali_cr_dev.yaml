@@ -28,3 +28,7 @@ spec:
     service_type: $SERVICE_TYPE
     logger:
       log_level: info
+
+  server:
+    profiler:
+      enabled: true
