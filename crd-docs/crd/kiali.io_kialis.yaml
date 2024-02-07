@@ -1357,6 +1357,13 @@ spec:
                   port:
                     description: "The port that the server will bind to in order to receive console and API requests."
                     type: integer
+                  profiler:
+                    description: "Controls the internal profiler used to debug the internals of Kiali"
+                    type: object
+                    properties:
+                      enabled:
+                        description: "When 'true', the profiler will be enabled and accessible at /debug/pprof/ on the Kiali endpoint."
+                        type: boolean
                   web_fqdn:
                     description: "Defines the public domain where Kiali is being served. This is the 'domain' part of the URL (usually it's a fully-qualified domain name). For example, `kiali.example.org`. When empty, Kiali will try to guess this value from HTTP headers. On non-OpenShift clusters, you must populate this value if you want to enable cross-linking between Kiali instances in a multi-cluster setup."
                     type: string
