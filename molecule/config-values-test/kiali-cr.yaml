@@ -17,3 +17,5 @@ spec:
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+  server:
+    node_port: 32444

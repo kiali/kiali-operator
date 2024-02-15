@@ -48,6 +48,23 @@
       - kiali_pod_spec.containers[0].resources.requests.memory == "64Mi"
       - kiali_pod_spec.containers[0].resources.limits.memory == "1Gi"
 
+  - name: If we are configured with NodePort as service type, make sure its port is correct
+    vars:
+      http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'equalto', 'http') | first }}"
+    assert:
+      that:
+      - http_port.nodePort == 32444
+    when:
+    - kiali_configmap.deployment.service_type == "NodePort"
+  - name: If we are NOT configured with NodePort as service type, make sure there is no nodePort in the service
+    vars:
+      http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'equalto', 'http') | first }}"
+    assert:
+      that:
+      - http_port.nodePort is not defined
+    when:
+    - kiali_configmap.deployment.service_type != "NodePort"
+
   # default auth strategy for both openshift or non-openshift (openshift or token) will always result in the kiali-viewer role
   - name: Get Kiali Role
     vars:
