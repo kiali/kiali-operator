@@ -1311,6 +1311,9 @@ spec:
                   gzip_enabled:
                     description: "When true, Kiali serves http requests with gzip enabled (if the browser supports it) when the requests are over 1400 bytes."
                     type: boolean
+                  node_port:
+                    description: "If `deployment.service_type` is 'NodePort' and this value is set, then this is the node port that the Kiali service will listen to."
+                    type: integer
                   observability:
                     description: "Settings to enable observability into the Kiali server itself."
                     type: object

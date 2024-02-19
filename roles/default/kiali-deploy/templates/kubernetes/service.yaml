@@ -22,6 +22,9 @@ spec:
     appProtocol: {{ 'http' if kiali_vars.identity.cert_file == "" else 'https' }}
 {% endif %}
     port: {{ kiali_vars.server.port }}
+{% if kiali_vars.deployment.service_type == "NodePort" and kiali_vars.server.node_port is defined %}
+    nodePort: {{ kiali_vars.server.node_port }}
+{% endif %}
 {% if kiali_vars.server.observability.metrics.enabled|bool == True %}
   - name: http-metrics
     protocol: TCP

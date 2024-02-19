@@ -334,6 +334,7 @@ kiali_defaults:
     audit_log: true
     cors_allow_all: false
     gzip_enabled: true
+    #node_port:
     observability:
       metrics:
         enabled: true
