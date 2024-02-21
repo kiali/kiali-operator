@@ -50,7 +50,7 @@
 
   - name: If we are configured with NodePort as service type, make sure its port is correct
     vars:
-      http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'equalto', 'http') | first }}"
+      http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'match', '^(http|tcp)$') | first }}"
     assert:
       that:
       - http_port.nodePort == 32444
@@ -58,7 +58,7 @@
     - kiali_configmap.deployment.service_type == "NodePort"
   - name: If we are NOT configured with NodePort as service type, make sure there is no nodePort in the service
     vars:
-      http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'equalto', 'http') | first }}"
+      http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'match', '^(http|tcp)$') | first }}"
     assert:
       that:
       - http_port.nodePort is not defined
