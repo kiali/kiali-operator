@@ -67,6 +67,9 @@
         spec:
           minReplicas: 1
           maxReplicas: 1
+      new_ingress_labels:
+        aaa: bbb
+        camelCaseName: camelCaseValue
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
@@ -120,6 +123,17 @@
       - "{{ kiali_service.resources[0].spec.externalName == 'my.kiali.example.com' }}"
       fail_msg: "Additional service yaml was not applied successfully: {{ kiali_service.resources[0].spec }}"
 
+  - name: Make sure the additional ingress labels made it to the Route on OpenShift or Ingress on non-OpenShift
+    vars:
+      ingress: "{{ (kiali_route if is_openshift else kiali_ingress) | default({}) }}"
+    assert:
+      that:
+      - ingress.resources is defined
+      - ingress.resources | length > 0
+      - ingress.resources[0].metadata.labels.aaa == 'bbb'
+      - ingress.resources[0].metadata.labels.camelCaseName == 'camelCaseValue'
+      fail_msg: "Missing additional ingress labels: {{ ingress }}"
+
   - name: Get the HPA resource that should now exist
     k8s_info:
       api_version: autoscaling/v2
@@ -147,6 +161,7 @@
       new_service_annotations: null
       new_pod_labels: null
       new_hpa: null
+      new_ingress_labels: null
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
