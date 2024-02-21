@@ -166,6 +166,10 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'configmap_annotations': {'aaa': 'bbb', 'camelCaseName': 'camelCaseValue'}}}}, recursive=True) }}"
 
+  - name: Add ingress additional labels
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'ingress': {'additional_labels': {'aaa': 'bbb', 'camelCaseName': 'camelCaseValue'}}}}}, recursive=True) }}"
+
   - name: Disable logs-tab feature
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_feature_flags': {'disabled_features': ['logs-tab'] }}}, recursive=True) }}"
@@ -281,6 +285,15 @@
       - kiali_configmap_resource.metadata.annotations.aaa == 'bbb'
       - kiali_configmap_resource.metadata.annotations.camelCaseName == 'camelCaseValue'
       fail_msg: "Missing configmap annotations: {{ kiali_configmap_resource }}"
+
+  - name: Make sure the additional ingress labels made it to the Route
+    assert:
+      that:
+      - kiali_route.metadata.labels.aaa == 'bbb'
+      - kiali_route.metadata.labels.camelCaseName == 'camelCaseValue'
+      fail_msg: "Missing additional ingress labels: {{ kiali_route }}"
+    when:
+    - is_openshift == True
 
   - name: Get Kiali Role
     vars:
