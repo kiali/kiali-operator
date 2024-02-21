@@ -53,6 +53,12 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'ingress': {'override_yaml': current_cr.spec.deployment.ingress.override_yaml }}}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.ingress.additional_labels #}
+      {% if kiali_vars.deployment.ingress.additional_labels is defined and kiali_vars.deployment.ingress.additional_labels | length > 0 %}
+      {%   set _=kiali_vars['deployment']['ingress'].pop('additional_labels') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'ingress': {'additional_labels': current_cr.spec.deployment.ingress.additional_labels }}}, recursive=True) %}
+      {% endif %}
+      {# #}
       {# deployment.pod_annotations #}
       {% if kiali_vars.deployment.pod_annotations is defined and kiali_vars.deployment.pod_annotations | length > 0 %}
       {%   set _=kiali_vars['deployment'].pop('pod_annotations') %}
