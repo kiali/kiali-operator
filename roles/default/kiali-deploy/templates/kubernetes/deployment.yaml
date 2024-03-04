@@ -129,6 +129,9 @@ spec:
 {% else %}
         resources: null
 {% endif %}
+{% if kiali_vars.deployment.additional_pod_containers_yaml|length > 0 %}
+      {{ kiali_vars.deployment.additional_pod_containers_yaml | to_nice_yaml(indent=0) | trim | indent(6) }}
+{% endif %}
       volumes:
       - name: kiali-configuration
         configMap:

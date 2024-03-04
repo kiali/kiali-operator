@@ -152,6 +152,13 @@
   # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
   - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
 
+- name: Only allow ad-hoc containers when appropriate
+  fail:
+    msg: "The operator is forbidden from installing additional containers into the Kiali pod."
+  when:
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
+  - lookup('env', 'ALLOW_AD_HOC_CONTAINERS') | default('false', True) != "true"
+
 - name: "Determine environment to store in status"
   set_fact:
     status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
