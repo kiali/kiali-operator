@@ -410,7 +410,7 @@ spec:
           tcp: "sent"
       i18n:
         language: "en"
-        show_selector: true
+        show_selector: false
       list:
         include_health: true
         include_istio_resources: true
