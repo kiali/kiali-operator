@@ -1170,17 +1170,15 @@ spec:
                                 type: string
                                 enum: ["none", "sent", "received", "total"]
                       i18n:
-                        description: "Default settings for the i18n values (default and available languages)."
+                        description: "Default settings for the i18n values."
                         type: object
                         properties:
-                          default:
-                            description: "Default language value used in Kiali application"
+                          language:
+                            description: "Default language used in Kiali application."
                             type: string
-                          languages:
-                            description: "Available languages in Kiali application. For the moment possible values are English ('en') and/or Chinese ('zh')"
-                            type: array
-                            items:
-                              type: string
+                          show_selector:
+                            description: "If true Kiali masthead displays language selector icon. Default is true."
+                            type: boolean
                       list:
                         description: "Default settings for the List views (Apps, Workloads, etc)."
                         type: object

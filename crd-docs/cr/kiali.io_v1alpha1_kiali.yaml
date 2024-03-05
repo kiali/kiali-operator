@@ -409,8 +409,13 @@ spec:
           http: "requests"
           tcp: "sent"
       i18n:
-        default: "en"
-        languages: ["en"]
+        language: "en"
+        show_selector: true
+      list:
+        include_health: true
+        include_istio_resources: true
+        include_validations: true
+        show_include_toggles: false
       metrics_per_refresh: "1m"
       # default: metrics_inbound is undefined
       metrics_inbound:
