@@ -140,7 +140,7 @@ spec:
 
                       When empty, this value will default to `openshift` on OpenShift and `token` on other Kubernetes environments.
                     type: string
-                    enum: ["","anonymous","token","openshift","openid","header"]
+                    enum: ["", "anonymous", "token", "openshift", "openid", "header"]
                   openid:
                     description: "To learn more about these settings and how to configure the OpenId authentication strategy, read the documentation at https://kiali.io/docs/configuration/authentication/openid/"
                     type: object
@@ -491,11 +491,11 @@ spec:
                       log_level:
                         description: "The lowest priority of messages to log. Must be one of: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`."
                         type: string
-                        enum: ["trace","debug","info","warn","error","fatal"]
+                        enum: ["trace", "debug", "info", "warn", "error", "fatal"]
                       log_format:
                         description: "Indicates if the logs should be written with one log message per line or using a JSON format. Must be one of: `text` or `json`."
                         type: string
-                        enum: ["text","json"]
+                        enum: ["text", "json"]
                       sampler_rate:
                         description: "With this setting every sampler_rate-th message will be logged. By default, every message is logged. As an example, setting this to `'2'` means every other message will be logged. The value of this setting is a string but must be parsable as an integer."
                         type: string
@@ -531,16 +531,16 @@ spec:
                     type: integer
                   resources:
                     description: |
-                       Defines compute resources that are to be given to the Kiali pod's container. The value is a dict as defined by Kubernetes. See the Kubernetes documentation (https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container).
-                       If you set this to an empty dict (`{}`) then no resources will be defined in the Deployment.
-                       If you do not set this at all, the default is,
-                       ```
-                       requests:
-                         cpu: "10m"
-                         memory: "64Mi"
-                       limits:
-                         memory: "1Gi"
-                       ```
+                      Defines compute resources that are to be given to the Kiali pod's container. The value is a dict as defined by Kubernetes. See the Kubernetes documentation (https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container).
+                      If you set this to an empty dict (`{}`) then no resources will be defined in the Deployment.
+                      If you do not set this at all, the default is,
+                      ```
+                      requests:
+                        cpu: "10m"
+                        memory: "64Mi"
+                      limits:
+                        memory: "1Gi"
+                      ```
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   secret_name:
@@ -1160,15 +1160,27 @@ spec:
                               grpc:
                                 description: "gRPC traffic is measured in requests or sent/received/total messages. Value must be one of: `none`, `requests`, `sent`, `received`, or `total`."
                                 type: string
-                                enum: ["none","requests","sent","received","total"]
+                                enum: ["none", "requests", "sent", "received", "total"]
                               http:
                                 description: "HTTP traffic is measured in requests. Value must be one of: `none` or `requests`."
                                 type: string
-                                enum: ["none","requests"]
+                                enum: ["none", "requests"]
                               tcp:
                                 description: "TCP traffic is measured in sent/received/total bytes. Only request traffic supplies response codes. Value must be one of: `none`, `sent`, `received`, or `total`."
                                 type: string
-                                enum: ["none","sent","received","total"]
+                                enum: ["none", "sent", "received", "total"]
+                      i18n:
+                        description: "Default settings for the i18n values (default and available languages)."
+                        type: object
+                        properties:
+                          default:
+                            description: "Default language value used in Kiali application"
+                            type: string
+                          languages:
+                            description: "Available languages in Kiali application. For the moment possible values are English ('en') and/or Chinese ('zh')"
+                            type: array
+                            items:
+                              type: string
                       list:
                         description: "Default settings for the List views (Apps, Workloads, etc)."
                         type: object
@@ -1188,7 +1200,7 @@ spec:
                       metrics_per_refresh:
                         description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
                         type: string
-                        enum: ["1m","2m","5m","10m","30m","1h","3h","6h","12h","1d","7d","30d"]
+                        enum: ["1m", "2m", "5m", "10m", "30m", "1h", "3h", "6h", "12h", "1d", "7d", "30d"]
                       metrics_inbound:
                         description: |
                           Additional label aggregation for inbound metric pages in detail pages.
@@ -1245,7 +1257,7 @@ spec:
                       refresh_interval:
                         description: "The automatic refresh interval for pages offering automatic refresh. Value must be one of: `pause`, `10s`, `15s`, `30s`, `1m`, `5m` or `15m`"
                         type: string
-                        enum: ["pause","10s","15s","30s","1m","5m","15m"]
+                        enum: ["pause", "10s", "15s", "30s", "1m", "5m", "15m"]
                   validations:
                     description: "Features specific to the validations subsystem."
                     type: object
@@ -1382,4 +1394,4 @@ spec:
                   web_schema:
                     description: "Defines the public HTTP schema used to serve Kiali. Value must be one of: `http` or `https`. When empty, Kiali will try to guess this value from HTTP headers. On non-OpenShift clusters, you must populate this value if you want to enable cross-linking between Kiali instances in a multi-cluster setup."
                     type: string
-                    enum: ["","http","https"]
+                    enum: ["", "http", "https"]
