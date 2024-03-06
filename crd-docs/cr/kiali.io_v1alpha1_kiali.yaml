@@ -68,7 +68,7 @@ spec:
 
   deployment:
     # default: accessible_namespaces is undefined
-    accessible_namespaces: [ "my-mesh.*" ]
+    accessible_namespaces: ["my-mesh.*"]
     # default: additional_service_yaml is empty
     additional_service_yaml:
       externalName: "kiali.example.com"
@@ -371,7 +371,7 @@ spec:
   istio_labels:
     app_label_name: "app"
     injection_label_name: "istio-injection"
-    injection_label_rev:  "istio.io/rev"
+    injection_label_rev: "istio.io/rev"
     version_label_name: "version"
 
   kiali_feature_flags:
@@ -396,18 +396,26 @@ spec:
         - description: "Find: slow edges (> 1s)"
           expression: "rt > 1000"
         - description: "Find: unhealthy nodes"
-          expression:  "! healthy"
+          expression: "! healthy"
         - description: "Find: unknown nodes"
-          expression:  "name = unknown"
+          expression: "name = unknown"
         hide_options:
         - description: "Hide: healthy nodes"
           expression: "healthy"
         - description: "Hide: unknown nodes"
-          expression:  "name = unknown"
+          expression: "name = unknown"
         traffic:
           grpc: "requests"
           http: "requests"
-          tcp:  "sent"
+          tcp: "sent"
+      i18n:
+        language: "en"
+        show_selector: false
+      list:
+        include_health: true
+        include_istio_resources: true
+        include_validations: true
+        show_include_toggles: false
       metrics_per_refresh: "1m"
       # default: metrics_inbound is undefined
       metrics_inbound:
