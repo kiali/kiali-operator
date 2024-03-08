@@ -225,6 +225,7 @@ kiali_defaults:
         username: ""
       enabled: true
       grpc_port: 9095
+      health_check_url: ""
       in_cluster_url: ""
       is_core: false
       namespace_selector: true

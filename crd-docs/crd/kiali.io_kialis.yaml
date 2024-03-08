@@ -942,6 +942,9 @@ spec:
                       grpc_port:
                         description: "Set port number when `use_grpc` is true and `provider` is `tempo`. By default is `9095`"
                         type: integer
+                      health_check_url:
+                        description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
+                        type: string
                       in_cluster_url:
                         description: "Set URL for in-cluster access, which enables further integration between Kiali and Jaeger. When not provided, Kiali will only show external links using the `url` setting. Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the `use_grpc` value. Example: http://tracing.istio-system:16685"
                         type: string
