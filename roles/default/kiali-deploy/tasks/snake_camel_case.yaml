@@ -131,4 +131,10 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'security_context': current_cr.spec.deployment.security_context}}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.custom_secrets[].csi #}
+      {% if kiali_vars.deployment.custom_secrets is defined and kiali_vars.deployment.custom_secrets | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('custom_secrets') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'custom_secrets': current_cr.spec.deployment.custom_secrets}}, recursive=True) %}
+      {% endif %}
+      {# #}
       {{ kiali_vars }}
