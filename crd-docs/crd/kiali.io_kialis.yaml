@@ -339,7 +339,7 @@ spec:
                           description: "The name of the secret that is to be mounted to the Kiali pod's file system. The name of the custom secret must not be the same name as one created by the operator. Names such as `kiali`, `kiali-cert-secret`, and `kiali-cabundle` should not be used as a custom secret name because the operator may want to create one with one of those names."
                           type: string
                         optional:
-                          description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This will default to 'false' if not specified."
+                          description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This will default to 'false' if not specified. This is ignored if `csi` is specified - CSI secrets must exist when specified."
                           type: boolean
                   hpa:
                     description: |
