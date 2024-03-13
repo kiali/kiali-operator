@@ -115,6 +115,13 @@ spec:
     - name: "a-custom-secret"
       mount: "/a-custom-secret-path"
       optional: true
+    - name: "a-csi-secret"
+      mount: "/a-csi-secret-path"
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: kiali-secretprovider
     hpa:
       api_version: ""
       # default: spec is empty

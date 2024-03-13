@@ -152,10 +152,15 @@ spec:
 {% endfor %}
 {% for secret in kiali_vars.deployment.custom_secrets %}
       - name: {{ secret.name }}
+{% if secret.csi is defined %}
+        csi:
+          {{ secret.csi | to_nice_yaml(indent=0) | trim | indent(10) }}
+{% else %}
         secret:
           secretName: {{ secret.name }}
 {% if secret.optional is defined %}
           optional: {{ secret.optional }}
+{% endif %}
 {% endif %}
 {% endfor %}
 {% for sec in kiali_deployment_remote_cluster_secret_volumes %}
