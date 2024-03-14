@@ -232,6 +232,9 @@ kiali_defaults:
       provider: "jaeger"
       query_scope: {}
       query_timeout: 5
+      tempo_config:
+        org_id: ""
+        datasource_uid: ""
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
