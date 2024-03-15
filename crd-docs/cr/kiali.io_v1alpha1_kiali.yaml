@@ -354,8 +354,8 @@ spec:
         cluster: "cluster-east"
       query_timeout: 5
       tempo_config:
-        org_id: ""
         datasource_uid: ""
+        org_id: ""
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
