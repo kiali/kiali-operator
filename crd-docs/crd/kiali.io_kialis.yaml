@@ -972,11 +972,11 @@ spec:
                         description: "Settings used to configure the access url to the Tempo Datasource in Grafana."
                         type: object
                         properties:
-                          org_id:
-                            description: "The Id of the organization that the dashboard is in. Default to 1 (the first and default organization)."
-                            type: string
                           datasource_uid:
                             description: "The unique identifier (uid) of the Tempo datasource in Grafana."
+                            type: string
+                          org_id:
+                            description: "The Id of the organization that the dashboard is in. Default to 1 (the first and default organization)."
                             type: string
                       url:
                         description: "The external URL that will be used to generate links to Jaeger. It must be accessible to clients external to the cluster (e.g: a browser) in order to generate valid links. If the tracing service is deployed with a QUERY_BASE_PATH set, set this URL like https://<hostname>/<QUERY_BASE_PATH>. For example, https://tracing-service:8080/jaeger"
