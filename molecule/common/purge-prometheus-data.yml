@@ -6,7 +6,7 @@
     namespace: "{{ k8s_item.metadata.namespace }}"
     name: "{{ k8s_item.metadata.name }}"
   with_items:
-  - "{{ query('kubernetes.core.k8s', namespace=istio.control_plane_namespace, kind='Pod', label_selector='app=prometheus', api_version='v1') }}"
+  - "{{ query('kubernetes.core.k8s', namespace=istio.control_plane_namespace, kind='Pod', label_selector='app.kubernetes.io/name=prometheus', api_version='v1') }}"
   loop_control:
     loop_var: k8s_item
 
@@ -16,7 +16,7 @@
     kind: Pod
     namespace: "{{ istio.control_plane_namespace }}"
     label_selectors:
-    - app=prometheus
+    - app.kubernetes.io/name=prometheus
   register: restarted_prom_pod
   until:
   - restarted_prom_pod is success
