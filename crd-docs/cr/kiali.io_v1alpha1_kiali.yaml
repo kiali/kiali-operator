@@ -353,6 +353,9 @@ spec:
         mesh_id: "mesh-1"
         cluster: "cluster-east"
       query_timeout: 5
+      tempo_config:
+        datasource_uid: ""
+        org_id: ""
       url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
