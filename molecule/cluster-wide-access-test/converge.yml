@@ -169,7 +169,7 @@
 
   - name: Pause for a few seconds to ensure the server gets notified of the change to the Istio ConfigMap
     pause:
-      seconds: 15
+      seconds: 25
 
   - debug: msg="Now that we do not have discoverySelectors, we should see all AN namespaces (istio-system, cluster-wide-access-test-1, cluster-wide-access-test-2, cluster-wide-access-test-x)"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
