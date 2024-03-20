@@ -97,7 +97,7 @@ spec:
         - name: LOG_FORMAT
           value: "{{ kiali_vars.deployment.logger.log_format }}"
         - name: LOG_LEVEL
-          value: "{{ kiali_vars.deployment.verbose_mode if kiali_vars.deployment.verbose_mode is defined else kiali_vars.deployment.logger.log_level }}"
+          value: "{{ kiali_vars.deployment.logger.log_level }}"
         - name: LOG_SAMPLER_RATE
           value: "{{ kiali_vars.deployment.logger.sampler_rate }}"
         - name: LOG_TIME_FIELD_FORMAT

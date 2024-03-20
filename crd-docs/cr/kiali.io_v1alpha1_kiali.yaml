@@ -208,7 +208,6 @@ spec:
     - key: "example-key"
       operator: "Exists"
       effect: "NoSchedule"
-    verbose_mode: "3"
     version_label: ""
     view_only_mode: false
 
