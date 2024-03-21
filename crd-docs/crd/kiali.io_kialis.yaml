@@ -567,9 +567,6 @@ spec:
                     items:
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
-                  verbose_mode:
-                    description: "DEPRECATED! Determines which priority levels of log messages Kiali will output. Use `deployment.logger` settings instead."
-                    type: string
                   version_label:
                     description: |
                       Kiali resources will be assigned a 'version' label when they are deployed.
