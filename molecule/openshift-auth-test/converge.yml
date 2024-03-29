@@ -70,9 +70,22 @@
       - kiali_output.json.strategy == "openshift"
       - kiali_output.json.authorizationEndpoint is search("oauth/authorize")
       - kiali_output.json.sessionInfo.keys() | length == 0
-  - name: Set the auth endpoint we are being redirected to and assume our test credentials are for the htpasswd provider
+
+  - name: Get OpenShift identity provider of type HTPasswd
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: OAuth
+      name: cluster
+      namespace: openshift-config
+    register: openshift_oauth_cluster_raw
+
+  - name: Determine the name of the identity provider which may be different on CRC or other clusters
     set_fact:
-      auth_endpoint: "{{ kiali_output.json.authorizationEndpoint | regex_replace('\\?', '?idp=htpasswd&') }}"
+      openshift_idp_name: "{{ openshift_oauth_cluster_raw.resources[0] | json_query('spec.identityProviders[?type==`HTPasswd`].name') | join }}"
+
+  - name: Set the auth endpoint we are being redirected to and assume our test credentials are for the HTPasswd provider
+    set_fact:
+      auth_endpoint: "{{ kiali_output.json.authorizationEndpoint | regex_replace('\\?', '?idp=' + openshift_idp_name + '&') }}"
 
   - name: Send request to oauth-openshift /oauth/authorize endpoint
     uri:
