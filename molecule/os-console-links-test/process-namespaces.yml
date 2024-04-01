@@ -1,0 +1,22 @@
+- name: "Process Test Namespaces [state={{ state }}]"
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+  tasks:
+  - k8s:
+      state: "{{ state }}"
+      api_version: v1
+      kind: Namespace
+      name: consolelinks1
+  - k8s:
+      state: "{{ state }}"
+      api_version: v1
+      kind: Namespace
+      name: consolelinks2
+  - k8s:
+      state: "{{ state }}"
+      api_version: v1
+      kind: Namespace
+      name: noconsolelinks

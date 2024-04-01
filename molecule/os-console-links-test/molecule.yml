@@ -13,8 +13,8 @@ provisioner:
     defaults:
       callbacks_enabled: junit
   playbooks:
-    destroy: ../default/destroy.yml
-    prepare: ../default/prepare.yml
+    destroy: ./destroy-os-console-links-test.yml
+    prepare: ./prepare-os-console-links-test.yml
     cleanup: ../default/cleanup.yml
   inventory:
     group_vars:
@@ -27,7 +27,7 @@ provisioner:
         kiali:
           spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
           install_namespace: istio-system
-          accessible_namespaces: ["**"]
+          accessible_namespaces: ["istio-system"]
           auth_strategy: openshift
           operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else ('openshift-operators' if (query('kubernetes.core.k8s', kind='Namespace', resource_name='openshift-operators') | length > 0) else 'operators') }}" # if external operator, assume operator is in OLM location
           operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
