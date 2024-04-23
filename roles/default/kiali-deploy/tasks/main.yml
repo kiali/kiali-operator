@@ -324,11 +324,6 @@
       {% set kv = kv | combine({'external_services': {'tracing': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
       {% endif %}
 
-      {# Make sure the correct auth.openshift.client_id_prefix is defined when using openshift auth strategy #}
-      {% if kv.auth.strategy == 'openshift' and kv.auth.openshift.client_id_prefix != kv.deployment.instance_name %}
-      {% set kv = kv | combine({'auth': {'openshift': {'client_id_prefix': kv.deployment.instance_name }}}, recursive=True) %}
-      {% endif %}
-
       {# The default cluster_wide_access setting is determined by deployment.accessible_namespaces #}
       {% if kv.deployment.cluster_wide_access is not defined %}
       {% set kv = kv | combine({'deployment': {'cluster_wide_access': ('**' in kv.deployment.accessible_namespaces)}}, recursive=True) %}

@@ -85,4 +85,11 @@ rules:
   - tokenreviews
   verbs:
   - create
+- apiGroups: ["oauth.openshift.io"]
+  resources:
+  - oauthclients
+  resourceNames:
+  - {{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}
+  verbs:
+  - get
 {% endfor %}
