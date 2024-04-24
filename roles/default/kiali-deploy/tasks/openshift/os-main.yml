@@ -26,6 +26,8 @@
     - "templates/openshift/role-controlplane.yaml"
     - "templates/openshift/rolebinding.yaml"
     - "templates/openshift/rolebinding-controlplane.yaml"
+    - "templates/openshift/clusterrole.yaml"
+    - "templates/openshift/clusterrolebinding.yaml"
     - "templates/openshift/deployment.yaml"
     - "templates/openshift/service.yaml"
     - "{{ 'templates/openshift/hpa.yaml' if kiali_vars.deployment.hpa.spec | length > 0 else '' }}"
