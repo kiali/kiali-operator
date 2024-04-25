@@ -13,3 +13,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ kiali_vars.deployment.instance_name }}-viewer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ kiali_vars_remove.deployment.instance_name }}-{{ kiali_vars_remove.deployment.namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ kiali_vars_remove.deployment.instance_name }}-{{ kiali_vars_remove.deployment.namespace }}
