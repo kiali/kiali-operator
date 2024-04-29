@@ -12,6 +12,8 @@ COPY roles/ ${HOME}/roles/
 COPY playbooks/ ${HOME}/playbooks/
 COPY watches-k8s.yaml ${HOME}/watches-k8s.yaml
 COPY watches-os.yaml ${HOME}/watches-os.yaml
+COPY watches-k8s-ns.yaml ${HOME}/watches-k8s-ns.yaml
+COPY watches-os-ns.yaml ${HOME}/watches-os-ns.yaml
 
 COPY requirements.yml ${HOME}/requirements.yml
 RUN ansible-galaxy collection install -r ${HOME}/requirements.yml \
