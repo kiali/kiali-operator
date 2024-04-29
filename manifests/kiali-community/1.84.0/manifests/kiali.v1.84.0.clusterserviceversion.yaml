@@ -249,7 +249,7 @@ spec:
                 args:
                 - "--zap-log-level=info"
                 - "--leader-election-id=kiali-operator"
-                - "--watches-file=./watches-os.yaml"
+                - "--watches-file=./$(WATCHES_FILE)"
                 securityContext:
                   allowPrivilegeEscalation: false
                   privileged: false
@@ -300,6 +300,8 @@ spec:
                   value: "/tmp/ansible/tmp"
                 - name: ANSIBLE_REMOTE_TEMP
                   value: "/tmp/ansible/tmp"
+                - name: WATCHES_FILE
+                  value: "watches-os.yaml"
                 ports:
                 - name: http-metrics
                   containerPort: 8080
