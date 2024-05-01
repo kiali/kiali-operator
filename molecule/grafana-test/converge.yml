@@ -26,17 +26,18 @@
       msg: "{{ status_response.json }}"  
 
   # IstioStatus API returns a statuses list of external components (Grafana is one of them)
-  # If Grafana is in the list, it means that there is an error (Unreacheable)
+  # If Grafana is in the list get the status (it should be Healthy)
   - name: Check if Grafana status is present
     set_fact:
-      grafana_error: "{{ item.status }}"     
+      grafana_healthy: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'grafana'"
+    when:
+    - item.name == 'grafana'
   
   - name: Assert that there is no error related to Grafana
     assert:
       that:
-      - grafana_error is not defined
+      - grafana_healthy == 'Healthy'
   
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
@@ -71,9 +72,9 @@
 
   - name: Check if Grafana status is present
     set_fact:
-      grafana_bad_url_error: "{{ item.status }}"     
+      grafana_bad_url_error: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'grafana'"
+    when: "item.name == 'grafana' and item.status != 'Healthy'"
   
   - name: Assert that there is an error related to Grafana
     assert:
@@ -108,12 +109,12 @@
       msg: "{{ status_response.json }}"  
 
   # IstioStatus API returns a statuses list of external components (Grafana is one of them)
-  # If Grafana is in the list, it means that there is an error (Unreacheable)
+  # If Grafana is in the list and not "Healthy", it means that there is an error (Unreacheable)
   - name: Check if Grafana status is present
     set_fact:
       grafana_health_url_error: "{{ item.status }}"     
     loop: "{{ status_response.json }}"
-    when: "item.name == 'grafana'"
+    when: "item.name == 'grafana' and item.status != 'Healthy'"
   
   - name: Assert that there is no error related to Grafana
     assert:

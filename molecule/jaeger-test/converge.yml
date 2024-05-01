@@ -22,17 +22,18 @@
       msg: "{{ status_response.json }}"  
 
   # IstioStatus API returns a statuses list of external components (Jaeger is one of them)
-  # If Jaeger is in the list, it means that there is an error (Unreacheable)
+  # If Jaeger is in the list, get the status (it should be Healthy)
   - name: Check if Jaeger status is present
     set_fact:
-      tracing_error: "{{ item.status }}"
+      tracing_healthy: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'tracing'"
+    when:
+    - item.name == 'tracing'
   
   - name: Assert that there is no error related to Jaeger
     assert:
       that:
-      - tracing_error is not defined
+      - tracing_healthy == 'Healthy'
 
   # Update Jaeger URL to a bad URL just to test a bad integration
   - import_tasks: update-jaeger-url.yml
@@ -59,7 +60,7 @@
     set_fact:
       tracing_error: "{{ item.status }}"
     loop: "{{ status_response.json }}"
-    when: "item.name == 'tracing'"
+    when: "item.name == 'tracing' and item.status != 'Healthy'"
   
   - name: Assert that there is an error related to Jaeger
     assert:
