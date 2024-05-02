@@ -56,7 +56,7 @@
       - http_port.nodePort == 32444
     when:
     - kiali_configmap.deployment.service_type == "NodePort"
-  - name: If we are NOT configured with NodePort as service type, make sure there is no nodePort in the service
+  - name: If we are NOT configured with NodePort as service type, and NOT on KinD, make sure there is no nodePort in the service
     vars:
       http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'match', '^(http|tcp)$') | first }}"
     assert:
@@ -64,6 +64,7 @@
       - http_port.nodePort is not defined
     when:
     - kiali_configmap.deployment.service_type != "NodePort"
+    - is_kind == False
 
   # default auth strategy for both openshift or non-openshift (openshift or token) will always result in the kiali-viewer role
   - name: Get Kiali Role
