@@ -1,4 +1,4 @@
-# OPENSHIFT WATCHES YAML
+# KUBERNETES/NON-OPENSHIFT WATCHES YAML WITH NAMESPACE WATCHING
 ---
 # The normal Kiali CR processing playbook
 - version: v1alpha1
@@ -12,15 +12,13 @@
   finalizer:
     name: kiali.io/finalizer
     playbook: playbooks/kiali-remove.yml
-# The normal processing for the OpenShift ServiceMesh Console plugin playbook
-- version: v1alpha1
-  group: kiali.io
-  kind: OSSMConsole
-  playbook: playbooks/ossmconsole-deploy.yml
+# Watching new namespaces so the operator can determine if they should be accessible to Kiali
+- version: v1
+  group: ""
+  kind: Namespace
+  playbook: playbooks/kiali-new-namespace-detected.yml
   reconcilePeriod: "0s"
+  manageStatus: False
   watchDependentResources: False
   watchClusterScopedResources: False
-  snakeCaseParameters: False
-  finalizer:
-    name: kiali.io/finalizer
-    playbook: playbooks/ossmconsole-remove.yml
+  watchAnnotationsChanges: False
