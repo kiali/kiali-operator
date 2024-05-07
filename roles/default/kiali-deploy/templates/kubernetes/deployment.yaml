@@ -47,6 +47,15 @@ spec:
       hostAliases:
         {{ kiali_vars.deployment.host_aliases | to_nice_yaml(indent=0) | trim | indent(8) }}
 {% endif %}
+{% if kiali_vars.deployment.dns | length > 0 %}
+{% if kiali_vars.deployment.dns.policy | length > 0 %}
+      dnsPolicy: "{{ kiali_vars.deployment.dns.policy }}"
+{% endif %}
+{% if kiali_vars.deployment.dns.config | length > 0 %}
+      dnsConfig:
+        {{ kiali_vars.deployment.dns.config | to_nice_yaml(indent=0) | trim | indent(8) }}
+{% endif %}
+{% endif %}
       containers:
       - image: {{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}
         imagePullPolicy: {{ kiali_vars.deployment.image_pull_policy }}

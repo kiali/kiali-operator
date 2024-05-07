@@ -120,6 +120,14 @@ spec:
         readOnly: true
         volumeAttributes:
           secretProviderClass: kiali-secretprovider
+    dns:
+      # default: config is empty
+      config:
+        options:
+        - name: ndots
+          value: "1"
+      # default: policy is empty
+      policy: "ClusterFirst"
     hpa:
       api_version: ""
       # default: spec is empty
