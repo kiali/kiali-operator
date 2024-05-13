@@ -70,6 +70,9 @@ kiali_defaults:
     #cluster_wide_access:
     configmap_annotations: {}
     custom_secrets: []
+    dns:
+      config: {}
+      policy: ""
     host_aliases: []
     hpa:
       api_version: ""

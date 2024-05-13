@@ -88,6 +88,17 @@
       - kiali_configmap.api.namespaces.label_selector is not defined
       - kiali_configmap.api.namespaces.label_selector_include == "kiali.io/member-of=istio-system"
 
+  - name: Test the default deployment.dns is what we expect
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_configmap.deployment.dns | length == 2
+      - kiali_configmap.deployment.dns.policy | length == 0
+      - kiali_configmap.deployment.dns.config | length == 0
+      - kiali_pod_spec.dnsPolicy == "ClusterFirst"
+      - kiali_pod_spec.dnsConfig is not defined
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config and deploy that new CR.
@@ -187,6 +198,17 @@
   - name: Add timeouts to the OpenShift OAuthClient
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'auth': {'openshift': {'token_inactivity_timeout': 9876, 'token_max_age': 8765}}}}, recursive=True) }}"
+
+  - name: Change DNS config
+    vars:
+      dns_settings:
+        policy: "Default"
+        config:
+          options:
+          - name: "ndots"
+            value: "1"
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'dns': dns_settings}}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -329,3 +351,16 @@
       - kiali_oauth_client_raw.resources[0].accessTokenMaxAgeSeconds == 8765
     when:
     - is_openshift == True
+
+  - name: Test the deployment.dns settings
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_configmap.deployment.dns | length == 2
+      - kiali_configmap.deployment.dns.policy == "Default"
+      - kiali_configmap.deployment.dns.config.options[0].name == "ndots"
+      - kiali_configmap.deployment.dns.config.options[0].value == "1"
+      - kiali_pod_spec.dnsPolicy == "Default"
+      - kiali_pod_spec.dnsConfig.options[0].name == "ndots"
+      - kiali_pod_spec.dnsConfig.options[0].value == "1"

@@ -335,6 +335,19 @@ spec:
                         optional:
                           description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This will default to 'false' if not specified. This is ignored if `csi` is specified - CSI secrets must exist when specified."
                           type: boolean
+                  dns:
+                    description: |
+                      The Kiali server pod's DNS configuration. Kubernetes supports different DNS policies and configurations.
+                      For further details, consult the Kubernetes documentation - https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/
+                    type: object
+                    properties:
+                      config:
+                        description: DNS configuration that is applied to the DNS policy. See the Kubernetes documentation for the different configuration settings that are supported.
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
+                      policy:
+                        description: DNS policy. See the Kubernetes documentation for the different policies that are supported.
+                        type: string
                   hpa:
                     description: |
                       Determines what (if any) HorizontalPodAutoscaler should be created to autoscale the Kiali pod.
