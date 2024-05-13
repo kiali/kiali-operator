@@ -346,6 +346,9 @@ spec:
         type: "none"
         use_kiali_token: false
         username: ""
+      # default: custom_headers is empty
+      custom_headers:
+        customHeader1: "customHeader1Value"
       enabled: true
       grpc_port: 9095
       health_check_url: ""

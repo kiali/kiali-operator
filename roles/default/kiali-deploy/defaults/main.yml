@@ -224,6 +224,7 @@ kiali_defaults:
         type: "none"
         use_kiali_token: false
         username: ""
+      custom_headers: {}
       enabled: true
       grpc_port: 9095
       health_check_url: ""
