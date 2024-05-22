@@ -45,6 +45,7 @@
       - kiali_configmap.external_services.prometheus.url != ""
       - kiali_configmap.external_services.prometheus.custom_headers | length == 0
       - kiali_configmap.external_services.prometheus.query_scope | length == 0
+      - kiali_configmap.external_services.tracing.custom_headers | length == 0
       - kiali_configmap.external_services.tracing.query_scope | length == 0
       - kiali_configmap.identity.cert_file is defined
       - kiali_configmap.identity.private_key_file is defined
