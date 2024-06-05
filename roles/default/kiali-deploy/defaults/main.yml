@@ -357,12 +357,12 @@ kiali_defaults:
     port: 20001
     profiler:
       enabled: false
-    timeout: 30
     web_fqdn: ""
     web_history_mode: ""
     web_port: ""
     web_root: ""
     web_schema: ""
+    write_timeout: 30
 
 # These variables are outside of the kiali_defaults. Their values will be
 # auto-detected by the role and are not meant to be set by the user.

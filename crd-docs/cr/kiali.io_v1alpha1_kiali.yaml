@@ -495,9 +495,9 @@ spec:
     port: 20001
     profiler:
       enabled: false
-    timeout: 30
     web_fqdn: ""
     web_history_mode: ""
     web_port: ""
     web_root: ""
     web_schema: ""
+    write_timeout: 30
