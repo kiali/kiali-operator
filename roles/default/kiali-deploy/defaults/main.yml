@@ -357,6 +357,7 @@ kiali_defaults:
     port: 20001
     profiler:
       enabled: false
+    timeout: 30
     web_fqdn: ""
     web_history_mode: ""
     web_port: ""
