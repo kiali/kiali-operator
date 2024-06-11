@@ -707,19 +707,19 @@
 
 - name: Autodetect remote cluster secrets within the Kiali deployment namespace
   vars:
-    all_remote_cluster_secrets: "{{ query(k8s_plugin, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='Secret', label_selector=kiali_vars.kiali_feature_flags.clustering.autodetect_secrets.label) }}"
+    all_remote_cluster_secrets: "{{ query(k8s_plugin, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='Secret', label_selector=kiali_vars.clustering.autodetect_secrets.label) }}"
   loop: "{{ all_remote_cluster_secrets }}"
   set_fact:
     kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.metadata.annotations['kiali.io/cluster']|default(item.metadata.name): {'secret_name': item.metadata.name }}) }}"
   when:
-  - kiali_vars.kiali_feature_flags.clustering.autodetect_secrets.enabled
+  - kiali_vars.clustering.autodetect_secrets.enabled
 
 - name: Prepare the manually declared remote clusters
-  loop: "{{ kiali_vars.kiali_feature_flags.clustering.clusters }}"
+  loop: "{{ kiali_vars.clustering.clusters }}"
   set_fact:
-    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.name: {'secret_name': item.secret_name }}) }}"
+    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine(({ item.name: {'secret_name': item.secret_name }}) if (item.secret_name is defined and item.secret_name | length > 0) else {}) }}"
   when:
-  - kiali_vars.kiali_feature_flags.clustering.clusters | length > 0
+  - kiali_vars.clustering.clusters | length > 0
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to figure out what
 # namespaces are no longer accessible. Those namespaces will have their Kiali roles removed.
