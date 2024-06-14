@@ -1303,4 +1303,7 @@ spec:
                   web_schema:
                     description: "Defines the public HTTP schema used to serve Kiali. Value must be one of: `http` or `https`. When empty, Kiali will try to guess this value from HTTP headers. On non-OpenShift clusters, you must populate this value if you want to enable cross-linking between Kiali instances in a multi-cluster setup."
                     type: string
-                    enum: ["","http","https"]
+                    enum: ["", "http", "https"]
+                  write_timeout:
+                    description: "The maximum duration, in seconds, before timing out writes of the HTTP response back to the client. Default is 30."
+                    type: integer

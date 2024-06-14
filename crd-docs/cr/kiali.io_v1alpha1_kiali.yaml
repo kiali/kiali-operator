@@ -457,3 +457,4 @@ spec:
     web_port: ""
     web_root: ""
     web_schema: ""
+    write_timeout: 30
