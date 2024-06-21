@@ -71,10 +71,10 @@
       that:
       - kiali_output.location is defined
       - kiali_output.set_cookie is defined
-      - kiali_output.set_cookie is search("kiali-token-nonce")
+      - kiali_output.set_cookie is search("kiali-token-nonce-.+")
   - set_fact:
       auth2_endpoint: "{{ kiali_output.location }}"
-      nonce_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-nonce=[^;]+).*', '\\1') }}"
+      nonce_cookie: "{{ kiali_output.set_cookie | regex_replace('.*(kiali-token-nonce-.+=[^;]+).*', '\\1') }}"
 
   - name: Send request to auth2 endpoint which will redirect to the OpenID login screen
     uri:
