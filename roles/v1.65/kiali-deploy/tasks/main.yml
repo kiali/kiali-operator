@@ -943,7 +943,7 @@
   - deployment_is_new == False
   - processed_resources.configmap is defined
   - processed_resources.configmap.changed == True
-  - processed_resources.configmap.method == "patch"
+  - processed_resources.configmap.method == "update"
 
 # Can't just populate with the list of namespaces - see https://github.com/operator-framework/operator-sdk-ansible-util/issues/12
 # So instead - if the list of namespaces is manageable, store them in a comma-separate list.
