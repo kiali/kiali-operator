@@ -239,11 +239,6 @@
       {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
       {% endif %}
 
-      {# Set default Istio service that provides version info (istiod service that was introduced in Istio 1.6) #}
-      {% if kv.external_services.istio.url_service_version == "" %}
-      {% set kv = kv | combine({'external_services': {'istio': {'url_service_version': 'http://' + kv.external_services.istio.istiod_deployment_name + '.' + kv.istio_namespace + ':15014/version'}}}, recursive=True) %}
-      {% endif %}
-
       {# Set default Prometheus URL #}
       {% if kv.external_services.prometheus.url == "" %}
       {% set kv = kv | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kv.istio_namespace + ':9090'}}}, recursive=True) %}

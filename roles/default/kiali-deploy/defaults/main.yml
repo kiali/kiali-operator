@@ -179,7 +179,6 @@ kiali_defaults:
           is_proxy: true
           namespace: ""
         enabled: true
-      config_map_name: "istio"
       envoy_admin_local_port: 15000
       gateway_api_classes: []
       istio_api_enabled: true
@@ -190,10 +189,8 @@ kiali_defaults:
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
       istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
-      istiod_deployment_name: "istiod"
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
-      url_service_version: ""
     prometheus:
       auth:
         ca_file: ""
