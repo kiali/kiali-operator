@@ -35,7 +35,7 @@
 
 collections:
 - name: kubernetes.core
-  version: 2.2.3
+  version: 4.0.0
 - name: operator_sdk.util
   version: 0.4.0
 
