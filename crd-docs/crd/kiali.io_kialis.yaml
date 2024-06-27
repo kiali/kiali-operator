@@ -634,16 +634,16 @@ spec:
 
               extensions:
                 description: |
-                  Defines third-party extensions whose metrics can be integrated into the Kiali UI.
+                  Defines third-party extensions whose metrics can be integrated into the Kiali traffic graph.
                 type: array
                 items:
                   type: object
                   properties:
                     enabled:
-                      description: Determines if the extension is to be visualized in the Kiali UI.
+                      description: Determines if the Kiali traffic graph should incorporate the extension's metrics.
                       type: boolean
                     name:
-                      description: The name that is used to identify the metric timeseries for the extension.
+                      description: The name that is used to identify the metric time series for the extension.
                       type: string
 
               external_services:
