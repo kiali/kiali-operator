@@ -1057,6 +1057,12 @@ spec:
                   app_label_name:
                     description: "The name of the label used to define what application a workload belongs to. This is typically something like `app` or `app.kubernetes.io/name`."
                     type: string
+                  egress_gateway_label:
+                    description: "The selector label for Egress Gateway workload. This is typically `istio=egressgateway`."
+                    type: string
+                  ingress_gateway_label:
+                    description: "The selector label for Ingress Gateway workload. This is typically `istio=ingressgateway`."
+                    type: string
                   injection_label_name:
                     description: "The name of the label used to instruct Istio to automatically inject sidecar proxies when applications are deployed."
                     type: string
