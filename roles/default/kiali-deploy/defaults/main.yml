@@ -222,7 +222,7 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       custom_headers: {}
-      enabled: true
+      enabled: false
       grpc_port: 9095
       health_check_url: ""
       in_cluster_url: ""

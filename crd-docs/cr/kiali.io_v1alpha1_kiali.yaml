@@ -349,7 +349,7 @@ spec:
       # default: custom_headers is empty
       custom_headers:
         customHeader1: "customHeader1Value"
-      enabled: true
+      enabled: false
       grpc_port: 9095
       health_check_url: ""
       in_cluster_url: ""
