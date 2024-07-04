@@ -11,14 +11,17 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-20.04
     steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-      - name: Validate OLM metadata
-        run: make validate
-      - name: Validate CR
-        run: |
-          kind create cluster
-          CLIENT_EXE=kubectl make validate-cr
-          kind delete cluster
-      - name: Build operator
-        run: make build
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Validate OLM metadata
+      run: make validate
+
+    - name: Validate CR
+      run: |
+        kind create cluster
+        CLIENT_EXE=kubectl make validate-cr
+        kind delete cluster
+
+    - name: Build operator
+      run: make build

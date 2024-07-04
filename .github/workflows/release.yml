@@ -36,7 +36,7 @@ jobs:
       quay_tag: ${{ steps.quay_tag.outputs.quay_tag }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.inputs.release_branch || github.ref_name }}
 
@@ -187,7 +187,7 @@ jobs:
       OPERATOR_QUAY_TAG: ${{ needs.initialize.outputs.quay_tag }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.event.inputs.release_branch || github.ref_name }}
     
