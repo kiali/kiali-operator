@@ -18,3 +18,6 @@ spec:
     image_version: "{{ kiali.image_version }}"
     accessible_namespaces: {{ kiali.accessible_namespaces }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+  external_services:
+    tracing:
+      enabled: true
