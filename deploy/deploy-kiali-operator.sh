@@ -55,10 +55,8 @@
 #    When true, the operator will be given permission to create cluster roles and
 #    cluster role bindings so it can, in turn, assign Kiali a cluster role and
 #    cluster role binding to access all namespaces. This is to support the Kiali CR
-#    setting deployment.accessible_namespaces=['**'] (see the Kiali documentation for
+#    setting deployment.cluster_wide_access (see the Kiali documentation for
 #    more details on this setting).
-#    This is overridden to "true" if you are installing Kiali with accessible namespaces
-#    set to ** (i.e. -an '**' -oik true).
 #    Default: "false"
 #
 # OPERATOR_IMAGE_NAME
@@ -110,18 +108,15 @@
 # -----------
 # Environment variables that affect Kiali installation:
 #
-# ACCESSIBLE_NAMESPACES
-#   These are the namespaces that Kiali will be granted access to. These should be the namespaces
-#   that make up the service mesh - it will be those namespaces Kiali will observe and manage.
-#   The format of the value of this environment variable is a space-separated list (no commas).
-#   The namespaces can be regular expressions or explicit namespace names.
-#   NOTE! If this is the special value of "**" (two asterisks), that will denote you want Kiali to be
-#   given access to all namespaces. When given this value, the operator will
-#   be given permission to create cluster roles and cluster role bindings so it can in turn
-#   assign Kiali a cluster role and cluster role binding to access all namespaces. Therefore,
-#   be very careful when setting this value to "**" because of the superpowers this will grant
-#   to the Kiali operator.
-#   Default: "^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"
+# CLUSTER_WIDE_ACCESS
+#   When true, the server will be granted ClusterRole permissions. Otherwise, it is required
+#   that you provide discovery selectors to determine what namespaces Kiali can access.
+#   NOTE: this script doesn't support setting discovery selectors today.
+#   NOTE! If this true, the operator willbe given permission to create cluster roles and
+#   cluster role bindings so it can in turn assign Kiali a cluster role and cluster role binding
+#   to access all namespaces. Therefore, be very careful when setting this value to true
+#   because of the superpowers this will grant to the Kiali operator.
+#   Default: "true"
 #
 # AUTH_STRATEGY
 #    Determines what authentication strategy to use.
@@ -189,12 +184,12 @@ _CMD=""
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
-    -an|--accessible-namespaces)
-      ACCESSIBLE_NAMESPACES="$2"
-      shift;shift
-      ;;
     -as|--auth-strategy)
       AUTH_STRATEGY="$2"
+      shift;shift
+      ;;
+    -cwa|--cluster-wide-access)
+      CLUSTER_WIDE_ACCESS="$2"
       shift;shift
       ;;
     -dr|--dry-run)
@@ -326,10 +321,8 @@ Valid options for the operator installation:
       When true, the operator will be given permission to create cluster roles and
       cluster role bindings so it can, in turn, assign Kiali a cluster role and
       cluster role binding to access all namespaces. This is to support the Kiali CR
-      setting deployment.accessible_namespaces=['**'] (see the Kiali documentation for
+      setting deployment.cluster_wide_access (see the Kiali documentation for
       more details on this setting).
-      This is overridden to "true" if you are installing Kiali with accessible namespaces
-      set to ** (i.e. -an '**' -oik true).
       Default: "false"
   -oin|--operator-image-name
       Image of the Kiali operator to download and install.
@@ -365,20 +358,18 @@ Valid options for the operator installation:
       Default: "" (two double-quotes)
 
 Valid options for Kiali installation (if Kiali is to be installed):
-  -an|--accessible-namespaces
-      The namespaces that Kiali will be given permission to observe and manage.
-      The format of the value of this option is a space-separated list (no commas).
-      The namespaces can be regular expressions or explicit namespace names.
-      NOTE! If this is the special value of "**" (two asterisks), that will denote you want
-      Kiali to be given access to all namespaces via a single cluster role. When given this
-      value, the operator will be given permission to create cluster roles and cluster
-      role bindings so it can in turn assign Kiali a cluster role to access all namespaces.
-      Therefore, be very careful when setting this value to "**" because of the
-      superpowers this will grant to the Kiali operator.
-      Default: "^((?!(istio-operator|kube.*|openshift.*|ibm.*|kiali-operator)).)*$"
   -as|--auth-strategy
       Determines what authentication strategy to use.
       Default: "openshift" (when using OpenShift), "token" (when using Kubernetes)
+  -cwa|--cluster-wide-access
+      When true, the server will be granted ClusterRole permissions. Otherwise, it is required
+      that you provide discovery selectors to determine what namespaces Kiali can access.
+      NOTE: this script doesn't support setting discovery selectors today.
+      NOTE! If this true, the operator willbe given permission to create cluster roles and
+      cluster role bindings so it can in turn assign Kiali a cluster role and cluster role binding
+      to access all namespaces. Therefore, be very careful when setting this value to true
+      because of the superpowers this will grant to the Kiali operator.
+      Default: true
   -kcn|--kiali-cr-namespace
       Determines the namespace where the Kiali CR will be created. If not specified,
       the operator watch namespace (-own) is used. If the operator is to watch all namespaces
@@ -455,7 +446,7 @@ VERSION="${VERSION:-default}"
 HELM_CHART="${HELM_CHART:-}"
 HELM_REPO_CHART_VERSION="${HELM_REPO_CHART_VERSION:-lastrelease}"
 HELM_SET_ARGS="${HELM_SET_ARGS:-}"
-ACCESSIBLE_NAMESPACES="${ACCESSIBLE_NAMESPACES:-**}"
+CLUSTER_WIDE_ACCESS="${CLUSTER_WIDE_ACCESS:-true}"
 
 if [ "${DRY_RUN:-}" == "true" ]; then
   DRY_RUN_ARG="--dry-run"
@@ -703,15 +694,16 @@ if [ "${KIALI_CR:-}" != "" ]; then
   # Depending how the accessible_namespace list is indented, the parser might be producing different lines.
   # To detect the "**" value regardless how the indentation is done, just look for ** after deployment_ (since we
   # know "**" isn't a valid value for anything other than accessible_namespace its fine to test it like this)
-  parse_yaml "${KIALI_CR}" | grep -E 'deployment.*=.*\*\*' 2>&1 > /dev/null
-  if [ "$?" == "0" ]; then
-    ACCESSIBLE_NAMESPACES="**"
-  fi
+  ## TODO: this used to process accessible namespaces; we no longer have that. Maybe figure out what needs to be done now?
+  ##parse_yaml "${KIALI_CR}" | grep -E 'deployment.*=.*\*\*' 2>&1 > /dev/null
+  ##if [ "$?" == "0" ]; then
+  ##CLUSTER_WIDE_ACCESS="true"
+  ##fi
 fi
 
 # Determine if the operator needs to create cluster roles for Kiali to be installed
-if [ "${ACCESSIBLE_NAMESPACES:-}" == "**" -a "${OPERATOR_INSTALL_KIALI}" == "true" -a "${OPERATOR_CLUSTER_ROLE_CREATOR}" != "true" ]; then
-  echo "NOTE! The operator will be granted cluster role creator rights because you are installing Kiali with accessible namespaces of '**'"
+if [ "${CLUSTER_WIDE_ACCESS:-}" == "true" -a "${OPERATOR_INSTALL_KIALI}" == "true" -a "${OPERATOR_CLUSTER_ROLE_CREATOR}" != "true" ]; then
+  echo "NOTE! The operator will be granted cluster role creator rights because you are installing Kiali with cluster wide access"
   OPERATOR_CLUSTER_ROLE_CREATOR="true"
 fi
 
@@ -822,7 +814,7 @@ if [ "${AUTH_STRATEGY}" != "openshift" ] && [ "${AUTH_STRATEGY}" != "anonymous" 
 fi
 
 echo "=== KIALI SETTINGS ==="
-echo ACCESSIBLE_NAMESPACES=$ACCESSIBLE_NAMESPACES
+echo CLUSTER_WIDE_ACCESS=$CLUSTER_WIDE_ACCESS
 echo AUTH_STRATEGY=$AUTH_STRATEGY
 echo DRY_RUN_ARG=$DRY_RUN_ARG
 echo KIALI_CR=${KIALI_CR:-}
@@ -900,7 +892,7 @@ spec:
   auth:
     $(build_spec_value strategy AUTH_STRATEGY)
   deployment:
-    $(build_spec_list_value accessible_namespaces ACCESSIBLE_NAMESPACES)
+    $(build_spec_value cluster_wide_access CLUSTER_WIDE_ACCESS)
     $(build_spec_value image_name KIALI_IMAGE_NAME)
     $(build_spec_value image_pull_policy KIALI_IMAGE_PULL_POLICY)
     $(build_spec_value image_version KIALI_IMAGE_VERSION)

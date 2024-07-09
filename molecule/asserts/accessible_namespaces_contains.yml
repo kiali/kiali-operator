@@ -1,5 +1,39 @@
-- name: Assert Accessible Namespaces contains {{ namespace_list }}
+- name: "Obtain these namespaces so we can check if they are accessible: {{ namespace_list }}"
+  k8s_info:
+    kind: Namespace
+    name: "{{ item }}"
+  loop: "{{ namespace_list }}"
+  register: _namespace_list_info
+
+- name: Assert that all namespaces that are accessible actually exist
+  vars:
+    existing_namespaces: "{{ _namespace_list_info.results | selectattr('resources.0', 'defined') | map(attribute='resources.0.metadata.name') | list }}"
+    non_existent_namespaces: "{{ namespace_list | difference(existing_namespaces) }}"
   assert:
     that:
-    - item in kiali_configmap.deployment.accessible_namespaces
-  loop: "{{ namespace_list }}"
+    - non_existent_namespaces | length == 0
+    msg: "The following namespaces do not exist: {{ non_existent_namespaces }}"
+
+- name: Assert that all namespaces that are accessible have the correct labels
+  assert:
+    that:
+    - "'kiali.io/' + (kiali.instance_name | default('kiali')) + '.home' in item.resources[0].metadata.labels"
+    - "item.resources[0].metadata.labels['kiali.io/' +(kiali.instance_name | default('kiali')) + '.home'] == (kiali.install_namespace | default('istio-system'))"
+    msg: "Namespace [{{ item.resources[0].metadata.name }}] does not have the required labels."
+  loop: "{{ _namespace_list_info.results }}"
+
+- name: Get all namespaces with that exist with our labels
+  k8s_info:
+    kind: Namespace
+    label_selectors:
+    - "kiali.io/{{ kiali.instance_name | default('kiali') }}.home={{ kiali.install_namespace | default('istio-system') }}"
+  register: _namespaces_with_labels
+
+- name: Make sure all labeled namespaces are only the namespaces we expect - any extras means we gave access to too many namespaces
+  vars:
+    filtered_namespaces: "{{ _namespaces_with_labels.resources | map(attribute='metadata.name') | list }}"
+    extra_namespaces: "{{ filtered_namespaces | difference(namespace_list) }}"
+  assert:
+    that:
+    - extra_namespaces | length == 0
+    fail_msg: "Some namespaces were labeled as accessible when they should not be: {{ extra_namespaces }}"

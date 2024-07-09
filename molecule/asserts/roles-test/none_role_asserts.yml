@@ -1,5 +1,5 @@
 # pass in var "role_namespaces_to_test" to check Roles in those namespaces.
-# If you do not set that var, the default will be the namespaces in kiali.accessible_namespaces.
+# If you do not set that var, the default will be the namespace in kiali.install_namespace.
 
 - name: Get roles
   vars:
@@ -11,7 +11,7 @@
    name: "{{ item[1] }}"
   register: empty_roles
   with_nested:
-  - "{{ role_namespaces_to_test | default(kiali.accessible_namespaces) }}"
+  - "{{ role_namespaces_to_test | default([ kiali.install_namespace ]) }}"
   - "{{ instance_name}}"
 
 - name: Assert that namespaces do not have the roles
@@ -31,7 +31,7 @@
    name: "{{ item[1] }}"
   register: empty_roles
   with_nested:
-  - "{{ role_namespaces_to_test | default(kiali.accessible_namespaces) }}"
+  - "{{ role_namespaces_to_test | default([ kiali.install_namespace ]) }}"
   - "{{ instance_name}}-viewer"
 
 - name: Assert that namespaces do not have the viewer roles
@@ -51,7 +51,7 @@
    name: "{{ item[1] }}"
   register: empty_rolebindings
   with_nested:
-  - "{{ role_namespaces_to_test | default(kiali.accessible_namespaces) }}"
+  - "{{ role_namespaces_to_test | default([ kiali.install_namespace ]) }}"
   - "{{ instance_name}}"
 
 - name: Assert the role bindings do not exist

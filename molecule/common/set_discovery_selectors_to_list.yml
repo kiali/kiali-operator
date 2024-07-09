@@ -1,0 +1,12 @@
+# Wait for the operator to finish any reconciliation currently ongoing
+- include_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+# Accessible namespaces are defined by the discovery selectors
+# You can still turn on cluster_wide_access by passing in "new_cluster_wide_access" variable (default is false)
+- name: "Set cluster_wide_access and discovery selectors in current Kiali CR"
+  vars:
+    current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
+  set_fact:
+    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'cluster_wide_access': new_cluster_wide_access | default(false), 'discovery_selectors': {'default': discovery_selectors }}}}, recursive=True) }}"
+
+- include_tasks: ../common/set_kiali_cr.yml
