@@ -51,9 +51,9 @@
   - is_k8s == True
   - kiali_vars.deployment.cluster_wide_access == False
 
-- name: Create additional Kiali roles/bindings on all accessible namespaces on Kubernetes
+- name: Create additional Kiali roles/bindings on all namespaces that are accessible on Kubernetes
   vars:
-    role_namespaces: "{{ kiali_vars.deployment.accessible_namespaces }}"
+    role_namespaces: "{{ discovery_selector_namespaces }}"
   k8s:
     template:
     - "templates/kubernetes/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"

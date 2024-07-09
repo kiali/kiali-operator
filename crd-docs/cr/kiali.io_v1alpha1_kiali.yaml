@@ -16,18 +16,6 @@ spec:
 
   version: "default"
 
-  api:
-    namespaces:
-      exclude:
-      - "^istio-operator"
-      - "^kube-.*"
-      - "^openshift.*"
-      - "^ibm.*"
-      - "^kiali-operator"
-      include: []
-      label_selector_exclude: ""
-      # default: label_selector_include is undefined
-      label_selector_include: "kiali.io/member-of=istio-system"
   auth:
     strategy: ""
     openid:
@@ -65,8 +53,6 @@ spec:
   - name: "envoy"
 
   deployment:
-    # default: accessible_namespaces is undefined
-    accessible_namespaces: ["my-mesh.*"]
     # default: additional_service_yaml is empty
     additional_service_yaml:
       externalName: "kiali.example.com"
@@ -103,8 +89,7 @@ spec:
                 values:
                 - S2
             topologyKey: topology.kubernetes.io/zone
-    # default: cluster_wide_access is undefined
-    cluster_wide_access: false
+    cluster_wide_access: true
     # default: configmap_annotations is empty
     configmap_annotations:
       strategy.spinnaker.io/versioned: "false"
@@ -120,6 +105,39 @@ spec:
         readOnly: true
         volumeAttributes:
           secretProviderClass: kiali-secretprovider
+    # default: discovery_selectors is empty
+    discovery_selectors:
+      default:
+      - matchLabels:
+          region: north
+      - matchExpressions:
+        - key: organization
+          operator: "In"
+          values: ["engineering", "accounting"]
+      - matchLabels:
+          region: south
+        matchExpressions:
+        - key: app
+          operator: "DoesNotExist"
+        - key: domain
+          operator: "NotIn"
+          values: ["production"]
+      overrides:
+        myRemoteCluster:
+        - matchLabels:
+            region: world
+        - matchExpressions:
+          - key: organization
+            operator: "NotIn"
+            values: ["marketing"]
+        - matchLabels:
+            region: antarctica
+          matchExpressions:
+          - key: app
+            operator: "DoesNotExist"
+          - key: domain
+            operator: "In"
+            values: ["staging"]
     dns:
       # default: config is empty
       config:

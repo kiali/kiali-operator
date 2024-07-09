@@ -8,146 +8,262 @@
   tasks:
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
+
   - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ '**' ]
-  - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
+      namespace_list: []
+
+  # Cluster Wide Access (CWA) is true by default - with no discovery selectors, all namespaces should be retrieved
+  - debug: msg="test to make sure the default (CWA=true) behavior works"
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 5
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-operator
+      - kiali-test-other
+      - kiali-test-region-east
+      - kiali-test-region-west
+
+  - name: Assert status field does not specify any discovery selector namespaces
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector_include is not defined
+      - kiali_cr.status.deployment.discoverySelectorNamespaces is not defined
 
-  - debug: msg="test to make sure the default AN=** behavior works (default include/exclude filters are in effect)"
-  - include_tasks: ../asserts/assert-api-namespaces-result.yml
-    vars:
-      min_namespaces_expected: 4
-      namespaces_expected:
-      - "{{ istio.control_plane_namespace }}"
-      - kialitestns
-      - kialitestns2
-      - kialianothertestns
-      namespaces_not_expected:
-      - kiali-operator
+  ###
 
-  - debug: msg="test that include filter works when AN=**; also tests exclude filter"
-  - include_tasks: ./set-api-namespaces.yml
+  - debug: msg="change discovery_selectors - east and west"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
     vars:
-      # include kialitest* and kialianother* but we exclude kialianother* and exclude takes precedence.
-      # Also, trying to exclude the control plane namespace is ignored - the control plane namespace is always returned.
-      # So this will return the two kialitest* namespaces and the control plane namespace.
-      api_namespaces:
-        include: [ "kialitest.*", "kialianother.*" ]
-        exclude: [ "{{ istio.control_plane_namespace }}", "kialianother.*" ]
-        label_selector_include: null
-        label_selector_exclude: null
+      discovery_selectors:
+      - matchExpressions:
+        - key: region
+          operator: In
+          values: ["east"]
+      - matchExpressions:
+        - key: region
+          operator: In
+          values: ["west"]
 
-  - include_tasks: ../asserts/assert-api-namespaces-result.yml
-    vars:
-      min_namespaces_expected: 3
-      max_namespaces_expected: 3
-      namespaces_expected:
-      - "{{ istio.control_plane_namespace }}"
-      - kialitestns
-      - kialitestns2
-
-  - debug: msg="test both exclude filters (both exclude list and label selector) works"
-  - include_tasks: ./set-api-namespaces.yml
-    vars:
-      api_namespaces:
-        include: [ "kialitest.*", "kialianother.*" ]
-        exclude: [ "kialianother.*" ]
-        label_selector_include: null
-        label_selector_exclude: "customLabel=test"
-
-  - include_tasks: ../asserts/assert-api-namespaces-result.yml
-    vars:
-      min_namespaces_expected: 2
-      max_namespaces_expected: 2
-      namespaces_expected:
-      - "{{ istio.control_plane_namespace }}"
-      - kialitestns2
-
-  - debug: msg="test include label selector works when AN=**"
-  - include_tasks: ./set-api-namespaces.yml
-    vars:
-      api_namespaces:
-        include: ["{{ istio.control_plane_namespace }}"]
-        exclude: null
-        label_selector_include: "customLabel=test"
-        label_selector_exclude: null
-
-  - include_tasks: ../asserts/assert-api-namespaces-result.yml
-    vars:
-      min_namespaces_expected: 2
-      max_namespaces_expected: 2
-      namespaces_expected:
-      - "{{ istio.control_plane_namespace }}"
-      - kialitestns
-
-  - debug: msg="reset the api.namespaces so it goes back to all defaults"
-  - include_tasks: ./set-api-namespaces.yml
-    vars:
-      api_namespaces:
-        include: null
-        exclude: null
-        label_selector_include: null
-        label_selector_exclude: null
-
-  - include_tasks: ../asserts/assert-api-namespaces-result.yml
-    vars:
-      min_namespaces_expected: 4
-      namespaces_expected:
-      - "{{ istio.control_plane_namespace }}"
-      - kialitestns
-      - kialitestns2
-      - kialianothertestns
-      namespaces_not_expected:
-      - kiali-operator
-
-  - debug: msg="change to accessible_namespaces to a fixed list of namespaces"
-  - include_tasks: ../common/set_accessible_namespaces_to_list.yml
-    vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianother.*' ]
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
-  - include_tasks: ../asserts/accessible_namespaces_equals.yml
-    vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'kialitestns', 'kialianothertestns' ]
-  - name: "Make sure label_selector_include is set properly"
-    assert:
-      that:
-      - kiali_configmap.api.namespaces.label_selector_include == "kiali.io/member-of={{ istio.control_plane_namespace }}"
 
-  - name: Make sure the new label exists, but didn't overwrite any existing labels
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      # Use query - it is the only way to ensure a list is returned; for some reason, lookup/wantList=true is not working
-      namespacesWithCustomLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector='customLabel=test') }}"
-      namespacesWithKialiLabel: "{{ query('kubernetes.core.k8s', kind='Namespace', label_selector=kiali_configmap.api.namespaces.label_selector_include) }}"
-    assert:
-      that:
-      - namespacesWithCustomLabel | length == 1
-      - namespacesWithCustomLabel[0].metadata.name == "kialitestns"
-      - namespacesWithKialiLabel | length == 3
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-east
+      - kiali-test-region-west
 
-  - debug: msg="test the normal accessible namespaces (without custom include/exclude filters defined)"
+  - include_tasks: ./assert-configmap-discovery-selectors.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-east
+      - kiali-test-region-west
+
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 3
       max_namespaces_expected: 3
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
-      - kialitestns
-      - kialianothertestns
+      - kiali-test-region-east
+      - kiali-test-region-west
+      namespaces_not_expected:
+      - kiali-operator
+      - kiali-test-other
 
-  - debug: msg="test to show include is ignored when AN is not ** but exclude filters are still applied"
-  - include_tasks: ./set-api-namespaces.yml
+  - name: Assert status field specifies the correct discovery selector namespaces
+    assert:
+      that:
+      - kiali_cr.status.deployment.discoverySelectorNamespaces == "istio-system,kiali-test-region-east,kiali-test-region-west"
+
+  ###
+
+  - debug: msg="change discovery_selectors - east"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
     vars:
-      api_namespaces:
-        include: [ ".*" ]
-        exclude: [ "kialianother.*" ]
-        label_selector_include: null
-        label_selector_exclude: "customLabel=test"
+      discovery_selectors:
+      - matchExpressions:
+        - key: region
+          operator: In
+          values: ["east"]
+        - key: org
+          operator: NotIn
+          values: ["other"]
+
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-east
+
+  - include_tasks: ./assert-configmap-discovery-selectors.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-east
+
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 2
+      max_namespaces_expected: 2
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-east
+      namespaces_not_expected:
+      - kiali-operator
+      - kiali-test-other
+      - kiali-test-region-west
+
+  - name: Assert status field specifies the correct discovery selector namespaces
+    assert:
+      that:
+      - kiali_cr.status.deployment.discoverySelectorNamespaces == "istio-system,kiali-test-region-east"
+
+  ###
+
+  - debug: msg="change discovery_selectors - west"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
+    vars:
+      discovery_selectors:
+      - matchLabels:
+          region: west
+          org: test
+
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-west
+
+  - include_tasks: ./assert-configmap-discovery-selectors.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-west
+
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 2
+      max_namespaces_expected: 2
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-region-west
+      namespaces_not_expected:
+      - kiali-operator
+      - kiali-test-other
+      - kiali-test-region-east
+
+  - name: Assert status field specifies the correct discovery selector namespaces
+    assert:
+      that:
+      - kiali_cr.status.deployment.discoverySelectorNamespaces == "istio-system,kiali-test-region-west"
+
+  ###
+
+  - debug: msg="change discovery_selectors - east, west, other"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
+    vars:
+      discovery_selectors:
+      - matchLabels:
+          region: west
+          org: test
+      - matchExpressions:
+        - key: org
+          operator: In
+          values: ["other"]
+        - key: other
+          operator: Exists
+        - key: region
+          operator: DoesNotExist
+      - matchLabels:
+          region: east
+
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-other
+      - kiali-test-region-east
+      - kiali-test-region-west
+
+  - include_tasks: ./assert-configmap-discovery-selectors.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-other
+      - kiali-test-region-east
+      - kiali-test-region-west
+
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 4
+      max_namespaces_expected: 4
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-test-other
+      - kiali-test-region-east
+      - kiali-test-region-west
+      namespaces_not_expected:
+      - kiali-operator
+
+  - name: Assert status field specifies the correct discovery selector namespaces
+    assert:
+      that:
+      - kiali_cr.status.deployment.discoverySelectorNamespaces == "istio-system,kiali-test-other,kiali-test-region-east,kiali-test-region-west"
+
+  ###
+
+  - name: Make sure the operator does not overwrite existing labels
+    vars:
+      # Use query - it is the only way to ensure a list is returned; for some reason, lookup/wantList=true is not working
+      namespacesWithCustomLabel: "{{ query('k8s', kind='Namespace', label_selector='test=kiali') }}"
+    assert:
+      that:
+      - namespacesWithCustomLabel | length == 3
+
+  ###
+
+  - debug: msg="change discovery_selectors so they select nothing"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
+    vars:
+      discovery_selectors:
+      - matchLabels:
+          does: not-exist
+
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+
+  - include_tasks: ./assert-configmap-discovery-selectors.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
 
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
@@ -155,17 +271,46 @@
       max_namespaces_expected: 1
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
+      namespaces_not_expected:
+      - kiali-operator
+      - kiali-test-other
+      - kiali-test-region-east
+      - kiali-test-region-west
 
-  # change to accessible_namespaces back to **
-  - include_tasks: ../common/set_accessible_namespaces_to_all.yml
+  - name: Assert status field specifies the correct discovery selector namespaces
+    assert:
+      that:
+      - kiali_cr.status.deployment.discoverySelectorNamespaces == "istio-system"
+
+  ###
+
+  - debug: msg="change back to all namespace access"
+  - include_tasks: ../common/set_discovery_selectors_to_all.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../common/tasks.yml
   - include_tasks: ../asserts/pod_asserts.yml
+
   - include_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ '**' ]
-  - name: Make sure label_selector_include is not set since its default is nil when accessible namespaces is **
+      namespace_list: []
+
+  - include_tasks: ../asserts/assert-api-namespaces-result.yml
+    vars:
+      min_namespaces_expected: 5
+      namespaces_expected:
+      - "{{ istio.control_plane_namespace }}"
+      - kiali-operator
+      - kiali-test-other
+      - kiali-test-region-east
+      - kiali-test-region-west
+
+  - name: Assert status field does not specify any discovery selector namespaces
     assert:
       that:
-      - kiali_configmap.api.namespaces.label_selector_include is not defined
+      - kiali_cr.status.deployment.discoverySelectorNamespaces is not defined
+  
+  - name: Assert the ConfigMap does not specify any discovery selectors
+    assert:
+      that:
+      - kiali_configmap.deployment.discovery_selectors | length == 0

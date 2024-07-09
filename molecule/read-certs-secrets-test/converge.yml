@@ -31,7 +31,8 @@
     set_fact:
       cert_role: "{{ item }}"
     with_items: "{{ rules }}"
-    when: "{{ istio_secret in item.resourceNames and user_secret in item.resourceNames }}"
+    when:
+    - istio_secret in item.resourceNames and user_secret in item.resourceNames
 
   - name: Check that the role has the right verbs
     vars:
