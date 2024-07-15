@@ -165,22 +165,10 @@ kiali_defaults:
       url: ""
     istio:
       component_status:
-        components:
-        - app_label: "istiod"
-          is_core: true
-          is_proxy: false
-          namespace: ""
-        - app_label: "istio-ingressgateway"
-          is_core: true
-          is_proxy: true
-          namespace: ""
-        - app_label: "istio-egressgateway"
-          is_core: false
-          is_proxy: true
-          namespace: ""
         enabled: true
       envoy_admin_local_port: 15000
       gateway_api_classes: []
+      gateway_namespace: ""
       istio_api_enabled: true
       #istio_canary_revision:
         #current: prod
