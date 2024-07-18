@@ -166,9 +166,10 @@ kiali_defaults:
     istio:
       component_status:
         enabled: true
+      egress_gateway_namespace: ""
       envoy_admin_local_port: 15000
       gateway_api_classes: []
-      gateway_namespace: ""
+      ingress_gateway_namespace: ""
       istio_api_enabled: true
       #istio_canary_revision:
         #current: prod
