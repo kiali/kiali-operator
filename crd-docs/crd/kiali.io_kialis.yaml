@@ -810,6 +810,9 @@ spec:
                             class_name:
                               description: "The name of the GatewayClass."
                               type: string
+                      gateway_namespace:
+                        description: "The namespace where Istio gateway components are read for a status check. When left empty, then `istio_namespace` value is used."
+                        type: string
                       istio_api_enabled:
                         description: "Indicates if Kiali has access to istiod. true by default."
                         type: boolean

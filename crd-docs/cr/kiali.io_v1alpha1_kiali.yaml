@@ -280,24 +280,11 @@ spec:
       url: ""
     istio:
       component_status:
-        components:
-        - app_label: "istiod"
-          is_core: true
-          is_proxy: false
-        - app_label: "istio-ingressgateway"
-          is_core: true
-          is_proxy: true
-          # default: namespace is undefined
-          namespace: istio-system
-        - app_label: "istio-egressgateway"
-          is_core: false
-          is_proxy: true
-          # default: namespace is undefined
-          namespace: istio-system
         enabled: true
       config_map_name: "istio"
       envoy_admin_local_port: 15000
       gateway_api_classes: []
+      gateway_namespace: ""
       istio_api_enabled: true
       # default: istio_canary_revision is undefined
       istio_canary_revision:
