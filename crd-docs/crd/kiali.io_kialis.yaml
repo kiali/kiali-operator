@@ -795,6 +795,9 @@ spec:
                       config_map_name:
                         description: "The name of the istio control plane config map."
                         type: string
+                      egress_gateway_namespace:
+                        description: "The namespace where Istio EgressGateway component is read for a status check. When left empty, then `istio_namespace` value is used."
+                        type: string
                       envoy_admin_local_port:
                         description: "The port which kiali will open to fetch envoy config data information."
                         type: integer
@@ -810,8 +813,8 @@ spec:
                             class_name:
                               description: "The name of the GatewayClass."
                               type: string
-                      gateway_namespace:
-                        description: "The namespace where Istio gateway components are read for a status check. When left empty, then `istio_namespace` value is used."
+                      ingress_gateway_namespace:
+                        description: "The namespace where Istio IngressGateway component is read for a status check. When left empty, then `istio_namespace` value is used."
                         type: string
                       istio_api_enabled:
                         description: "Indicates if Kiali has access to istiod. true by default."

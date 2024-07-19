@@ -282,9 +282,10 @@ spec:
       component_status:
         enabled: true
       config_map_name: "istio"
+      egress_gateway_namespace: ""
       envoy_admin_local_port: 15000
       gateway_api_classes: []
-      gateway_namespace: ""
+      ingress_gateway_namespace: ""
       istio_api_enabled: true
       # default: istio_canary_revision is undefined
       istio_canary_revision:
