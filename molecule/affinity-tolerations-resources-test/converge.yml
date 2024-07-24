@@ -8,6 +8,12 @@
   tasks:
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Assert that replicas takes effect (there is no HPA defined yet)
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.replicas == 1
+
   # set affinity and tolerations and resources and pod_annotations and service_annotations and pod_labels
   - import_tasks: set-affinity-tolerations-resources.yml
     vars:
@@ -65,15 +71,20 @@
         some.test.label/labelKeepCamelCaseFOO: labelCamelCaseValueFOO
       new_hpa:
         spec:
-          minReplicas: 1
-          maxReplicas: 1
+          minReplicas: 2
+          maxReplicas: 2
       new_ingress_labels:
         aaa: bbb
         camelCaseName: camelCaseValue
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
-  - import_tasks: ../common/wait_for_kiali_running.yml
+  - name: Now expect that HPA will set replicas to 2
+    import_tasks: ../common/wait_for_kiali_running.yml
+    vars:
+      kiali_expected_replicas: 2
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+    vars:
+      kiali_expected_replicas: 2
 
   - name: Assert that tolerations were applied to the deployment
     assert:
@@ -148,6 +159,11 @@
       - hpa_resource_raw.resources | length == 1
       fail_msg: "HPA was not created successfully: {{ hpa_resource_raw }}"
 
+  - name: Assert that deployment.replicas does not take effect (HPA is now defining replicas as 2)
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.replicas == 2
+
   # Reset them all to empty dicts
   - import_tasks: set-affinity-tolerations-resources.yml
     vars:
@@ -163,7 +179,8 @@
       new_hpa: null
       new_ingress_labels: null
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
-  - import_tasks: ../common/wait_for_kiali_running.yml
+  - name: Replicas should be back to 1 now that HPA is no longer defined
+    import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
 
@@ -199,6 +216,11 @@
       - hpa_resource_raw.resources is defined
       - hpa_resource_raw.resources | length == 0
       fail_msg: "HPA was not deleted successfully: {{ hpa_resource_raw }} [kiali CR={{ kiali_cr }}]"
+
+  - name: Assert that replicas takes effect (there is no HPA defined anymore)
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.replicas == 1
 
 # There is no mechanism in the operator right now that let's you remove an already existing annotation.
 # See: https://github.com/kiali/kiali/issues/2247

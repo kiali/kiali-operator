@@ -538,7 +538,7 @@ spec:
                     description: "The priorityClassName used to assign the priority of the Kiali pod."
                     type: string
                   replicas:
-                    description: "The replica count for the Kiail deployment."
+                    description: "The replica count for the Kiail deployment. If `deployment.hpa` is specified, this setting is ignored."
                     type: integer
                   resources:
                     description: |

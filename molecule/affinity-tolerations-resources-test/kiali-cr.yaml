@@ -8,6 +8,7 @@ spec:
   auth:
     strategy: {{ kiali.auth_strategy }}
   deployment:
+    replicas: 1
     ingress:
       enabled: true
     logger:
