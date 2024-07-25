@@ -1,4 +1,5 @@
-- name: Asserting that Kiali Pod exists and there is only one
+# By default, expect just one pod, but if you expect more set "kiali_expected_replicas"
+- name: Asserting that Kiali Pod(s) exists
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
   k8s_info:
@@ -10,7 +11,7 @@
   register: kiali_pod
   until:
   - kiali_pod is success
-  - kiali_pod.resources | length == 1
+  - kiali_pod.resources | length == (kiali_expected_replicas|default(1))
   - kiali_pod.resources[0].status is defined
   - kiali_pod.resources[0].status.phase is defined
   - kiali_pod.resources[0].status.phase == "Running"
