@@ -159,6 +159,21 @@
       - hpa_resource_raw.resources | length == 1
       fail_msg: "HPA was not created successfully: {{ hpa_resource_raw }}"
 
+  - name: Wait until the Kiali deployment is up to date with the HPA replicas
+    k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ kiali.instance_name | default('kiali') }}"
+    register: kiali_deployment
+    until:
+    - kiali_deployment.resources | length > 0
+    - kiali_deployment.resources[0].status.replicas == 2
+    - kiali_deployment.resources[0].status.readyReplicas == 2
+    retries: 30
+    delay: 10
+
   - name: Assert that deployment.replicas does not take effect (HPA is now defining replicas as 2)
     assert:
       that:
