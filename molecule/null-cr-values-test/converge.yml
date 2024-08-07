@@ -19,15 +19,10 @@
   # Note that accessible namespaces is being set to "[**]" so some settings depend on that.
   - assert:
       that:
-      - kiali_configmap.deployment.accessible_namespaces[0] == "**"
       - kiali_configmap.installation_tag == ""
       - kiali_configmap.additional_display_details | length == 1
-      - kiali_configmap.api.namespaces.label_selector_exclude == ""
-      - kiali_configmap.api.namespaces.label_selector_include is not defined
-      - kiali_configmap.api.namespaces.exclude | length > 0
-      - kiali_configmap.api.namespaces.include | length == 0
-      - kiali_configmap.api.namespaces.label_selector is not defined
       - kiali_configmap.custom_dashboards | length == 0
+      - kiali_configmap.deployment.discovery_selectors | length == 0
       - kiali_configmap.deployment.replicas == 1
       - kiali_configmap.deployment.secret_name == "kiali"
       - kiali_configmap.deployment.logger.log_format == "text"

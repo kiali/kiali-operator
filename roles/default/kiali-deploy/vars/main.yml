@@ -24,13 +24,6 @@ kiali_vars:
     {{ kiali_defaults.additional_display_details }}
     {%- endif -%}
 
-  api: |
-    {%- if api is defined and api is iterable -%}
-    {{ kiali_defaults.api | combine((api | stripnone), recursive=True) }}
-    {%- else -%}
-    {{ kiali_defaults.api }}
-    {%- endif -%}
-
   auth: |
     {%- if auth is defined and auth is iterable -%}
     {{ kiali_defaults.auth | combine((auth | stripnone), recursive=True) }}

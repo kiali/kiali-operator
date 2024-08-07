@@ -143,4 +143,10 @@
       {%   set kiali_vars=kiali_vars | combine({'external_services': {'tracing': {'custom_headers': current_cr.spec.external_services.tracing.custom_headers }}}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.discovery_selectors #}
+      {% if kiali_vars.deployment.discovery_selectors is defined and kiali_vars.deployment.discovery_selectors | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('discovery_selectors') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'discovery_selectors': current_cr.spec.deployment.discovery_selectors}}, recursive=True) %}
+      {% endif %}
+      {# #}
       {{ kiali_vars }}

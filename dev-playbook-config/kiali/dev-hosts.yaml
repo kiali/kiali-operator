@@ -6,8 +6,7 @@ all:
     version: default
 
     deployment:
-      accessible_namespaces:
-      - "**"
+      cluster_wide_access: true
       image_version: dev
       namespace: istio-system
 

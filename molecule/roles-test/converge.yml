@@ -24,8 +24,8 @@
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
-  # change to accessible_namespaces=** which switches to cluster roles
-  - include_tasks: ../common/set_accessible_namespaces_to_all.yml
+  # change to cluster access mode and give access to all namespaces; this switches to cluster roles
+  - include_tasks: ../common/set_discovery_selectors_to_all.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml

@@ -34,7 +34,3 @@
   assert:
     that:
     - kiali_configmap.external_services.grafana.in_cluster_url == "http://grafana.{{ istio.control_plane_namespace }}:3000"
-
-- name: Actual Kiali Accessible namespace list should be the same as the CR
-  assert:
-    that: " kiali_configmap.deployment.accessible_namespaces | symmetric_difference(kiali.accessible_namespaces) | length == 0 "

@@ -16,7 +16,7 @@ spec:
     image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
-    accessible_namespaces: {{ kiali.accessible_namespaces }}
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   external_services:
     tracing:

@@ -1,0 +1,24 @@
+# This confirms the discovery selectors found in the configmap
+# Given a list of namespace names, it looks for singular matchLabels
+# in the discovery selectors for each namespace.
+# Pass in "namespace_list" as a list of namespace names that should be in the discovery selectors.
+# The "kiali_configmap" fact must already be loaded from the Kiali configmap.
+# Note that the namespace names must match the order in the ConfigMap, but that shouldn't be a problem
+# if you sort the namespace list since they will be sorted in the ConfigMap by the operator.
+
+- name: Assert that the ConfigMap has the same number of items as the number of namespaces
+  assert:
+    that:
+    - (kiali_configmap.deployment.discovery_selectors.default | length) == (namespace_list | length)
+
+- name: Assert that each item in the ConfigMap is the correct matchLabels for the namespace.
+  assert:
+    that:
+    - selector.matchLabels | length == 1
+    - selector.matchLabels['kubernetes.io/metadata.name'] == namespace_name
+  loop: "{{ namespace_list }}"
+  loop_control:
+    loop_var: namespace_name
+    index_var: idx
+  vars:
+    selector: "{{ kiali_configmap.deployment.discovery_selectors.default[idx] }}"
