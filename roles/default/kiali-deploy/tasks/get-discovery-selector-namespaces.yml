@@ -1,14 +1,23 @@
-# These tasks are not performed if cluster_wide_access is true - this is because the operator will grant Kiali permission to see all
-# namespaces via ClusterRole, so the operator does not need to process discovery selectors.
+# These tasks are not performed if cluster_wide_access is true - this is because the operator will
+# grant Kiali permission to see all namespaces via ClusterRole, so the operator does not need to
+# process discovery selectors.
 #
-# These tasks are performed if cluster wide access is false - this is because the operator will need to create Roles in all the namespaces
-# found by the discovery selectors so Kiali can be granted permission to see those namespaces (but only those namespaces).
+# These tasks are performed if cluster wide access is false - this is because the operator will
+# need to create Roles in all the namespaces found by the discovery selectors so Kiali can be
+# granted permission to see those namespaces (but only those namespaces).
 #
-# These tasks will use discovery selectors found in Kiali config deployment.discovery_selectors["default"].
-# If that is not defined at all, Istio ConfigMap data.mesh.discoverSelectors will be used.
-# These discovery selectors will be used to discover namespaces that Kiali should be given access to.
+# These tasks will use discovery selectors found in the Kiali configuration setting
+# spec.deployment.discovery_selectors["default"]. These discovery selectors will be used to discover
+# namespaces that Kiali should be given access to.
 #
-# When these tasks finish, "discovery_selector_namespaces" will be a list of names of the namespace discovered by the selectors.
+# When these tasks finish, "discovery_selector_namespaces" will be a list of namespaces discovered by the selectors.
+#
+# NOTE: Regardless of what discovery selectors are defined, the Kiali Operator should always give the server
+# access to the Kiali Server deployment namespace and the Istio control plane namespace. But that is
+# not done here - these tasks simply scan all namespaces and match them to selectors. The operator
+# will add those two namespaces later if appropriate.
+#
+# NOTE: These tasks specifically ignore Istio's own discovery selectors found in Istio meshConfig.
 
 - name: Get Kiali discovery selectors if they are defined
   set_fact:
@@ -17,43 +26,13 @@
   - kiali_vars.deployment.cluster_wide_access == False
   - kiali_vars.deployment.discovery_selectors.default is defined
 
-- name: Find the Istio ConfigMap if we need to read it to find the discovery selectors
-  vars:
-    all_configmaps: "{{ query(k8s_plugin, kind='ConfigMap', namespace=kiali_vars.istio_namespace, errors='warn') }}"
-  set_fact:
-    istio_configmap: "{{ item }}"
-  loop: "{{ all_configmaps }}"
-  when:
-  - kiali_vars.deployment.cluster_wide_access == False
-  - discovery_selectors is not defined
-  - item.data is defined
-  - item.data.mesh is defined
-
-- name: Get Istio discovery selectors if they are defined and if we need them
-  vars:
-    istio_discovery_selectors: "{{ (istio_configmap.data.mesh | from_yaml).discoverySelectors | default ([]) }}"
-  set_fact:
-    discovery_selectors: "{{ istio_discovery_selectors }}"
-    using_istio_discovery_selectors: true
-  when:
-  - kiali_vars.deployment.cluster_wide_access == False
-  - discovery_selectors is not defined
-  - istio_configmap is defined
-  - istio_discovery_selectors | length > 0
-
 - name: If cluster wide access is disabled and no discovery selectors are found, warn the user that this is probably not what they want
   debug:
-    msg: "Cluster wide access is disabled, but no discovery selectors were found either in the Kiali CR or the Istio ConfigMap [{{ istio_configmap_name | default('-unknown-') }}] from namespace [{{ kiali_vars.istio_namespace }}]. The Istio ConfigMap either could not be read or it does not define discovery selectors; you should probably define discovery selectors in the Kiali CR."
+    msg: "Cluster wide access is disabled, but no discovery selectors were specified. You likely will want to define discovery selectors in the Kiali CR."
   when:
   - kiali_vars.deployment.cluster_wide_access == False
   - kiali_vars.discovery_selectors.default is not defined
   - discovery_selectors is not defined
-
-- debug:
-    msg: "Using discovery selectors found in Istio ConfigMap [{{ istio_configmap.metadata.name }}] from namespace [{{ kiali_vars.istio_namespace }}]."
-  when:
-  - using_istio_discovery_selectors is defined
-  - using_istio_discovery_selectors == True
 
 - name: Find namespaces selected by the discovery selectors
   set_fact:

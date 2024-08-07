@@ -90,18 +90,14 @@
   # change Istio ConfigMap to use discoverySelectors
   # matchLabels selects the namespace "cluster-wide-access-test-1"
   # matchExpressions selects the namespace "cluster-wide-access-test-2"
+  # WE DO THIS TO CONFIRM KIALI OPERATOR WILL IGNORE THESE DISCOVERY SELECTORS
   - include_tasks: ./set-istio-configmap-discovery-selectors.yml
     vars:
       discovery_selectors:
       - matchLabels:
           discoverySelectorLabel1: test
-      - matchExpressions:
-        - key: discoverySelectorLabel2
-          operator: In
-          values:
-          - matchme
 
-  - debug: msg="remove our discovery selectors (but the server will only show us namespaces filtered by Istio discoverySelectors)"
+  - debug: msg="remove our discovery selectors (the server will show us all namespaces; Istio discoverySelectors are ignored)"
   # We will still have cluster-wide-access
   - include_tasks: ../common/set_discovery_selectors_to_all.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
@@ -115,16 +111,14 @@
       that:
       - kiali_configmap.deployment.cluster_wide_access == True
 
-  - debug: msg="the server should only return namespaces with Istio discoverySelectors also filtering the namespaces"
+  - debug: msg="the server should return all namespaces; Istio discoverySelectors are ignored"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
-      min_namespaces_expected: 3
-      max_namespaces_expected: 3
+      min_namespaces_expected: 4
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
       - cluster-wide-access-test-1
       - cluster-wide-access-test-2
-      namespaces_not_expected:
       - cluster-wide-access-test-x
 
   - debug: msg="assert that we have clusterroles since we have been given cluster wide access"
@@ -167,7 +161,7 @@
       - cluster-wide-access-test-1
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
 
-  - debug: msg="the server should only return those namespaces filtered by our discoverySelectors (Kiali overrides Istio) - the roles still let us see them"
+  - debug: msg="the server should only return those namespaces filtered by our discoverySelectors (Kiali ignores Istio) - the roles still let us see them"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 2
@@ -188,7 +182,7 @@
     pause:
       seconds: 25
 
-  - debug: msg="Now that we do not have Istio discoverySelectors, we should see still see only Kiali discovery selector namespaces (istio-system, cluster-wide-access-test-1)"
+  - debug: msg="We do not have Istio discoverySelectors, but it doesn't matter. We should still see only Kiali discovery selector namespaces (istio-system, cluster-wide-access-test-1)"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
       min_namespaces_expected: 2
