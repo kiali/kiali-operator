@@ -252,7 +252,7 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                   cluster_wide_access:
-                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces. When true, this provides more efficient caching within the Kiali server. It must be `true` if `deployment.discovery_selectors.default` is left unset and there are no discovery selectors defined within Istio. To limit the namespaces for which Kiali has permissions, set to `false` and define the desired selectors in `deployment.discovery_selectors.default`. When not set, this value will default to `true`."
+                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces. When true, this provides more efficient caching within the Kiali server. It must be `true` if `deployment.discovery_selectors.default` is left unset. To limit the namespaces for which Kiali has permissions, set to `false` and define the desired selectors in `deployment.discovery_selectors.default`. When not set, this value will default to `true`."
                     type: boolean
                   configmap_annotations:
                     description: "Custom annotations to be created on the Kiali ConfigMap."
@@ -309,9 +309,8 @@ spec:
                           These are label selectors for the Kiali local cluster and for all remote clusters that do not have overrides.
                           Namespaces that match these selectors are visible to Kiali users.
                           When `cluster_wide_access=false` these `default` selectors are used to restrict which namespaces Kiali will have access to.
-                          If left unset, the fallback defaults will be the discovery selectors defined by Istio MeshConfig. If there are no discovery
-                          selectors at all, it is required that `cluster_wide_access` be `true` in which case Kiali will have permissions to access all
-                          namespaces.
+                          If there are no default discovery selectors, then `cluster_wide_access` should be `true` in which case Kiali will have
+                          permissions to access all namespaces.
                         type: array
                         items:
                           type: object
