@@ -296,6 +296,8 @@ spec:
                   value: "true"
                 - name: ACCESSIBLE_NAMESPACES_LABEL
                   value: "maistra.io/member-of"
+                - name: OSSMC_SKIP_VERSION_CHECK
+                  value: "false"
                 - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
                   value: "100"
                 - name: ANSIBLE_DEBUG_LOGS
