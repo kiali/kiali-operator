@@ -32,7 +32,7 @@
 
 - name: Get OSSMConsole ConsolePlugin
   set_fact:
-    ossmconsole_consoleplugin: "{{ lookup('kubernetes.core.k8s', api_version='console.openshift.io/v1alpha1', kind='ConsolePlugin', namespace=ossmconsole.install_namespace, resource_name='ossmconsole') }}"
+    ossmconsole_consoleplugin: "{{ lookup('kubernetes.core.k8s', api_version='console.openshift.io/v1', kind='ConsolePlugin', namespace=ossmconsole.install_namespace, resource_name='ossmconsole') }}"
 - name: Dump OSSMConsole ConsolePlugin
   debug:
     msg: "{{ ossmconsole_consoleplugin }}"
