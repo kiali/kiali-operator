@@ -62,22 +62,25 @@ spec:
 
               version:
                 description: |
-                  The version of the Ansible playbook to execute in order to install that version of Kiali.
-                  It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
-                  The only supported value today is `default`.
+                  The version of the Ansible role that will be executed in order to install Kiali.
+                  This also indirectly determines the version of Kiali that will be installed.
+                  You normally will want to use `default` since this is the only officially supported value today.
 
-                  If not specified, a default version of Kiali will be installed which will be the most recent release of Kiali.
-                  Refer to this file to see where these values are defined in the master branch,
+                  If not specified, the value of `default` is assumed which means the most recent Ansible role is used;
+                  thus the most recent release of Kiali will be installed.
+
+                  Refer to this file to see what the valid values are for this `version` field (as defined in the master branch),
                   https://github.com/kiali/kiali-operator/blob/master/playbooks/kiali-default-supported-images.yml
 
-                  This version setting affects the defaults of the deployment.image_name and
-                  deployment.image_version settings. See the comments for those settings
-                  below for additional details. But in short, this version setting will
-                  dictate which version of the Kiali image will be deployed by default.
-                  Note that if you explicitly set deployment.image_name and/or
-                  deployment.image_version you are responsible for ensuring those settings
-                  are compatible with this setting (i.e. the Kiali image must be compatible
-                  with the rest of the configuration and resources the operator will install).
+                  This `version` setting affects the defaults of the `deployment.image_name` and
+                  `deployment.image_version` settings. See the documentation for those settings below for
+                  additional details. In short, this `version` setting will dictate which version of the
+                  Kiali image will be deployed by default. However, if you explicitly set `deployment.image_name`
+                  and/or `deployment.image_version` to reference your own custom image, that will override the
+                  default Kiali image to be installed; therefore, you are responsible for ensuring those settings
+                  are compatible with the Ansible role that will be executed in order to install Kiali (i.e. your
+                  custom Kiali image must be compatible with the rest of the configuration and resources the
+                  operator will install).
                 type: string
 
               api:
