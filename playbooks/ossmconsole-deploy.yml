@@ -28,6 +28,10 @@
       file: "ossmconsole-default-supported-images.yml"
       name: supported_ossmconsole_images
 
+  - name:  Remember the original supported images that contain the actual version numbers
+    set_fact:
+      original_supported_ossmconsole_images: "{{ supported_ossmconsole_images }}"
+
   - name: Override the supported images if found in the environment
     set_fact:
       supported_ossmconsole_images: "{{ supported_ossmconsole_images | default({}) | combine({item.key: {'imageName': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('(.+):.+', '\\1'), 'imageVersion': lookup('env', 'RELATED_IMAGE_ossmconsole_' + (item.key | replace('.','_'))) | regex_replace('.+:(.+)', '\\1')}}, recursive=True) }}"

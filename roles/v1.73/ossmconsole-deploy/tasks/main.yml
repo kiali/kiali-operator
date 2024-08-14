@@ -248,7 +248,9 @@
 # We asked the Kiali Server what version it is, so we already have that.
 # To know the OSSMC version, we assume even if the user overrides the imageName/imageVersion, that that image must
 # support the same major.minor version of the playbook (i.e. spec.version). We look up the version of the playbook
-# in supported_ossmconsole_images and obtain the imageVersion that that playbook supports and assume that is the version
+# in original_supported_ossmconsole_images (which contains the actual imageVersion strings, even if they were overridden
+# by the RELATED_IMAGES environment variables - we assume all RELATED_IMAGES are fixed hashs of the original imageVersion
+# numbers) and obtain the imageVersion that that playbook supports and assume that is the version
 # of OSSMC that is being installed - so that is the version we compare with the Kiali version. Note that if imageVersion
 # is the string "operator_version", the supported OSSMC version is the same version as the operator itself.
 # Note that we ignore any "v" prefix that may be in front of the version numbers; always just compare major.minor (v or no-v).
@@ -257,7 +259,7 @@
 - name: Ensure Kiali major.minor version is supported by the version of OSSMC being installed
   vars:
     kiali_version_to_match: "{{ kiali_version | default('') | regex_replace('^[v]?([0-9]+.[0-9]+).*', '\\1') }}"
-    ossmc_version_expected: "{{ supported_ossmconsole_images[ossmconsole_vars.version].imageVersion | default ('') }}"
+    ossmc_version_expected: "{{ original_supported_ossmconsole_images[ossmconsole_vars.version].imageVersion | default ('') }}"
     ossmc_version_to_match: "{{ ((operator_version | default('')) if ossmc_version_expected == 'operator_version' else ossmc_version_expected) | regex_replace('^[v]?([0-9]+.[0-9]+).*', '\\1') }}"
   fail:
     msg: "The version of the Kiali Server [{{ kiali_version_to_match }}] does not match the OSSMC version [{{ ossmc_version_to_match }}]. OSSMC will not be installed. To skip this check and allow for the install to continue, set the operator environment variable OSSMC_SKIP_VERSION_CHECK to 'true'."
