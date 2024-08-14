@@ -19,15 +19,21 @@
 
   - name: Confirm the Kiali Service Name is as expected
     assert:
-      that: "{{ ossmconsole_consoleplugin.spec.proxy[0].service.name == current_ossmconsole_cr.status.kiali.serviceName }}"
+      that:
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.name == current_ossmconsole_cr.status.kiali.serviceName
+      - ossmconsole_consoleplugin.spec.backend.service.name == 'ossmconsole'
 
   - name: Confirm the Kiali Service Namespace is as expected
     assert:
-      that: "{{ ossmconsole_consoleplugin.spec.proxy[0].service.namespace == current_ossmconsole_cr.status.kiali.serviceNamespace }}"
+      that:
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.namespace == current_ossmconsole_cr.status.kiali.serviceNamespace
+      - ossmconsole_consoleplugin.spec.backend.service.namespace == current_ossmconsole_cr.status.deployment.namespace
 
   - name: Confirm the Kiali Service Port is as expected
     assert:
-      that: "{{ ossmconsole_consoleplugin.spec.proxy[0].service.port == (current_ossmconsole_cr.status.kiali.servicePort | int) }}"
+      that:
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == (current_ossmconsole_cr.status.kiali.servicePort | int)
+      - ossmconsole_consoleplugin.spec.backend.service.port == 9443
 
   - name: Confirm the Kiali Graph Impl is the expected default in the ConfigMap
     assert:
