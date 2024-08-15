@@ -30,22 +30,25 @@ spec:
             properties:
               version:
                 description: |
-                  The version of the Ansible playbook to execute in order to install that version of OSSM Console.
-                  It is rare you will want to set this - if you are thinking of setting this, know what you are doing first.
-                  The only supported value today is `default`.
+                  The version of the Ansible role that will be executed in order to install OSSM Console.
+                  This also indirectly determines the version of OSSM Console that will be installed.
+                  You normally will want to use `default` since this is the only officially supported value today.
 
-                  If not specified, a default version of OSSMC will be installed which will be the most recent release of OSSMC.
-                  Refer to this file to see where these values are defined in the master branch,
+                  If not specified, the value of `default` is assumed which means the most recent Ansible role is used;
+                  thus the most recent release of OSSM Console will be installed.
+
+                  Refer to this file to see what the valid values are for this `version` field (as defined in the master branch),
                   https://github.com/kiali/kiali-operator/blob/master/playbooks/ossmconsole-default-supported-images.yml
 
-                  This version setting affects the defaults of the deployment.imageName and
-                  deployment.imageVersion settings. See the comments for those settings
-                  below for additional details. But in short, this version setting will
-                  dictate which version of the OSSM Console image will be deployed by default.
-                  Note that if you explicitly set deployment.imageName and/or
-                  deployment.imageVersion you are responsible for ensuring those settings
-                  are compatible with this setting (i.e. the image must be compatible
-                  with the rest of the configuration and resources the operator will install).
+                  This `version` setting affects the defaults of the `deployment.imageName` and
+                  `deployment.imageVersion` settings. See the documentation for those settings below for
+                  additional details. In short, this `version` setting will dictate which version of the
+                  OSSM Console image will be deployed by default. However, if you explicitly set `deployment.imageName`
+                  and/or `deployment.imageVersion` to reference your own custom image, that will override the
+                  default OSSM Console image to be installed; therefore, you are responsible for ensuring those settings
+                  are compatible with the Ansible role that will be executed in order to install OSSM Console (i.e. your
+                  custom OSSM Console image must be compatible with the rest of the configuration and resources the
+                  operator will install).
                 type: string
               deployment:
                 type: object
@@ -54,7 +57,7 @@ spec:
                     description: "If `deployment.imageVersion` is a digest hash, this value indicates what type of digest it is. A typical value would be 'sha256'. Note: do NOT prefix this value with a '@'."
                     type: string
                   imageName:
-                    description: "Determines which OSSM Console image to download and install. If you set this to a specific name (i.e. you do not leave it as the default empty string), you must make sure that image is supported by the operator. If empty, the operator will use a known supported image name based on which `version` was defined. Note that, as a security measure, a cluster admin may have configured the OSSM Console operator to ignore this setting. A cluster admin may do this to ensure the OSSM Console operator only installs a single, specific OSSM Console version, thus this setting may have no effect depending on how the operator itself was configured."
+                    description: "Determines which OSSM Console image to download and install. If you set this to a specific name (i.e. you do not leave it as the default empty string), you must make sure that image is supported by the operator. If empty, the operator will use a known supported image name based on which `version` was defined. Note that, as a security measure, a cluster admin may have configured the operator to ignore this setting. A cluster admin may do this to ensure the operator only installs a single, specific OSSM Console version, thus this setting may have no effect depending on how the operator itself was configured."
                     type: string
                   imagePullPolicy:
                     description: "The Kubernetes pull policy for the OSSM Console deployment. This is overridden to be 'Always' if `deployment.imageVersion` is set to 'latest'."
@@ -76,8 +79,8 @@ spec:
                       If you set this to a specific version (i.e. you do not leave it as the default empty string),
                       you must make sure that image is supported by the operator.
                       If empty, the operator will use a known supported image version based on which 'version' was defined.
-                      Note that, as a security measure, a cluster admin may have configured the OSSM Console operator to
-                      ignore this setting. A cluster admin may do this to ensure the OSSM Console operator only installs
+                      Note that, as a security measure, a cluster admin may have configured the operator to
+                      ignore this setting. A cluster admin may do this to ensure the operator only installs
                       a single, specific OSSM Console version, thus this setting may have no effect depending on how the
                       operator itself was configured.
                     type: string
