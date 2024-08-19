@@ -315,9 +315,9 @@ spec:
                 - name: WATCHES_FILE
                   value: "watches-os.yaml"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "${KIALI_1_86}"
-                - name: RELATED_IMAGE_kiali_v1_86
-                  value: "${KIALI_1_86}"
+                  value: "${KIALI_1_89}"
+                - name: RELATED_IMAGE_kiali_v1_89
+                  value: "${KIALI_1_89}"
                 - name: RELATED_IMAGE_kiali_v1_73
                   value: "${KIALI_1_73}"
                 - name: RELATED_IMAGE_kiali_v1_65
@@ -325,9 +325,9 @@ spec:
                 - name: RELATED_IMAGE_kiali_v1_57
                   value: "${KIALI_1_57}"
                 - name: RELATED_IMAGE_ossmconsole_default
-                  value: "${OSSMCONSOLE_1_86}"
-                - name: RELATED_IMAGE_ossmconsole_v1_86
-                  value: "${OSSMCONSOLE_1_86}"
+                  value: "${OSSMCONSOLE_1_89}"
+                - name: RELATED_IMAGE_ossmconsole_v1_89
+                  value: "${OSSMCONSOLE_1_89}"
                 - name: RELATED_IMAGE_ossmconsole_v1_73
                   value: "${OSSMCONSOLE_1_73}"
                 ports:
