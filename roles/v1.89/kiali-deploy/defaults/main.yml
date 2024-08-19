@@ -165,23 +165,11 @@ kiali_defaults:
       url: ""
     istio:
       component_status:
-        components:
-        - app_label: "istiod"
-          is_core: true
-          is_proxy: false
-          namespace: ""
-        - app_label: "istio-ingressgateway"
-          is_core: true
-          is_proxy: true
-          namespace: ""
-        - app_label: "istio-egressgateway"
-          is_core: false
-          is_proxy: true
-          namespace: ""
         enabled: true
-      config_map_name: "istio"
+      egress_gateway_namespace: ""
       envoy_admin_local_port: 15000
       gateway_api_classes: []
+      ingress_gateway_namespace: ""
       istio_api_enabled: true
       #istio_canary_revision:
         #current: prod
@@ -190,10 +178,8 @@ kiali_defaults:
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
       istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
-      istiod_deployment_name: "istiod"
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
-      url_service_version: ""
     prometheus:
       auth:
         ca_file: ""
@@ -225,7 +211,7 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       custom_headers: {}
-      enabled: true
+      enabled: false
       grpc_port: 9095
       health_check_url: ""
       in_cluster_url: ""
@@ -250,6 +236,8 @@ kiali_defaults:
 
   istio_labels:
     app_label_name: "app"
+    egress_gateway_label: "istio=egressgateway"
+    ingress_gateway_label: "istio=ingressgateway"
     injection_label_name: "istio-injection"
     injection_label_rev: "istio.io/rev"
     version_label_name: "version"
