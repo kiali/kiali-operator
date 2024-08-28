@@ -9,14 +9,20 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.13 \
+#   quay.io/openshift/origin-ansible-operator:4.15 \
+#   ansible-galaxy collection list
+#
+# NOTE: for older base images, there is no "collection list" command; instead, run the command:
 #   ls /opt/ansible/.ansible/collections/ansible_collections
 #
-# To determine the version of a specific collection, look at the MANIFEST.json:
+# To determine the version of a specific collection
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.13 \
+#   quay.io/openshift/origin-ansible-operator:4.15 \
+#   ansible-galaxy collection list kubernetes.core
+#
+# NOTE: for older base images, there is no "collection list" command; instead, look at the MANIFEST.json:
 #   cat /opt/ansible/.ansible/collections/ansible_collections/kubernetes/core/MANIFEST.json | grep version
 #
 # It is best if you have the same version of Ansible installed locally as found in the base image. You can determine
@@ -24,7 +30,7 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   quay.io/openshift/origin-ansible-operator:4.13 \
+#   quay.io/openshift/origin-ansible-operator:4.15 \
 #   ansible --version
 #
 # To install that version locally, you can git clone the source via:
@@ -34,8 +40,10 @@
 
 
 collections:
+- name: community.general
+  version: 7.5.0
 - name: kubernetes.core
   version: 4.0.0
 - name: operator_sdk.util
-  version: 0.4.0
+  version: 0.5.0
 
