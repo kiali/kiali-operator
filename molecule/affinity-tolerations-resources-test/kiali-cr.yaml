@@ -19,7 +19,7 @@ spec:
     image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
-    accessible_namespaces: {{ kiali.accessible_namespaces }}
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     # while we are here, make sure the additional service yaml retains camelCase
     additional_service_yaml:
       externalName: my.kiali.example.com

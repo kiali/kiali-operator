@@ -11,11 +11,6 @@ spec:
   installation_tag: null
   istio_namespace: {{ istio.control_plane_namespace }}
 
-  api:
-    namespaces: null
-
-  apidocs: null
-
   auth:
     strategy: {{ kiali.auth_strategy }}
     openid: null
@@ -24,12 +19,13 @@ spec:
   custom_dashboards: null
 
   deployment:
-    accessible_namespaces: {{ kiali.accessible_namespaces }}
     additional_service_yaml: null
     affinity:
       node: null
       pod: null
       pod_anti: null
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    discovery_selectors: null
     image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_pull_secrets: null
@@ -69,7 +65,6 @@ spec:
         type: null
         use_kiali_token: null
         username: null
-      is_core_component: null
       dashboards: null
       enabled: null
       in_cluster_url: null
@@ -101,7 +96,6 @@ spec:
         type: null
         use_kiali_token: null
         username: null
-      is_core_component: null
       enabled: null
       in_cluster_url: null
       namespace_selector: null

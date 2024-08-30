@@ -2,7 +2,6 @@ kiali_defaults_remove:
   istio_namespace: ""
 
   deployment:
-    accessible_namespaces: []
     hpa:
       api_version: ""
     instance_name: "kiali"

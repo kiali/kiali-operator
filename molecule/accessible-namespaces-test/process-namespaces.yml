@@ -11,17 +11,31 @@
         apiVersion: v1
         kind: Namespace
         metadata:
-          name: kialitestns
+          name: kiali-test-region-west
           labels:
-            customLabel: test
+            region: west
+            org: test
+            test: kiali
   - k8s:
       state: "{{ state }}"
-      api_version: v1
-      kind: Namespace
-      name: kialitestns2
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: kiali-test-region-east
+          labels:
+            region: east
+            org: test
+            test: kiali
   - k8s:
       state: "{{ state }}"
-      api_version: v1
-      kind: Namespace
-      name: kialianothertestns
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: kiali-test-other
+          labels:
+            org: other
+            other: foo
+            test: kiali
 

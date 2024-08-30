@@ -17,18 +17,6 @@ kiali_defaults:
     annotation: "kiali.io/api-spec"
     icon_annotation: "kiali.io/api-type"
 
-  api:
-    namespaces:
-      exclude:
-      - "^istio-operator"
-      - "^kube-.*"
-      - "^openshift.*"
-      - "^ibm.*"
-      - "^kiali-operator"
-      include: []
-      label_selector_exclude: ""
-      #label_selector_include:
-
   auth:
     openid:
       additional_request_params: {}
@@ -61,15 +49,15 @@ kiali_defaults:
   custom_dashboards: []
 
   deployment:
-    accessible_namespaces: ["**"]
     #additional_service_yaml:
     affinity:
       node: {}
       pod: {}
       pod_anti: {}
-    #cluster_wide_access:
+    cluster_wide_access: true
     configmap_annotations: {}
     custom_secrets: []
+    discovery_selectors: {}
     dns:
       config: {}
       policy: ""

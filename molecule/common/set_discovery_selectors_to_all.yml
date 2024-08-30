@@ -1,9 +1,8 @@
 # Wait for the operator to finish any reconciliation currently ongoing
 - include_tasks: ../common/wait_for_kiali_cr_changes.yml
 
-# We used to set the accessible namespaces to ** explicitly but now that is the default when left unset.
-# To test this default behavior, just make sure accessible_namespaces is left unset.
-- name: "Unset accessible namespace (defaults to ** behavior) in current Kiali CR"
+# To make all namespaces accessible, set CWA to true and remove discovery selectors
+- name: "Unset discovery selectors and set cluster_wide_access to true in current Kiali CR"
   vars:
     current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
   k8s_json_patch:
@@ -13,4 +12,7 @@
     name: "{{ current_kiali_cr.metadata.name }}"
     patch:
     - op: remove
-      path: /spec/deployment/accessible_namespaces
+      path: /spec/deployment/discovery_selectors
+    - op: add
+      path: /spec/deployment/cluster_wide_access
+      value: true

@@ -10,7 +10,8 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}" ]
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
 
   # Test that there are no main masthead console links (we used to create these, but no longer)
   - name: Get app links if exist
@@ -25,17 +26,26 @@
       that:
       - "{{ applink.resources | length == 0 }}"
 
-  # change to accessible_namespaces to a fixed list of namespaces
-  - import_tasks: ../common/set_accessible_namespaces_to_list.yml
+  # change to accessible namespaces to a fixed list of namespaces
+  - import_tasks: ../common/set_discovery_selectors_to_list.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'consolelinks1', 'consolelinks2' ]
+      discovery_selectors:
+      - matchLabels:
+          kubernetes.io/metadata.name: "{{ istio.control_plane_namespace }}"
+      - matchLabels:
+          kubernetes.io/metadata.name: consolelinks1
+      - matchLabels:
+          kubernetes.io/metadata.name: consolelinks2
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../asserts/accessible_namespaces_equals.yml
+  - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'consolelinks1', 'consolelinks2' ]
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - consolelinks1
+      - consolelinks2
 
   # Test that console links are correct across namespaces
   - name: Get links from consolelinks1
@@ -61,28 +71,34 @@
     assert:
       that:
       - "{{ consolelinks1.resources[0].metadata.name == 'kiali-namespace-consolelinks1' }}"
-      - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
+      - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/kiali.home'] == kiali.install_namespace }}"
       - "{{ consolelinks1.resources[0].spec.href is not search('///') }}"
       - "{{ 'consolelinks1' in consolelinks1.resources[0].spec.namespaceDashboard.namespaces }}"
       - "{{ consolelinks2.resources[0].metadata.name == 'kiali-namespace-consolelinks2' }}"
-      - "{{ consolelinks2.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
+      - "{{ consolelinks2.resources[0].metadata.labels['kiali.io/kiali.home'] == kiali.install_namespace }}"
       - "{{ consolelinks2.resources[0].spec.href is not search('///') }}"
       - "{{ 'consolelinks2' in consolelinks2.resources[0].spec.namespaceDashboard.namespaces }}"
       - "{{ noconsolelinks.resources | length == 0 }}"
 
-  # change to accessible_namespaces by removing consolelinks2 from the list
-  - import_tasks: ../common/set_accessible_namespaces_to_list.yml
+  # change to accessible namespaces by removing consolelinks2 from the list
+  - import_tasks: ../common/set_discovery_selectors_to_list.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'consolelinks1' ]
+      discovery_selectors:
+      - matchLabels:
+          kubernetes.io/metadata.name: "{{ istio.control_plane_namespace }}"
+      - matchLabels:
+          kubernetes.io/metadata.name: consolelinks1
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../asserts/accessible_namespaces_equals.yml
+  - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'consolelinks1' ]
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - consolelinks1
 
-  # Test that console links are correct - note we removed a namespace from accessible_namespaces so the link should be gone
+  # Test that console links are correct - note we removed a namespace so the link should be gone
   - name: Get links from consolelinks1
     k8s_info:
       api_version: console.openshift.io/v1
@@ -106,21 +122,30 @@
     assert:
       that:
       - "{{ consolelinks1.resources[0].metadata.name == 'kiali-namespace-consolelinks1' }}"
-      - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
+      - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/kiali.home'] == kiali.install_namespace }}"
       - "{{ consolelinks2.resources | length == 0 }}"
       - "{{ noconsolelinks.resources | length == 0 }}"
 
-  # change to accessible_namespaces by adding a namespace to the existing fixed list of accessible namespaces
-  - import_tasks: ../common/set_accessible_namespaces_to_list.yml
+  # change to accessible namespaces by adding a namespace to the existing fixed list of accessible namespaces
+  - import_tasks: ../common/set_discovery_selectors_to_list.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'consolelinks1', 'consolelinks2' ]
+      discovery_selectors:
+      - matchLabels:
+          kubernetes.io/metadata.name: "{{ istio.control_plane_namespace }}"
+      - matchLabels:
+          kubernetes.io/metadata.name: consolelinks1
+      - matchLabels:
+          kubernetes.io/metadata.name: consolelinks2
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../asserts/accessible_namespaces_equals.yml
+  - import_tasks: ../asserts/accessible_namespaces_contains.yml
     vars:
-      namespace_list: [ "{{ istio.control_plane_namespace }}", 'consolelinks1', 'consolelinks2' ]
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - consolelinks1
+      - consolelinks2
 
   # Test that console links are correct across namespaces
   - name: Get links from consolelinks1
@@ -146,9 +171,9 @@
     assert:
       that:
       - "{{ consolelinks1.resources[0].metadata.name == 'kiali-namespace-consolelinks1' }}"
-      - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
+      - "{{ consolelinks1.resources[0].metadata.labels['kiali.io/kiali.home'] == kiali.install_namespace }}"
       - "{{ consolelinks2.resources[0].metadata.name == 'kiali-namespace-consolelinks2' }}"
-      - "{{ consolelinks2.resources[0].metadata.labels['kiali.io/home'] == kiali.install_namespace }}"
+      - "{{ consolelinks2.resources[0].metadata.labels['kiali.io/kiali.home'] == kiali.install_namespace }}"
       - "{{ noconsolelinks.resources | length == 0 }}"
 
   # Uninstall Kiali CR which should uninstall all console links
@@ -167,7 +192,7 @@
       api_version: console.openshift.io/v1
       kind: ConsoleLink
       label_selectors:
-      - "kiali.io/home = {{ kiali.install_namespace }}"
+      - "kiali.io/kiali.home = {{ kiali.install_namespace }}"
     register: all_console_links
     until:
     - all_console_links is success

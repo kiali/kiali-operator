@@ -82,12 +82,6 @@
       that:
       - kiali_role_raw.resources[0].rules | to_yaml is search('pods/log')
 
-  - name: Test the deprecated api.namespaces.label_selector was renamed api.namespaces.label_selector_include
-    assert:
-      that:
-      - kiali_configmap.api.namespaces.label_selector is not defined
-      - kiali_configmap.api.namespaces.label_selector_include == "kiali.io/member-of=istio-system"
-
   - name: Test the default deployment.dns is what we expect
     vars:
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
