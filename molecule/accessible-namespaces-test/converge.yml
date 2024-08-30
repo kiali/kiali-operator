@@ -13,17 +13,20 @@
     vars:
       namespace_list: []
 
-  # Cluster Wide Access (CWA) is true by default - with no discovery selectors, all namespaces should be retrieved
+  # Cluster Wide Access (CWA) is true by default - with no discovery selectors, all namespaces should be retrieved, minus system namespaces
   - debug: msg="test to make sure the default (CWA=true) behavior works"
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
-      min_namespaces_expected: 5
+      min_namespaces_expected: 4
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
-      - kiali-operator
       - kiali-test-other
       - kiali-test-region-east
       - kiali-test-region-west
+      namespaces_not_expected:
+      - kiali-operator
+      - kube-system
+      - openshift-operators
 
   - name: Assert status field does not specify any discovery selector namespaces
     assert:
@@ -297,13 +300,16 @@
 
   - include_tasks: ../asserts/assert-api-namespaces-result.yml
     vars:
-      min_namespaces_expected: 5
+      min_namespaces_expected: 4
       namespaces_expected:
       - "{{ istio.control_plane_namespace }}"
-      - kiali-operator
       - kiali-test-other
       - kiali-test-region-east
       - kiali-test-region-west
+      namespaces_not_expected:
+      - kiali-operator
+      - kube-system
+      - openshift-operators
 
   - name: Assert status field does not specify any discovery selector namespaces
     assert:
