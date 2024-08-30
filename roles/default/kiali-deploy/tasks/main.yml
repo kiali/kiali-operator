@@ -490,21 +490,20 @@
   - kiali_vars.deployment.cluster_wide_access == True
   - lookup('env', 'ALLOW_ALL_ACCESSIBLE_NAMESPACES') | default('false', True) != "true"
 
-# We want to convert discovery selectors so they use only matchLabels on namespace names so the server can find the exact
+# We want to convert discovery selectors so they use only matchExpressions values on namespace names so the server can find the exact
 # namespaces we found since these namespaces are the only ones that the Kiali Server will be granted permission to see.
 # Note that we only do this if cluster_wide_access is False, because that is when the operator will create the Roles for each namespace.
 # If the server will have cluster wide access, all namespaces can be accessed via the main ClusterRole, so it is OK if the server
 # discovers different namespaces using the original selectors.
-- name: Convert the discovery selectors to all matchLabels so they match the namespace names.
+- name: Convert the discovery selectors to all matchExpressions values so they match the namespace names.
   set_fact:
-    discovery_selectors_match_labels: "{{ (discovery_selectors_match_labels|default([])) + [{'matchLabels': {'kubernetes.io/metadata.name': item }}] }}"
-  with_items: "{{ discovery_selector_namespaces }}"
+    discovery_selectors_match_expressions: "{{ (discovery_selectors_match_expressions|default([])) + [{'matchExpressions': [{'key': 'kubernetes.io/metadata.name', 'operator': 'In', 'values': discovery_selector_namespaces }] }] }}"
   when:
   - kiali_vars.deployment.cluster_wide_access == False
 - set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'discovery_selectors': {'default': discovery_selectors_match_labels}}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'discovery_selectors': {'default': discovery_selectors_match_expressions}}}, recursive=True) }}"
   when:
-  - discovery_selectors_match_labels is defined
+  - discovery_selectors_match_expressions is defined
 
 - name: Define the namespace labels that will be used when needed
   set_fact:
