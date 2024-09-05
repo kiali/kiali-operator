@@ -525,6 +525,7 @@ spec:
           resources:
           - tokenreviews
           verbs:
+          - create
         - apiGroups: ["admissionregistration.k8s.io"]
           resources:
           - mutatatingwebhookconfigurations
