@@ -528,7 +528,7 @@ spec:
           - create
         - apiGroups: ["admissionregistration.k8s.io"]
           resources:
-          - mutatatingwebhookconfigurations
+          - mutatingwebhookconfigurations
           verbs:
           - get
           - list
