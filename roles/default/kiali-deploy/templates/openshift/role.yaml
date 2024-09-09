@@ -92,4 +92,11 @@ rules:
   - tokenreviews
   verbs:
   - create
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - watch
 {% endfor %}

@@ -595,14 +595,16 @@ spec:
           - projects
           verbs:
           - get
-        - apiGroups: ["route.openshift.io"]
-          resources:
-          - routes
-          verbs:
-          - get
         - apiGroups: ["authentication.k8s.io"]
           resources:
           - tokenreviews
           verbs:
           - create
+        - apiGroups: ["admissionregistration.k8s.io"]
+          resources:
+          - mutatingwebhookconfigurations
+          verbs:
+          - get
+          - list
+          - watch
         serviceAccountName: kiali-operator
