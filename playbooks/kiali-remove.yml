@@ -18,14 +18,8 @@
       playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
 
   - ignore_errors: yes
-    name: Determine the default playbook
-    include_vars:
-      file: "default-playbook.yml"
-      name: default_playbook
-
-  - ignore_errors: yes
     include_role:
-      name: "{{ version | default(default_playbook.playbook) }}/kiali-remove"
+      name: "{{ version | default('default') }}/kiali-remove"
 
   - ignore_errors: yes
     name: Playbook end time

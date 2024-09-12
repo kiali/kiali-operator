@@ -14,14 +14,29 @@
     set_fact:
       playbook_time_start: "{{ '%Y-%m-%d %H:%M:%S' | strftime }}"
 
-  - name: Determine the default playbook
-    include_vars:
-      file: "default-playbook.yml"
-      name: default_playbook
+  - name: Ensure spec.version is specified - we must be told which version to install, abort otherwise
+    fail:
+      msg: |
+        The CR is missing the spec.version field.
+        You must explicitly indicate which version you want.
+        The spec.version field must be either the literal string 'default' or
+        one of the supported versions in the form of 'vX.Y'.
+        Please consult the Kiali documentation for more details.
+    when:
+    - (version is not defined) or (version | length == 0)
 
   - name: Determine the version that is to be installed
     set_fact:
-      version: "{{ version | default(default_playbook.playbook) }}"
+      version: "{{ version }}"
+
+  - name: If upgrade is in progress then run the old version-specific remove role to purge old install
+    include_role:
+      name: "{{ _kiali_io_ossmconsole.status.specVersion }}/ossmconsole-remove"
+    when:
+    - skip_reconciliation is not defined or skip_reconciliation == False
+    - _kiali_io_ossmconsole.status is defined
+    - _kiali_io_ossmconsole.status.specVersion is defined
+    - version != _kiali_io_ossmconsole.status.specVersion
 
   - name: Determine the default supported images for all known versions
     include_vars:
