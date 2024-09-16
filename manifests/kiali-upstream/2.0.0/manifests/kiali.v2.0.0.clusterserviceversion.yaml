@@ -142,7 +142,7 @@ spec:
         version: route.openshift.io/v1
       specDescriptors:
       - displayName: Version
-        description: "The version of the Kiali Server to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When not specified, or when set to the string 'default', the latest supported version of the Kiali Server will be installed. Default: default"
+        description: "The version of the Kiali Server to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When set to the string 'default', the latest supported version of the Kiali Server will be installed. This setting must be explicitly specified."
         path: version
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'

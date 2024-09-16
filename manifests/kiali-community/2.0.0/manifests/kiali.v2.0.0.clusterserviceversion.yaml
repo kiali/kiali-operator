@@ -162,7 +162,7 @@ spec:
         version: consolelinks.console.openshift.io/v1
       specDescriptors:
       - displayName: Version
-        description: "The version of the Kiali Server to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When not specified, or when set to the string 'default', the latest supported version of the Kiali Server will be installed. Default: default"
+        description: "The version of the Kiali Server to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When set to the string 'default', the latest supported version of the Kiali Server will be installed. This setting must be explicitly specified."
         path: version
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
@@ -200,7 +200,7 @@ spec:
         version: v1
       specDescriptors:
       - displayName: Version
-        description: "The version of OSSMC to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When not specified, or when set to the string 'default', the latest supported version of OSSMC will be installed. You must ensure this value is the same as the spec.version field in the Kiali CR that was used to install the Kiali Server, otherwise you are not guaranteed OSSMC will work properly. Default: default"
+        description: "The version of OSSMC to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When set to the string 'default', the latest supported version of OSSMC will be installed. You must ensure this value is the same as the spec.version field in the Kiali CR that was used to install the Kiali Server, otherwise you are not guaranteed OSSMC will work properly. This setting must be explicitly specified."
         path: version
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
