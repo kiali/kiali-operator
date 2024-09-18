@@ -795,18 +795,18 @@ spec:
                       enabled:
                         description: "When true, Grafana support will be enabled in Kiali."
                         type: boolean
-                      health_check_url:
-                        description: "Used in the Components health feature. This is the URL which Kiali will ping to determine whether the component is reachable or not. It defaults to `in_cluster_url` when not provided."
+                      external_url:
+                        description: "The URL that the Kiali UI uses when displaying Grafana links to the user. This URL must be accessible to clients external to the cluster (e.g. a browser) in order for the integration to work properly. If empty, an attempt to auto-discover it is made. This URL can contain query parameters if needed, such as '?orgId=1'."
                         type: string
-                      in_cluster_url:
-                        description: "The URL used for in-cluster access. An example would be `http://grafana.istio-system:3000`. This URL can contain query parameters if needed, such as '?orgId=1'. If not defined, it will default to `http://grafana.<istio_namespace>:3000`."
+                      health_check_url:
+                        description: "Used in the Components health feature. This is the URL which Kiali will ping to determine whether the component is reachable or not. It defaults to `internal_url` when not provided."
+                        type: string
+                      internal_url:
+                        description: "The URL used by Kiali to perform requests and queries to Grafana. An example would be `http://grafana.istio-system:3000`. This URL can contain query parameters if needed, such as '?orgId=1'. If not defined, it will default to `http://grafana.<istio_namespace>:3000`."
                         type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
-                      url:
-                        description: "The URL that Kiali uses when integrating with Grafana. This URL must be accessible to clients external to the cluster in order for the integration to work properly. If empty, an attempt to auto-discover it is made. This URL can contain query parameters if needed, such as '?orgId=1'."
-                        type: string
                   istio:
                     description: "Istio configuration that Kiali needs to know about in order to observe the mesh."
                     type: object
@@ -999,16 +999,19 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       enabled:
-                        description: "When true, connections to the Tracing server are enabled. `in_cluster_url` and/or `url` need to be provided."
+                        description: "When true, connections to the Tracing server are enabled. `internal_url` and/or `external_url` need to be provided."
                         type: boolean
+                      external_url:
+                        description: "The URL that the Kiali UI uses when displaying Tracing UI links to the user. This URL must be accessible to clients external to the cluster (e.g. a browser) in order to generate valid links. If the tracing service is deployed with a QUERY_BASE_PATH set, set this URL like https://<hostname>/<QUERY_BASE_PATH>; for example, https://tracing-service:8080/jaeger"
+                        type: string
                       grpc_port:
                         description: "Set port number when `use_grpc` is true and `provider` is `tempo`. By default is `9095`"
                         type: integer
                       health_check_url:
                         description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
                         type: string
-                      in_cluster_url:
-                        description: "Set URL for in-cluster access, which enables further integration between Kiali and Jaeger. When not provided, Kiali will only show external links using the `url` setting. Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the `use_grpc` value. Example: http://tracing.istio-system:16685"
+                      internal_url:
+                        description: "The URL used by Kiali to perform requests and queries to the tracing backend which enables further integration between Kiali and the tracing server. When not provided, Kiali will only show external links using the `external_url` setting. Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the `use_grpc` value. Example: http://tracing.istio-system:16685"
                         type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
@@ -1036,9 +1039,6 @@ spec:
                           org_id:
                             description: "The Id of the organization that the dashboard is in. Default to 1 (the first and default organization)."
                             type: string
-                      url:
-                        description: "The external URL that will be used to generate links to Jaeger. It must be accessible to clients external to the cluster (e.g: a browser) in order to generate valid links. If the tracing service is deployed with a QUERY_BASE_PATH set, set this URL like https://<hostname>/<QUERY_BASE_PATH>. For example, https://tracing-service:8080/jaeger"
-                        type: string
                       use_grpc:
                         description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it). If not specified, this will defalt to 'true'."
                         type: boolean

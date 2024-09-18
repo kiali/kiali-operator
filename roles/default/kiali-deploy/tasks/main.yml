@@ -215,19 +215,19 @@
       {% set kv = kv | combine({'external_services': {'istio': {'root_namespace': kv.istio_namespace}}}, recursive=True) %}
       {% endif %}
 
-      {# Set default Grafana in_cluster_url #}
-      {% if kv.external_services.grafana.in_cluster_url is not defined %}
-      {% set kv = kv | combine({'external_services': {'grafana': {'in_cluster_url': 'http://grafana.' + kv.istio_namespace + ':3000'}}}, recursive=True) %}
+      {# Set default Grafana internal_url #}
+      {% if kv.external_services.grafana.internal_url is not defined %}
+      {% set kv = kv | combine({'external_services': {'grafana': {'internal_url': 'http://grafana.' + kv.istio_namespace + ':3000'}}}, recursive=True) %}
       {% endif %}
 
-      {# Set default Tracing in_cluster_url for grpc consumption #}
-      {% if kv.external_services.tracing.in_cluster_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
-      {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + ':16685/jaeger'}}}, recursive=True) %}
+      {# Set default Tracing internal_url for grpc consumption #}
+      {% if kv.external_services.tracing.internal_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.istio_namespace + ':16685/jaeger'}}}, recursive=True) %}
       {% endif %}
 
-      {# Set default Tracing in_cluster_url for http consumption #}
-      {% if kv.external_services.tracing.in_cluster_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
-      {% set kv = kv | combine({'external_services': {'tracing': {'in_cluster_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
+      {# Set default Tracing internal_url for http consumption #}
+      {% if kv.external_services.tracing.internal_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
       {% endif %}
 
       {# Set default Prometheus URL #}

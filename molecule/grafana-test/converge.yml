@@ -10,9 +10,9 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   
-  - name: Remember the good in_cluster_url
+  - name: Remember the good internal_url
     set_fact:
-      good_in_cluster_url: "{{ kiali_configmap.external_services.grafana.in_cluster_url }}"
+      good_internal_url: "{{ kiali_configmap.external_services.grafana.internal_url }}"
 
   - name: Get statuses from Istio components
     uri:
@@ -46,7 +46,7 @@
     vars:
       current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
     set_fact:
-      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'in_cluster_url': 'http://wrong.url'}}}}, recursive=True) }}"
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'internal_url': 'http://wrong.url'}}}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
 
@@ -88,7 +88,7 @@
     vars:
       current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
     set_fact:
-      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'in_cluster_url': good_in_cluster_url, 'health_check_url': good_in_cluster_url }}}}, recursive=True) }}"
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'grafana': {'internal_url': good_internal_url, 'health_check_url': good_internal_url }}}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
 

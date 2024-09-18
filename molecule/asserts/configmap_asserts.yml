@@ -33,4 +33,4 @@
 - name: Assert Kiali Configmap has the correct Grafana Url for Upstream Istio installs
   assert:
     that:
-    - kiali_configmap.external_services.grafana.in_cluster_url == "http://grafana.{{ istio.control_plane_namespace }}:3000"
+    - kiali_configmap.external_services.grafana.internal_url == "http://grafana.{{ istio.control_plane_namespace }}:3000"

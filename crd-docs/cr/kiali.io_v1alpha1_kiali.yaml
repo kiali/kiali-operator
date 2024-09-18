@@ -291,11 +291,11 @@ spec:
       - name: "Istio Performance Dashboard"
       - name: "Istio Wasm Extension Dashboard"
       enabled: true
+      external_url: ""
       health_check_url: ""
-      # default: in_cluster_url is undefined
-      in_cluster_url: ""
+      # default: internal_url is undefined
+      internal_url: ""
       is_core: false
-      url: ""
     istio:
       component_status:
         enabled: true
@@ -356,9 +356,10 @@ spec:
       custom_headers:
         customHeader1: "customHeader1Value"
       enabled: false
+      external_url: ""
       grpc_port: 9095
       health_check_url: ""
-      in_cluster_url: ""
+      internal_url: ""
       is_core: false
       namespace_selector: true
       provider: "jaeger"
@@ -370,7 +371,6 @@ spec:
       tempo_config:
         datasource_uid: ""
         org_id: ""
-      url: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
