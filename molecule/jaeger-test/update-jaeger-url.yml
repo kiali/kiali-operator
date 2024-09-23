@@ -5,6 +5,6 @@
   vars:
     current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
   set_fact:
-    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'tracing': {'in_cluster_url': 'http://wrong.url'}}}}, recursive=True) }}"
+    new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'tracing': {'internal_url': 'http://wrong.url'}}}}, recursive=True) }}"
 
 - import_tasks: ../common/set_kiali_cr.yml

@@ -67,8 +67,8 @@ spec:
         username: null
       dashboards: null
       enabled: null
-      in_cluster_url: null
-      url: null
+      internal_url: null
+      external_url: null
 
     istio:
       component_status: null
@@ -97,9 +97,9 @@ spec:
         use_kiali_token: null
         username: null
       enabled: null
-      in_cluster_url: null
+      internal_url: null
       namespace_selector: null
-      url: null
+      external_url: null
       whitelist_istio_system: null
 
   health_config: null
