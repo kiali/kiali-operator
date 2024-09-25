@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-conf
-  namespace: {{ ossmconsole_vars.deployment.namespace }}
+  namespace: "{{ ossmconsole_vars.deployment.namespace }}"
   labels: {{ ossmconsole_resource_metadata_labels }}
 data:
   nginx.conf: |
