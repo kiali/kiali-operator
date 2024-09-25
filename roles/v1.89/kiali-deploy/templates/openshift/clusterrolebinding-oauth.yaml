@@ -10,4 +10,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: {{ kiali_vars.deployment.instance_name }}-service-account
-  namespace: {{ kiali_vars.deployment.namespace }}
+  namespace: "{{ kiali_vars.deployment.namespace }}"
