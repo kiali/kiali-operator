@@ -2,7 +2,7 @@ apiVersion: "networking.k8s.io/{{ 'v1' if (lookup(k8s_plugin, kind='Ingress', ap
 kind: Ingress
 metadata:
   name: {{ kiali_vars.deployment.instance_name }}
-  namespace: {{ kiali_vars.deployment.namespace }}
+  namespace: "{{ kiali_vars.deployment.namespace }}"
   labels: {{ kiali_vars.deployment.ingress.additional_labels | combine(kiali_resource_metadata_labels) }}
 {% if kiali_vars.deployment.ingress.override_yaml is defined and kiali_vars.deployment.ingress.override_yaml.metadata is defined and kiali_vars.deployment.ingress.override_yaml.metadata.annotations is defined %}
   {{ kiali_vars.deployment.ingress.override_yaml.metadata | to_nice_yaml(indent=0) | trim | indent(2) }}

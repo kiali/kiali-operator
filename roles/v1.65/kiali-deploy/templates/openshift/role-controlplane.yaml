@@ -2,7 +2,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ kiali_vars.deployment.instance_name }}-controlplane
-  namespace: {{ kiali_vars.istio_namespace }}
+  namespace: "{{ kiali_vars.istio_namespace }}"
   labels: {{ kiali_resource_metadata_labels }}
 rules:
 {% if kiali_vars.kiali_feature_flags.certificates_information_indicators.enabled|bool == True %}

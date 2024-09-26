@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ossmconsole
-  namespace: {{ ossmconsole_vars.deployment.namespace }}
+  namespace: "{{ ossmconsole_vars.deployment.namespace }}"
   labels: {{ ossmconsole_resource_metadata_labels }}
 spec:
   replicas: 1
