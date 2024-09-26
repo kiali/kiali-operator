@@ -7,11 +7,11 @@ metadata:
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  namespace: {{ kiali_vars_remove.deployment.namespace }}
+  namespace: "{{ kiali_vars_remove.deployment.namespace }}"
   name: {{ kiali_vars_remove.deployment.instance_name }}
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  namespace: {{ kiali_vars_remove.deployment.namespace }}
+  namespace: "{{ kiali_vars_remove.deployment.namespace }}"
   name: {{ kiali_vars_remove.deployment.instance_name }}-cabundle

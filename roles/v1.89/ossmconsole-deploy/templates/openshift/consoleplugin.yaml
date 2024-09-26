@@ -8,7 +8,7 @@ spec:
   backend:
     service:
       name: ossmconsole
-      namespace: {{ ossmconsole_vars.deployment.namespace }}
+      namespace: "{{ ossmconsole_vars.deployment.namespace }}"
       port: 9443
       basePath: "/"
     type: Service
@@ -18,6 +18,6 @@ spec:
     endpoint:
       service:
         name: {{ ossmconsole_vars.kiali.serviceName }}
-        namespace: {{ ossmconsole_vars.kiali.serviceNamespace }}
+        namespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
         port: {{ ossmconsole_vars.kiali.servicePort }}
       type: Service

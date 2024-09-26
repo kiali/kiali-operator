@@ -3,7 +3,7 @@ apiVersion: {{ kiali_vars.deployment.hpa.api_version }}
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ kiali_vars.deployment.instance_name }}
-  namespace: {{ kiali_vars.deployment.namespace }}
+  namespace: "{{ kiali_vars.deployment.namespace }}"
   labels: {{ kiali_resource_metadata_labels }}
 spec:
   scaleTargetRef:
