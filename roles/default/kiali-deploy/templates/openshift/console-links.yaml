@@ -12,5 +12,5 @@ spec:
   text: {{ ('Kiali [' + kiali_vars.deployment.instance_name + ']') if kiali_vars.deployment.instance_name != 'kiali' else 'Kiali' }}
   namespaceDashboard:
     namespaces:
-    - {{ namespace }}
+    - "{{ namespace }}"
 {% endfor %}
