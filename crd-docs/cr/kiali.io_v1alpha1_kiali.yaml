@@ -235,6 +235,11 @@ spec:
     version_label: ""
     view_only_mode: false
 
+  # default: extensions is an empty list
+  extensions:
+  - enabled: true
+    name: "skupper"
+
   external_services:
     custom_dashboards:
       discovery_auto_threshold: 10
