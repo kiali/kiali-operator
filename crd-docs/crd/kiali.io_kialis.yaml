@@ -1141,16 +1141,6 @@ spec:
                 description: "Kiali features that can be enabled or disabled."
                 type: object
                 properties:
-                  certificates_information_indicators:
-                    description: "Flag to enable/disable displaying certificates information and which secrets to grant read permissions."
-                    type: object
-                    properties:
-                      enabled:
-                        type: boolean
-                      secrets:
-                        type: array
-                        items:
-                          type: string
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array
