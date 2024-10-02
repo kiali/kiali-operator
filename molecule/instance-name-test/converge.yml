@@ -81,8 +81,8 @@
       that:
       - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
       - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 1
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 1
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
@@ -98,8 +98,8 @@
       that:
       - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
       - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 1
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 1
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
@@ -146,8 +146,8 @@
       that:
       - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 1
       - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 1
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 1
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
@@ -162,8 +162,8 @@
       that:
       - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=item) | length == 2
       - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=item) | length == 1
-      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 2
-      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 2
+      - query('k8s', kind='Role',           namespace=queryNamespace, api_version=apiRole, label_selector=item) | length == 1
+      - query('k8s', kind='RoleBinding',    namespace=queryNamespace, api_version=apiRoBi, label_selector=item) | length == 1
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
