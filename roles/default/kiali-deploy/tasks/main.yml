@@ -591,6 +591,11 @@
       {# Initialize #}
       {% set d = {} %}
 
+      {# Prepare the secret volume for prometheus username #}
+      {% if kiali_vars.external_services.prometheus.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-username': {'secret_name': kiali_vars.external_services.prometheus.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
       {# Prepare the secret volume for prometheus password #}
       {% if kiali_vars.external_services.prometheus.auth.password | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'prometheus-password': {'secret_name': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
@@ -601,6 +606,11 @@
       {% set d = d | combine({'prometheus-token': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
+      {# Prepare the secret volume for tracing username #}
+      {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-username': {'secret_name': kiali_vars.external_services.tracing.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
       {# Prepare the secret volume for tracing password #}
       {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'tracing-password': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
@@ -609,6 +619,11 @@
       {# Prepare the secret volume for tracing token #}
       {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'tracing-token': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana username #}
+      {% if kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-username': {'secret_name': kiali_vars.external_services.grafana.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Prepare the secret volume for grafana password #}
@@ -624,6 +639,21 @@
       {# Prepare the secret volume for login token signing key #}
       {% if kiali_vars.login_token.signing_key | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus username #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-username': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus password #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-password': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus token #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-token': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Set the yaml to the new dict #}
