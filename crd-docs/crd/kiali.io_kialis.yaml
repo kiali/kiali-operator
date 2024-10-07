@@ -712,7 +712,7 @@ spec:
                                 description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Prometheus (in this case, `auth.token` config is ignored)."
                                 type: boolean
                               username:
-                                description: "Username to be used when making requests to Prometheus with `basic` authentication."
+                                description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret."
                                 type: string
                           cache_duration:
                             description: "Prometheus caching duration expressed in seconds."
@@ -780,7 +780,7 @@ spec:
                             description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Grafana (in this case, `auth.token` config is ignored)."
                             type: boolean
                           username:
-                            description: "Username to be used when making requests to Grafana with `basic` authentication."
+                            description: "Username to be used when making requests to Grafana with `basic` authentication. May refer to a secret."
                             type: string
                       dashboards:
                         description: "A list of Grafana dashboards that Kiali can link to."
@@ -938,7 +938,7 @@ spec:
                             description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Prometheus (in this case, `auth.token` config is ignored)."
                             type: boolean
                           username:
-                            description: "Username to be used when making requests to Prometheus with `basic` authentication."
+                            description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret."
                             type: string
                       cache_duration:
                         description: "Prometheus caching duration expressed in seconds."
@@ -1006,7 +1006,7 @@ spec:
                             description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to the Tracing server (in this case, `auth.token` config is ignored)."
                             type: boolean
                           username:
-                            description: "Username to be used when making requests to the Tracing server with `basic` authentication."
+                            description: "Username to be used when making requests to the Tracing server with `basic` authentication. May refer to a secret."
                             type: string
                       custom_headers:
                         description: "A set of name/value settings that will be passed as headers when requests are sent to the Tracing backend."
