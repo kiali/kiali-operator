@@ -113,6 +113,10 @@ spec:
           value: "{{ kiali_vars.deployment.logger.sampler_rate }}"
         - name: LOG_TIME_FIELD_FORMAT
           value: "{{ kiali_vars.deployment.logger.time_field_format }}"
+{% for env in kiali_vars.deployment.custom_envs %}
+        - name: "{{ env.name }}"
+          value: "{{ env.value }}"
+{% endfor %}
         volumeMounts:
         - name: kiali-configuration
           mountPath: "/kiali-configuration"

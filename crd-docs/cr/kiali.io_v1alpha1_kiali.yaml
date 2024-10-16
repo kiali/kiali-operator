@@ -93,6 +93,12 @@ spec:
     # default: configmap_annotations is empty
     configmap_annotations:
       strategy.spinnaker.io/versioned: "false"
+    # default: custom_envs is an empty list
+    custom_envs:
+    - name: "HTTP_PROXY"
+      value: "http://my.proxy.com:1234"
+    - name: "NO_PROXY"
+      value: "hostname.example.com"
     # default: custom_secrets is an empty list
     custom_secrets:
     - name: "a-custom-secret"
