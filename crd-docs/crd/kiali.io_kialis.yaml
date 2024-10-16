@@ -258,6 +258,19 @@ spec:
                     description: "Custom annotations to be created on the Kiali ConfigMap."
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
+                  custom_envs:
+                    description: "Defines additional environment variables to be set in the Kiali server pod. This is typically used for (but not limited to) setting proxy environment variables such as HTTP_PROXY, HTTPS_PROXY, and/or NO_PROXY."
+                    type: array
+                    items:
+                      required: ["name", "value"]
+                      type: object
+                      properties:
+                        name:
+                          description: "The name of the custom environment variable."
+                          type: string
+                        value:
+                          description: "The value of the custom environment variable."
+                          type: string
                   custom_secrets:
                     description: |
                       Defines additional secrets that are to be mounted in the Kiali pod.

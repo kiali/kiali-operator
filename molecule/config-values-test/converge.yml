@@ -165,6 +165,18 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'custom_secrets': custom_secrets}}}, recursive=True) }}"
 
+  - name: Add custom_envs
+    vars:
+      custom_envs:
+      - name: CUSTOM_ENV_VAR_ONE
+        value: "true"
+      - name: CUSTOM_ENV_VAR_2
+        value: "12345"
+      - name: CUSTOM_ENV_VAR_THREE
+        value: "a: b// :123 *,X,Y,Z"
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'custom_envs': custom_envs}}}, recursive=True) }}"
+
   - name: Set deployment.resources to empty map which means we want to not define the pod resources at all
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'resources': {}}}}, recursive=True) }}"
@@ -378,3 +390,12 @@
       - kiali_configmap.extensions | length == 1
       - kiali_configmap.extensions[0].name == "skupper"
       - kiali_configmap.extensions[0].enabled == False
+
+  - name: Test custom_envs
+    vars:
+      kiali_pod_envs: "{{ kiali_pod.resources[0].spec.containers[0].env }}"
+    assert:
+      that:
+      - kiali_pod_envs | selectattr('name', 'equalto', 'CUSTOM_ENV_VAR_ONE') | selectattr('value', 'equalto', 'true') | list | length > 0
+      - kiali_pod_envs | selectattr('name', 'equalto', 'CUSTOM_ENV_VAR_2') | selectattr('value', 'equalto', '12345') | list | length > 0
+      - "'a: b// :123 *,X,Y,Z' in kiali_pod_envs | selectattr('name', 'equalto', 'CUSTOM_ENV_VAR_THREE') | map(attribute='value') | list"
