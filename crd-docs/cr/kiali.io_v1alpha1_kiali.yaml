@@ -376,6 +376,7 @@ spec:
       tempo_config:
         datasource_uid: ""
         org_id: ""
+        url_format: ""
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
