@@ -1066,6 +1066,9 @@ spec:
                           org_id:
                             description: "The Id of the organization that the dashboard is in. Default to 1 (the first and default organization)."
                             type: string
+                          url_format:
+                            description: "The URL format for the external url. Can be 'jaeger' or 'grafana'. Default to 'grafana'. Grafana will need a Grafana url in the Grafana settings."
+                            type: string
                       use_grpc:
                         description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it). If not specified, this will defalt to 'true'."
                         type: boolean
