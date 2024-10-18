@@ -1,9 +1,9 @@
 name: Release
 
 on:
-  schedule:
+  #schedule:
   # Every Monday at 07:00 (UTC)
-  - cron: '00 7 * * MON'
+  #- cron: '00 7 * * MON'
   workflow_dispatch:
     inputs:
       release_type:
@@ -11,6 +11,7 @@ on:
         required: true
         type: choice
         options:
+        - major
         - minor
         - patch
       release_branch:
@@ -111,6 +112,9 @@ jobs:
         elif [[ $RELEASE_TYPE == "minor" ]]
         then
           RELEASE_VERSION=$RELEASE_VERSION
+        elif [[ $RELEASE_TYPE == "major" ]]
+        then
+          RELEASE_VERSION=$RELEASE_VERSION
         fi
 
         echo "release_version=$RELEASE_VERSION" >> $GITHUB_OUTPUT
@@ -128,6 +132,9 @@ jobs:
         elif [[ $RELEASE_TYPE == "minor" ]]
         then 
             NEXT_VERSION=$(python bump.py $RELEASE_TYPE $RELEASE_VERSION)
+        elif [[ $RELEASE_TYPE == "major" ]]
+        then
+            NEXT_VERSION=$(python bump.py "minor" $RELEASE_VERSION)
         fi
 
         echo "next_version=$NEXT_VERSION" >> $GITHUB_OUTPUT
@@ -209,7 +216,7 @@ jobs:
     - name: Create tag
       run: |
         # Skip OLM metadata for patch releases
-        if [[ $RELEASE_TYPE == "minor" ]]
+        if [[ $RELEASE_TYPE == "minor" || $RELEASE_TYPE == "major" ]]
         then
           VERSION_TO_RELEASE=${RELEASE_VERSION:1}
           DATETIME_NOW="$(date --utc +'%FT%TZ')"
@@ -245,7 +252,7 @@ jobs:
       run: git push origin $(git rev-parse HEAD):refs/heads/$BRANCH_VERSION
 
     - name: Configure Operator SDK
-      if: ${{ needs.initialize.outputs.release_type == 'minor' }}
+      if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
       run: |
         make get-operator-sdk
 
@@ -253,7 +260,7 @@ jobs:
       env:
         BUILD_TAG: kiali-operator-release-${{ github.run_number }}-main
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      if: ${{ needs.initialize.outputs.release_type == 'minor' }}
+      if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
       run: |
         export PATH="$PATH:$GITHUB_WORKSPACE/_output/operator-sdk-install"
 
