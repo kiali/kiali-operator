@@ -132,6 +132,7 @@
   fail:
     msg: "The operator is forbidden from installing Kiali in a namespace [{{ kiali_vars.deployment.namespace }}] that is different from the namespace where the CR was created [{{ current_cr.metadata.namespace }}]"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.deployment.namespace != current_cr.metadata.namespace
   - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
 
@@ -185,6 +186,7 @@
   fail:
     msg: "The operator is forbidden from accepting a Kiali CR that defines an ad hoc Kiali image [{{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}]. Remove spec.deployment.image_name, spec.deployment.image_version, and spec.deployment.image_digest from the Kiali CR."
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != "" or kiali_vars.deployment.image_digest != ""
   - lookup('env', 'ALLOW_AD_HOC_KIALI_IMAGE') | default('false', True) != "true"
 
@@ -381,6 +383,7 @@
 - fail:
     msg: "Could not determine what the image version should be. Set deployment.image_version to a valid value"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.deployment.image_version == "" or kiali_vars.deployment.image_version == "unknown"
 
 - name: Determine version_label based on image_version
@@ -516,12 +519,13 @@
   fail:
     msg: "Signing key must be 16, 24 or 32 byte length"
   when:
-    - kiali_vars.auth.strategy != 'anonymous'
-    - kiali_vars.login_token.signing_key != ""
-    - not(kiali_vars.login_token.signing_key | regex_search('secret:.+:.+'))
-    - kiali_vars.login_token.signing_key | length != 16
-    - kiali_vars.login_token.signing_key | length != 24
-    - kiali_vars.login_token.signing_key | length != 32
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.auth.strategy != 'anonymous'
+  - kiali_vars.login_token.signing_key != ""
+  - not(kiali_vars.login_token.signing_key | regex_search('secret:.+:.+'))
+  - kiali_vars.login_token.signing_key | length != 16
+  - kiali_vars.login_token.signing_key | length != 24
+  - kiali_vars.login_token.signing_key | length != 32
 
 # If the signing key is empty string, we need to ensure a signing key secret exists. If one does not exist, we need to generate one.
 # Note that to avoid granting to the operator the very powerful permission to CRUD all secrets in all namespaces, we always generate
@@ -538,6 +542,7 @@
     name: kiali-signing-key
   register: signing_key_secret_raw
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.login_token.signing_key == ""
 
 - name: Create kiali-signing-key secret to store a random signing key if a secret does not already exist and we need one
@@ -554,6 +559,7 @@
       data:
         key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') | b64encode }}"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.login_token.signing_key == ""
   - signing_key_secret_raw is defined
   - signing_key_secret_raw.resources is defined
@@ -574,12 +580,14 @@
         labels:
           {{ kiali_instance_label_name }}: {{ kiali_instance_label_value }}
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.login_token.signing_key == ""
 
 - name: Point signing key to the generated secret
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'login_token': {'signing_key': 'secret:kiali-signing-key:key'}}, recursive=True) }}"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.login_token.signing_key == ""
 
 # Some credentials in the config can be overridden by secrets that are to be mounted on the file system.
@@ -672,6 +680,7 @@
   set_fact:
     kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.metadata.annotations['kiali.io/cluster']|default(item.metadata.name): {'secret_name': item.metadata.name }}) }}"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.clustering.autodetect_secrets.enabled
 
 - name: Prepare the manually declared remote clusters
@@ -679,6 +688,7 @@
   set_fact:
     kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine(({ item.name: {'secret_name': item.secret_name }}) if (item.secret_name is defined and item.secret_name | length > 0) else {}) }}"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.clustering.clusters | length > 0
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
@@ -880,6 +890,7 @@
     state: "present"
     definition: "{{ updated_deployment }}"
   when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool== False
   - deployment_is_new == False
   - processed_resources_dict is defined
   - processed_resources_dict[keyname] is defined

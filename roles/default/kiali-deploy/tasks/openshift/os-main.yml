@@ -31,16 +31,16 @@
     role_namespaces: "{{ [ kiali_vars.deployment.namespace ] }}"
     process_resource_templates:
     - "templates/openshift/serviceaccount.yaml"
-    - "templates/openshift/configmap.yaml"
-    - "templates/openshift/cabundle.yaml"
+    - "{{ 'templates/openshift/configmap.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
+    - "{{ 'templates/openshift/cabundle.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "templates/openshift/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"
     - "templates/openshift/rolebinding.yaml"
     - "{{ 'templates/openshift/clusterrole-oauth.yaml' if kiali_vars.auth.strategy == 'openshift' else '' }}"
     - "{{ 'templates/openshift/clusterrolebinding-oauth.yaml' if kiali_vars.auth.strategy == 'openshift' else '' }}"
-    - "templates/openshift/deployment.yaml"
-    - "templates/openshift/service.yaml"
-    - "{{ 'templates/openshift/hpa.yaml' if kiali_vars.deployment.hpa.spec | length > 0 else '' }}"
-    - "{{ 'templates/openshift/route.yaml' if kiali_vars.deployment.ingress.enabled|bool == True else '' }}"
+    - "{{ 'templates/openshift/deployment.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
+    - "{{ 'templates/openshift/service.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
+    - "{{ 'templates/openshift/hpa.yaml' if ((kiali_vars.deployment.hpa.spec | length > 0) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
+    - "{{ 'templates/openshift/route.yaml' if ((kiali_vars.deployment.ingress.enabled|bool == True) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
   when:
   - is_openshift == True
 
@@ -83,12 +83,14 @@
   include_tasks: openshift/os-get-kiali-route-url.yml
   when:
   - is_openshift == True
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
 
 - name: Process OpenShift OAuth client
   k8s:
     definition: "{{ lookup('template', 'templates/openshift/oauth.yaml') }}"
   when:
   - is_openshift == True
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.auth.strategy == "openshift"
 
 - name: Delete all ConsoleLinks for namespaces that are no longer accessible
@@ -116,5 +118,6 @@
     namespaces: "{{ discovery_selector_namespaces }}"
   when:
   - is_openshift == True
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.deployment.cluster_wide_access == False
   - openshift_version is version('4.3', '>=')
