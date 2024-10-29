@@ -21,7 +21,7 @@
     role_namespaces: "{{ [ kiali_vars.deployment.namespace ] }}"
     process_resource_templates:
     - "templates/kubernetes/serviceaccount.yaml"
-    - "{{ 'templates/kubernetes/configmap.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
+    - "templates/kubernetes/configmap.yaml"
     - "templates/kubernetes/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"
     - "templates/kubernetes/rolebinding.yaml"
     - "{{ 'templates/kubernetes/deployment.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"

@@ -31,7 +31,7 @@
     role_namespaces: "{{ [ kiali_vars.deployment.namespace ] }}"
     process_resource_templates:
     - "templates/openshift/serviceaccount.yaml"
-    - "{{ 'templates/openshift/configmap.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
+    - "templates/openshift/configmap.yaml"
     - "{{ 'templates/openshift/cabundle.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "templates/openshift/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"
     - "templates/openshift/rolebinding.yaml"
