@@ -109,7 +109,7 @@
   when:
   - kiali_vars.deployment.namespace is not defined or kiali_vars.deployment.namespace == ""
 
-# Never allow the deployment.instance_name or deployment.namespace to change to avoid leaking resources - to uninstall resources you must delete the Kiali CR
+# Never allow the deployment.instance_name, deployment.namespace, or deployment.remote_cluster_resources_only to change to avoid leaking resources - to uninstall resources you must delete the Kiali CR
 - name: Ensure the deployment.instance_name has not changed
   fail:
     msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_cr.status.deployment.instanceName }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
@@ -127,6 +127,15 @@
   - current_cr.status.deployment is defined
   - current_cr.status.deployment.namespace is defined
   - current_cr.status.deployment.namespace != kiali_vars.deployment.namespace
+
+- name: Ensure the deployment.remote_cluster_resources_only has not changed
+  fail:
+    msg: "The deployment.remote_cluster_resources_only cannot be changed to a different value. It was [{{ current_cr.status.deployment.remoteClusterResourcesOnly }}] but is now [{{ kiali_vars.deployment.remote_cluster_resources_only }}]. In order to change to a different deployment.remote_cluster_resources_only value, please delete the Kiali CR first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment.remoteClusterResourcesOnly is defined
+  - current_cr.status.deployment.remoteClusterResourcesOnly is defined
+  - current_cr.status.deployment.remoteClusterResourcesOnly != kiali_vars.deployment.remote_cluster_resources_only
 
 - name: Only allow ad-hoc kiali namespace when appropriate
   fail:
@@ -164,6 +173,7 @@
       deployment:
         instanceName: "{{ kiali_vars.deployment.instance_name }}"
         namespace: "{{ kiali_vars.deployment.namespace }}"
+        remoteClusterResourcesOnly: "{{ kiali_vars.deployment.remote_cluster_resources_only }}"
 
 - name: Validate web_schema configuration
   fail:
