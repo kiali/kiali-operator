@@ -1,0 +1,251 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+
+  # just set some common constants so our assert code in the below tests is easier to read
+  - set_fact:
+      querySelector: "app.kubernetes.io/instance=kiali"
+      queryNamespace: "{{ kiali.install_namespace }}"
+      apiCMap: "v1"
+      apiCoLn: "console.openshift.io/v1"
+      apiDepl: "apps/v1"
+      apiPod:  "v1"
+      apiSecr: "v1"
+      apiServ: "v1"
+      apiSvcA: "v1"
+      apiIngr: "networking.k8s.io/{{ 'v1' if (lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
+      apiRout: "route.openshift.io/v1"
+      apiOAut: "oauth.openshift.io/v1"
+
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  # ASSERT CWA=TRUE
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list: []
+
+  - debug: msg="test to make sure cluster-wide-access is True"
+  - assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == True
+
+  - debug: msg="assert that we have clusterroles since we have been given cluster wide access"
+  - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - remote-cluster-resources-test-1
+      - remote-cluster-resources-test-2
+      - remote-cluster-resources-test-x
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+
+  # SET discovery selectors=[istio-system, remote-cluster-resources-test-1, remote-cluster-resources-test-x]
+  - debug: msg="change accessible namespaces to a fixed list of namespaces but keep cluster-wide-access (set to True)"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
+    vars:
+      new_cluster_wide_access: true
+      discovery_selectors:
+      - matchLabels:
+          kubernetes.io/metadata.name: "{{ istio.control_plane_namespace}}"
+      - matchLabels:
+          kubernetes.io/metadata.name: "remote-cluster-resources-test-1"
+      - matchLabels:
+          kubernetes.io/metadata.name: "remote-cluster-resources-test-x"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+  - name: CWA is true so there should be no labels on any namespaces
+    include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list: []
+
+  - debug: msg="test the normal accessible namespaces"
+  - name: "Even though discovery selectors are set, cluster wide access should still be True because we explicitly asked for it"
+    assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == True
+
+  - debug: msg="assert that we have clusterroles since we have been given cluster wide access"
+  - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - remote-cluster-resources-test-1
+      - remote-cluster-resources-test-2
+      - remote-cluster-resources-test-x
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+
+  - debug: msg="Turn off cluster wide access and set our discovery selectors to [istio-system, remote-cluster-resources-test-1]"
+  - include_tasks: ../common/set_discovery_selectors_to_list.yml
+    vars:
+      new_cluster_wide_access: false
+      discovery_selectors:
+      - matchLabels:
+          kubernetes.io/metadata.name: "{{ istio.control_plane_namespace}}"
+      - matchLabels:
+          kubernetes.io/metadata.name: "remote-cluster-resources-test-1"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list:
+      - "{{ istio.control_plane_namespace }}"
+      - 'remote-cluster-resources-test-1'
+  - assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == False
+
+  - debug: msg="assert that we have roles since we have NOT been given cluster wide access"
+  - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - remote-cluster-resources-test-1
+  - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+
+  - debug: msg="We have discovery selectors and CWA=false. Now let's set CWA=true and see the roles get removed and cluster roles added"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'cluster_wide_access': True }}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - remote-cluster-resources-test-1
+      - remote-cluster-resources-test-2
+      - remote-cluster-resources-test-x
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+
+  - debug: msg="We have discovery selectors and CWA=true. Now let's set CWA back to false and see the roles get added and cluster roles removed"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'deployment': {'cluster_wide_access': False }}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - remote-cluster-resources-test-1
+  - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+
+  - debug: msg="remove discovery selectors but keep CWA=true and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles"
+  - include_tasks: ../common/set_discovery_selectors_to_all.yml
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/accessible_namespaces_contains.yml
+    vars:
+      namespace_list: []
+
+  - debug: msg="test to make sure we are back to cluster-wide-access is True"
+  - assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == True
+
+  - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+    vars:
+      role_namespaces_to_test:
+      - "{{ istio.control_plane_namespace }}"
+      - remote-cluster-resources-test-1
+      - remote-cluster-resources-test-2
+      - remote-cluster-resources-test-x
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0

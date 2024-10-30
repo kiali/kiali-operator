@@ -1,0 +1,12 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  auth:
+    strategy: {{ kiali.auth_strategy }}
+  deployment:
+    namespace: {{ kiali.install_namespace }}
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    remote_cluster_resources_only: true
