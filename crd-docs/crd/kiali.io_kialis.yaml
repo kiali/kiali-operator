@@ -594,6 +594,9 @@ spec:
                   priority_class_name:
                     description: "The priorityClassName used to assign the priority of the Kiali pod."
                     type: string
+                  remote_cluster_resources_only:
+                    description: "When `true`, only those resources necessary for a remote Kiali Server to access this cluster are created (such as the service account and roles/bindings). There will be no Kiali Server deployment/pod created when this is `true`."
+                    type: boolean
                   replicas:
                     description: "The replica count for the Kiail deployment. If `deployment.hpa` is specified, this setting is ignored."
                     type: integer
