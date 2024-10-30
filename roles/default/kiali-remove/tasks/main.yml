@@ -131,7 +131,7 @@
   - namespaces_with_kiali_roles is defined
   - namespaces_with_kiali_roles | length > 0
 
-- name: Remote Kiali label from namespaces that are currently accessible
+- name: Remove Kiali label from namespaces that are currently accessible
   ignore_errors: yes
   k8s:
     state: patched
@@ -173,7 +173,7 @@
 - name: Unlabel the signing key secret if it exists to indicate this Kiali instance no longer uses it
   ignore_errors: yes
   k8s:
-    state: present
+    state: patched
     definition: |
       apiVersion: v1
       kind: Secret
