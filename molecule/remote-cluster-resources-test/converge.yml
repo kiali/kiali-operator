@@ -56,9 +56,9 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
-      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
-      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
 
   # SET discovery selectors=[istio-system, remote-cluster-resources-test-1, remote-cluster-resources-test-x]
   - debug: msg="change accessible namespaces to a fixed list of namespaces but keep cluster-wide-access (set to True)"
@@ -106,9 +106,9 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
-      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
-      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
 
   - debug: msg="Turn off cluster wide access and set our discovery selectors to [istio-system, remote-cluster-resources-test-1]"
   - include_tasks: ../common/set_discovery_selectors_to_list.yml
@@ -149,9 +149,9 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
-      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
-      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
 
   - debug: msg="We have discovery selectors and CWA=false. Now let's set CWA=true and see the roles get removed and cluster roles added"
   - include_tasks: ../common/set_kiali_cr.yml
@@ -180,9 +180,9 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
-      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
-      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
 
   - debug: msg="We have discovery selectors and CWA=true. Now let's set CWA back to false and see the roles get added and cluster roles removed"
   - include_tasks: ../common/set_kiali_cr.yml
@@ -209,9 +209,9 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
-      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
-      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
 
   - debug: msg="remove discovery selectors but keep CWA=true and see that the roles have been removed and we are back to using cluster-wide-access and clusterroles"
   - include_tasks: ../common/set_discovery_selectors_to_all.yml
@@ -246,6 +246,6 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
-      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector) | length == 0
-      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector) | length == 0
-      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
