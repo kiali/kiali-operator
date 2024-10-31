@@ -249,3 +249,47 @@
       - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
       - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
       - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
+
+  - debug: msg="Change auth strategy to openshift to confirm OAuthClient is created"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'strategy': 'openshift', 'openshift': {'kiali_route_url': 'http://test-kiali-route' }}}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift ConsoleLink, but should have OpenShift OAuthClient resource
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 1
+
+  - debug: msg="Change auth strategy back to anonymous to see OAuthClient resource gets removed"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'strategy': 'anonymous', 'openshift': {'kiali_route_url': '' }}}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  # there should be no deployment, pod, service, ingress/route, or OpenShift-specific resources
+  - name: Make sure we only have the resources that are expected
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
