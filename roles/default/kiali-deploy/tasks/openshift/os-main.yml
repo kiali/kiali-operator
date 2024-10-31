@@ -79,6 +79,17 @@
   when:
   - is_openshift == True
 
+- name: Delete OAuthClient on OpenShift if not using auth.strategy openshift
+  k8s:
+    state: absent
+    api_version: "oauth.openshift.io/v1"
+    kind: "OAuthClient"
+    label_selectors:
+    - "app.kubernetes.io/instance = {{ kiali_vars.deployment.instance_name }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.auth.strategy != "openshift"
+
 - name: Get the Kiali Route URL
   include_tasks: openshift/os-get-kiali-route-url.yml
   when:
