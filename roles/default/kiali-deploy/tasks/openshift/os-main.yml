@@ -83,14 +83,12 @@
   include_tasks: openshift/os-get-kiali-route-url.yml
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
 
 - name: Process OpenShift OAuth client
   k8s:
     definition: "{{ lookup('template', 'templates/openshift/oauth.yaml') }}"
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.auth.strategy == "openshift"
 
 - name: Delete all ConsoleLinks for namespaces that are no longer accessible
