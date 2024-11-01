@@ -97,7 +97,7 @@
   fail:
     msg: "Redirect URIs for the Kiali Server OAuthClient are not specified via auth.openshift.redirect_uris; this is required when creating remote cluster resources with auth.strategy of openshift."
   when:
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == True
   - kiali_vars.auth.strategy == 'openshift'
   - kiali_vars.auth.openshift.redirect_uris | default([]) | length == 0
 
