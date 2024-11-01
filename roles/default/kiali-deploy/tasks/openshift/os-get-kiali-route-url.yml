@@ -1,23 +1,8 @@
 # All of this is ultimately to obtain the kiali_route_url
 
-- name: Check if kiali_route_url is explicitly configured
-  set_fact:
-    kiali_route_url: "{{ kiali_vars.auth.openshift.kiali_route_url }}"
-  when:
-  - kiali_vars.auth.openshift.kiali_route_url is defined
-  - kiali_vars.auth.openshift.kiali_route_url != ""
-
-- name: Fail if creating remote cluster resources with auth strategy of openshift, but the Kiali Route URL is not defined
-  fail:
-    msg: "The root URL of the Kiali Server route is not specified via auth.openshift.kiali_route_url; this is required when creating remote cluster resources with auth.strategy of openshift."
-  when:
-  - kiali_route_url is not defined
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == True
-  - kiali_vars.auth.strategy == 'openshift'
-
-# We need to auto-discover the Kiali Route URL because the OAuthClient and ConsoleLink resources need it.
-# Note that we perform this auto-discovery only if we expect a Kiali Route to exist on the local cluster,
-# (that is to say, we only perform this auto-discovery if remote_cluster_resources_only is False).
+# We need to auto-discover the Kiali Route URL because the OAuthClient (for redirect URIs) and ConsoleLink resources need it.
+# Note that the user can override redirect URIs in auth.openshift.redirect_uris so this route URL will
+# be ignored in the OAuthClient template in that case.
 
 - name: Get the Kiali Route on OpenShift, which may require waiting some time for it to startup
   k8s_info:
@@ -37,21 +22,18 @@
   delay: 10
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
 
 - name: Set Kiali TLS Termination from OpenShift route
   set_fact:
     kiali_route_tls_termination: "{{ kiali_route_raw['resources'][0]['spec']['tls']['termination'] }}"
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
 
 - name: Detect HTTP Kiali OpenShift route protocol
   set_fact:
     kiali_route_protocol: "http"
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_route_tls_termination == ""
 
 - name: Detect HTTPS Kiali OpenShift route protocol
@@ -59,7 +41,6 @@
     kiali_route_protocol: "https"
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_route_tls_termination != ""
 
 - name: Create URL for Kiali OpenShift route
@@ -67,4 +48,3 @@
     kiali_route_url: "{{ kiali_route_protocol }}://{{ kiali_route_raw['resources'][0]['status']['ingress'][0]['host'] }}"
   when:
   - is_openshift == True
-  - kiali_vars.deployment.remote_cluster_resources_only|bool == False

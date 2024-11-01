@@ -35,7 +35,7 @@ kiali_defaults:
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
     openshift:
-      #kiali_route_url:
+      #redirect_uris:
       #token_inactivity_timeout:
       #token_max_age:
     strategy: ""

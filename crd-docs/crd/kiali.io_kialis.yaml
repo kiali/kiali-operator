@@ -148,9 +148,11 @@ spec:
                     description: "To learn more about these settings and how to configure the OpenShift authentication strategy, read the documentation at https://kiali.io/docs/configuration/authentication/openshift/"
                     type: object
                     properties:
-                      kiali_route_url:
-                        description: "The URL for the Kiali Route that will be used for the OAuth redirect URI. You normally do not have to set this unless you are creating remote cluster resources (see `deployment.remote_cluster_resources_only`) with `openshift` auth strategy enabled."
-                        type: string
+                      redirect_uris:
+                        description: "The OAuthClient redirect URIs. You normally do not have to set this unless you are creating remote cluster resources (see `deployment.remote_cluster_resources_only`) with `auth.strategy` set to `openshift`."
+                        type: array
+                        items:
+                          type: string
                       token_inactivity_timeout:
                         description: "Timeout that overrides the default OpenShift token inactivity timeout. This value represents the maximum amount of time in seconds that can occur between consecutive uses of the token. Tokens become invalid if they are not used within this temporal window. If 0, the Kiali tokens never timeout. OpenShift may have a minimum allowed value - see the OpenShift documentation specific for the version of OpenShift you are using. WARNING: existing tokens will not be affected by changing this setting."
                         type: integer

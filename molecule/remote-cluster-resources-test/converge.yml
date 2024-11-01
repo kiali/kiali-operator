@@ -253,7 +253,7 @@
   - debug: msg="Change auth strategy to openshift to confirm OAuthClient is created"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
-      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'strategy': 'openshift', 'openshift': {'kiali_route_url': 'http://test-kiali-route' }}}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'strategy': 'openshift', 'openshift': {'redirect_uris': ['http://one-redirect-uri', 'http://two-redirect-uri'] }}}}, recursive=True) }}"
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/tasks.yml
 
@@ -272,10 +272,19 @@
       - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
       - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 1
 
+  - name: Make sure the OAuthClient has the correct redirectURIs defined
+    vars:
+      oauthclient: "{{ query('k8s', kind='OAuthClient', api_version=apiOAut, label_selector=querySelector)[0] }}"
+    assert:
+      that:
+      - oauthclient.redirectURIs | length == 2
+      - oauthclient.redirectURIs[0] == 'http://one-redirect-uri'
+      - oauthclient.redirectURIs[1] == 'http://two-redirect-uri'
+
   - debug: msg="Change auth strategy back to anonymous to see OAuthClient resource gets removed"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
-      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'strategy': 'anonymous', 'openshift': {'kiali_route_url': '' }}}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'strategy': 'anonymous', 'openshift': {'redirect_uris': [] }}}}, recursive=True) }}"
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/tasks.yml
 
