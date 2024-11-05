@@ -84,9 +84,9 @@ validate: .ensure-operator-sdk-exists
 	@printf "==========\nValidating kiali-ossm metadata\n==========\n"
 	@mkdir -p ${OUTDIR}/kiali-ossm && rm -rf ${OUTDIR}/kiali-ossm/* && cp -R ./manifests/kiali-ossm ${OUTDIR} && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR_VERSION="2.0.0" KIALI_OLD_OPERATOR_VERSION="1.0.0" KIALI_OPERATOR_REGISTRY="registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-operator:2.0.0" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm/manifests/kiali.clusterserviceversion.yaml && ${OP_SDK} bundle validate --verbose ${OUTDIR}/kiali-ossm
 	@printf "==========\nValidating the latest version of kiali-community metadata\n==========\n"
-	@for d in $$(ls -1d manifests/kiali-community/* | sort -V | grep -v ci.yaml | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
+	@for d in $$(find . -type d -name "[0-9]*" | grep -E "/[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
 	@printf "==========\nValidating the latest version of kiali-upstream metadata\n==========\n"
-	@for d in $$(ls -1d manifests/kiali-upstream/* | sort -V | grep -v ci.yaml | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
+	@for d in $$(find . -type d -name "[0-9]*" | grep -E "/[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
 
 ## validate-cr: Ensures the example CR is valid according to the CRD schema
 validate-cr:
