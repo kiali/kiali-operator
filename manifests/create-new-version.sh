@@ -109,6 +109,16 @@ if [ "${VERIFY_BUNDLE}" == "true" ]; then
   fi
 fi
 
+if ! which opm &> /dev/null; then
+  echo "Missing 'opm'. You can run 'make get-opm' to obtain the binary. Put it in your PATH."
+  exit 1
+fi
+
+if ! which yq &> /dev/null; then
+  echo "Missing 'yq'. You must install it and put it in your PATH."
+  exit 1
+fi
+
 NEW_MANIFEST=${NEW_MANIFEST:-${OLD_MANIFEST}}
 OLD_MANIFEST_DIR="${SCRIPT_DIR}/${OLD_MANIFEST}"
 NEW_MANIFEST_DIR="${SCRIPT_DIR}/${NEW_MANIFEST}"
@@ -195,6 +205,21 @@ if [ ! -s /tmp/kiali-manifest-changes.txt ]; then
   echo "It looks like 'createdAt' metadata was not changed in the new CSV file. Check the new CSV file for correctness."
   echo CSV FILE: ${NEW_VERSION_CSV_YAML}
   exit 1
+fi
+
+# If using FBC, we need to update the catalog templates
+if [ -d "${OLD_MANIFEST_DIR}/catalog-templates" ]; then
+  echo "${OLD_MANIFEST_DIR} uses FBC. Will update catalog templates now."
+  for d in $(ls -1 "${OLD_MANIFEST_DIR}/catalog-templates"); do
+    yq eval 'select(.schema=="olm.template.basic").entries[] |= select(.schema == "olm.channel" and (.name == "stable" or .name == "alpha")).entries += [{"name": "kiali-operator.v'${NEW_VERSION}'", "replaces": "kiali-operator.v'${REPLACE_VERSION}'", "skipRange": ">=1.0.0 <'${NEW_VERSION}'"}]' -i ${OLD_MANIFEST_DIR}/catalog-templates/${d}
+    echo "Updated catalog template: ${OLD_MANIFEST_DIR}/catalog-templates/${d}"
+  done
+
+  echo "The catalog template diffs are below."
+  echo "=========="
+  git diff -w ${OLD_MANIFEST_DIR}/catalog-templates
+  echo "=========="
+  echo "The catalog template diffs are above."
 fi
 
 # Verify the correctness using operator-sdk tool

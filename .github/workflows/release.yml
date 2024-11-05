@@ -251,10 +251,11 @@ jobs:
     - name: Create or update version branch      
       run: git push origin $(git rev-parse HEAD):refs/heads/$BRANCH_VERSION
 
-    - name: Configure Operator SDK
+    - name: Configure Operator SDK and OPM
       if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
       run: |
         make get-operator-sdk
+        make get-opm
 
     - name: Create a PR to prepare for next version
       env:

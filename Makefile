@@ -27,6 +27,9 @@ OPERATOR_SDK_VERSION ?= 1.35.0
 OPERATOR_BASE_IMAGE_VERSION ?= v${OPERATOR_SDK_VERSION}
 OPERATOR_BASE_IMAGE_REPO ?= quay.io/operator-framework/ansible-operator
 
+# The version of OPM that is required when building OLM metadata
+OPM_VERSION ?= 1.47.0
+
 .PHONY: help
 help: Makefile
 	@echo
@@ -37,6 +40,26 @@ help: Makefile
 ## clean: Cleans _output
 clean:
 	@rm -rf ${OUTDIR}
+
+.download-opm-if-needed:
+	@if [ "$(shell which opm 2>/dev/null || echo -n "")" == "" ]; then \
+	  mkdir -p "${OUTDIR}/operator-sdk-install" ;\
+	  if [ -x "${OUTDIR}/operator-sdk-install/opm" ]; then \
+	    echo "You do not have opm installed in your PATH. Will use the one found here: ${OUTDIR}/operator-sdk-install/opm" ;\
+	  else \
+	    echo "You do not have opm installed in your PATH. The binary will be downloaded to ${OUTDIR}/operator-sdk-install/opm" ;\
+	    curl -L https://github.com/operator-framework/operator-registry/releases/download/v${OPM_VERSION}/linux-$$(test "$$(uname -m)" == "x86_64" && echo "amd64" || uname -m)-opm > "${OUTDIR}/operator-sdk-install/opm" ;\
+	    chmod +x "${OUTDIR}/operator-sdk-install/opm" ;\
+	  fi ;\
+	fi
+
+.ensure-opm-exists: .download-opm-if-needed
+	@$(eval OPM ?= $(shell which opm 2>/dev/null || echo "${OUTDIR}/operator-sdk-install/opm"))
+	@"${OPM}" version
+
+## get-opm: Downloads the OPM operator SDK tool if it is not already in PATH.
+get-opm: .ensure-opm-exists
+	@echo OPM location: ${OPM}
 
 .download-operator-sdk-if-needed:
 	@if [ "$(shell which operator-sdk 2>/dev/null || echo -n "")" == "" ]; then \
