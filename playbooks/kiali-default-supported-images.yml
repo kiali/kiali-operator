@@ -2,4 +2,4 @@ default: {"image_name": "quay.io/kiali/kiali", "image_version": "operator_versio
 v1.57: {"image_name": "quay.io/kiali/kiali", "image_version": "v1.57"}
 v1.65: {"image_name": "quay.io/kiali/kiali", "image_version": "v1.65"}
 v1.73: {"image_name": "quay.io/kiali/kiali", "image_version": "v1.73"}
-v1.89: {"image_name": "quay.io/kiali/kiali", "image_version": "v1.89"}
+v1.89: {"image_name": "quay.io/kiali/kiali", "image_version": "v2.1"}

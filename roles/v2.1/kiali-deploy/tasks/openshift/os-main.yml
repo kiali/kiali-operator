@@ -1,0 +1,120 @@
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Creating core resources"
+  when:
+  - is_openshift == True
+
+# If it is Removed, the web console is disabled.
+# See: https://docs.openshift.com/container-platform/4.13/web_console/disabling-web-console.html
+- name: Determine if OpenShift Console is installed and enabled
+  vars:
+    console_res: "{{ query(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console', errors='ignore') }}"
+  set_fact:
+    has_openshift_console: "{{ console_res | length > 0 and console_res[0].spec.managementState != 'Removed' }}"
+  when:
+  - is_openshift == True
+
+- name: Remove HPA if disabled on OpenShift
+  k8s:
+    state: absent
+    api_version: "{{ kiali_vars.deployment.hpa.api_version }}"
+    kind: "HorizontalPodAutoscaler"
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.hpa.spec | length == 0
+
+- name: Create Kiali objects on OpenShift
+  include_tasks: process-resource.yml
+  vars:
+    role_namespaces: "{{ [ kiali_vars.deployment.namespace ] }}"
+    process_resource_templates:
+    - "templates/openshift/serviceaccount.yaml"
+    - "templates/openshift/configmap.yaml"
+    - "templates/openshift/cabundle.yaml"
+    - "templates/openshift/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"
+    - "templates/openshift/rolebinding.yaml"
+    - "{{ 'templates/openshift/clusterrole-oauth.yaml' if kiali_vars.auth.strategy == 'openshift' else '' }}"
+    - "{{ 'templates/openshift/clusterrolebinding-oauth.yaml' if kiali_vars.auth.strategy == 'openshift' else '' }}"
+    - "templates/openshift/deployment.yaml"
+    - "templates/openshift/service.yaml"
+    - "{{ 'templates/openshift/hpa.yaml' if kiali_vars.deployment.hpa.spec | length > 0 else '' }}"
+    - "{{ 'templates/openshift/route.yaml' if kiali_vars.deployment.ingress.enabled|bool == True else '' }}"
+  when:
+  - is_openshift == True
+
+- name: Delete Route on OpenShift if disabled
+  k8s:
+    state: absent
+    api_version: "route.openshift.io/v1"
+    kind: "Route"
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.ingress.enabled|bool == False
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Creating additional roles"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.cluster_wide_access == False
+
+- name: Create additional Kiali roles/bindings on all namespaces that are accessible on OpenShift
+  vars:
+    role_namespaces: "{{ discovery_selector_namespaces }}"
+  k8s:
+    template:
+    - "templates/openshift/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"
+    - "templates/openshift/rolebinding.yaml"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.cluster_wide_access == False
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Creating OpenShift resources"
+  when:
+  - is_openshift == True
+
+- name: Get the Kiali Route URL
+  include_tasks: openshift/os-get-kiali-route-url.yml
+  when:
+  - is_openshift == True
+
+- name: Process OpenShift OAuth client
+  k8s:
+    definition: "{{ lookup('template', 'templates/openshift/oauth.yaml') }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.auth.strategy == "openshift"
+
+- name: Delete all ConsoleLinks for namespaces that are no longer accessible
+  k8s:
+    state: absent
+    definition: |
+      {% for namespace in namespaces_no_longer_accessible  %}
+      ---
+      apiVersion: console.openshift.io/v1
+      kind: ConsoleLink
+      metadata:
+        name: "{{ kiali_vars.deployment.instance_name }}-namespace-{{ namespace }}"
+      ...
+      {% endfor %}
+  when:
+  - is_openshift == True
+  - has_openshift_console is defined
+  - has_openshift_console == True
+  - namespaces_no_longer_accessible is defined
+
+- name: Process OpenShift Console Links
+  k8s:
+    definition: "{{ lookup('template', 'templates/openshift/console-links.yaml') }}"
+  vars:
+    namespaces: "{{ discovery_selector_namespaces }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.cluster_wide_access == False
+  - openshift_version is version('4.3', '>=')
