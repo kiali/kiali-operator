@@ -1,6 +1,18 @@
 #!/bin/bash
 
 ################################################
+# NOTE: AS OF NOVEMBER, 2024, THIS NO LONGER
+# PERFORMS ANY WORK FOR THE COMMUNITY OPERATOR.
+# ANYTHING ABOUT THE REDHAT COMMUNITY CATALOG
+# OR THE community-operators-prod IS IGNORED.
+# ONLY OperatorHub.io UPSTREAM CATALOG WORK
+# IS PERFORMED NOW BY THIS SCRIPT.
+#
+# THE CODE IS STILL HERE IN THIS SCRIPT (SOME
+# OF WHICH IS COMMENTED OUT) IN THE OFF CHANCE
+# WE NEED TO RESURRECT THE COMMUNITY OPERATOR.
+################################################
+#
 # This script prepares new branches in the two
 # community operator git repos. You can create
 # PRs based on the branches this script creates.
@@ -40,6 +52,7 @@ Valid options:
       which resolves to:
       $(readlink -f ${DEFAULT_GIT_REPO_OPERATORHUB} || echo '<git repo does not exist at the default location>')
   -gr|--gitrepo-redhat <directory>
+      THIS IS NO LONGER USED!
       The directory where the local community-operators-prod git repo is located.
       This is the location where you git cloned the repo https://github.com/redhat-openshift-ecosystem/community-operators-prod
       Default: ${DEFAULT_GIT_REPO_REDHAT}
@@ -62,18 +75,23 @@ if [ ! -d "${GIT_REPO_OPERATORHUB}" ]; then
   exit 1
 fi
 
-if [ ! -d "${GIT_REPO_REDHAT}" ]; then
-  echo "You must specify a valid community-operators-prod git repo: ${GIT_REPO_REDHAT}"
-  exit 1
-fi
+### DO NOT PERFORM COMMUNITY CATALOG WORK
+### if [ ! -d "${GIT_REPO_REDHAT}" ]; then
+###  echo "You must specify a valid community-operators-prod git repo: ${GIT_REPO_REDHAT}"
+###  exit 1
+### fi
+###
 
 COMMUNITY_MANIFEST_DIR="${SCRIPT_DIR}/kiali-community"
 UPSTREAM_MANIFEST_DIR="${SCRIPT_DIR}/kiali-upstream"
 
-if [ ! -d "${COMMUNITY_MANIFEST_DIR}" ]; then
-  echo "Did not find the community manifest directory: ${COMMUNITY_MANIFEST_DIR}"
-  exit 1
-fi
+### DO NOT PERFORM COMMUNITY CATALOG WORK
+### if [ ! -d "${COMMUNITY_MANIFEST_DIR}" ]; then
+###  echo "Did not find the community manifest directory: ${COMMUNITY_MANIFEST_DIR}"
+###  exit 1
+### fi
+###
+
 if [ ! -d "${UPSTREAM_MANIFEST_DIR}" ]; then
   echo "Did not find the upstream manifest directory: ${UPSTREAM_MANIFEST_DIR}"
   exit 1
@@ -85,12 +103,14 @@ DATETIME_NOW="$(date --utc +'%F-%H-%M-%S')"
 GIT_REPO_COMMUNITY_BRANCH_NAME="kiali-community-${DATETIME_NOW}"
 GIT_REPO_UPSTREAM_BRANCH_NAME="kiali-upstream-${DATETIME_NOW}"
 
-cd ${GIT_REPO_REDHAT}
-git fetch origin --verbose
-git checkout -b ${GIT_REPO_COMMUNITY_BRANCH_NAME} origin/main
-cp -R ${COMMUNITY_MANIFEST_DIR}/* ${GIT_REPO_REDHAT}/operators/kiali
-git add -A
-git commit --signoff -m '[kiali] update kiali'
+### DO NOT PERFORM COMMUNITY CATALOG WORK
+### cd ${GIT_REPO_REDHAT}
+### git fetch origin --verbose
+### git checkout -b ${GIT_REPO_COMMUNITY_BRANCH_NAME} origin/main
+### cp -R ${COMMUNITY_MANIFEST_DIR}/* ${GIT_REPO_REDHAT}/operators/kiali
+### git add -A
+### git commit --signoff -m '[kiali] update kiali'
+###
 
 cd ${GIT_REPO_OPERATORHUB}
 git fetch origin --verbose
@@ -100,7 +120,8 @@ git add -A
 git commit --signoff -m '[kiali] update kiali'
 
 # Completed!
-echo "New Kiali metadata has been added to new branches in the community git repo."
-echo "Create two PRs based on these two branches:"
-echo "1. cd ${GIT_REPO_REDHAT} && git push <your git remote name> ${GIT_REPO_COMMUNITY_BRANCH_NAME}"
-echo "2. cd ${GIT_REPO_OPERATORHUB} && git push <your git remote name> ${GIT_REPO_UPSTREAM_BRANCH_NAME}"
+echo "New Kiali metadata has been added. Create a PR from here:"
+echo "*** cd ${GIT_REPO_OPERATORHUB} && git push <your git remote name> ${GIT_REPO_UPSTREAM_BRANCH_NAME}"
+
+### DO NOT PERFORM COMMUNITY CATALOG WORK
+### echo "*** cd ${GIT_REPO_REDHAT} && git push <your git remote name> ${GIT_REPO_COMMUNITY_BRANCH_NAME}"

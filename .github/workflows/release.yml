@@ -222,7 +222,9 @@ jobs:
           DATETIME_NOW="$(date --utc +'%FT%TZ')"
           CSV_UPSTREAM_FILE="./manifests/kiali-upstream/${VERSION_TO_RELEASE}/manifests/kiali.v${VERSION_TO_RELEASE}.clusterserviceversion.yaml"
           CSV_COMMUNITY_FILE="./manifests/kiali-community/${VERSION_TO_RELEASE}/manifests/kiali.v${VERSION_TO_RELEASE}.clusterserviceversion.yaml"
-          for csv in ${CSV_UPSTREAM_FILE} ${CSV_COMMUNITY_FILE}
+          ### DO NOT PERFORM COMMUNITY CATALOG WORK
+          ### for csv in ${CSV_UPSTREAM_FILE} ${CSV_COMMUNITY_FILE}
+          for csv in ${CSV_UPSTREAM_FILE}
           do
             rm -f /tmp/kiali-csv-changes.txt
             sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw /tmp/kiali-csv-changes.txt" ${csv}
@@ -233,7 +235,9 @@ jobs:
             fi
           done
 
-          git add $CSV_UPSTREAM_FILE $CSV_COMMUNITY_FILE
+          ### DO NOT PERFORM COMMUNITY CATALOG WORK
+          ### git add $CSV_UPSTREAM_FILE $CSV_COMMUNITY_FILE
+          git add $CSV_UPSTREAM_FILE
         fi
 
         git add Makefile
@@ -268,7 +272,8 @@ jobs:
         
         # Using versions without the prefix 'v'        
         ./manifests/create-new-version.sh -nv ${NEXT_VERSION:1} -ov ${RELEASE_VERSION:1} -om kiali-upstream/
-        ./manifests/create-new-version.sh -nv ${NEXT_VERSION:1} -ov ${RELEASE_VERSION:1} -om kiali-community/
+        ### DO NOT PERFORM COMMUNITY CATALOG WORK
+        ### ./manifests/create-new-version.sh -nv ${NEXT_VERSION:1} -ov ${RELEASE_VERSION:1} -om kiali-community/
 
         git add Makefile manifests/
 
