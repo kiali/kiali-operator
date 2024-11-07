@@ -35,6 +35,7 @@ kiali_defaults:
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
     openshift:
+      #redirect_uris:
       #token_inactivity_timeout:
       #token_max_age:
     strategy: ""
@@ -87,6 +88,7 @@ kiali_defaults:
     pod_annotations: {}
     pod_labels: {}
     priority_class_name: ""
+    remote_cluster_resources_only: false
     replicas: 1
     #resources:
     secret_name: "kiali"

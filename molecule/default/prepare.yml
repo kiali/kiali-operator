@@ -110,6 +110,9 @@
       namespace: "{{ cr_namespace }}"
       definition: "{{ kiali_cr_definition }}"
 
+  # We normally always want to wait for kiali to be deployed, but for those tests
+  # where this is not wanted (e.g. when remote_cluster_resources_only==true), then
+  # import this playbook with the var "wait_for_kiali_pod_after_prepare" set to false.
   - name: Asserting that Kiali is Deployed
     vars:
       instance_name: "{{ kiali.instance_name | default('kiali') }}"
@@ -127,3 +130,5 @@
     - kiali_deployment.resources[0].status.availableReplicas == 1
     retries: "{{ wait_retries }}"
     delay: 5
+    when:
+    - wait_for_kiali_pod_after_prepare | default(true) == True

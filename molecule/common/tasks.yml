@@ -14,6 +14,18 @@
 - debug:
     msg: "Present Kiali CR: {{ kiali_cr }}"
 
+- name: Get Kiali Configmap
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  set_fact:
+    kiali_configmap_resource: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
+
+- name: Format Configmap
+  set_fact:
+    kiali_configmap: "{{ kiali_configmap_resource.data['config.yaml'] | from_yaml }}"
+- debug:
+    msg: "Present Kiali ConfigMap: {{ kiali_configmap }}"
+
 - name: Get Kiali Operator Pod
   k8s_info:
     api_version: v1
@@ -33,18 +45,8 @@
     label_selectors:
     - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_pod
-
-- name: Get Kiali Configmap
-  vars:
-    instance_name: "{{ kiali.instance_name | default('kiali') }}"
-  set_fact:
-    kiali_configmap_resource: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name=instance_name) }}"
-
-- name: Format Configmap
-  set_fact:
-    kiali_configmap: "{{ kiali_configmap_resource.data['config.yaml'] | from_yaml }}"
-- debug:
-    msg: "Present Kiali ConfigMap: {{ kiali_configmap }}"
+  when:
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 - name: Get Kiali Deployment
   vars:
@@ -56,6 +58,8 @@
     label_selectors:
     - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_deployment
+  when:
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 - name: Get Kiali Service
   vars:
@@ -67,6 +71,8 @@
     label_selectors:
     - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_service
+  when:
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 - name: Get Kiali Route
   vars:
@@ -80,6 +86,7 @@
   register: kiali_route
   when:
   - is_openshift == True
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 - name: Get Kiali Ingress
   ignore_errors: yes
@@ -93,7 +100,8 @@
     - "app.kubernetes.io/instance={{ instance_name }}"
   register: kiali_ingress
   when:
-  - is_openshift != True
+  - is_openshift == False
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 - name: Determine the Kiali Route URL on OpenShift
   vars:
@@ -102,6 +110,7 @@
     kiali_base_url: "https://{{ kiali_route.resources[0].spec.host }}{{ web_root }}"
   when:
   - is_openshift == True
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 # To avoid problems with Ingress/Minikube conflicts, if installing multiple kiali instances set web_root to the instance name
 - name: Determine the Kiali Ingress URL on minikube
@@ -112,9 +121,11 @@
     kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}{{ web_root }}"
   when:
   - is_minikube == True
+  - kiali_configmap.deployment.remote_cluster_resources_only == False
 
 - name: Determine the Kiali Ingress URL on kind
   set_fact:
     kiali_base_url: "http://{{ kiali_service.resources[0].status.loadBalancer.ingress[0].ip }}:20001/kiali"
   when:
   - is_kind == True
+  - kiali_configmap.deployment.remote_cluster_resources_only == False

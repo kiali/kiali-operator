@@ -38,6 +38,7 @@ spec:
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
     openshift:
+      #redirect_uris:
       #token_inactivity_timeout:
       #token_max_age:
 
@@ -218,6 +219,7 @@ spec:
     pod_labels:
       sidecar.istio.io/inject: "true"
     priority_class_name: ""
+    remote_cluster_resources_only: false
     replicas: 1
     # default: resources is undefined
     resources:

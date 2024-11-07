@@ -1,8 +1,10 @@
 # All of this is ultimately to obtain the kiali_route_url
 
-# Give some time for the route to come up
+# We need to auto-discover the Kiali Route URL because the OAuthClient (for redirect URIs) and ConsoleLink resources need it.
+# Note that the user can override redirect URIs in auth.openshift.redirect_uris so this route URL will
+# be ignored in the OAuthClient template in that case.
 
-- name: Detect Kiali route on OpenShift
+- name: Get the Kiali Route on OpenShift, which may require waiting some time for it to startup
   k8s_info:
     api_version: route.openshift.io/v1
     kind: Route

@@ -4,9 +4,15 @@ metadata:
   name: {{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}
   labels: {{ kiali_resource_metadata_labels }}
 redirectURIs:
-  - {{ kiali_route_url }}/api/auth/callback
+{% if kiali_vars.auth.openshift.redirect_uris | default([]) | length > 0 %}
+{% for uri in kiali_vars.auth.openshift.redirect_uris %}
+- "{{ uri }}"
+{% endfor %}
+{% else %}
+- {{ kiali_route_url }}/api/auth/callback
 {% if kiali_vars.server.web_port | length > 0 %}
-  - {{ kiali_route_url }}:{{ kiali_vars.server.web_port }}/api/auth/callback
+- {{ kiali_route_url }}:{{ kiali_vars.server.web_port }}/api/auth/callback
+{% endif %}
 {% endif %}
 grantMethod: auto
 {% if kiali_vars.auth.openshift.token_inactivity_timeout is defined %}

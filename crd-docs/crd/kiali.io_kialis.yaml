@@ -148,6 +148,11 @@ spec:
                     description: "To learn more about these settings and how to configure the OpenShift authentication strategy, read the documentation at https://kiali.io/docs/configuration/authentication/openshift/"
                     type: object
                     properties:
+                      redirect_uris:
+                        description: "The OAuthClient redirect URIs. You normally do not have to set this unless you are creating remote cluster resources (see `deployment.remote_cluster_resources_only`) with `auth.strategy` set to `openshift`."
+                        type: array
+                        items:
+                          type: string
                       token_inactivity_timeout:
                         description: "Timeout that overrides the default OpenShift token inactivity timeout. This value represents the maximum amount of time in seconds that can occur between consecutive uses of the token. Tokens become invalid if they are not used within this temporal window. If 0, the Kiali tokens never timeout. OpenShift may have a minimum allowed value - see the OpenShift documentation specific for the version of OpenShift you are using. WARNING: existing tokens will not be affected by changing this setting."
                         type: integer
@@ -594,6 +599,9 @@ spec:
                   priority_class_name:
                     description: "The priorityClassName used to assign the priority of the Kiali pod."
                     type: string
+                  remote_cluster_resources_only:
+                    description: "When `true`, only those resources necessary for a remote Kiali Server to access this cluster are created (such as the service account and roles/bindings). There will be no Kiali Server deployment/pod created when this is `true`."
+                    type: boolean
                   replicas:
                     description: "The replica count for the Kiail deployment. If `deployment.hpa` is specified, this setting is ignored."
                     type: integer
