@@ -201,6 +201,7 @@ spec:
                 - "--zap-log-level=info"
                 - "--leader-election-id=kiali-operator"
                 - "--watches-file=./$(WATCHES_FILE)"
+                terminationMessagePolicy: FallbackToLogsOnError
                 securityContext:
                   allowPrivilegeEscalation: false
                   privileged: false
