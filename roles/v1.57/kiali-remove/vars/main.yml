@@ -1,9 +1,0 @@
-kiali_vars_remove:
-  istio_namespace: "{{ istio_namespace | default(kiali_defaults_remove.istio_namespace) }}"
-
-  deployment: |
-    {%- if deployment is defined and deployment is iterable -%}
-    {{ kiali_defaults_remove.deployment | combine((deployment | stripnone), recursive=True) }}
-    {%- else -%}
-    {{ kiali_defaults_remove.deployment }}
-    {%- endif -%}
