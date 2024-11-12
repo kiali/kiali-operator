@@ -66,6 +66,7 @@ spec:
         - "/opt/kiali/kiali"
         - "-config"
         - "/kiali-configuration/config.yaml"
+        terminationMessagePolicy: FallbackToLogsOnError
         securityContext:
 {% if kiali_vars.deployment.security_context|length > 0 %}
           {{ kiali_vars.deployment.security_context | to_nice_yaml(indent=0) | trim | indent(10) }}
@@ -100,6 +101,14 @@ spec:
             scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
           initialDelaySeconds: 5
           periodSeconds: 30
+        startupProbe:
+          httpGet:
+            path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
+            port: api-port
+            scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 6
         env:
         - name: ACTIVE_NAMESPACE
           valueFrom:

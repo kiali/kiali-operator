@@ -201,6 +201,25 @@ spec:
                 - "--zap-log-level=info"
                 - "--leader-election-id=kiali-operator"
                 - "--watches-file=./$(WATCHES_FILE)"
+                - "--health-probe-bind-address=:6789"
+                terminationMessagePolicy: FallbackToLogsOnError
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 6789
+                  periodSeconds: 30
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 6789
+                  periodSeconds: 30
+                startupProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 6789
+                  initialDelaySeconds: 30
+                  periodSeconds: 10
+                  failureThreshold: 6
                 securityContext:
                   allowPrivilegeEscalation: false
                   privileged: false
