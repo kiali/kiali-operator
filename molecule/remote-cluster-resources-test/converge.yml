@@ -250,6 +250,12 @@
       - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
       - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
 
+  ###
+  ### The below tests are ONLY executed if on OpenShift; if not OpenShift, exit the test now.
+  ###
+  - meta: end_play
+    when: is_openshift == False
+
   - debug: msg="Change auth strategy to openshift to confirm OAuthClient is created"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
