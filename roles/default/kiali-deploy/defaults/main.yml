@@ -89,10 +89,10 @@ kiali_defaults:
     pod_labels: {}
     priority_class_name: ""
     probes:
-      readiness:
+      liveness:
         initial_delay_seconds: 5
         period_seconds: 30
-      liveness:
+      readiness:
         initial_delay_seconds: 5
         period_seconds: 30
       startup:
