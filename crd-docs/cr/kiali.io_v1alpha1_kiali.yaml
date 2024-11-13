@@ -219,6 +219,17 @@ spec:
     pod_labels:
       sidecar.istio.io/inject: "true"
     priority_class_name: ""
+    probes:
+      liveness:
+        initial_delay_seconds: 5
+        period_seconds: 30
+      readiness:
+        initial_delay_seconds: 5
+        period_seconds: 30
+      startup:
+        failure_threshold: 6
+        initial_delay_seconds: 30
+        period_seconds: 10
     remote_cluster_resources_only: false
     replicas: 1
     # default: resources is undefined

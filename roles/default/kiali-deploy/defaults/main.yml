@@ -88,6 +88,17 @@ kiali_defaults:
     pod_annotations: {}
     pod_labels: {}
     priority_class_name: ""
+    probes:
+      readiness:
+        initial_delay_seconds: 5
+        period_seconds: 30
+      liveness:
+        initial_delay_seconds: 5
+        period_seconds: 30
+      startup:
+        failure_threshold: 6
+        initial_delay_seconds: 30
+        period_seconds: 10
     remote_cluster_resources_only: false
     replicas: 1
     #resources:
