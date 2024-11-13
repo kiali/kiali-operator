@@ -504,6 +504,9 @@ spec:
     port: 20001
     profiler:
       enabled: false
+    readiness_probe:
+      initial_delay_seconds: 5
+      period_seconds: 30
     web_fqdn: ""
     web_history_mode: ""
     web_port: ""
