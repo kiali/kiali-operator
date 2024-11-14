@@ -98,6 +98,19 @@
       that:
       - kiali_configmap.extensions | length == 0
 
+  - name: Test the default configs for the probes
+    vars:
+      kiali_pod_container: "{{ kiali_pod.resources[0].spec.containers[0] }}"
+    assert:
+      that:
+      - kiali_pod_container.livenessProbe.initialDelaySeconds == 5
+      - kiali_pod_container.livenessProbe.periodSeconds == 30
+      - kiali_pod_container.readinessProbe.initialDelaySeconds == 5
+      - kiali_pod_container.readinessProbe.periodSeconds == 30
+      - kiali_pod_container.startupProbe.failureThreshold == 6
+      - kiali_pod_container.startupProbe.initialDelaySeconds == 30
+      - kiali_pod_container.startupProbe.periodSeconds == 10
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config and deploy that new CR.
@@ -228,6 +241,22 @@
         enabled: false
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'extensions': extensions}}, recursive=True) }}"
+
+  - name: Customize probes
+    vars:
+      probes:
+        liveness:
+          initial_delay_seconds: 11
+          period_seconds: 12
+        readiness:
+          initial_delay_seconds: 13
+          period_seconds: 14
+        startup:
+          failure_threshold: 2
+          initial_delay_seconds: 15
+          period_seconds: 16
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'probes': probes }}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -390,6 +419,19 @@
       - kiali_configmap.extensions | length == 1
       - kiali_configmap.extensions[0].name == "skupper"
       - kiali_configmap.extensions[0].enabled == False
+
+  - name: Test the custom configs for the probes
+    vars:
+      kiali_pod_container: "{{ kiali_pod.resources[0].spec.containers[0] }}"
+    assert:
+      that:
+      - kiali_pod_container.livenessProbe.initialDelaySeconds == 11
+      - kiali_pod_container.livenessProbe.periodSeconds == 12
+      - kiali_pod_container.readinessProbe.initialDelaySeconds == 13
+      - kiali_pod_container.readinessProbe.periodSeconds == 14
+      - kiali_pod_container.startupProbe.failureThreshold == 2
+      - kiali_pod_container.startupProbe.initialDelaySeconds == 15
+      - kiali_pod_container.startupProbe.periodSeconds == 16
 
   - name: Test custom_envs
     vars:

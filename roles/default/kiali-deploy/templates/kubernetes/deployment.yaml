@@ -92,23 +92,23 @@ spec:
             path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
             port: api-port
             scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
-          initialDelaySeconds: 5
-          periodSeconds: 30
+          initialDelaySeconds: {{ kiali_vars.deployment.probes.readiness.initial_delay_seconds|int }}
+          periodSeconds: {{ kiali_vars.deployment.probes.readiness.period_seconds|int }}
         livenessProbe:
           httpGet:
             path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
             port: api-port
             scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
-          initialDelaySeconds: 5
-          periodSeconds: 30
+          initialDelaySeconds: {{ kiali_vars.deployment.probes.liveness.initial_delay_seconds|int }}
+          periodSeconds: {{ kiali_vars.deployment.probes.liveness.period_seconds|int }}
         startupProbe:
           httpGet:
             path: {{ kiali_vars.server.web_root | regex_replace('\\/$', '') }}/healthz
             port: api-port
             scheme:  {{ 'HTTP' if kiali_vars.identity.cert_file == "" else 'HTTPS' }}
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          failureThreshold: 6
+          failureThreshold: {{ kiali_vars.deployment.probes.startup.failure_threshold|int }}
+          initialDelaySeconds: {{ kiali_vars.deployment.probes.startup.initial_delay_seconds|int }}
+          periodSeconds: {{ kiali_vars.deployment.probes.startup.period_seconds|int }}
         env:
         - name: ACTIVE_NAMESPACE
           valueFrom:
