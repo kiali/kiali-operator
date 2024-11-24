@@ -1255,7 +1255,7 @@ spec:
                               animation:
                                 description: "The traffic animation style. Value must be one of: `dash` or `point`. Default is `point`."
                                 type: string
-                                enum: ["dash", "point" ]
+                                enum: ["dash", "point"]
                           traffic:
                             description: "These settings determine which rates are used to determine graph traffic."
                             type: object
