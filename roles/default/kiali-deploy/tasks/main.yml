@@ -152,6 +152,24 @@
   # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
   - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
 
+# We know that when CWA=true we will create a cluster role binding whose name is deployment.instance_name and has a
+# single "subjects" item that refers to the Kiali SA. Make sure there is no cluster role binding that already exists
+# with that name but does not have a subject pointing to this Kiali's SA. If there is, that means another Kiali is
+# already installed with CWA=true and with the same instance name. This is not allowed because it will conflict
+# with the cluster role binding for the Kiali we are installing. Abort the reconciliation when this is detected.
+- name: Do not allow multiple Kiali Servers with the same deployment.instance_name to have CWA=true
+  vars:
+    current_rolebinding: "{{ query(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, api_version='rbac.authorization.k8s.io/v1', kind='ClusterRoleBinding', errors='ignore') }}"
+  fail:
+    msg: "There is already a Kiali Server installed with `deployment.instance_name` of [{{ kiali_vars.deployment.instance_name }}] that has 'deployment.cluster_wide_access' set to true. You must use a different instance name."
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+  - current_rolebinding is defined
+  - current_rolebinding | length > 0
+  - current_rolebinding[0].subjects is defined
+  - current_rolebinding[0].subjects | length > 0
+  - current_rolebinding[0].subjects[0].name != kiali_vars.deployment.instance_name + '-service-account' or current_rolebinding[0].subjects[0].namespace != kiali_vars.deployment.namespace
+
 - name: "Determine environment to store in status"
   set_fact:
     status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
