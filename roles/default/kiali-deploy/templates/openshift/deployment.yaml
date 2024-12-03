@@ -162,8 +162,13 @@ spec:
           secretName: {{ kiali_vars.deployment.secret_name }}
           optional: true
       - name: kiali-cabundle
-        configMap:
-          name: {{ kiali_vars.deployment.instance_name }}-cabundle
+        projected:
+          sources:
+          - configMap:
+              name: {{ kiali_vars.deployment.instance_name }}-cabundle
+          - configMap:
+              name: {{ kiali_vars.deployment.instance_name }}-oauth-cabundle
+              optional: true
 {% for sec in kiali_deployment_secret_volumes %}
       - name: {{ sec }}
         secret:
