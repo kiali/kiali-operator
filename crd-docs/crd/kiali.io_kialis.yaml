@@ -1098,6 +1098,12 @@ spec:
                         description: "Settings used to configure the access url to the Tempo Datasource in Grafana."
                         type: object
                         properties:
+                          cache_capacity:
+                            description: "When `cache_enabled` is true, the number of traces saved in the cache. 200 by default."
+                            type: integer
+                          cache_enabled:
+                            description: "A FIFO cache with the last `cache_capacity` traces viewed."
+                            type: boolean
                           datasource_uid:
                             description: "The unique identifier (uid) of the Tempo datasource in Grafana."
                             type: string

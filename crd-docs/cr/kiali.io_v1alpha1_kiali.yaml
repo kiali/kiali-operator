@@ -393,6 +393,8 @@ spec:
         cluster: "cluster-east"
       query_timeout: 5
       tempo_config:
+        cache_capacity: 200
+        cache_enabled: true
         datasource_uid: ""
         org_id: ""
         url_format: ""
