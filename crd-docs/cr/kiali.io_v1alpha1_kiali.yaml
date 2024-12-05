@@ -447,7 +447,10 @@ spec:
           expression: "healthy"
         - description: "Hide: unknown nodes"
           expression: "name = unknown"
+        settings:
+          animation: "point"
         traffic:
+          ambient: "total"
           grpc: "requests"
           http: "requests"
           tcp: "sent"

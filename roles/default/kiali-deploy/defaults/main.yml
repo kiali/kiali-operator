@@ -280,10 +280,12 @@ kiali_defaults:
           description: "Hide: nodes ranked lower than the 2 top rankings"
           expression:  "rank > 2"
         settings:
+          animation: "point"
           font_label: 13
           min_font_badge: 7
           min_font_label: 10
         traffic:
+          ambient: "total"
           grpc: "requests"
           http: "requests"
           tcp: "sent"

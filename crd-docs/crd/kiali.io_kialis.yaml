@@ -1254,10 +1254,22 @@ spec:
                                 expression:
                                   type: string
                                   description: "The hide expression."
+                          settings:
+                            description: "Various presentation options."
+                            type: object
+                            properties:
+                              animation:
+                                description: "The traffic animation style. Value must be one of: `dash` or `point`. Default is `point`."
+                                type: string
+                                enum: ["dash", "point"]
                           traffic:
                             description: "These settings determine which rates are used to determine graph traffic."
                             type: object
                             properties:
+                              ambient:
+                                description: "Ambient traffic is reported by ztunnel and/or waypoints. Value must be one of: `none`, `total`, `waypoint`, or `ztunnel`."
+                                type: string
+                                enum: ["none", "total", "waypoint", "ztunnel"]
                               grpc:
                                 description: "gRPC traffic is measured in requests or sent/received/total messages. Value must be one of: `none`, `requests`, `sent`, `received`, or `total`."
                                 type: string
