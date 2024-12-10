@@ -1,3 +1,0 @@
-ossmconsole_defaults:
-  deployment:
-    namespace: ""
