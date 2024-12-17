@@ -584,7 +584,7 @@
         labels: "{{ kiali_resource_metadata_labels }}"
       type: Opaque
       data:
-        key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters,digits') | b64encode }}"
+        key: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') | b64encode }}"
   when:
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.login_token.signing_key == ""
