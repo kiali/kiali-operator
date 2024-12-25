@@ -22,12 +22,14 @@
   delay: 10
   when:
   - is_openshift == True
+  - kiali_vars.auth.strategy == "openshift"
 
 - name: Set Kiali TLS Termination from OpenShift route
   set_fact:
     kiali_route_tls_termination: "{{ kiali_route_raw['resources'][0]['spec']['tls']['termination'] }}"
   when:
-  - is_openshift == True
+  - is_openshift == True 
+  - kiali_vars.auth.strategy == "openshift"
 
 - name: Detect HTTP Kiali OpenShift route protocol
   set_fact:
@@ -35,6 +37,7 @@
   when:
   - is_openshift == True
   - kiali_route_tls_termination == ""
+  - kiali_vars.auth.strategy == "openshift"
 
 - name: Detect HTTPS Kiali OpenShift route protocol
   set_fact:
@@ -42,9 +45,11 @@
   when:
   - is_openshift == True
   - kiali_route_tls_termination != ""
+  - kiali_vars.auth.strategy == "openshift"
 
 - name: Create URL for Kiali OpenShift route
   set_fact:
     kiali_route_url: "{{ kiali_route_protocol }}://{{ kiali_route_raw['resources'][0]['status']['ingress'][0]['host'] }}"
   when:
   - is_openshift == True
+  - kiali_vars.auth.strategy == "openshift"
