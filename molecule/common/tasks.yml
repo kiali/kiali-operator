@@ -111,6 +111,8 @@
   when:
   - is_openshift == True
   - kiali_configmap.deployment.remote_cluster_resources_only == False
+  - kiali_route is defined
+  - kiali_route.resources | length > 0
 
 # To avoid problems with Ingress/Minikube conflicts, if installing multiple kiali instances set web_root to the instance name
 - name: Determine the Kiali Ingress URL on minikube

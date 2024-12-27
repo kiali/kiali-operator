@@ -109,10 +109,12 @@
 # what redirect URIs to use (see the above fail task to ensure the user does that).
 # All of this is to say: we only need to auto-discover the route when we are creating the Kiali Server itself (we do not
 # auto-discover the route when we are creating only the remote cluster resources).
+# We also don't expect the Route if it was disabled (which also disables other features like OAuthClient -- see https://github.com/kiali/kiali/issues/8023)
 - name: Get the Kiali Route URL
   include_tasks: openshift/os-get-kiali-route-url.yml
   when:
   - is_openshift == True
+  - kiali_vars.deployment.ingress.enabled|bool == True
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
 
 - name: Process OpenShift OAuth client
@@ -120,6 +122,7 @@
     definition: "{{ lookup('template', 'templates/openshift/oauth.yaml') }}"
   when:
   - is_openshift == True
+  - kiali_vars.deployment.ingress.enabled|bool == True
   - kiali_vars.auth.strategy == "openshift"
 
 - name: Delete all ConsoleLinks for namespaces that are no longer accessible
@@ -147,6 +150,8 @@
     namespaces: "{{ discovery_selector_namespaces }}"
   when:
   - is_openshift == True
+  - has_openshift_console is defined
+  - has_openshift_console == True
+  - kiali_route_url is defined
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.deployment.cluster_wide_access == False
-  - openshift_version is version('4.3', '>=')
