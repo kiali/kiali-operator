@@ -13,6 +13,20 @@
       namespace_list:
       - "{{ istio.control_plane_namespace }}"
 
+  # The ingress is disabled at the start of this test - without this, the Route is not created and thus no ConsoleLinks are created
+  - name: Assert that there is no Route (and no ConsoleLinks) because the ingress was disabled
+    assert:
+      that:
+      - "{{ kiali_route.resources | length == 0 }}"
+      - "{{ query('k8s', kind='ConsoleLink', api_version='console.openshift.io/v1', errors='warn') | length == 0 }}"
+
+  # Turn on ingress which allows the creation of the Route and ConsoleLinks
+  - import_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'deployment': {'ingress': {'enabled': true }}}}, recursive=True) }}"
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/tasks.yml
+
   # Test that there are no main masthead console links (we used to create these, but no longer)
   - name: Get app links if exist
     k8s_info:

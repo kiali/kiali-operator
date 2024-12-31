@@ -9,7 +9,7 @@ spec:
     strategy: {{ kiali.auth_strategy }}
   deployment:
     ingress:
-      enabled: true
+      enabled: false
     logger:
       log_level: debug
     namespace: {{ kiali.install_namespace }}
