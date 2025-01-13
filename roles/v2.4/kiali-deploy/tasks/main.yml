@@ -1,0 +1,942 @@
+- set_fact:
+    k8s_plugin: kubernetes.core.k8s
+
+- name: Get the original CR as-is for the camelCase keys and so we can update its status field
+  set_fact:
+    current_cr: "{{ _kiali_io_kiali }}"
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Initializing"
+    status_vars:
+      specVersion: "{{ kiali_vars.version }}"
+      deployment:
+        discoverySelectorNamespaces: null
+
+- name: Get api group information from the cluster
+  set_fact:
+    api_groups: "{{ lookup(k8s_plugin, cluster_info='api_groups') }}"
+  when:
+  - is_openshift == False
+  - is_k8s == False
+
+- name: Get api version information from the cluster
+  k8s_cluster_info:
+  register: api_status
+
+- name: Determine the cluster type
+  set_fact:
+    is_openshift: "{{ True if 'operator.openshift.io' in api_groups else False }}"
+    is_k8s: "{{ False if 'operator.openshift.io' in api_groups else True }}"
+  when:
+  - is_openshift == False
+  - is_k8s == False
+
+# Indicate what kind of cluster we are in (OpenShift or Kubernetes).
+- debug:
+    msg: "CLUSTER TYPE: is_openshift={{ is_openshift }}; is_k8s={{ is_k8s }}"
+- fail:
+    msg: "Cannot determine what type of cluster we are in"
+  when:
+  - is_openshift == False
+  - is_k8s == False
+
+- name: Determine the Kubernetes version
+  set_fact:
+    k8s_version: "{{ lookup(k8s_plugin, cluster_info='version').kubernetes.gitVersion | regex_replace('^v', '') }}"
+  ignore_errors: yes
+
+- name: Determine the OpenShift version
+  vars:
+    kube_apiserver_cluster_op_raw: "{{ lookup(k8s_plugin, api_version='config.openshift.io/v1', kind='ClusterOperator', resource_name='kube-apiserver') | default({}) }}"
+    ri_query: "status.versions[?name == 'raw-internal'].version"
+  set_fact:
+    openshift_version: "{{ kube_apiserver_cluster_op_raw | json_query(ri_query) | join }}"
+  when:
+  - is_openshift == True
+
+- name: Get information about the operator
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ lookup('env', 'POD_NAMESPACE') }}"
+    name: "{{ lookup('env', 'POD_NAME') }}"
+  register: operator_pod_raw
+  ignore_errors: yes
+- name: Determine the version of the operator based on the version label
+  set_fact:
+    operator_version: "{{ operator_pod_raw.resources[0].metadata.labels.version }}"
+  when:
+  - operator_pod_raw is defined
+  - operator_pod_raw.resources[0] is defined
+  - operator_pod_raw.resources[0].metadata is defined
+  - operator_pod_raw.resources[0].metadata.labels is defined
+  - operator_pod_raw.resources[0].metadata.labels.version is defined
+- set_fact:
+    operator_version: "unknown"
+  when:
+  - operator_version is not defined
+- debug:
+    msg: "OPERATOR VERSION: [{{ operator_version }}]"
+
+# To remain backward compatible with some settings that have changed in later releases,
+# let's take some deprecated settings and set the current settings appropriately.
+
+- name: deployment.ingress_enabled is deprecated but if deployment.ingress.enabled is not set then use the old setting
+  set_fact:
+    kiali_vars: |
+      {% set ie=kiali_vars['deployment'].pop('ingress_enabled') %}
+      {{ kiali_vars | combine({'deployment': {'ingress': {'enabled': ie|bool }}}, recursive=True) }}
+  when:
+  - kiali_vars.deployment.ingress_enabled is defined
+  - kiali_vars.deployment.ingress is not defined or kiali_vars.deployment.ingress.enabled is not defined
+
+# convert snake case to camelCase where appropriate
+- include_tasks: snake_camel_case.yaml
+
+- name: Print some debug information
+  vars:
+    msg: |
+        Kiali Variables:
+        --------------------------------
+        {{ kiali_vars | to_nice_yaml }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: Set default deployment namespace to the same namespace where the CR lives
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.namespace is not defined or kiali_vars.deployment.namespace == ""
+
+# Never allow the deployment.instance_name, deployment.namespace, or deployment.remote_cluster_resources_only to change to avoid leaking resources - to uninstall resources you must delete the Kiali CR
+- name: Ensure the deployment.instance_name has not changed
+  fail:
+    msg: "The deployment.instance_name cannot be changed to a different value. It was [{{ current_cr.status.deployment.instanceName }}] but is now [{{ kiali_vars.deployment.instance_name }}]. In order to install Kiali with a different deployment.instance_name, please uninstall Kiali first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.instanceName is defined
+  - current_cr.status.deployment.instanceName != kiali_vars.deployment.instance_name
+
+- name: Ensure the deployment.namespace has not changed
+  fail:
+    msg: "The deployment.namespace cannot be changed to a different value. It was [{{ current_cr.status.deployment.namespace }}] but is now [{{ kiali_vars.deployment.namespace }}]. In order to install Kiali with a different deployment.namespace, please uninstall Kiali first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.namespace is defined
+  - current_cr.status.deployment.namespace != kiali_vars.deployment.namespace
+
+- name: Ensure the deployment.remote_cluster_resources_only has not changed
+  fail:
+    msg: "The deployment.remote_cluster_resources_only cannot be changed to a different value. It was [{{ current_cr.status.deployment.remoteClusterResourcesOnly }}] but is now [{{ kiali_vars.deployment.remote_cluster_resources_only }}]. In order to change to a different deployment.remote_cluster_resources_only value, please delete the Kiali CR first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment.remoteClusterResourcesOnly is defined
+  - current_cr.status.deployment.remoteClusterResourcesOnly is defined
+  - current_cr.status.deployment.remoteClusterResourcesOnly != kiali_vars.deployment.remote_cluster_resources_only
+
+- name: Only allow ad-hoc kiali namespace when appropriate
+  fail:
+    msg: "The operator is forbidden from installing Kiali in a namespace [{{ kiali_vars.deployment.namespace }}] that is different from the namespace where the CR was created [{{ current_cr.metadata.namespace }}]"
+  when:
+  - kiali_vars.deployment.namespace != current_cr.metadata.namespace
+  - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
+
+- name: Make sure instance_name follows the DNS label standard because it will be a Service name
+  fail:
+    msg: "The value for deployment.instance_name [{{ kiali_vars.deployment.instance_name }}] does not follow the DNS label standard as defined in RFC 1123. In short, it must only contain lowercase alphanumeric characters or '-'."
+  when:
+  # regex must follow https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
+  # restrict to 40 chars, not 63, because instance_name is a prefix and we need to prepend additional chars for some resource names (like "-service-account")
+  - kiali_vars.deployment.instance_name is not regex('^(?![0-9]+$)(?!-)[a-z0-9-]{,40}(?<!-)$')
+
+# We know that when CWA=true we will create a cluster role binding whose name is deployment.instance_name and has a
+# single "subjects" item that refers to the Kiali SA. Make sure there is no cluster role binding that already exists
+# with that name but does not have a subject pointing to this Kiali's SA. If there is, that means another Kiali is
+# already installed with CWA=true and with the same instance name. This is not allowed because it will conflict
+# with the cluster role binding for the Kiali we are installing. Abort the reconciliation when this is detected.
+- name: Do not allow multiple Kiali Servers with the same deployment.instance_name to have CWA=true
+  vars:
+    current_rolebinding: "{{ query(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, api_version='rbac.authorization.k8s.io/v1', kind='ClusterRoleBinding', errors='ignore') }}"
+  fail:
+    msg: "There is already a Kiali Server installed with `deployment.instance_name` of [{{ kiali_vars.deployment.instance_name }}] that has 'deployment.cluster_wide_access' set to true. You must use a different instance name."
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+  - current_rolebinding is defined
+  - current_rolebinding | length > 0
+  - current_rolebinding[0].subjects is defined
+  - current_rolebinding[0].subjects | length > 0
+  - current_rolebinding[0].subjects[0].name != kiali_vars.deployment.instance_name + '-service-account' or current_rolebinding[0].subjects[0].namespace != kiali_vars.deployment.namespace
+
+- name: "Determine environment to store in status"
+  set_fact:
+    status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
+  loop: "{{ data[0] | zip(data[1]) | list }}"
+  vars:
+    data:
+    - ['isKubernetes', 'isOpenshift', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
+    - ["{{is_k8s}}", "{{is_openshift}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
+  when:
+  - item.1 != ""
+  - item.1 != "false"
+  - item.1 != False
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Setting up configuration"
+    status_vars:
+      environment: "{{ status_environment | default({}) }}"
+      deployment:
+        instanceName: "{{ kiali_vars.deployment.instance_name }}"
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+        remoteClusterResourcesOnly: "{{ kiali_vars.deployment.remote_cluster_resources_only }}"
+
+- name: Validate web_schema configuration
+  fail:
+    msg: "Invalid server.web_schema [{{ kiali_vars.server.web_schema }}]! Must be empty, or one of either 'http' or 'https'"
+  when:
+  - kiali_vars.server.web_schema != ''
+  - kiali_vars.server.web_schema != 'https'
+  - kiali_vars.server.web_schema != 'http'
+
+- name: Validate web_history_mode configuration
+  fail:
+    msg: "Invalid server.web_history_mode [{{ kiali_vars.server.web_history_mode }}]! Must be empty, or one of either 'browser' or 'hash'"
+  when:
+  - kiali_vars.server.web_history_mode != ''
+  - kiali_vars.server.web_history_mode != 'browser'
+  - kiali_vars.server.web_history_mode != 'hash'
+
+- name: Only allow ad-hoc kiali image when appropriate
+  fail:
+    msg: "The operator is forbidden from accepting a Kiali CR that defines an ad hoc Kiali image [{{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}]. Remove spec.deployment.image_name, spec.deployment.image_version, and spec.deployment.image_digest from the Kiali CR."
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != "" or kiali_vars.deployment.image_digest != ""
+  - lookup('env', 'ALLOW_AD_HOC_KIALI_IMAGE') | default('false', True) != "true"
+
+# We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
+# provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
+# values accordingly.
+# We determine the default Istio namespace var first, and the rest will use it for their default as appropriate.
+
+- name: Set configuration defaults
+  vars:
+    resource_limits_default:
+      requests:
+        cpu: "10m"
+        memory: "64Mi"
+      limits:
+        memory: "1Gi"
+    kiali_vars_yaml: |
+      {# Initialize #}
+      {% set kv = kiali_vars %}
+
+      {# Set default istio namespace #}
+      {% if kv.istio_namespace == "" %}
+      {% set kv = kv | combine({'istio_namespace': kv.deployment.namespace}, recursive=True) %}
+      {% endif %}
+
+      {# Set default root namespace #}
+      {% if kv.external_services.istio.root_namespace == "" %}
+      {% set kv = kv | combine({'external_services': {'istio': {'root_namespace': kv.istio_namespace}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default Grafana internal_url #}
+      {% if kv.external_services.grafana.internal_url is not defined %}
+      {% set kv = kv | combine({'external_services': {'grafana': {'internal_url': 'http://grafana.' + kv.istio_namespace + ':3000'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default Tracing internal_url for grpc consumption #}
+      {% if kv.external_services.tracing.internal_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.istio_namespace + ':16685/jaeger'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default Tracing internal_url for http consumption #}
+      {% if kv.external_services.tracing.internal_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default Prometheus URL #}
+      {% if kv.external_services.prometheus.url == "" %}
+      {% set kv = kv | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kv.istio_namespace + ':9090'}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default HPA api_version #}
+      {% if kv.deployment.hpa.api_version == "" %}
+      {% set kv = kv | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if (api_status.apis['autoscaling/v2'] is defined) else 'autoscaling/v2beta2' }}}, recursive=True) %}
+      {% endif %}
+
+      {# Provide some default resource limits #}
+      {% if kv.deployment.resources is not defined %}
+      {% set kv = kv | combine({'deployment': {'resources': resource_limits_default }}, recursive=True) %}
+      {% endif %}
+
+      {# Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift) #}
+      {% if kv.deployment.ingress.enabled is not defined or kv.deployment.ingress.enabled == "" %}
+      {% set kv = kv | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default tracing use_grpc setting #}
+      {% if kv.external_services.tracing.use_grpc is not defined %}
+      {% set kv = kv | combine({'external_services': {'tracing': { 'use_grpc': True }}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default web root based on cluster type #}
+      {% if kv.server.web_root == "" %}
+      {% set kv = kv | combine({'server': {'web_root': '/' if is_openshift else '/kiali'}}, recursive=True) %}
+      {% endif %}
+
+      {# Make sure web root never ends with a slash #}
+      {% if kv.server.web_root != "/" and kv.server.web_root is match(".*/$") %}
+      {% set kv = kv | combine({'server': {'web_root': kv.server.web_root | regex_replace('\\/$', '')}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default identity cert_file based on cluster type (non-OpenShift clusters do not get a default identity) #}
+      {% if kv.identity.cert_file is not defined %}
+      {% set kv = kv | combine({'identity': {'cert_file': '/kiali-cert/tls.crt' if is_openshift else ''}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default identity private_key_file based on cluster type (non-OpenShift clusters do not get a default identity) #}
+      {% if kv.identity.private_key_file is not defined %}
+      {% set kv = kv | combine({'identity': {'private_key_file': '/kiali-cert/tls.key' if is_openshift else ''}}, recursive=True) %}
+      {% endif %}
+
+      {# Default the image name to a known supported image. #}
+      {% if kv.deployment.image_name == "" %}
+      {% set kv = kv | combine({'deployment': {'image_name': supported_kiali_images[kv.version].image_name}}, recursive=True) %}
+      {% endif %}
+
+      {# Default the image version to a known supported image. #}
+      {% if kv.deployment.image_version == "" %}
+      {% set kv = kv | combine({'deployment': {'image_version': ('latest' if operator_version == 'master' else operator_version) if supported_kiali_images[kv.version].image_version == 'operator_version' else supported_kiali_images[kv.version].image_version}}, recursive=True) %}
+      {% endif %}
+
+      {# If image version is latest then we will want to always pull #}
+      {% if kv.deployment.image_version == "latest" %}
+      {% set kv = kv | combine({'deployment': {'image_pull_policy': 'Always'}}, recursive=True) %}
+      {% endif %}
+
+      {# Set default auth strategy based on cluster type #}
+      {% if kv.auth.strategy == "" %}
+      {% set kv = kv | combine({'auth': {'strategy': 'openshift' if is_openshift else 'token'}}, recursive=True) %}
+      {% endif %}
+
+      {# Use OpenShift service CA file for Grafana #}
+      {% if is_openshift == True and (kv.external_services.grafana.auth.ca_file is not defined or kv.external_services.grafana.auth.ca_file == '') %}
+      {% set kv = kv | combine({'external_services': {'grafana': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
+      {% endif %}
+
+      {# Use OpenShift service CA file for Prometheus #}
+      {% if is_openshift == True and (kv.external_services.prometheus.auth.ca_file is not defined or kv.external_services.prometheus.auth.ca_file == '') %}
+      {% set kv = kv | combine({'external_services': {'prometheus': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
+      {% endif %}
+
+      {# Use OpenShift service CA file for Tracing #}
+      {% if is_openshift == True and (kv.external_services.tracing.auth.ca_file is not defined or kv.external_services.tracing.auth.ca_file == '') %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
+      {% endif %}
+
+      {# Set the yaml to the new kv dict #}
+      {{ kv | to_nice_yaml }}
+  set_fact:
+    kiali_vars: "{{ kiali_vars_yaml | from_yaml }}"
+
+# Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
+- debug:
+    msg: "AUTH STRATEGY={{ kiali_vars.auth.strategy }}"
+- name: Confirm auth strategy is valid for OpenShift environments
+  fail:
+    msg: "Invalid auth.strategy [{{ kiali_vars.auth.strategy }}]! Must be one of either 'openshift', 'token' or 'anonymous'"
+  when:
+  - is_openshift == True
+  - kiali_vars.auth.strategy != 'anonymous'
+  - kiali_vars.auth.strategy != 'openshift'
+  - kiali_vars.auth.strategy != 'token'
+- name: Confirm auth strategy is valid for Kubernetes environments
+  fail:
+    msg: "Invalid auth.strategy [{{ kiali_vars.auth.strategy }}]! Must be one of either 'token', 'openid', 'anonymous', or 'header'"
+  when:
+  - is_k8s == True
+  - kiali_vars.auth.strategy != 'anonymous'
+  - kiali_vars.auth.strategy != 'token'
+  - kiali_vars.auth.strategy != 'openid'
+  - kiali_vars.auth.strategy != 'header'
+- name: Confirm OpenID configuration when auth strategy is 'openid'
+  fail:
+    msg: "Invalid configuration for OpenID connect! The mandatory parameters should be provided: 'issuer_uri', 'client_id'. Also, the 'username_claim' cannot be set to the empty string."
+  when:
+  - kiali_vars.auth.strategy == "openid"
+  - kiali_vars.auth.openid.issuer_uri == "" or kiali_vars.auth.openid.client_id == "" or kiali_vars.auth.openid.username_claim == ""
+- name: Check valid value for api_token on OpenID configuration
+  fail:
+    msg: "Invalid configuration for OpenID connect! The api_token must be either 'id_token' or 'access_token'"
+  when:
+    - kiali_vars.auth.strategy == "openid"
+    - kiali_vars.auth.openid.api_token != "id_token"
+    - kiali_vars.auth.openid.api_token != "access_token"
+# Fail if ingress is disabled but auth_strategy is openshift. This is because the openshift auth strategy
+# requires OAuth Client which requires a Route. So ingress must be enabled if strategy is openshift.
+- name: Ensure Ingress is Enabled if Auth Strategy is openshift
+  fail:
+    msg: "The auth.strategy is 'openshift' which requires a Route, but deployment.ingress.enabled is false. Aborting."
+  when:
+  - kiali_vars.auth.strategy == "openshift"
+  - kiali_vars.deployment.ingress.enabled|bool == False
+
+- name: Confirm the cluster can access github.com when it needs to determine the last release of Kiali
+  uri:
+    url: https://api.github.com/repos/kiali/kiali-operator/releases
+  when:
+  - kiali_vars.deployment.image_version == "lastrelease"
+- name: Determine image version when last release is to be installed
+  shell: echo -n $(curl -s https://api.github.com/repos/kiali/kiali-operator/releases 2> /dev/null | grep "tag_name" | sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | grep -v "snapshot" | sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | tail -n 1)
+  register: github_lastrelease
+  when:
+  - kiali_vars.deployment.image_version == "lastrelease"
+- set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_version': github_lastrelease.stdout}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.image_version == "lastrelease"
+
+- name: Determine image version when it explicitly was configured as the operator_version
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'image_version': 'latest' if operator_version == 'master' else operator_version}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.image_version == "operator_version"
+
+- fail:
+    msg: "Could not determine what the image version should be. Set deployment.image_version to a valid value"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.deployment.image_version == "" or kiali_vars.deployment.image_version == "unknown"
+
+- name: Determine version_label based on image_version
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'version_label': 'master' if kiali_vars.deployment.image_version == 'latest' else kiali_vars.deployment.image_version}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.version_label == ""
+
+# Kubernetes limits the length of version label strings to 63 characters or less - make sure the label is valid.
+- name: Trim version_label when appropriate
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'version_label': kiali_vars.deployment.version_label[:60] + 'XXX' }}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.version_label | length > 63
+
+# Indicate which Kiali image we are going to use.
+- debug:
+    msg: "IMAGE_NAME={{ kiali_vars.deployment.image_name }}; IMAGE VERSION={{ kiali_vars.deployment.image_version }}; VERSION LABEL={{ kiali_vars.deployment.version_label }}"
+
+- name: Determine what metadata labels to apply to all created resources
+  set_fact:
+    kiali_resource_metadata_labels:
+      app: kiali
+      version: "{{ kiali_vars.deployment.version_label }}"
+      app.kubernetes.io/name: kiali
+      app.kubernetes.io/version: "{{ kiali_vars.deployment.version_label }}"
+      app.kubernetes.io/instance: "{{ kiali_vars.deployment.instance_name }}"
+      app.kubernetes.io/part-of: kiali
+
+# Determine the namespaces Kiali is to be given access.
+# If the user did not specify Kiali's own namespace in the discovery selectors, it will be added to the list automatically.
+# NOTE: if deployment.cluster_wide_access is true, that means Kiali is to be given access to all namespaces via ClusterRoles
+#       (as opposed to individual roles in each accessible namespace). If deployment.cluster_wide_access is False then we
+#       create individual Roles per namespace.
+
+- name: Determine the Role and RoleBinding kinds that the operator will create and that the role templates will use
+  set_fact:
+    role_kind: "{{ 'ClusterRole' if kiali_vars.deployment.cluster_wide_access == True else 'Role' }}"
+    role_binding_kind: "{{ 'ClusterRoleBinding' if kiali_vars.deployment.cluster_wide_access == True else 'RoleBinding' }}"
+
+- name: Determine if the operator can support cluster wide access - can_i create clusterroles
+  register: can_i_create_clusterroles
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterroles
+          verb: create
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+
+- name: Determine if the operator can support cluster wide access - can_i create clusterrolebindings
+  register: can_i_create_clusterrolebindings
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterrolebindings
+          verb: create
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+
+- fail:
+    msg: "The operator cannot support deployment.cluster_wide_access set to 'true' because it does not have permissions to create ClusterRoles"
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+  - can_i_create_clusterroles is defined
+  - can_i_create_clusterroles.result is defined
+  - can_i_create_clusterroles.result.status is defined
+  - can_i_create_clusterroles.result.status.allowed is defined
+  - can_i_create_clusterroles.result.status.allowed == False
+
+- fail:
+    msg: "The operator cannot support deployment.cluster_wide_access set to 'true' because it does not have permissions to create ClusterRoleBindings"
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+  - can_i_create_clusterrolebindings is defined
+  - can_i_create_clusterrolebindings.result is defined
+  - can_i_create_clusterrolebindings.result.status is defined
+  - can_i_create_clusterrolebindings.result.status.allowed is defined
+  - can_i_create_clusterrolebindings.result.status.allowed == False
+
+- include_tasks: get-discovery-selector-namespaces.yml
+
+- name: Make sure the Kiali deployment namespace and the Istio control plane namespace are accessible
+  set_fact:
+    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
+
+- name: Listing of all namespaces that are accessible to Kiali
+  debug:
+    msg: "Cluster-wide Access=[{{ kiali_vars.deployment.cluster_wide_access }}], Discovered Namespaces={{ discovery_selector_namespaces }}"
+
+- name: Abort if all namespace access is not allowed
+  fail:
+    msg: "The operator is forbidden from installing Kiali with deployment.cluster_wide_access set to 'true'"
+  when:
+  - kiali_vars.deployment.cluster_wide_access == True
+  - lookup('env', 'ALLOW_ALL_ACCESSIBLE_NAMESPACES') | default('false', True) != "true"
+
+# We want to convert discovery selectors so they use only matchExpressions values on namespace names so the server can find the exact
+# namespaces we found since these namespaces are the only ones that the Kiali Server will be granted permission to see.
+# Note that we only do this if cluster_wide_access is False, because that is when the operator will create the Roles for each namespace.
+# If the server will have cluster wide access, all namespaces can be accessed via the main ClusterRole, so it is OK if the server
+# discovers different namespaces using the original selectors.
+- name: Convert the discovery selectors to all matchExpressions values so they match the namespace names.
+  set_fact:
+    discovery_selectors_match_expressions: "{{ (discovery_selectors_match_expressions|default([])) + [{'matchExpressions': [{'key': 'kubernetes.io/metadata.name', 'operator': 'In', 'values': discovery_selector_namespaces }] }] }}"
+  when:
+  - kiali_vars.deployment.cluster_wide_access == False
+- set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'discovery_selectors': {'default': discovery_selectors_match_expressions}}}, recursive=True) }}"
+  when:
+  - discovery_selectors_match_expressions is defined
+
+- name: Define the namespace labels that will be used when needed
+  set_fact:
+    kiali_instance_label_name: "kiali.io/{{ kiali_vars.deployment.instance_name }}.home"
+    kiali_instance_label_value: "{{ kiali_vars.deployment.namespace }}"
+
+# If the signing key is not empty string, and is not of the special value secret:name:key,
+# do some validation on it's length
+- name: Validate signing key, if it is set in the CR
+  fail:
+    msg: "Signing key must be 16, 24 or 32 byte length"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.auth.strategy != 'anonymous'
+  - kiali_vars.login_token.signing_key != ""
+  - not(kiali_vars.login_token.signing_key | regex_search('secret:.+:.+'))
+  - kiali_vars.login_token.signing_key | length != 16
+  - kiali_vars.login_token.signing_key | length != 24
+  - kiali_vars.login_token.signing_key | length != 32
+
+# If the signing key is empty string, we need to ensure a signing key secret exists. If one does not exist, we need to generate one.
+# Note that to avoid granting to the operator the very powerful permission to CRUD all secrets in all namespaces, we always generate
+# a signing key secret with the name "kiali-signing-key" regardless of the value of kiali_vars.deployment.instance_name.
+# Thus, all Kiali instances will be using the same signing key secret name. If the user does not want this, they can generate their
+# own secret with their own key (which is a smart thing to do anyway). The user tells the operator what the name of that secret
+# signing key is via "login_token.signing_key" with value "secret:<theSecretName>:<theSecretKey>".
+
+- name: Get information about any existing signing key secret if we need to know if it exists or not
+  k8s_info:
+    api_version: v1
+    kind: Secret
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: kiali-signing-key
+  register: signing_key_secret_raw
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.login_token.signing_key == ""
+
+- name: Create kiali-signing-key secret to store a random signing key if a secret does not already exist and we need one
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+        name: kiali-signing-key
+        labels: "{{ kiali_resource_metadata_labels }}"
+      type: Opaque
+      data:
+        key: "{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') | b64encode }}"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.login_token.signing_key == ""
+  - signing_key_secret_raw is defined
+  - signing_key_secret_raw.resources is defined
+  - signing_key_secret_raw.resources | length == 0
+
+# Because we must use a fixed name for the secret, we need to attach a label to indicate this Kiali install will be using it.
+# This allows multiple Kiali instances deployed in the same namespace to share the secret. This secret won't be removed
+# as long as our label exists on the secret resource.
+- name: Add label to kiali-signing-key secret to make it known this Kiali instance will be using it
+  k8s:
+    state: present
+    definition: |
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        namespace: "{{ kiali_vars.deployment.namespace }}"
+        name: kiali-signing-key
+        labels:
+          {{ kiali_instance_label_name }}: {{ kiali_instance_label_value }}
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.login_token.signing_key == ""
+
+- name: Point signing key to the generated secret
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'login_token': {'signing_key': 'secret:kiali-signing-key:key'}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.login_token.signing_key == ""
+
+# Some credentials in the config can be overridden by secrets that are to be mounted on the file system.
+# Prepare these overrides that need to be defined as volumes in the deployment.
+
+- name: Prepare secret volumes for external services
+  vars:
+    kiali_deployment_secret_volumes_yaml: |-
+      {# Initialize #}
+      {% set d = {} %}
+
+      {# Prepare the secret volume for prometheus username #}
+      {% if kiali_vars.external_services.prometheus.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-username': {'secret_name': kiali_vars.external_services.prometheus.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for prometheus password #}
+      {% if kiali_vars.external_services.prometheus.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-password': {'secret_name': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for prometheus token #}
+      {% if kiali_vars.external_services.prometheus.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-token': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for tracing username #}
+      {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-username': {'secret_name': kiali_vars.external_services.tracing.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for tracing password #}
+      {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-password': {'secret_name': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for tracing token #}
+      {% if kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-token': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana username #}
+      {% if kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-username': {'secret_name': kiali_vars.external_services.grafana.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana password #}
+      {% if kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-password': {'secret_name': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana token #}
+      {% if kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-token': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for login token signing key #}
+      {% if kiali_vars.login_token.signing_key | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus username #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-username': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus password #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-password': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus token #}
+      {% if kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-token': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Set the yaml to the new dict #}
+      {{ d | to_nice_yaml }}
+  set_fact:
+    kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes_yaml | from_yaml }}"
+
+# Prepare to mount remote cluster secrets. These must exist in the Kiali deployment namespace because that is required in order to mount them to the pod.
+- set_fact:
+    kiali_deployment_remote_cluster_secret_volumes: {}
+
+- name: Autodetect remote cluster secrets within the Kiali deployment namespace
+  vars:
+    all_remote_cluster_secrets: "{{ query(k8s_plugin, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='Secret', label_selector=kiali_vars.clustering.autodetect_secrets.label) }}"
+  loop: "{{ all_remote_cluster_secrets }}"
+  set_fact:
+    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine({ item.metadata.annotations['kiali.io/cluster']|default(item.metadata.name): {'secret_name': item.metadata.name }}) }}"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.clustering.autodetect_secrets.enabled
+
+- name: Prepare the manually declared remote clusters
+  loop: "{{ kiali_vars.clustering.clusters }}"
+  set_fact:
+    kiali_deployment_remote_cluster_secret_volumes: "{{ kiali_deployment_remote_cluster_secret_volumes | combine(({ item.name: {'secret_name': item.secret_name }}) if (item.secret_name is defined and item.secret_name | length > 0) else {}) }}"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False
+  - kiali_vars.clustering.clusters | length > 0
+
+# The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
+
+- name: Find current configmap, if it exists
+  set_fact:
+    current_configmap: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='v1', kind='ConfigMap') }}"
+
+- name: Find some current configuration settings, if they exist
+  set_fact:
+    current_view_only_mode: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.view_only_mode') }}"
+    current_image_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_name') }}"
+    current_image_version: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.image_version') }}"
+    current_instance_name: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.instance_name') }}"
+    current_auth_strategy: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('auth.strategy') }}"
+    current_cluster_wide_access: "{{ current_configmap.data['config.yaml'] | from_yaml | json_query('deployment.cluster_wide_access') }}"
+  when:
+  - current_configmap is defined
+  - current_configmap.data is defined
+  - current_configmap.data['config.yaml'] is defined
+
+- name: Examine namespace labels in order to determine the namespaces that Kiali currently has access to
+  vars:
+    label: "{{ kiali_instance_label_name }}={{ kiali_instance_label_value }}"
+  set_fact:
+    namespaces_currently_accessible: "{{ query(k8s_plugin, kind='Namespace', label_selector=label) | default({}) | json_query('[].metadata.name') }}"
+
+- name: Determine if we are moving to cluster-wide-access in which case we need to pretend to make all namespaces inaccessible so the Roles are removed
+  set_fact:
+    namespaces_no_longer_accessible: "{{ namespaces_currently_accessible }}"
+  when:
+  - namespaces_currently_accessible is defined
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access|bool == False
+  - kiali_vars.deployment.cluster_wide_access == True
+
+- name: Determine the namespaces that were previously accessible but are now inaccessible
+  set_fact:
+    namespaces_no_longer_accessible: "{{ namespaces_currently_accessible | difference(discovery_selector_namespaces) }}"
+  when:
+  - namespaces_no_longer_accessible is not defined
+  - namespaces_currently_accessible is defined
+  - discovery_selector_namespaces is defined
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access|bool == False
+  - kiali_vars.deployment.cluster_wide_access == False
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Deleting obsolete roles"
+
+- name: Delete all additional Kiali roles from namespaces that Kiali no longer has access to
+  include_tasks: remove-roles.yml
+  vars:
+    role_namespaces: "{{ namespaces_no_longer_accessible }}"
+  when:
+  - namespaces_no_longer_accessible is defined
+
+- name: Delete Kiali cluster roles if no longer given special access to all namespaces
+  include_tasks: remove-clusterroles.yml
+  when:
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access|bool == True
+  - kiali_vars.deployment.cluster_wide_access == False
+
+# Role Bindings are always "view-only" unless auth.strategy is anonymous and view_only_mode is false.
+# If the view_only_mode or auth.strategy changes, we'll delete the roles to make sure we create the correct ones.
+# We need to see if the currently installed role binding is view-only - this is used to not break upgrades. See: https://github.com/kiali/kiali/issues/5695
+- name: Determine if the currently installed role binding in the deployment namespace is view-only
+  vars:
+    current_rolebinding: "{{ query(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='rbac.authorization.k8s.io/v1', kind=role_binding_kind, errors='ignore') }}"
+  set_fact:
+    current_rolebinding_view_only: "{{ (current_rolebinding | length == 1) and (current_rolebinding[0].roleRef.name is regex('^.*-viewer$')) }}"
+
+- name: Delete all Kiali roles from namespaces if view_only_mode or auth.strategy is changing since role bindings are immutable
+  include_tasks: remove-roles.yml
+  vars:
+    role_namespaces: "{{ discovery_selector_namespaces }}"
+  when:
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access|bool == False
+  - kiali_vars.deployment.cluster_wide_access == False
+  - current_view_only_mode is defined
+  - current_auth_strategy is defined
+  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy) or (current_rolebinding_view_only|bool == False and kiali_vars.auth.strategy != 'anonymous')
+
+- name: Delete Kiali cluster roles if view_only_mode or auth.strategy is changing since cluster role bindings are immutable
+  include_tasks: remove-clusterroles.yml
+  when:
+  - current_cluster_wide_access is defined
+  - current_cluster_wide_access|bool == True
+  - kiali_vars.deployment.cluster_wide_access == True
+  - current_view_only_mode is defined
+  - current_auth_strategy is defined
+  - (current_view_only_mode|bool != kiali_vars.deployment.view_only_mode|bool) or (current_auth_strategy != kiali_vars.auth.strategy) or (current_rolebinding_view_only|bool == False and kiali_vars.auth.strategy != 'anonymous')
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Processing namespace labels"
+
+- name: Remove Kiali label from namespaces that Kiali no longer has access to
+  # if a namespace happened to have been deleted, we do not want to (nor can we) resurrect it, hence we use state=patched
+  k8s:
+    state: patched
+    definition: |
+      {% for namespace in namespaces_no_longer_accessible %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ kiali_instance_label_name }}: null
+      ...
+      {% endfor %}
+  when:
+  - namespaces_no_longer_accessible is defined
+
+- name: Create additional Kiali labels on all accessible namespaces
+  vars:
+    namespaces: "{{ discovery_selector_namespaces }}"
+  k8s:
+    state: patched
+    definition: |
+      {% for namespace in namespaces %}
+      ---
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace }}"
+        labels:
+          {{ kiali_instance_label_name }}: "{{ kiali_instance_label_value }}"
+      ...
+      {% endfor %}
+  when:
+  - kiali_vars.deployment.cluster_wide_access == False
+
+- name: Delete Kiali deployment if image is changing - this uninstalled any old version of Kiali that might be running
+  k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
+  when:
+  - current_image_name is defined and current_image_version is defined
+  - (current_image_name != kiali_vars.deployment.image_name) or (current_image_version != kiali_vars.deployment.image_version)
+
+# Get the deployment's custom annotation we set that tells us when we last updated the Deployment.
+# We need this to ensure the Deployment we update retains this same timestamp unless changes are made
+# that requires a pod restart - in which case we update this timestamp.
+- name: Find current deployment, if it exists
+  set_fact:
+    current_deployment: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
+
+- name: Get current deployment last-updated annotation timestamp from existing deployment
+  set_fact:
+    current_deployment_last_updated: "{{ current_deployment.spec.template.metadata.annotations['operator.kiali.io/last-updated'] if current_deployment.spec.template.metadata.annotations['operator.kiali.io/last-updated'] is defined else lookup('pipe','date') }}"
+    deployment_is_new: false
+  when:
+  - current_deployment is defined
+  - current_deployment.spec is defined
+  - current_deployment.spec.template is defined
+  - current_deployment.spec.template.metadata is defined
+  - current_deployment.spec.template.metadata.annotations is defined
+
+- name: Set current deployment last-updated annotation timestamp for new deployments
+  set_fact:
+    current_deployment_last_updated: "{{ lookup('pipe','date') }}"
+    deployment_is_new: true
+  when:
+  - current_deployment_last_updated is not defined
+
+# Now deploy all resources for the specific cluster environment
+
+- name: Execute for OpenShift environment
+  include_tasks: openshift/os-main.yml
+  vars:
+    deployment_last_updated: "{{ current_deployment_last_updated }}"
+  when:
+  - is_openshift == True
+
+- name: Execute for Kubernetes environment
+  include_tasks: kubernetes/k8s-main.yml
+  vars:
+    deployment_last_updated: "{{ current_deployment_last_updated }}"
+  when:
+  - is_k8s == True
+
+# If something changed that can only be picked up when the Kiali pod starts up, then restart the Kiali pod using a rolling restart
+# We do this by checking the processed_resources_dict created by process-resources.yml task. If there is a map key
+# with the kind (ConfigMap) with the name of our config map appended to it ("-" + the kiali instanance name) see if that config map changed.
+# If it did, we need to restart the kiali pod so it can re-read the new config.
+- name: Force the Kiali pod to restart if necessary
+  vars:
+    keyname: "{{ 'ConfigMap-' + kiali_vars.deployment.instance_name }}"
+    updated_deployment: "{{ lookup(k8s_plugin, resource_name=kiali_vars.deployment.instance_name, namespace=kiali_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
+  k8s:
+    state: "present"
+    definition: "{{ updated_deployment }}"
+  when:
+  - kiali_vars.deployment.remote_cluster_resources_only|bool== False
+  - deployment_is_new == False
+  - processed_resources_dict is defined
+  - processed_resources_dict[keyname] is defined
+  - processed_resources_dict[keyname].changed == True
+  - processed_resources_dict[keyname].method == "update"
+
+# If the list of namespaces is manageable, store them in a comma-separate list.
+# Otherwise, we'll just log the count. The purpose of this discoverySelectorNamespaces status field is
+# just to inform the user how many namespaces the operator processed.
+# Note that we only populate the discoverySelectorNamespaces if we are NOT in cluster wide access mode.
+# This is because we really only care about what namespaces the operator discovered when
+# not in cluster wide access mode as these are the namespaces where the Roles are created (they are
+# the namespaces Kiali is granted permission to see).
+- include_tasks: update-status-progress.yml
+  vars:
+    noDsn:
+      discoverySelectorNamespaces: null
+    listDsn:
+      discoverySelectorNamespaces: "{{ ('Number of namespaces (including control plane namespace): ' + (discovery_selector_namespaces | length | string)) if (discovery_selector_namespaces | length > 20) else (discovery_selector_namespaces | join(',')) }}"
+    status_progress_message: "Finished all resource creation"
+    status_vars:
+      deployment: "{{ listDsn if (kiali_vars.deployment.cluster_wide_access == False and discovery_selector_namespaces is defined) else noDsn }}"
