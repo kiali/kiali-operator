@@ -522,6 +522,7 @@ spec:
     port: 20001
     profiler:
       enabled: false
+    require_auth: false
     web_fqdn: ""
     web_history_mode: ""
     web_port: ""

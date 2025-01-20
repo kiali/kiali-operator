@@ -1490,6 +1490,9 @@ spec:
                       enabled:
                         description: "When 'true', the profiler will be enabled and accessible at /debug/pprof/ on the Kiali endpoint."
                         type: boolean
+                  require_auth:
+                    description: "When true, the /api endpoint will require users to authenticate themselves. When false, users need not authenticate with Kiali in order to get basic runtime info about the server via the /api endpoint. This setting is ignored if auth.strategy is 'anonymous'."
+                    type: boolean
                   web_fqdn:
                     description: "Defines the public domain where Kiali is being served. This is the 'domain' part of the URL (usually it's a fully-qualified domain name). For example, `kiali.example.org`. When empty, Kiali will try to guess this value from HTTP headers. On non-OpenShift clusters, you must populate this value if you want to enable cross-linking between Kiali instances in a multi-cluster setup."
                     type: string
