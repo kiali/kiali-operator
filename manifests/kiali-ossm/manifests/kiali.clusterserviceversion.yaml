@@ -405,6 +405,15 @@ spec:
           - create
           - list
           - watch
+        # the following get-secrets can be removed after 1.73 is no longer supported
+        - apiGroups: [""]
+          resourceNames:
+          - cacerts
+          - istio-ca-secret
+          resources:
+          - secrets
+          verbs:
+          - get
         - apiGroups: [""]
           resourceNames:
           - kiali-signing-key
