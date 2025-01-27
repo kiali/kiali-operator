@@ -225,21 +225,6 @@ spec:
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
   apiservicedefinitions: {}
-  relatedImages:
-  - name: kiali_default
-    image: "${KIALI_2_4}"
-  - name: kiali_v2_4
-    image: "${KIALI_2_4}"
-  - name: kiali_v1_73
-    image: "${KIALI_1_73}"
-  - name: kiali_v1_65
-    image: "${KIALI_1_65}"
-  - name: ossmconsole_default
-    image: "${OSSMCONSOLE_2_4}"
-  - name: ossmconsole_v2_4
-    image: "${OSSMCONSOLE_2_4}"
-  - name: ossmconsole_v1_73
-    image: "${OSSMCONSOLE_1_73}"
   install:
     strategy: deployment
     spec:
@@ -352,15 +337,15 @@ spec:
                 - name: RELATED_IMAGE_kiali_default
                   value: "${KIALI_2_4}"
                 - name: RELATED_IMAGE_kiali_v2_4
-                  value: "${KIALI_2_4}"
+                  value: "${KIALI_2_4}"  
                 - name: RELATED_IMAGE_kiali_v1_73
                   value: "${KIALI_1_73}"
                 - name: RELATED_IMAGE_kiali_v1_65
-                  value: "${KIALI_1_65}"
+                  value: "${KIALI_1_65}"                
                 - name: RELATED_IMAGE_ossmconsole_default
                   value: "${OSSMCONSOLE_2_4}"
                 - name: RELATED_IMAGE_ossmconsole_v2_4
-                  value: "${OSSMCONSOLE_2_4}"
+                  value: "${OSSMCONSOLE_2_4}"  
                 - name: RELATED_IMAGE_ossmconsole_v1_73
                   value: "${OSSMCONSOLE_1_73}"
                 ports:
