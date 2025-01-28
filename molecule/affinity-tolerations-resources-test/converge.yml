@@ -14,7 +14,7 @@
       that:
       - kiali_deployment.resources[0].spec.replicas == 1
 
-  # set affinity and tolerations and resources and pod_annotations and service_annotations and pod_labels
+  # set affinity, tolerations, resources, and other things we are going to test
   - import_tasks: set-affinity-tolerations-resources.yml
     vars:
       new_affinity:
@@ -76,6 +76,13 @@
       new_ingress_labels:
         aaa: bbb
         camelCaseName: camelCaseValue
+      new_topology_spread_constraints:
+      - maxSkew: 10
+        labelSelector:
+          matchLabels:
+            app: foo
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - name: Now expect that HPA will set replicas to 2
     import_tasks: ../common/wait_for_kiali_running.yml
@@ -145,6 +152,16 @@
       - ingress.resources[0].metadata.labels.camelCaseName == 'camelCaseValue'
       fail_msg: "Missing additional ingress labels: {{ ingress }}"
 
+  - name: Assert that topology spread constraints was applied
+    assert:
+      that:
+      - "{{ kiali_deployment.resources[0].spec.template.spec.topologySpreadConstraints | length > 0 }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.topologySpreadConstraints[0].maxSkew == 10 }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.topologySpreadConstraints[0].whenUnsatisfiable == 'ScheduleAnyway' }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.topologySpreadConstraints[0].topologyKey == 'kubernetes.io/hostname' }}"
+      - "{{ kiali_deployment.resources[0].spec.template.spec.topologySpreadConstraints[0].labelSelector.matchLabels.app == 'foo' }}"
+      fail_msg: "Topology Spread Contraints was not applied successfully: {{ kiali_deployment.resources[0].spec.template.spec }}"
+
   - name: Get the HPA resource that should now exist
     k8s_info:
       api_version: autoscaling/v2
@@ -193,6 +210,7 @@
       new_pod_labels: null
       new_hpa: null
       new_ingress_labels: null
+      new_topology_spread_constraints: null
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - name: Replicas should be back to 1 now that HPA is no longer defined
     import_tasks: ../common/wait_for_kiali_running.yml
@@ -236,6 +254,11 @@
     assert:
       that:
       - kiali_deployment.resources[0].spec.replicas == 1
+
+  - name: Assert that topology spread constraints were removed
+    assert:
+      that:
+      - "{{ kiali_deployment.resources[0].spec.template.spec.topologySpreadConstraints is not defined }}"
 
 # There is no mechanism in the operator right now that let's you remove an already existing annotation.
 # See: https://github.com/kiali/kiali/issues/2247
