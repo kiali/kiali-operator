@@ -669,6 +669,12 @@ spec:
                     items:
                       type: object
                       x-kubernetes-preserve-unknown-fields: true
+                  topology_spread_constraints:
+                    description: "A list of constraints which control how the Kiali pods are spread across your cluster to help achieve high availability as well as efficient resource utilization. See the Kubernetes documentation on Topology Spread Constraints for more details."
+                    type: array
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   version_label:
                     description: |
                       Kiali resources will be assigned a 'version' label when they are deployed.

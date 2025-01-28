@@ -227,3 +227,9 @@ spec:
 {% else %}
       nodeSelector: null
 {% endif %}
+{% if kiali_vars.deployment.topology_spread_constraints|length > 0 %}
+      topologySpreadConstraints:
+        {{ kiali_vars.deployment.topology_spread_constraints | to_nice_yaml(indent=0) | trim | indent(8) }}
+{% else %}
+      topologySpreadConstraints: null
+{% endif %}

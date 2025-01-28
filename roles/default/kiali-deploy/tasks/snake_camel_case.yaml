@@ -149,4 +149,10 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'discovery_selectors': current_cr.spec.deployment.discovery_selectors}}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.topology_spread_constraints #}
+      {% if kiali_vars.deployment.topology_spread_constraints is defined and kiali_vars.deployment.topology_spread_constraints | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('topology_spread_constraints') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'topology_spread_constraints': current_cr.spec.deployment.topology_spread_constraints }}, recursive=True) %}
+      {% endif %}
+      {# #}
       {{ kiali_vars }}
