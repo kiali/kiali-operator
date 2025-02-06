@@ -182,7 +182,6 @@ kiali_defaults:
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
-      istio_sidecar_injector_config_map_name: "istio-sidecar-injector"
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
     prometheus:
