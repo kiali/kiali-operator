@@ -1069,6 +1069,9 @@ spec:
                         description: "A set of name/value settings that will be passed as headers when requests are sent to the Tracing backend."
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
+                      disable_version_check:
+                        description: "When true, version won't be checked. Defaults to `false`"
+                        type: boolean
                       enabled:
                         description: "When true, connections to the Tracing server are enabled. `internal_url` and/or `external_url` need to be provided."
                         type: boolean
