@@ -1070,7 +1070,7 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                       disable_version_check:
-                        description: "When true, version won't be checked. Defaults to `false`"
+                        description: "When true, the version of the Tracing backend will not be retrieved. This will mean Kiali will not be able to display the version of your Tracing component in the Kiali UI. This may be needed in order to avoid Kiali reporting errors in cases where the full version endpoint is not accessible or is unknown. Defaults to `false`"
                         type: boolean
                       enabled:
                         description: "When true, connections to the Tracing server are enabled. `internal_url` and/or `external_url` need to be provided."
