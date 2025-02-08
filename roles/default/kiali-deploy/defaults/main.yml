@@ -243,12 +243,12 @@ kiali_defaults:
     #private_key_file:
 
   istio_labels:
-    app_label_name: "app"
+    app_label_name: ""
     egress_gateway_label: "istio=egressgateway"
     ingress_gateway_label: "istio=ingressgateway"
     injection_label_name: "istio-injection"
     injection_label_rev: "istio.io/rev"
-    version_label_name: "version"
+    version_label_name: ""
 
   kiali_feature_flags:
     disabled_features: []
