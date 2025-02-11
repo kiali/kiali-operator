@@ -380,6 +380,7 @@ spec:
       # default: custom_headers is empty
       custom_headers:
         customHeader1: "customHeader1Value"
+      disable_version_check: false
       enabled: false
       external_url: ""
       grpc_port: 9095

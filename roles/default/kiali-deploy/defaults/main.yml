@@ -215,6 +215,7 @@ kiali_defaults:
         use_kiali_token: false
         username: ""
       custom_headers: {}
+      disable_version_check: false
       enabled: false
       external_url: ""
       grpc_port: 9095
