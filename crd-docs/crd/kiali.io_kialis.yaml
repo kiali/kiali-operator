@@ -1188,7 +1188,7 @@ spec:
                 type: object
                 properties:
                   app_label_name:
-                    description: "The name of the label used to define what application a workload belongs to. This is typically something like `app` or `app.kubernetes.io/name`."
+                    description: "If using a single scheme for app/version labeling, set this to the app label name being used. This is typically `app` or `app.kubernetes.io/name`. The default is unset, and Kiali will handle mixed schemes."
                     type: string
                   egress_gateway_label:
                     description: "The selector label for Egress Gateway workload. This is typically `istio=egressgateway`."
@@ -1203,7 +1203,7 @@ spec:
                     description: "The label used to identify the Istio revision."
                     type: string
                   version_label_name:
-                    description: "The name of the label used to define what version of the application a workload belongs to. This is typically something like `version` or `app.kubernetes.io/version`."
+                    description: "If using a single scheme for app/version labeling, set this to the version label name being used. This is typically `version` or `app.kubernetes.io/version`. The default is unset, and Kiali will handle mixed schemes."
                     type: string
 
               kiali_feature_flags:
