@@ -184,6 +184,7 @@ kiali_defaults:
       istio_sidecar_annotation: "sidecar.istio.io/status"
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
+      validation_reconcile_interval: 1m
     prometheus:
       auth:
         ca_file: ""

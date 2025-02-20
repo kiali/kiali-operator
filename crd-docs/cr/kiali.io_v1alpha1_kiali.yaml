@@ -342,6 +342,7 @@ spec:
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
       url_service_version: ""
+      validation_reconcile_interval: "1m"
     prometheus:
       auth:
         ca_file: ""
