@@ -968,6 +968,8 @@ spec:
                       url_service_version:
                         description: "The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint."
                         type: string
+                      validation_reconcile_interval:
+                        description: "Configures how often Kiali will validate Istio configuration. Validations cannot be disabled at the moment but you can set this to a long period of time. Accepts a golang duration string e.g. '1h' or '30m'."
                   prometheus:
                     description: "The Prometheus configuration defined here refers to the Prometheus instance that is used by Istio to store its telemetry."
                     type: object
