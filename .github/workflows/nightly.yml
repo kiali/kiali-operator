@@ -20,7 +20,7 @@ on:
 jobs:
   initialize:
     name: Initialize
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     outputs:
       target_branch: ${{ github.ref_name }}
       quay_tag: ${{ steps.quay_tag.outputs.quay_tag }}
@@ -39,7 +39,7 @@ jobs:
         else
           QUAY_REPO="${{ github.event.inputs.quay_repository }}"
         fi
-        
+
         QUAY_TAG="$QUAY_REPO:latest"
 
         echo "quay_tag=$QUAY_TAG" >> $GITHUB_OUTPUT
@@ -54,7 +54,7 @@ jobs:
     name: Push latest
     # Avoid schedule workflows from forks to push images
     if: ${{ (github.event_name == 'schedule' && github.repository == 'kiali/kiali-operator') || github.event_name != 'schedule' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [initialize]
     env:
       OPERATOR_QUAY_TAG: ${{ needs.initialize.outputs.quay_tag }}
@@ -62,10 +62,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        ref: ${{ github.event.inputs.release_branch }}  
-        
+        ref: ${{ github.event.inputs.release_branch }}
+
     - name: Build and push image
-      run: |              
+      run: |
         docker login -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
-        
-        make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay    
+
+        make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay
