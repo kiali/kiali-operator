@@ -32,9 +32,10 @@ spec:
                 description: |
                   A list of additional details that Kiali will look for in annotations. When found on any workload or service, Kiali will display the additional details in the respective workload or service details page. This is typically used to inject some CI metadata or documentation links into Kiali views. For example, by default, Kiali will recognize these annotations on a service or workload (e.g. a Deployment, StatefulSet, etc.):
                   ```
-                  annotations:
-                    kiali.io/api-spec: http://list/to/my/api/doc
-                    kiali.io/api-type: rest
+                  spec:
+                    annotations:
+                      kiali.io/api-spec: http://list/to/my/api/doc
+                      kiali.io/api-type: rest
                   ```
                   Note that if you change this setting for your own custom annotations, keep in mind that it would override the current default. So you would have to add the default setting as shown in the example CR if you want to preserve the default links.
                 type: array
@@ -215,19 +216,23 @@ spec:
 
                   An example of an additional user-defined dashboard,
                   ```
-                  - name: myapp
-                    title: My App Metrics
-                    items:
-                    - chart:
-                        name: "Thread Count"
-                        spans: 4
-                        metricName: "thread-count"
-                        dataType: "raw"
+                  spec:
+                    custom_dashboards:
+                    - name: myapp
+                      title: My App Metrics
+                      items:
+                      - chart:
+                          name: "Thread Count"
+                          spans: 4
+                          metricName: "thread-count"
+                          dataType: "raw"
                   ```
 
                   An example of disabling a built-in dashboard (in this case, disabling the Envoy dashboard),
                   ```
-                  - name: envoy
+                  spec:
+                    custom_dashboards:
+                    - name: envoy
                   ```
 
                   To learn more about custom monitoring dashboards, see the documentation at https://kiali.io/docs/configuration/custom-dashboard/
@@ -287,12 +292,14 @@ spec:
                       is assumed these secrets are externally managed. You can define 0, 1, or more secrets.
                       An example configuration is,
                       ```
-                      custom_secrets:
-                      - name: mysecret
-                        mount: /mysecret-path
-                      - name: my-other-secret
-                        mount: /my-other-secret-location
-                        optional: true
+                      spec:
+                        deployment:
+                          custom_secrets:
+                          - name: mysecret
+                            mount: /mysecret-path
+                          - name: my-other-secret
+                            mount: /my-other-secret-location
+                            optional: true
                       ```
                     type: array
                     items:
@@ -410,44 +417,19 @@ spec:
                       policy:
                         description: DNS policy. See the Kubernetes documentation for the different policies that are supported.
                         type: string
-                  hpa:
-                    description: |
-                      Determines what (if any) HorizontalPodAutoscaler should be created to autoscale the Kiali pod.
-                      A typical way to configure HPA for Kiali is,
-                      ```
-                      hpa:
-                        api_version: "autoscaling/v2"
-                        spec:
-                          maxReplicas: 2
-                          minReplicas: 1
-                          metrics:
-                          - type: Resource
-                            resource:
-                              name: cpu
-                              target:
-                                type: Utilization
-                                averageUtilization: 50
-                      ```
-                    type: object
-                    properties:
-                      api_version:
-                        description: "A specific HPA API version that can be specified in case there is some HPA feature you want to use that is only supported in that specific version. If value is an empty string, an attempt will be made to determine a valid version."
-                        type: string
-                      spec:
-                        description: "The `spec` specified here will be placed in the created HPA resource's 'spec' section. If `spec` is left empty, no HPA resource will be created. Note that you must not specify the 'scaleTargetRef' section in `spec`; the Kiali Operator will populate that for you."
-                        type: object
-                        x-kubernetes-preserve-unknown-fields: true
                   host_aliases:
                     description: |
                       This is content for the Kubernetes 'hostAliases' setting for the Kiali server.
                       This allows you to modify the Kiali server pod '/etc/hosts' file.
                       A typical way to configure this setting is,
                       ```
-                      host_aliases:
-                      - ip: 192.168.1.100
-                        hostnames:
-                        - "foo.local"
-                        - "bar.local"
+                      spec:
+                        deployment:
+                          host_aliases:
+                          - ip: 192.168.1.100
+                            hostnames:
+                            - "foo.local"
+                            - "bar.local"
                       ```
                       For details on the content of this setting, see https://kubernetes.io/docs/tasks/network/customize-hosts-file-for-pods/#adding-additional-entries-with-hostaliases
                     type: array
@@ -460,6 +442,35 @@ spec:
                           type: array
                           items:
                             type: string
+                  hpa:
+                    description: |
+                      Determines what (if any) HorizontalPodAutoscaler should be created to autoscale the Kiali pod.
+                      A typical way to configure HPA for Kiali is,
+                      ```
+                      spec:
+                        deployment:
+                          hpa:
+                            api_version: "autoscaling/v2"
+                            spec:
+                              maxReplicas: 2
+                              minReplicas: 1
+                              metrics:
+                              - type: Resource
+                                resource:
+                                  name: cpu
+                                  target:
+                                    type: Utilization
+                                    averageUtilization: 50
+                      ```
+                    type: object
+                    properties:
+                      api_version:
+                        description: "A specific HPA API version that can be specified in case there is some HPA feature you want to use that is only supported in that specific version. If value is an empty string, an attempt will be made to determine a valid version."
+                        type: string
+                      spec:
+                        description: "The `spec` specified here will be placed in the created HPA resource's 'spec' section. If `spec` is left empty, no HPA resource will be created. Note that you must not specify the 'scaleTargetRef' section in `spec`; the Kiali Operator will populate that for you."
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                   image_digest:
                     description: "If `deployment.image_version` is a digest hash, this value indicates what type of digest it is. A typical value would be 'sha256'. Note: do NOT prefix this value with a '@'."
                     type: string
@@ -526,22 +537,25 @@ spec:
                           labels to the default set of labels, use the `deployment.ingress.additional_labels` setting.
                           Example,
                           ```
-                          override_yaml:
-                            metadata:
-                              annotations:
-                                nginx.ingress.kubernetes.io/secure-backends: "true"
-                                nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-                            spec:
-                              rules:
-                              - http:
-                                  paths:
-                                  - path: /kiali
-                                    pathType: Prefix
-                                    backend:
-                                      service
-                                        name: "kiali"
-                                        port:
-                                          number: 20001
+                          spec:
+                            deployment:
+                              ingress:
+                                override_yaml:
+                                  metadata:
+                                    annotations:
+                                      nginx.ingress.kubernetes.io/secure-backends: "true"
+                                      nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+                                  spec:
+                                    rules:
+                                    - http:
+                                        paths:
+                                        - path: /kiali
+                                          pathType: Prefix
+                                          backend:
+                                            service
+                                              name: "kiali"
+                                              port:
+                                                number: 20001
                           ```
                         type: object
                         properties:
@@ -641,11 +655,14 @@ spec:
                       If you set this to an empty dict (`{}`) then no resources will be defined in the Deployment.
                       If you do not set this at all, the default is,
                       ```
-                      requests:
-                        cpu: "10m"
-                        memory: "64Mi"
-                      limits:
-                        memory: "1Gi"
+                      spec:
+                        deployment:
+                          resources:
+                            requests:
+                              cpu: "10m"
+                              memory: "64Mi"
+                            limits:
+                              memory: "1Gi"
                       ```
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
@@ -1330,12 +1347,15 @@ spec:
                           You will see these configurations in the 'Metric Settings' drop-down.
                           An example,
                           ```
-                          metrics_inbound:
-                            aggregations:
-                            - display_name: Istio Network
-                              label: topology_istio_io_network
-                            - display_name: Istio Revision
-                              label: istio_io_rev
+                          spec:
+                            kiali_feature_flags:
+                              ui_defaults:
+                                metrics_inbound:
+                                  aggregations:
+                                  - display_name: Istio Network
+                                    label: topology_istio_io_network
+                                  - display_name: Istio Revision
+                                    label: istio_io_rev
                           ```
                         type: object
                         properties:
@@ -1354,12 +1374,15 @@ spec:
                           You will see these configurations in the 'Metric Settings' drop-down.
                           An example,
                           ```
-                          metrics_outbound:
-                            aggregations:
-                            - display_name: Istio Network
-                              label: topology_istio_io_network
-                            - display_name: Istio Revision
-                              label: istio_io_rev
+                          spec:
+                            kiali_feature_flags:
+                              ui_defaults:
+                                metrics_outbound:
+                                  aggregations:
+                                  - display_name: Istio Network
+                                    label: topology_istio_io_network
+                                  - display_name: Istio Revision
+                                    label: istio_io_rev
                           ```
                         type: object
                         properties:
