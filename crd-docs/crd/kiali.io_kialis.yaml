@@ -985,6 +985,9 @@ spec:
                       url_service_version:
                         description: "The Istio service used to determine the Istio version. If empty, assumes the URL for the well-known Istio version endpoint."
                         type: string
+                      validation_change_detection_enabled:
+                        description: "Configures whether to perform configuration change detection. Validation checks will be skipped when no changes are detected. true by default."
+                        type: boolean
                       validation_reconcile_interval:
                         description: "Configures how often Kiali will validate Istio configuration. Validations cannot be disabled at the moment but you can set this to a long period of time. Accepts a golang duration string e.g. '1h' or '30m'."
                         type: string
