@@ -204,7 +204,7 @@ jobs:
     - name: Build and push image
       run: |
         docker login -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
-
+        
         make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay
 
     - name: Configure git
@@ -252,8 +252,30 @@ jobs:
       run: |
         gh release create $RELEASE_VERSION -t "Kiali Operator $RELEASE_VERSION"
 
-    - name: Create or update version branch
+    - name: Check if branch exists
+      run: |
+        if git ls-remote --exit-code --heads origin "$BRANCH_VERSION"; then
+          echo "EXISTS=true" >> $GITHUB_ENV
+        else
+          echo "EXISTS=false" >> $GITHUB_ENV
+        fi
+
+    - name: Create version branch
+      if: env.EXISTS == 'false'
       run: git push origin $(git rev-parse HEAD):refs/heads/$BRANCH_VERSION
+
+    - name: Create PR to update version branch
+      if: env.EXISTS == 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git checkout -b update-$BRANCH_VERSION-$GITHUB_RUN_ID
+        git push origin update-$BRANCH_VERSION-$GITHUB_RUN_ID
+
+        gh pr create --title "Update $BRANCH_VERSION" \
+                    --body "Automated PR to update $BRANCH_VERSION" \
+                    --base "$BRANCH_VERSION" \
+                    --head update-$BRANCH_VERSION-$GITHUB_RUN_ID
 
     - name: Configure Operator SDK
       if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
