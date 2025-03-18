@@ -426,6 +426,15 @@ spec:
           - patch
           - update
           - watch
+        - apiGroups: [""]
+          resourceNames:
+          - kiali-multi-cluster-secret
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups: ["apps"]
           resources:
           - deployments
