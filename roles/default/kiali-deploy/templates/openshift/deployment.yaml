@@ -146,6 +146,9 @@ spec:
         - name: {{ secret.name }}
           mountPath: "{{ secret.mount }}"
 {% endfor %}
+        - name: "kiali-multi-cluster-secret"
+          mountPath: "/kiali-remote-cluster-secrets/kiali-multi-cluster-secret"
+          readOnly: true
 {% for sec in kiali_deployment_remote_cluster_secret_volumes %}
         - name: {{ sec }}
           mountPath: "/kiali-remote-cluster-secrets/{{ kiali_deployment_remote_cluster_secret_volumes[sec].secret_name }}"
@@ -200,6 +203,10 @@ spec:
 {% endif %}
 {% endif %}
 {% endfor %}
+      - name: "kiali-multi-cluster-secret"
+        secret:
+          secretName: "kiali-multi-cluster-secret"
+          optional: true
 {% for sec in kiali_deployment_remote_cluster_secret_volumes %}
       - name: {{ sec }}
         secret:
