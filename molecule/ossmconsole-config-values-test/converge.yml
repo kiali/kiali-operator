@@ -35,20 +35,16 @@
       - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == (current_ossmconsole_cr.status.kiali.servicePort | int)
       - ossmconsole_consoleplugin.spec.backend.service.port == 9443
 
-  - name: Confirm the Kiali Graph Impl is the expected default in the ConfigMap
-    assert:
-      that: "{{ ossmconsole_configmap.graph.impl == 'pf' }}"
-
   # This test will change some config settings to make sure things work like we expect.
   # We alter the current CR with new config and deploy that new CR.
 
   # Change the existing CR to get a new config
 
-  - name: Set to use cy graph impl
+  - name: Set to use different service port
     vars:
-      new_graph_impl: "cy"
+      new_service_port: 9444
     set_fact:
-      current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'graph': {'impl': new_graph_impl }}}}, recursive=True) }}"
+      current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'servicePort': new_service_port }}}, recursive=True) }}"
 
   # Deploy the new CR and wait for the CR change to take effect
 
@@ -62,6 +58,6 @@
   - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
   - import_tasks: ../ossmconsole-common/tasks.yml
 
-  - name: Confirm the Kiali Graph Impl is now changed to use the "cy" impl
+  - name: Confirm the servicePort is now changed to 9444
     assert:
-      that: "{{ ossmconsole_configmap.graph.impl == 'cy' }}"
+      that: "{{ ossmconsole_configmap.servicePort == 9444 }}"

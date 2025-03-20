@@ -283,9 +283,6 @@ kiali_defaults:
           expression:  "rank > 2"
         settings:
           animation: "point"
-          font_label: 13
-          min_font_badge: 7
-          min_font_label: 10
         traffic:
           ambient: "total"
           grpc: "requests"
