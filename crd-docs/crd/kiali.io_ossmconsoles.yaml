@@ -90,12 +90,6 @@ spec:
               kiali:
                 type: object
                 properties:
-                  graph:
-                    type: object
-                    properties:
-                      impl:
-                        description: "The graph implementation used by OSSMC. Possible values are 'cy' (Cytoscape) and 'pf' (Patternfly). By default the patternfly graph is used."
-                        type: string
                   serviceName:
                     description: "The internal Kiali service that the OpenShift Console will use to proxy API calls. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
                     type: string

@@ -9,8 +9,6 @@ all:
       imageVersion: "dev"
 
     kiali:
-      graph:
-        impl: "pf"
       serviceName: ""
       serviceNamespace: ""
       servicePort: 0

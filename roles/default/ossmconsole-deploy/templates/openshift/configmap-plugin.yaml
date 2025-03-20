@@ -7,7 +7,4 @@ metadata:
 data:
   plugin-config.json: |
     {
-      "graph": {
-        "impl": "{{ ossmconsole_vars.kiali.graph.impl }}"
-      }
     }
