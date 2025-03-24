@@ -42,7 +42,7 @@
 
   - name: Set to use different service port
     vars:
-      new_service_port: 9444
+      new_service_port: 20001
     set_fact:
       current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'servicePort': new_service_port }}}, recursive=True) }}"
 
@@ -58,6 +58,6 @@
   - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
   - import_tasks: ../ossmconsole-common/tasks.yml
 
-  - name: Confirm the servicePort is now changed to 9444
+  - name: Confirm the servicePort is now changed to 20001
     assert:
-      that: "{{ ossmconsole_configmap.servicePort == 9444 }}"
+      that: "{{ ossmconsole_configmap.servicePort == 20001 }}"
