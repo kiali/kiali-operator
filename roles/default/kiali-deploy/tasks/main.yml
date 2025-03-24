@@ -697,6 +697,7 @@
     kiali_deployment_secret_volumes: "{{ kiali_deployment_secret_volumes_yaml | from_yaml }}"
 
 # Prepare to mount remote cluster secrets. These must exist in the Kiali deployment namespace because that is required in order to mount them to the pod.
+# We ignore any secrets named "kiali-multi-cluster-secret" because that will always be mounted, though it is optional.
 - set_fact:
     kiali_deployment_remote_cluster_secret_volumes: {}
 
@@ -709,6 +710,7 @@
   when:
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.clustering.autodetect_secrets.enabled
+  - item.metadata.name != "kiali-multi-cluster-secret"
 
 - name: Prepare the manually declared remote clusters
   loop: "{{ kiali_vars.clustering.clusters }}"
@@ -717,6 +719,7 @@
   when:
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.clustering.clusters | length > 0
+  - item.secret_name != "kiali-multi-cluster-secret"
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
 
