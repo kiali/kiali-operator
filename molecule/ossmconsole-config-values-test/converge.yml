@@ -60,4 +60,6 @@
 
   - name: Confirm the servicePort is now changed to 20001
     assert:
-      that: "{{ ossmconsole_configmap.servicePort == 20001 }}"
+      that:
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == (current_ossmconsole_cr.status.kiali.servicePort | int)
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == 20001
