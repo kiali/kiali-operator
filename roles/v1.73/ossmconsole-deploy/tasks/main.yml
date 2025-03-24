@@ -194,7 +194,7 @@
 
 - name: Ask Kiali for information about itself
   vars:
-    version_url: "{{ 'https://' + ossmconsole_vars.kiali.serviceName + '.' + ossmconsole_vars.kiali.serviceNamespace + '.svc.cluster.local:' + ossmconsole_vars.kiali.servicePort + '/api' }}"
+    version_url: "{{ 'https://' + ossmconsole_vars.kiali.serviceName + '.' + ossmconsole_vars.kiali.serviceNamespace + '.svc.cluster.local:' + ossmconsole_vars.kiali.servicePort|string + '/api' }}"
   uri:
     url: "{{ version_url }}"
     status_code: 200
