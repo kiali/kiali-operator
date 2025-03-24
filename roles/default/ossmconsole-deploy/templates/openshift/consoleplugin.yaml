@@ -19,5 +19,5 @@ spec:
       service:
         name: {{ ossmconsole_vars.kiali.serviceName }}
         namespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
-        port: {{ ossmconsole_vars.kiali.servicePort }}
+        port: {{ ossmconsole_vars.kiali.servicePort | int }}
       type: Service
