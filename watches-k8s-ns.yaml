@@ -12,6 +12,19 @@
   finalizer:
     name: kiali.io/finalizer
     playbook: playbooks/kiali-remove.yml
+# Watching for updated multi-cluster secret
+- version: v1
+  group: ""
+  kind: Secret
+  playbook: playbooks/kiali-multi-cluster-secret-detected.yml
+  reconcilePeriod: "0s"
+  manageStatus: False
+  watchDependentResources: False
+  watchClusterScopedResources: False
+  watchAnnotationsChanges: False
+  selector:
+    matchLabels:
+      kiali.io/kiali-multi-cluster-secret: "true"
 # Watching new namespaces so the operator can determine if they should be accessible to Kiali
 - version: v1
   group: ""
