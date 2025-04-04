@@ -9,7 +9,7 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   registry.redhat.io/openshift4/ose-ansible-rhel9-operator:v4.17 \
+#   registry.redhat.io/openshift4/ose-ansible-rhel9-operator:v4.19 \
 #   ansible-galaxy collection list
 #
 # NOTE: for older base images, ansible-galaxy had no "collection list" command; instead, run the command:
@@ -19,7 +19,7 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   registry.redhat.io/openshift4/ose-ansible-rhel9-operator:v4.17 \
+#   registry.redhat.io/openshift4/ose-ansible-rhel9-operator:v4.19 \
 #   ansible-galaxy collection list kubernetes.core
 #
 # NOTE: for older base images, ansible-galaxy had no "collection list" command; instead, look at the MANIFEST.json:
@@ -30,7 +30,7 @@
 #
 # podman run \
 #   -it --rm --entrypoint '' \
-#   registry.redhat.io/openshift4/ose-ansible-rhel9-operator:v4.17 \
+#   registry.redhat.io/openshift4/ose-ansible-rhel9-operator:v4.19 \
 #   ansible --version
 #
 # To install that version locally, you can git clone the source via:
