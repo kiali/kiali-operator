@@ -61,21 +61,19 @@ The link:https://github.com/kiali/kiali-operator/tree/master/roles/default/ossmc
 
 link:https://github.com/operator-framework/operator-lifecycle-manager[OLM] is an alternative method of installing the KO, as opposed to using the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator[Kiali Operator Helm Chart]. When a new release of the Kiali link:https://quay.io/repository/kiali/kiali?tab=tags[server] and link:https://quay.io/repository/kiali/kiali-operator?tab=tags[operator] container images are published on Quay.io, OLM metadata needs to published so users of OLM can subscribe to (aka install) the new KO. 
 
-There are three sets of link:https://github.com/kiali/kiali-operator/tree/master/manifests[OLM metadata maintained in the github project], each for a different operator catalog that a user might want to use.
+There are two sets of link:https://github.com/kiali/kiali-operator/tree/master/manifests[OLM metadata maintained in the github project], each for a different operator catalog that a user might want to use.
 
 . The link:https://github.com/kiali/kiali-operator/tree/master/manifests/kiali-upstream[kiali-upstream] metadata is published to the link:https://github.com/k8s-operatorhub/community-operators[Kubernetes Community Operators repo]. These operators then become available on link:https://operatorhub.io/operator/kiali[OperatorHub.io]
-. The link:https://github.com/kiali/kiali-operator/tree/master/manifests/kiali-community[kiali-community] metadata is published to the link:https://github.com/redhat-openshift-ecosystem/community-operators-prod[OpenShift Community Operators repo]. These operators then become available to OpenShift users as "community" operators.
 . The link:https://github.com/kiali/kiali-operator/tree/master/manifests/kiali-ossm[kiali-ossm] metadata is published as part of the productized OpenShift Service Mesh (OSSM) offering. These operators then become available to OpenShift customers as Red Hat-provided operators.
 
-The publishing of the Kubernetes Community ("kiali-upstream") and OpenShift Community ("kiali-community") Operator metadata is performed manually after a release of Kiali has been published and the Quay.io containers have been verified. Here are the steps necessary.
+The publishing of the Kubernetes Community ("kiali-upstream") Operator metadata is performed manually after a release of Kiali has been published and the Quay.io containers have been verified. Here are the steps necessary.
 
 === Manual Steps To Publish OLM Metadata
 
-NOTE: You must first have forked the two community github repos before performing the steps below.  Ensure these are forked and checked out on your local machine: +
+NOTE: You must first have forked the github repo before performing the steps below.  Ensure this is forked and checked out on your local machine: +
 - https://github.com/k8s-operatorhub/community-operators +
-- https://github.com/redhat-openshift-ecosystem/community-operators-prod
 
-NOTE: In order for the PRs that you will create to be automatically processed, your github username must be specified in the `reviewers` field of the `ci.yaml` file in both repos. So make sure link:https://github.com/k8s-operatorhub/community-operators/blob/main/operators/kiali/ci.yaml[this one] and link:https://github.com/redhat-openshift-ecosystem/community-operators-prod/blob/main/operators/kiali/ci.yaml[this one] have your github username listed as a reviewer. If not, request that it be added.
+NOTE: In order for the PR that you will create to be automatically processed, your github username must be specified in the `reviewers` field of the `ci.yaml` file in the repo. So make sure link:https://github.com/k8s-operatorhub/community-operators/blob/main/operators/kiali/ci.yaml[this one] has your github username listed as a reviewer. If not, request that it be added.
 
 . Checkout the branch of the version that was just released. For example, if you want to publish the latest z-stream release of KO v1.70:
 +
@@ -92,15 +90,12 @@ cd ./manifests
 +
 ```
 ./prepare-community-prs.sh \
-  --gitrepo-operatorhub <file path to your fork location of github.com/k8s-operatorhub/community-operators> \
-  --gitrepo-redhat <file path to your fork location of github.com/redhat-openshift-ecosystem/community-operators-prod>
+  --gitrepo-operatorhub <file path to your fork location of github.com/k8s-operatorhub/community-operators>
 ```
-. Read the link:https://github.com/kiali/kiali-operator/blob/v1.75.0/manifests/prepare-community-prs.sh#L103-L106[output of the script] and follow its directions. Basically, you want to push a PR to those two github repos for the Kubernetes Community Operators and OpenShift Community Operators
+. Read the link:https://github.com/kiali/kiali-operator/blob/v1.75.0/manifests/prepare-community-prs.sh#L103-L106[output of the script] and follow its directions. Basically, you want to push a PR to the github repo for the Kubernetes Community Operators.
 +
 ```
-New Kiali metadata has been added to new branches in the community git repo.
-Create two PRs based on these two branches:
-1. cd /your/redhat-openshift-ecosystem/community-operators-prod && git push <your git remote name> kiali-community-2023-06-05-14-05-50
-2. cd /your/k8s-operatorhub/community-operators && git push <your git remote name> kiali-upstream-2023-06-05-14-05-50
+New Kiali metadata has been added. Create a PR from here:
+*** cd /your/repo/source/kiali/kiali-operator/manifests/../../../community-operators/community-operators && git push <your git remote name> kiali-upstream-2025-04-07-17-32-25
 ```
-. Once you create the two PRs (in link:https://github.com/k8s-operatorhub/community-operators[here] and link:https://github.com/redhat-openshift-ecosystem/community-operators-prod[here]), they will be automatically processed. When all CI tests pass the new OLM metadata will be published for you.
+. Once you create the PR (in link:https://github.com/k8s-operatorhub/community-operators[here]), it will be automatically processed. When all CI tests pass the new OLM metadata will be published for you.
