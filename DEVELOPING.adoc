@@ -60,7 +60,7 @@ Once the operator is running, you can install a Kiali CR normally. One way to do
 
 To remove the Kiali operator and all the other OLM resources that came with it (including the CRs if you created some via the `kiali-create` target or the `ossmconsole-create` target), run `make olm-operator-delete`.
 
-NOTE: By default, you will test with the latest version of the "kiali-ossm" metadata. You can specify a different version by setting the `BUNDLE_VERSION` env var on the make command line. If the OC env var points to an `oc` binary, the metadata from the kiali-community will be used; otherwise, the metadata from the kiali-upstream will be used. If you want to do this, you also must set the env var `OLM_BUNDLE_PACKAGE` to `kiali` on the make command line.
+NOTE: By default, you will test with the latest version of the "kiali-ossm" metadata. You can specify a different version by setting the `BUNDLE_VERSION` env var on the make command line. If you want to do this, you also must set the env var `OLM_BUNDLE_PACKAGE` to `kiali` on the make command line.
 
 ### Running the Operator Playbook Without Installing in a Cluster
 
@@ -170,7 +170,6 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 ### Are You Altering a Kiali Operator Resource?
 
 - [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
-- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates[Operator Helm Chart templates]
 
@@ -184,7 +183,6 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 ### Are You Altering a Kiali Server Role Permission that Applies to Resources in All Accessible Namespaces?
 
 - [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
-- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes/role.yaml[Operator Kubernetes role.yaml]
 - [ ] Update the link:./roles/default/kiali-deploy/templates/kubernetes/role-viewer.yaml[Operator Kubernetes role-viewer.yaml]
@@ -197,7 +195,6 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 ### Are You Altering a Kiali Server Role Permission that Applies to Resources Only in the Control Plane Namespace?
 
 - [ ] Update the golden copy of the link:./manifests/kiali-upstream[kiali-upstream CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
-- [ ] Update the golden copy of the link:./manifests/kiali-community[kiali-community CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the golden copy of the link:./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml[kiali-ossm CSV metadata] (_* **see link:#maintain-backward-compatibility[note] above**_)
 - [ ] Update the link:https://github.com/kiali/helm-charts/tree/master/kiali-operator/templates/clusterrole.yaml[Operator Helm Chart clusterrole.yaml]
 
