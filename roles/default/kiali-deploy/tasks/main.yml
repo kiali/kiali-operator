@@ -719,7 +719,7 @@
   when:
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.clustering.clusters | length > 0
-  - item.secret_name != "kiali-multi-cluster-secret"
+  - (item.secret_name is not defined) or (item.secret_name != "kiali-multi-cluster-secret")
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
 
