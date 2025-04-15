@@ -417,6 +417,15 @@ spec:
                       policy:
                         description: DNS policy. See the Kubernetes documentation for the different policies that are supported.
                         type: string
+                  extra_labels:
+                    description: |
+                      Extra name/value pairs to be added to the labels of all resources created by the operator.
+                      These are added to the labels the operator creates by default. These will not overwrite
+                      labels that the operator creates itself. For example, if you set "app.kubernetes.io/name"
+                      as an extra label, it will be silently ignored because that is one of the labels the operator
+                      creates on all resources.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
                   host_aliases:
                     description: |
                       This is content for the Kubernetes 'hostAliases' setting for the Kiali server.
