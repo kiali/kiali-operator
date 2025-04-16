@@ -153,6 +153,13 @@ spec:
           value: "1"
       # default: policy is empty
       policy: "ClusterFirst"
+    extra_labels: {}
+    # default: host_aliases is an empty list
+    host_aliases:
+    - ip: "192.168.1.100"
+      hostnames:
+      - "foo.local"
+      - "bar.local"
     hpa:
       api_version: ""
       # default: spec is empty
@@ -166,12 +173,6 @@ spec:
             target:
               type: Utilization
               averageUtilization: 50
-    # default: host_aliases is an empty list
-    host_aliases:
-    - ip: "192.168.1.100"
-      hostnames:
-      - "foo.local"
-      - "bar.local"
     image_digest: ""
     image_name: ""
     image_pull_policy: "IfNotPresent"

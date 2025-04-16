@@ -63,6 +63,7 @@ kiali_defaults:
     dns:
       config: {}
       policy: ""
+    extra_labels: {}
     host_aliases: []
     hpa:
       api_version: ""

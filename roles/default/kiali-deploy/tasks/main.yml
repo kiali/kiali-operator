@@ -440,6 +440,13 @@
       app.kubernetes.io/instance: "{{ kiali_vars.deployment.instance_name }}"
       app.kubernetes.io/part-of: kiali
 
+- name: Determine the extra custom labels to apply to all created resources
+  set_fact:
+    kiali_resource_metadata_labels: "{{ kiali_vars.deployment.extra_labels | combine(kiali_resource_metadata_labels) }}"
+  when:
+  - kiali_vars.deployment.extra_labels is defined
+  - kiali_vars.deployment.extra_labels | length > 0
+
 # Determine the namespaces Kiali is to be given access.
 # If the user did not specify Kiali's own namespace in the discovery selectors, it will be added to the list automatically.
 # NOTE: if deployment.cluster_wide_access is true, that means Kiali is to be given access to all namespaces via ClusterRoles
