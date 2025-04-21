@@ -1401,9 +1401,9 @@ spec:
                         items:
                           type: string
                       refresh_interval:
-                        description: "The automatic refresh interval for pages offering automatic refresh. Value must be one of: `pause`, `10s`, `15s`, `30s`, `1m`, `5m` or `15m`"
+                        description: "The automatic refresh interval for pages offering automatic refresh. `Manual` requires user action even for initial page load. Value must be one of: `pause`, `manual`, `10s`, `15s`, `30s`, `1m`, `5m` or `15m`"
                         type: string
-                        enum: ["pause", "10s", "15s", "30s", "1m", "5m", "15m"]
+                        enum: ["pause", "manual", "10s", "15s", "30s", "1m", "5m", "15m"]
                   validations:
                     description: "Features specific to the validations subsystem."
                     type: object
