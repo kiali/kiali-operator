@@ -215,7 +215,7 @@ spec:
       nodeSelector: "nodeSelectorValue"
     # default: pod_annotations is empty
     pod_annotations:
-      podAnnotation: "podAnnotationValue"
+      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
     # default: pod_labels is empty
     pod_labels:
       sidecar.istio.io/inject: "true"
