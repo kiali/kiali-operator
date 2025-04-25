@@ -86,7 +86,8 @@ kiali_defaults:
       time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: ""
     node_selector: {}
-    pod_annotations: {}
+    pod_annotations:
+      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
     pod_labels: {}
     priority_class_name: ""
     probes:
