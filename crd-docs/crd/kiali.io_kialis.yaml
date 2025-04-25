@@ -1430,6 +1430,7 @@ spec:
               kiali_internal:
                 description: "Unstructured section for internal testing and debugging features."
                 type: object
+                x-kubernetes-preserve-unknown-fields: true
 
               kubernetes_config:
                 description: "Configuration of Kiali's access of the Kubernetes API."
