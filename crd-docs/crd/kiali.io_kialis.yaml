@@ -607,7 +607,15 @@ spec:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   pod_annotations:
-                    description: "Custom annotations to be created on the Kiali pod."
+                    description: |
+                      Custom annotations to be created on the Kiali pod.
+                      By default, the following annotation is applied:
+                      ```
+                      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+                      ```
+                      If you define your own pod_annotations, they will overwrite this default.
+                      To retain the default behavior while adding your own annotations,
+                      make sure to include this value alongside your custom annotations.
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                   pod_labels:
