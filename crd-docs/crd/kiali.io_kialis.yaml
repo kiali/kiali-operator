@@ -1428,7 +1428,7 @@ spec:
                         type: boolean
 
               kiali_internal:
-                description: "Unstructured section for internal testing and debugging features"
+                description: "Unstructured section for internal testing and debugging features."
                 type: object
 
               kubernetes_config:
