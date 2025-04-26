@@ -1435,6 +1435,11 @@ spec:
                         description: "The KIA0301 validation checks duplicity of host and port combinations across all Istio Gateways. This includes also Gateways with '*' in hosts. But Istio considers such a Gateway with a wildcard in hosts as the last in order, after the Gateways with FQDN in hosts. This option is to skip Gateways with wildcards in hosts from the KIA0301 validations but still keep Gateways with FQDN hosts."
                         type: boolean
 
+              kiali_internal:
+                description: "Unstructured section for internal testing and debugging features."
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+
               kubernetes_config:
                 description: "Configuration of Kiali's access of the Kubernetes API."
                 type: object
