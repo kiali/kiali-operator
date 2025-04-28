@@ -87,7 +87,8 @@ kiali_defaults:
     namespace: ""
     node_selector: {}
     pod_annotations:
-      "proxy.istio.io/config": '{ "holdApplicationUntilProxyStarts": true }'
+      proxy.istio.io/config: |
+        holdApplicationUntilProxyStarts: true
     pod_labels: {}
     priority_class_name: ""
     probes:
