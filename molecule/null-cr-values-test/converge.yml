@@ -16,12 +16,12 @@
   # Assert that we have defaults since the CR set most settings to null.
   # The defaults come from the operator's roles/kiali-deploy/defaults/main.yaml
   # This just checks some of the settings to see that defaults are getting set.
-  # Note that accessible namespaces is being set to "[**]" so some settings depend on that.
   - assert:
       that:
       - kiali_configmap.installation_tag == ""
       - kiali_configmap.additional_display_details | length == 1
       - kiali_configmap.custom_dashboards | length == 0
+      - kiali_configmap.deployment.configmap_annotations | length == 0
       - kiali_configmap.deployment.discovery_selectors | length == 0
       - kiali_configmap.deployment.replicas == 1
       - kiali_configmap.deployment.secret_name == "kiali"
@@ -29,10 +29,14 @@
       - kiali_configmap.deployment.logger.log_level == "info"
       - kiali_configmap.deployment.logger.time_field_format == "2006-01-02T15:04:05Z07:00"
       - kiali_configmap.deployment.logger.sampler_rate == "1"
+      - kiali_configmap.deployment.pod_annotations | length == 1
+      - kiali_configmap.deployment.pod_annotations['proxy.istio.io/config'] == '{ "holdApplicationUntilProxyStarts": true }'
+      - kiali_configmap.deployment.pod_labels | length == 0
       - kiali_configmap.deployment.resources | length == 2
       - kiali_configmap.deployment.resources.requests.cpu == "10m"
       - kiali_configmap.deployment.resources.requests.memory == "64Mi"
       - kiali_configmap.deployment.resources.limits.memory == "1Gi"
+      - kiali_configmap.deployment.service_annotations | length == 0
       - kiali_configmap.external_services.custom_dashboards.prometheus.custom_headers | length == 0
       - kiali_configmap.external_services.custom_dashboards.prometheus.query_scope | length == 0
       - kiali_configmap.external_services.istio.istio_identity_domain == "svc.cluster.local"

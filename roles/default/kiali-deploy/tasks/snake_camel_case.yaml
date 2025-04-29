@@ -60,7 +60,7 @@
       {% endif %}
       {# #}
       {# deployment.pod_annotations #}
-      {% if kiali_vars.deployment.pod_annotations is defined and kiali_vars.deployment.pod_annotations | length > 0 and current_cr.spec.deployment.pod_annotations is defined %}
+      {% if kiali_vars.deployment.pod_annotations is defined and kiali_vars.deployment.pod_annotations | length > 0 and current_cr.spec.deployment.pod_annotations is defined and current_cr.spec.deployment.pod_annotations is not none %}
       {%   set _=kiali_vars['deployment'].pop('pod_annotations') %}
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'pod_annotations': current_cr.spec.deployment.pod_annotations }}, recursive=True) %}
       {% endif %}

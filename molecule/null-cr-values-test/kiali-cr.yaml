@@ -25,7 +25,9 @@ spec:
       pod: null
       pod_anti: null
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    configmap_annotations: null
     discovery_selectors: null
+    extra_labels: null
     image_name: "{{ kiali.image_name }}"
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_pull_secrets: null
