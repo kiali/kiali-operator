@@ -114,6 +114,8 @@ spec:
 
   kiali_feature_flags: null
 
+  kiali_internal: null
+
   kubernetes_config:
     burst: null
     cache_duration: null
