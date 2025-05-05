@@ -94,6 +94,13 @@ kiali_vars:
     {{ kiali_defaults.kiali_feature_flags }}
     {%- endif -%}
 
+  kiali_internal: |
+    {%- if kiali_internal is defined and kiali_internal is iterable -%}
+    {{ kiali_defaults.kiali_internal | combine((kiali_internal | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ kiali_defaults.kiali_internal }}
+    {%- endif -%}
+
   kubernetes_config: |
     {%- if kubernetes_config is defined and kubernetes_config is iterable -%}
     {{ kiali_defaults.kubernetes_config | combine((kubernetes_config | stripnone), recursive=True) }}
