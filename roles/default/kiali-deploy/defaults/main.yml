@@ -306,6 +306,8 @@ kiali_defaults:
       ignore: ["KIA1301"]
       skip_wildcard_gateway_hosts: false
 
+  kiali_internal: {}
+
   kubernetes_config:
     burst: 200
     cache_duration: 300
