@@ -50,6 +50,7 @@
       - kiali_configmap.identity.private_key_file is defined
       - kiali_configmap.istio_labels.app_label_name == ""
       - kiali_configmap.istio_labels.version_label_name == ""
+      - kiali_configmap.kiali_internal is defined and kiali_configmap.kiali_internal | length == 0
       - kiali_configmap.kubernetes_config.burst == 200
       - kiali_configmap.kubernetes_config.excluded_workloads | length > 0
       - kiali_configmap.login_token.signing_key | length > 0

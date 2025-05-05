@@ -111,6 +111,11 @@
       - kiali_pod_container.startupProbe.initialDelaySeconds == 30
       - kiali_pod_container.startupProbe.periodSeconds == 10
 
+  - name: Test the default kiali_internal is empty
+    assert:
+      that:
+      - kiali_configmap.kiali_internal | length == 0
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config and deploy that new CR.
@@ -266,6 +271,15 @@
         app.kubernetes.io/name: "this should be silently ignored - it should not overwrite the label created by the operator"
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'extra_labels': custom_extra_labels}}}, recursive=True) }}"
+
+  - name: Add ad hoc kiali_internal settings
+    vars:
+      custom_kiali_internal:
+        first_internal_setting: 111
+        second_internal_setting:
+          foo: bar
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_internal': custom_kiali_internal}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -480,3 +494,10 @@
       fail_msg: "Extra labels were not properly applied to OpenShift resources"
     when:
     - is_openshift == True
+
+  - name: Test the kiali_internal settings
+    assert:
+      that:
+      - kiali_configmap.kiali_internal | length == 2
+      - kiali_configmap.kiali_internal['first_internal_setting'] == 111
+      - kiali_configmap.kiali_internal['second_internal_setting'].foo == 'bar'
