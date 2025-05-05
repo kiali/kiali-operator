@@ -329,6 +329,7 @@ spec:
       egress_gateway_namespace: ""
       envoy_admin_local_port: 15000
       gateway_api_classes: []
+      gateway_api_classes_label_selector: ""
       ingress_gateway_namespace: ""
       istio_api_enabled: true
       # default: istio_canary_revision is undefined
