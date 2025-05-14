@@ -516,7 +516,7 @@ spec:
         port: 9090
       tracing:
         collector_type: "otel"
-        collector_url: "jaeger-collector.istio-system:4317"
+        collector_url: "jaeger-collector.istio-system:4318"
         enabled: false
         otel:
           ca_name: ""
