@@ -79,13 +79,6 @@
   when:
   - kiali_vars_remove.deployment.namespace is not defined or kiali_vars_remove.deployment.namespace == ""
 
-- name: Set default istio namespace
-  ignore_errors: yes
-  set_fact:
-    kiali_vars_remove: "{{ kiali_vars_remove | combine({'istio_namespace': kiali_vars_remove.deployment.namespace}, recursive=True) }}"
-  when:
-  - kiali_vars_remove.istio_namespace == ""
-
 - name: Define the expected label for the namespaces and signing key secret
   set_fact:
     kiali_instance_label_name: "{{ 'kiali.io/' + kiali_vars_remove.deployment.instance_name + '.home' }}"

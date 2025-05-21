@@ -12,8 +12,6 @@ spec:
 
   installation_tag: ""
 
-  istio_namespace: ""
-
   version: "default"
 
   auth:
@@ -47,6 +45,7 @@ spec:
       enabled: true
       label: "kiali.io/multiCluster=true"
     clusters: []
+    ignore_home_cluster: false
     kiali_urls: []
 
   # default: custom_dashboards is an empty list
@@ -341,6 +340,7 @@ spec:
         upgrade: "1-10-2"
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
+      istio_namespace: "istio-system"
       istio_sidecar_annotation: "sidecar.istio.io/status"
       # default: istio_sidecar_injector_config_map_name is undefined
       istiod_deployment_name: "istiod"

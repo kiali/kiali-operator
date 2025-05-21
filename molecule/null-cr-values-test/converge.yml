@@ -40,6 +40,7 @@
       - kiali_configmap.external_services.custom_dashboards.prometheus.custom_headers | length == 0
       - kiali_configmap.external_services.custom_dashboards.prometheus.query_scope | length == 0
       - kiali_configmap.external_services.istio.istio_identity_domain == "svc.cluster.local"
+      - kiali_configmap.external_services.istio.istio_namespace == "istio-system"
       - kiali_configmap.external_services.istio.istio_sidecar_annotation == "sidecar.istio.io/status"
       - kiali_configmap.external_services.prometheus.url != ""
       - kiali_configmap.external_services.prometheus.custom_headers | length == 0

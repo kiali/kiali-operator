@@ -160,10 +160,6 @@
 #    If left empty (the default), the operator will use the last Kiali release.
 #    Default: ""
 #
-# ISTIO_NAMESPACE
-#    The namespace where Istio is installed. If empty, assumes the value of NAMESPACE.
-#    Default: ""
-#
 # NAMESPACE
 #    The namespace into which Kiali is to be installed.
 #    Default: "istio-system"
@@ -231,10 +227,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     -kiv|--kiali-image-version)
       KIALI_IMAGE_VERSION="$2"
-      shift;shift
-      ;;
-    -in|--istio-namespace)
-      ISTIO_NAMESPACE="$2"
       shift;shift
       ;;
     -n|--namespace)
@@ -822,7 +814,6 @@ echo KIALI_CR_NAMESPACE=$KIALI_CR_NAMESPACE
 echo KIALI_IMAGE_NAME=${KIALI_IMAGE_NAME:-}
 echo KIALI_IMAGE_PULL_POLICY=${KIALI_IMAGE_PULL_POLICY:-}
 echo KIALI_IMAGE_VERSION=${KIALI_IMAGE_VERSION:-}
-echo ISTIO_NAMESPACE=${ISTIO_NAMESPACE:-}
 echo NAMESPACE=$NAMESPACE
 echo VERSION=$VERSION
 echo "=== KIALI SETTINGS ==="
@@ -887,7 +878,6 @@ kind: Kiali
 metadata:
   name: kiali
 spec:
-  $(build_spec_value istio_namespace ISTIO_NAMESPACE)
   $(build_spec_value version VERSION)
   auth:
     $(build_spec_value strategy AUTH_STRATEGY)

@@ -15,11 +15,6 @@
     that:
     - kiali_configmap.deployment.image_pull_policy ==  kiali.image_pull_policy
 
-- name: Assert Kiali Configmap has the correct Istio Namespace
-  assert:
-    that:
-    - kiali_configmap.istio_namespace == istio.control_plane_namespace    
-
 - name: Assert Kiali Configmap has the correct Root Namespace
   assert:
     that:

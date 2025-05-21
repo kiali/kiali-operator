@@ -216,9 +216,8 @@
   - kiali_vars.deployment.image_name != "" or kiali_vars.deployment.image_version != "" or kiali_vars.deployment.image_digest != ""
   - lookup('env', 'ALLOW_AD_HOC_KIALI_IMAGE') | default('false', True) != "true"
 
-# We do not want to blindly default to istio-system for some namespaces. If the istio_namespace is not
-# provided, assume it is the same namespace where Kiali is being deployed. Set the other istio namespace
-# values accordingly.
+# We do not want to blindly default to istio-system for some namespaces. Unless otherwise specified, assume it
+# is the same namespace where Kiali is being deployed. Set the other istio namespace values accordingly.
 # We determine the default Istio namespace var first, and the rest will use it for their default as appropriate.
 
 - name: Set configuration defaults
@@ -233,34 +232,29 @@
       {# Initialize #}
       {% set kv = kiali_vars %}
 
-      {# Set default istio namespace #}
-      {% if kv.istio_namespace == "" %}
-      {% set kv = kv | combine({'istio_namespace': kv.deployment.namespace}, recursive=True) %}
-      {% endif %}
-
       {# Set default root namespace #}
       {% if kv.external_services.istio.root_namespace == "" %}
-      {% set kv = kv | combine({'external_services': {'istio': {'root_namespace': kv.istio_namespace}}}, recursive=True) %}
+      {% set kv = kv | combine({'external_services': {'istio': {'root_namespace': kv.deployment.namespace}}}, recursive=True) %}
       {% endif %}
 
       {# Set default Grafana internal_url #}
       {% if kv.external_services.grafana.internal_url is not defined %}
-      {% set kv = kv | combine({'external_services': {'grafana': {'internal_url': 'http://grafana.' + kv.istio_namespace + ':3000'}}}, recursive=True) %}
+      {% set kv = kv | combine({'external_services': {'grafana': {'internal_url': 'http://grafana.' + kv.deployment.namespace + ':3000'}}}, recursive=True) %}
       {% endif %}
 
       {# Set default Tracing internal_url for grpc consumption #}
       {% if kv.external_services.tracing.internal_url == "" and (kv.external_services.tracing.use_grpc is not defined or kv.external_services.tracing.use_grpc|bool == True) %}
-      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.istio_namespace + ':16685/jaeger'}}}, recursive=True) %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.deployment.namespace + ':16685/jaeger'}}}, recursive=True) %}
       {% endif %}
 
       {# Set default Tracing internal_url for http consumption #}
       {% if kv.external_services.tracing.internal_url == "" and kv.external_services.tracing.use_grpc is defined and kv.external_services.tracing.use_grpc|bool == False %}
-      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.istio_namespace + '/jaeger'}}}, recursive=True) %}
+      {% set kv = kv | combine({'external_services': {'tracing': {'internal_url': 'http://tracing.' + kv.deployment.namespace + '/jaeger'}}}, recursive=True) %}
       {% endif %}
 
       {# Set default Prometheus URL #}
       {% if kv.external_services.prometheus.url == "" %}
-      {% set kv = kv | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kv.istio_namespace + ':9090'}}}, recursive=True) %}
+      {% set kv = kv | combine({'external_services': {'prometheus': {'url': 'http://prometheus.' + kv.deployment.namespace + ':9090'}}}, recursive=True) %}
       {% endif %}
 
       {# Set default HPA api_version #}
@@ -511,9 +505,10 @@
 
 - include_tasks: get-discovery-selector-namespaces.yml
 
+# What if there is no co-located control plane?
 - name: Make sure the Kiali deployment namespace and the Istio control plane namespace are accessible
   set_fact:
-    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.istio_namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
+    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.deployment.namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
 
 - name: Listing of all namespaces that are accessible to Kiali
   debug:

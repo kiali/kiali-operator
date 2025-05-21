@@ -9,7 +9,6 @@
 
 kiali_defaults:
   installation_tag: ""
-  istio_namespace: ""
   version: "default"
 
   additional_display_details:
@@ -45,6 +44,7 @@ kiali_defaults:
       enabled: true
       label: "kiali.io/multiCluster=true"
     clusters: []
+    ignore_home_cluster: false
     kiali_urls: []
 
   custom_dashboards: []
@@ -187,6 +187,7 @@ kiali_defaults:
         #upgrade: canary
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
+      istio_namespace: "istio-system"
       istio_sidecar_annotation: "sidecar.istio.io/status"
       istiod_pod_monitoring_port: 15014
       root_namespace: ""

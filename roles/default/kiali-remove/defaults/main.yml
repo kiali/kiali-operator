@@ -1,6 +1,4 @@
 kiali_defaults_remove:
-  istio_namespace: ""
-
   deployment:
     cluster_wide_access: true
     hpa:

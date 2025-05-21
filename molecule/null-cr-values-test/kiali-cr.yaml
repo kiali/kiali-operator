@@ -9,7 +9,6 @@ spec:
 
   additional_display_details: null
   installation_tag: null
-  istio_namespace: {{ istio.control_plane_namespace }}
 
   auth:
     strategy: {{ kiali.auth_strategy }}
@@ -75,6 +74,7 @@ spec:
     istio:
       component_status: null
       istio_identity_domain: null
+      istio_namespace: null
       istio_sidecar_annotation: null
       url_service_version: null
 
