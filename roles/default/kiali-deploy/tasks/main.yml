@@ -20,9 +20,8 @@
   - is_openshift == False
   - is_k8s == False
 
-- name: Get api version information from the cluster
-  k8s_cluster_info:
-  register: api_status
+- name: Get api versions from the cluster
+  include_tasks: get-api-versions.yaml
 
 - name: Determine the cluster type
   set_fact:
@@ -260,7 +259,7 @@
 
       {# Set default HPA api_version #}
       {% if kv.deployment.hpa.api_version == "" %}
-      {% set kv = kv | combine({'deployment': {'hpa': {'api_version': 'autoscaling/v2' if (api_status.apis['autoscaling/v2'] is defined) else 'autoscaling/v2beta2' }}}, recursive=True) %}
+      {% set kv = kv | combine({'deployment': {'hpa': {'api_version': autoscaling_api_version }}}, recursive=True) %}
       {% endif %}
 
       {# Provide some default resource limits #}
