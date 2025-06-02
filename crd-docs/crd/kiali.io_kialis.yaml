@@ -905,7 +905,7 @@ spec:
                         type: boolean
                       datasource_uid:
                         description: "The UID of the Datasource configured in Grafana must be specified if multiple datasources are configured. It is empty by default and is used only in conjunction with the `datasource` variable."
-                          type: string
+                        type: string
                       external_url:
                         description: "The URL that the Kiali UI uses when displaying Grafana links to the user. This URL must be accessible to clients external to the cluster (e.g. a browser) in order for the integration to work properly. If empty, an attempt to auto-discover it is made. This URL can contain query parameters if needed, such as '?orgId=1'."
                         type: string
