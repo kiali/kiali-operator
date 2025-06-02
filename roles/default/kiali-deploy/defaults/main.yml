@@ -157,10 +157,12 @@ kiali_defaults:
         variables:
           namespace: "var-namespace"
           service: "var-service"
+          datasource: "var-datasource"
       - name: "Istio Workload Dashboard"
         variables:
           namespace: "var-namespace"
           workload: "var-workload"
+          datasource: "var-datasource"
       - name: "Istio Mesh Dashboard"
       - name: "Istio Control Plane Dashboard"
       - name: "Istio Performance Dashboard"
@@ -168,6 +170,7 @@ kiali_defaults:
       enabled: true
       external_url: ""
       health_check_url: ""
+      datasource_uid: ""
       #internal_url
       is_core: false
     istio:

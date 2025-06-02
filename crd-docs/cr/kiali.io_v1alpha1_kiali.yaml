@@ -308,10 +308,12 @@ spec:
         variables:
           namespace: "var-namespace"
           service: "var-service"
+          datasource: "var-datasource"
       - name: "Istio Workload Dashboard"
         variables:
           namespace: "var-namespace"
           workload: "var-workload"
+          datasource: "var-datasource"
       - name: "Istio Mesh Dashboard"
       - name: "Istio Control Plane Dashboard"
       - name: "Istio Performance Dashboard"
@@ -321,6 +323,7 @@ spec:
       health_check_url: ""
       # default: internal_url is undefined
       internal_url: ""
+      datasource_uid: ""
       is_core: false
     istio:
       component_status:
