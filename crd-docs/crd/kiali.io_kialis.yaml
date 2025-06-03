@@ -888,6 +888,9 @@ spec:
                                 app:
                                   description: "The name of a variable that holds the app name, if used in that dashboard (else it must be omitted)."
                                   type: string
+                                datasource:
+                                  description: "The name of the variable that holds the Datasource UID, required if Grafana has multiple datasources configured (else it must be omitted)."
+                                  type: string
                                 namespace:
                                   description: "The name of a variable that holds the namespace, if used in that dashboard (else it must be omitted)."
                                   type: string
@@ -897,6 +900,9 @@ spec:
                                 workload:
                                   description: "The name of a variable that holds the workload name, if used in that dashboard (else it must be omitted)."
                                   type: string
+                      datasource_uid:
+                        description: "The UID of the Datasource configured in Grafana must be specified if multiple datasources are configured. It is empty by default and is used only in conjunction with the `datasource` variable."
+                        type: string
                       enabled:
                         description: "When true, Grafana support will be enabled in Kiali."
                         type: boolean
