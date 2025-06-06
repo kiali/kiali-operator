@@ -253,7 +253,6 @@ jobs:
         gh release create $RELEASE_VERSION -t "Kiali Operator $RELEASE_VERSION"
 
     - name: Create or update version branch
-      if: env.EXISTS == 'false'
       run: git push origin $(git rev-parse HEAD):refs/heads/$BRANCH_VERSION
 
     - name: Configure Operator SDK
