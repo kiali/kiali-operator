@@ -1,0 +1,23 @@
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
+metadata:
+  name: ossmconsole
+  labels: {{ ossmconsole_resource_metadata_labels }}
+spec:
+  displayName: "OpenShift Service Mesh Console"
+  backend:
+    service:
+      name: ossmconsole
+      namespace: "{{ ossmconsole_vars.deployment.namespace }}"
+      port: 9443
+      basePath: "/"
+    type: Service
+  proxy:
+  - alias: kiali
+    authorization: UserToken
+    endpoint:
+      service:
+        name: {{ ossmconsole_vars.kiali.serviceName }}
+        namespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
+        port: {{ ossmconsole_vars.kiali.servicePort | int }}
+      type: Service
