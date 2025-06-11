@@ -1,0 +1,12 @@
+kiali_defaults_remove:
+  istio_namespace: ""
+
+  deployment:
+    cluster_wide_access: true
+    hpa:
+      api_version: ""
+    instance_name: "kiali"
+
+# Will be auto-detected, but for debugging purposes you can force one of these to true
+is_k8s: false
+is_openshift: false

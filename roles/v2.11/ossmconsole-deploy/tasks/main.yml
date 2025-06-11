@@ -1,0 +1,413 @@
+- set_fact:
+    k8s_plugin: kubernetes.core.k8s
+
+- name: Get the original CR as-is
+  set_fact:
+    current_cr: "{{ _kiali_io_ossmconsole }}"
+
+- name: Find oldest CR
+  vars:
+    crs: "{{ query(k8s_plugin, kind=current_cr.kind, api_version=current_cr.apiVersion) | sort(attribute='metadata.creationTimestamp') }}"
+  set_fact:
+    oldest_ossmconsole_cr: "{{ crs[0] }}"
+  when:
+  - crs | length > 0
+
+- block:
+  - debug:
+      msg: "Ignoring this CR [{{ current_cr.metadata.namespace }}/{{ current_cr.metadata.name }}]. The CR in control of OSSMC is [{{ oldest_ossmconsole_cr.metadata.namespace }}/{{ oldest_ossmconsole_cr.metadata.name }}]."
+  - include_tasks: update-status-progress.yml
+    vars:
+      status_progress_message: "Ignoring this CR. The CR in control of OSSMC is [{{ oldest_ossmconsole_cr.metadata.namespace }}/{{ oldest_ossmconsole_cr.metadata.name }}]."
+  - meta: end_play
+  when:
+  - oldest_ossmconsole_cr is defined
+  - oldest_ossmconsole_cr.metadata.name != current_cr.metadata.name or oldest_ossmconsole_cr.metadata.namespace != current_cr.metadata.namespace
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Initializing"
+    status_vars:
+      specVersion: "{{ ossmconsole_vars.version }}"
+      deployment:
+        namespace: null
+      kiali:
+        serviceName: null
+        serviceNamespace: null
+        servicePort: null
+
+# There are three possible values for the console managementState: Managed, Unmanaged, and Removed.
+# If it is Removed, the web console is disabled and thus we cannot install OSSMC so abort immediately.
+# See: https://docs.openshift.com/container-platform/4.13/web_console/disabling-web-console.html
+- name: Ensure OpenShift Console is installed and enabled
+  vars:
+    console_res: "{{ query(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console', errors='ignore') }}"
+  fail:
+    msg: "The OpenShift Console is not installed and enabled. Cannot install OSSMC."
+  when:
+  - console_res | length == 0 or console_res[0].spec.managementState == "Removed"
+
+- name: Get information about the cluster
+  set_fact:
+    api_groups: "{{ lookup(k8s_plugin, cluster_info='api_groups') }}"
+
+- name: Determine the Kubernetes version
+  set_fact:
+    k8s_version: "{{ lookup(k8s_plugin, cluster_info='version').kubernetes.gitVersion | regex_replace('^v', '') }}"
+  ignore_errors: yes
+
+- name: Determine the OpenShift version
+  vars:
+    kube_apiserver_cluster_op_raw: "{{ lookup(k8s_plugin, api_version='config.openshift.io/v1', kind='ClusterOperator', resource_name='kube-apiserver') | default({}) }}"
+    ri_query: "status.versions[?name == 'raw-internal'].version"
+  set_fact:
+    openshift_version: "{{ kube_apiserver_cluster_op_raw | json_query(ri_query) | join }}"
+
+- name: Get information about the operator
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ lookup('env', 'POD_NAMESPACE') }}"
+    name: "{{ lookup('env', 'POD_NAME') }}"
+  register: operator_pod_raw
+  ignore_errors: yes
+- name: Determine the version of the operator based on the version label
+  set_fact:
+    operator_version: "{{ operator_pod_raw.resources[0].metadata.labels.version }}"
+  when:
+  - operator_pod_raw is defined
+  - operator_pod_raw.resources[0] is defined
+  - operator_pod_raw.resources[0].metadata is defined
+  - operator_pod_raw.resources[0].metadata.labels is defined
+  - operator_pod_raw.resources[0].metadata.labels.version is defined
+- set_fact:
+    operator_version: "unknown"
+  when:
+  - operator_version is not defined
+- debug:
+    msg: "OPERATOR VERSION: [{{ operator_version }}]"
+
+- name: Print some debug information
+  vars:
+    msg: |
+      OSSM Console Variables:
+      --------------------------------
+      {{ ossmconsole_vars | to_nice_yaml }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: Set default deployment namespace to the same namespace where the CR lives
+  set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.deployment.namespace is not defined or ossmconsole_vars.deployment.namespace == ""
+
+- name: Do not support installing in any namespace other than where the CR lives
+  fail:
+    msg: "The operator currently does not support installing the plugin in any namespace other than the namespace where the CR was created."
+  when:
+  - ossmconsole_vars.deployment.namespace != current_cr.metadata.namespace
+
+# Never allow deployment.namespace to change to avoid leaking resources - to uninstall resources you must delete the OSSMConsole CR
+- name: Ensure the deployment.namespace has not changed
+  fail:
+    msg: "The deployment.namespace cannot be changed to a different value. It was [{{ current_cr.status.deployment.namespace }}] but is now [{{ ossmconsole_vars.deployment.namespace }}]. In order to install OSSM Console with a different deployment.namespace, please uninstall OSSM Console first."
+  when:
+  - current_cr.status is defined
+  - current_cr.status.deployment is defined
+  - current_cr.status.deployment.namespace is defined
+  - current_cr.status.deployment.namespace != ossmconsole_vars.deployment.namespace
+
+# If we need to auto-discover some things that require the Kiali Route, get the route now - first look in the CR's namespace then anywhere else. If Kiali is not found, abort.
+- name: Auto-discover the Kiali Route - preference goes to a Kiali installed in the same namespace as the CR
+  vars:
+    kiali_in_namespace: "{{ query(k8s_plugin, label_selector='app.kubernetes.io/name=kiali', api_version='route.openshift.io/v1', kind='Route', namespace=current_cr.metadata.namespace) }}"
+    kiali_anywhere: "{{ query(k8s_plugin, label_selector='app.kubernetes.io/name=kiali', api_version='route.openshift.io/v1', kind='Route') }}"
+  set_fact:
+    kiali_route: "{{ kiali_in_namespace[0] if kiali_in_namespace | length > 0 else (kiali_anywhere[0] if kiali_anywhere | length > 0 else '') }}"
+  when:
+  - ossmconsole_vars.kiali.serviceName == "" or ossmconsole_vars.kiali.serviceNamespace == "" or ossmconsole_vars.kiali.servicePort|int == 0
+  ignore_errors: yes
+
+- fail:
+    msg: "Failed to auto-discover the Kiali Route. Make sure Kiali is installed. You can specify the full 'kiali' section in the CR if there is a Kiali installed but cannot be auto-discovered by this operator."
+  when:
+  - kiali_route is defined
+  - kiali_route == ""
+
+- name: Auto-discover the Kiali Service Name
+  set_fact:
+    kiali_service_name: "{{ kiali_route.spec.to.name }}"
+  when:
+  - ossmconsole_vars.kiali.serviceName == ""
+  ignore_errors: yes
+
+- name: Auto-discover the Kiali Service Namespace
+  set_fact:
+    kiali_service_namespace: "{{ kiali_route.metadata.namespace }}"
+  when:
+  - ossmconsole_vars.kiali.serviceNamespace == ""
+  ignore_errors: yes
+
+- name: Auto-discover the Kiali Service Port
+  set_fact:
+    kiali_service_port: "{{ kiali_route.spec.port.targetPort }}"
+  when:
+  - ossmconsole_vars.kiali.servicePort|int == 0
+  ignore_errors: yes
+
+- fail:
+    msg: "Failed to auto-discover the Kiali Service Name. Make sure Kiali is installed. You can specify 'kiali.serviceName' in the CR if there is a Kiali Service the plugin can use but cannot be auto-discovered by this operator."
+  when:
+  - ossmconsole_vars.kiali.serviceName == ""
+  - kiali_service_name is not defined or kiali_service_name == ""
+
+- fail:
+    msg: "Failed to auto-discover the Kiali Service Namespace. Make sure Kiali is installed. You can specify 'kiali.serviceNamespace' in the CR if there is a Kiali Service the plugin can use but cannot be auto-discovered by this operator."
+  when:
+  - ossmconsole_vars.kiali.serviceNamespace == ""
+  - kiali_service_namespace is not defined or kiali_service_namespace == ""
+
+- fail:
+    msg: "Failed to auto-discover the Kiali Service Port. Make sure Kiali is installed. You can specify 'kiali.servicePort' in the CR if there is a Kiali Service the plugin can use but cannot be auto-discovered by this operator."
+  when:
+  - ossmconsole_vars.kiali.servicePort|int == 0
+  - kiali_service_port is not defined or kiali_service_port == ""
+
+# Set the auto-discovered values that we found
+- set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'kiali': {'serviceName': kiali_service_name}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.kiali.serviceName == ""
+- set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'kiali': {'serviceNamespace': kiali_service_namespace}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.kiali.serviceNamespace == ""
+- set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'kiali': {'servicePort': kiali_service_port}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.kiali.servicePort|int == 0
+
+- name: Ask Kiali for information about itself
+  vars:
+    version_url: "{{ 'https://' + ossmconsole_vars.kiali.serviceName + '.' + ossmconsole_vars.kiali.serviceNamespace + '.svc.cluster.local:' + ossmconsole_vars.kiali.servicePort|string + '/api' }}"
+  uri:
+    url: "{{ version_url }}"
+    status_code: 200
+    validate_certs: false
+    return_content: true
+  register: kiali_info_results
+  until:
+  - kiali_info_results is defined
+  - kiali_info_results.status is defined
+  - kiali_info_results.status == 200
+  retries: 60
+  delay: 5
+  ignore_errors: yes
+
+- name: Determine Kiali version
+  vars:
+    q: status."Kiali version"
+  set_fact:
+    kiali_version: "{{ kiali_info_results.json | json_query(q) }}"
+  when:
+  - kiali_info_results is defined
+  - kiali_info_results.json is defined
+  ignore_errors: yes
+
+- name: "Determine environment to store in status"
+  set_fact:
+    status_environment: "{{ status_environment | default({}) | combine({item.0: item.1}) }}"
+  loop: "{{ data[0] | zip(data[1]) | list }}"
+  vars:
+    data:
+    - ['kialiVersion', 'kubernetesVersion', 'openshiftVersion', 'operatorVersion']
+    - ["{{kiali_version|default('unknown')}}", "{{k8s_version|default('')}}", "{{openshift_version|default('')}}", "{{operator_version}}"]
+  when:
+  - item.1 != ""
+  - item.1 != "false"
+  - item.1 != False
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Setting up configuration"
+    status_vars:
+      environment: "{{ status_environment | default({}) }}"
+      deployment:
+        namespace: "{{ ossmconsole_vars.deployment.namespace }}"
+      kiali:
+        serviceName: "{{ ossmconsole_vars.kiali.serviceName }}"
+        serviceNamespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
+        servicePort: "{{ ossmconsole_vars.kiali.servicePort|int }}"
+
+# The OSSMC plugin must talk to a Kiali of the same version.
+# We asked the Kiali Server what version it is, so we already have that.
+# To know the OSSMC version, we assume even if the user overrides the imageName/imageVersion, that that image must
+# support the same major.minor version of the playbook (i.e. spec.version). We look up the version of the playbook
+# in original_supported_ossmconsole_images (which contains the actual imageVersion strings, even if they were overridden
+# by the RELATED_IMAGES environment variables - we assume all RELATED_IMAGES are fixed hashs of the original imageVersion
+# numbers) and obtain the imageVersion that that playbook supports and assume that is the version
+# of OSSMC that is being installed - so that is the version we compare with the Kiali version. Note that if imageVersion
+# is the string "operator_version", the supported OSSMC version is the same version as the operator itself.
+# Note that we ignore any "v" prefix that may be in front of the version numbers; always just compare major.minor (v or no-v).
+# If, for some reason, the user runs into an edge case where OSSMC needs to be installed even if the versions don't match,
+# set the env var OSSMC_SKIP_VERSION_CHECK=true in the operator.
+- name: Ensure Kiali major.minor version is supported by the version of OSSMC being installed
+  vars:
+    kiali_version_to_match: "{{ kiali_version | default('') | regex_replace('^[v]?([0-9]+.[0-9]+).*', '\\1') }}"
+    ossmc_version_expected: "{{ original_supported_ossmconsole_images[ossmconsole_vars.version].imageVersion | default ('') }}"
+    ossmc_version_to_match: "{{ ((operator_version | default('')) if ossmc_version_expected == 'operator_version' else ossmc_version_expected) | regex_replace('^[v]?([0-9]+.[0-9]+).*', '\\1') }}"
+  fail:
+    msg: "The version of the Kiali Server [{{ kiali_version_to_match }}] does not match the OSSMC version [{{ ossmc_version_to_match }}]. OSSMC will not be installed. To skip this check and allow for the install to continue, set the operator environment variable OSSMC_SKIP_VERSION_CHECK to 'true'."
+  when:
+  - kiali_version_to_match != ossmc_version_to_match
+  - lookup('env', 'OSSMC_SKIP_VERSION_CHECK') | default('false', True) != "true"
+
+- name: Only allow ad-hoc OSSM Console image when appropriate
+  fail:
+    msg: "The operator is forbidden from accepting an OSSMConsole CR that defines an ad hoc OSSM Console image [{{ ossmconsole_vars.deployment.imageName }}{{ '@' + ossmconsole_vars.deployment.imageDigest if ossmconsole_vars.deployment.imageDigest != '' else '' }}:{{ ossmconsole_vars.deployment.imageVersion }}]. Remove spec.deployment.imageName, spec.deployment.imageVersion, and spec.deployment.imageDigest from the OSSMConsole CR."
+  when:
+  - ossmconsole_vars.deployment.imageName != "" or ossmconsole_vars.deployment.imageVersion != "" or ossmconsole_vars.deployment.imageDigest != ""
+  - lookup('env', 'ALLOW_AD_HOC_OSSMCONSOLE_IMAGE') | default('false', True) != "true"
+
+- name: Default the image name to a known supported image.
+  set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'deployment': {'imageName': supported_ossmconsole_images[ossmconsole_vars.version].imageName}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.deployment.imageName == ""
+- name: Default the image version to a known supported image.
+  set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'deployment': {'imageVersion': ('latest' if operator_version == 'master' else operator_version) if supported_ossmconsole_images[ossmconsole_vars.version].imageVersion == 'operator_version' else supported_ossmconsole_images[ossmconsole_vars.version].imageVersion}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.deployment.imageVersion == ""
+
+- name: If image version is latest then we will want to always pull
+  set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'deployment': {'imagePullPolicy': 'Always'}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.deployment.imageVersion == "latest"
+
+- name: Confirm the cluster can access github.com when it needs to determine the last release of Kiali
+  uri:
+    url: https://api.github.com/repos/kiali/openshift-servicemesh-plugin/releases
+  when:
+  - ossmconsole_vars.deployment.imageVersion == "lastrelease"
+- name: Determine image version when last release is to be installed
+  shell: echo -n $(curl -s https://api.github.com/repos/kiali/openshift-servicemesh-plugin/releases 2> /dev/null | grep "tag_name" | sed -e 's/.*://' -e 's/ *"//' -e 's/",//' | grep -v "snapshot" | sort -t "." -k 1.2g,1 -k 2g,2 -k 3g | tail -n 1)
+  register: github_lastrelease
+  when:
+  - ossmconsole_vars.deployment.imageVersion == "lastrelease"
+- set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'deployment': {'imageVersion': github_lastrelease.stdout}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.deployment.imageVersion == "lastrelease"
+
+- name: Determine image version when it explicitly was configured as the operator_version
+  set_fact:
+    ossmconsole_vars: "{{ ossmconsole_vars | combine({'deployment': {'imageVersion': 'latest' if operator_version == 'master' else operator_version}}, recursive=True) }}"
+  when:
+  - ossmconsole_vars.deployment.imageVersion == "operator_version"
+
+- fail:
+    msg: "Could not determine what the image version should be. Set deployment.imageVersion to a valid value"
+  when:
+  - ossmconsole_vars.deployment.imageVersion == "" or ossmconsole_vars.deployment.imageVersion == "unknown"
+
+# Indicate which image we are going to use.
+- debug:
+    msg: "IMAGE_NAME={{ ossmconsole_vars.deployment.imageName }}; IMAGE VERSION={{ ossmconsole_vars.deployment.imageVersion }}"
+
+- name: Determine what metadata labels to apply to all created resources
+  vars:
+    version_label: "{{ (ossmconsole_vars.deployment.imageVersion) if (ossmconsole_vars.deployment.imageVersion | length <= 63) else (ossmconsole_vars.deployment.imageVersion[:60] + 'XXX') }}"
+  set_fact:
+    ossmconsole_resource_metadata_labels:
+      app: ossmconsole
+      version: "{{ version_label }}"
+      app.kubernetes.io/name: ossmconsole
+      app.kubernetes.io/version: "{{ version_label }}"
+      app.kubernetes.io/instance: ossmconsole
+      app.kubernetes.io/part-of: ossmconsole
+
+- name: Delete OSSM Console deployment if image is changing - this uninstalls any old version of OSSM Console that might be running
+  k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ ossmconsole_vars.deployment.namespace }}"
+    name: ossmconsole
+  when:
+  - current_image_name is defined and current_image_version is defined
+  - (current_image_name != ossmconsole_vars.deployment.imageName) or (current_image_version != ossmconsole_vars.deployment.imageVersion)
+
+# Get the deployment's custom annotation we set that tells us when we last updated the Deployment.
+# We need this to ensure the Deployment we update retains this same timestamp unless changes are made
+# that requires a pod restart - in which case we update this timestamp.
+- name: Find current deployment, if it exists
+  set_fact:
+    current_deployment: "{{ lookup(k8s_plugin, resource_name='ossmconsole', namespace=ossmconsole_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') }}"
+
+- name: Get current deployment last-updated annotation timestamp from existing deployment
+  set_fact:
+    current_deployment_last_updated: "{{ current_deployment.spec.template.metadata.annotations['ossmconsole.kiali.io/last-updated'] if current_deployment.spec.template.metadata.annotations['ossmconsole.kiali.io/last-updated'] is defined else lookup('pipe','date') }}"
+    deployment_is_new: false
+  when:
+  - current_deployment is defined
+  - current_deployment.spec is defined
+  - current_deployment.spec.template is defined
+  - current_deployment.spec.template.metadata is defined
+  - current_deployment.spec.template.metadata.annotations is defined
+
+- name: Set current deployment last-updated annotation timestamp for new deployments
+  set_fact:
+    current_deployment_last_updated: "{{ lookup('pipe','date') }}"
+    deployment_is_new: true
+  when:
+  - current_deployment_last_updated is not defined
+
+# Now deploy all resources for the specific cluster environment
+
+- name: Execute for OpenShift environment
+  include_tasks: openshift/os-main.yml
+  vars:
+    deployment_last_updated: "{{ current_deployment_last_updated }}"
+
+# If something changed that can only be picked up when the OSSM Console pod starts up, then restart the pod using a rolling restart
+# We do this by checking the processed_resources_dict created by process-resources.yml task. If there is a map key
+# with the kind (ConfigMap) with the name of our config map appended to it ("-plugin-conf") see if that config map changed.
+# If it did, we need to restart the pod so it can re-read the new config.
+- name: Force the OSSM Console pod to restart if necessary
+  vars:
+    keyname: "{{ 'ConfigMap-plugin-conf' }}"
+    updated_deployment: "{{ lookup(k8s_plugin, resource_name='ossmconsole', namespace=ossmconsole_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'ossmconsole.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
+  k8s:
+    state: "present"
+    definition: "{{ updated_deployment }}"
+  when:
+  - deployment_is_new == False
+  - processed_resources_dict is defined
+  - processed_resources_dict[keyname] is defined
+  - processed_resources_dict[keyname].changed == True
+  - processed_resources_dict[keyname].method == "patch"
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Enabling plugin"
+    status_vars: {}
+
+- name: Enable plugin by ensuring the OSSM Console is in the Console list of plugins
+  vars:
+    existing_plugins: "{{ lookup(k8s_plugin, resource_name='cluster', api_version='operator.openshift.io/v1', kind='Console').spec.plugins | default([]) }}"
+  k8s:
+    state: patched
+    api_version: operator.openshift.io/v1
+    kind: Console
+    name: cluster
+    definition:
+      spec:
+        plugins: "{{ (existing_plugins | difference(['ossmconsole'])) + ['ossmconsole'] }}"
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Finished"
+    status_vars: {}
