@@ -21,7 +21,6 @@ metadata:
     features.operators.openshift.io/token-auth-aws: "false"
     features.operators.openshift.io/token-auth-azure: "false"
     features.operators.openshift.io/token-auth-gcp: "false"
-    olm.skipRange: '>=1.0.0 <${KIALI_OPERATOR_VERSION}'
     categories: Monitoring,Logging & Tracing
     certified: "false"
     containerImage: ${KIALI_OPERATOR_REGISTRY}
@@ -67,7 +66,6 @@ metadata:
 spec:
   version: ${KIALI_OPERATOR_VERSION}
   maturity: stable
-  replaces: kiali-operator.v${KIALI_OLD_OPERATOR_VERSION}
   displayName: Kiali Operator
   description: |-
     ## About the managed application
