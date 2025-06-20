@@ -1435,8 +1435,10 @@ spec:
                         type: object
                         properties:
                           limit:
-                            description: "The default limit for the number of traces that will be fetched. It can be customized in the UI. 100 by default."
+                            description: "The default limit for the number of traces that will be fetched. It can be customized in the UI. 100 by default, must be a number between 10 and 1000."
                             type: integer
+                            minimum: 10
+                            maximum: 1000
                   validations:
                     description: "Features specific to the validations subsystem."
                     type: object
