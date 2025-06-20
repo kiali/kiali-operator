@@ -1430,6 +1430,15 @@ spec:
                         description: "The automatic refresh interval for pages offering automatic refresh. `Manual` requires user action even for initial page load. Value must be one of: `pause`, `manual`, `10s`, `15s`, `30s`, `1m`, `5m` or `15m`"
                         type: string
                         enum: ["pause", "manual", "10s", "15s", "30s", "1m", "5m", "15m"]
+                      tracing:
+                        description: "Default settings for the Tracing UI."
+                        type: object
+                        properties:
+                          limit:
+                            description: "The default limit for the number of traces that will be fetched. It can be customized in the UI. 100 by default, must be a number between 10 and 1000."
+                            type: integer
+                            minimum: 10
+                            maximum: 1000
                   validations:
                     description: "Features specific to the validations subsystem."
                     type: object
