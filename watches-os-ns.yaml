@@ -1,7 +1,7 @@
 # OPENSHIFT WATCHES YAML WITH NAMESPACE WATCHING
 ---
 # The normal Kiali CR processing playbook
-- version: v1alpha1
+- version: v1
   group: kiali.io
   kind: Kiali
   playbook: playbooks/kiali-deploy.yml
@@ -36,7 +36,7 @@
   watchClusterScopedResources: False
   watchAnnotationsChanges: False
 # The normal processing for the OpenShift ServiceMesh Console plugin playbook
-- version: v1alpha1
+- version: v1
   group: kiali.io
   kind: OSSMConsole
   playbook: playbooks/ossmconsole-deploy.yml

@@ -882,7 +882,7 @@ if [ "${KIALI_CR:-}" != "" ]; then
 else
   _KIALI_CR_YAML=$(cat <<EOF | sed '/^[ ]*$/d'
 ---
-apiVersion: kiali.io/v1alpha1
+apiVersion: kiali.io/v1
 kind: Kiali
 metadata:
   name: kiali

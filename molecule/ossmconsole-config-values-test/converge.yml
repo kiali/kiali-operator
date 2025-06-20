@@ -11,7 +11,7 @@
   - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
 
   - set_fact:
-      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
   - name: The current CR to be used as the base of the test
     debug:

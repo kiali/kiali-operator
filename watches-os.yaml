@@ -1,7 +1,7 @@
 # OPENSHIFT WATCHES YAML
 ---
 # The normal Kiali CR processing playbook
-- version: v1alpha1
+- version: v1
   group: kiali.io
   kind: Kiali
   playbook: playbooks/kiali-deploy.yml
@@ -26,7 +26,7 @@
     matchLabels:
       kiali.io/kiali-multi-cluster-secret: "true"
 # The normal processing for the OpenShift ServiceMesh Console plugin playbook
-- version: v1alpha1
+- version: v1
   group: kiali.io
   kind: OSSMConsole
   playbook: playbooks/ossmconsole-deploy.yml

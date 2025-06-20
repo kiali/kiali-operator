@@ -79,8 +79,8 @@ else
 	podman push ${OPERATOR_QUAY_TAG}
 endif
 
-## validate: Checks the latest version of the OLM bundle metadata for correctness.
-validate: .ensure-operator-sdk-exists
+## validate: Checks the latest version of the OLM bundle metadata for correctness and CRD sync.
+validate: .ensure-operator-sdk-exists validate-crd-sync
 	@printf "==========\nValidating kiali-ossm metadata\n==========\n"
 	@mkdir -p ${OUTDIR}/kiali-ossm && rm -rf ${OUTDIR}/kiali-ossm/* && cp -R ./manifests/kiali-ossm ${OUTDIR} && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR_VERSION="2.0.0" KIALI_OLD_OPERATOR_VERSION="1.0.0" KIALI_OPERATOR_REGISTRY="registry-proxy.engineering.redhat.com/rh-osbs/openshift-service-mesh-kiali-operator:2.0.0" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm/manifests/kiali.clusterserviceversion.yaml && ${OP_SDK} bundle validate --verbose ${OUTDIR}/kiali-ossm
 	@printf "==========\nValidating the latest version of kiali-upstream metadata\n==========\n"
@@ -89,9 +89,9 @@ validate: .ensure-operator-sdk-exists
 ## validate-cr: Ensures the example CR is valid according to the CRD schema
 validate-cr:
 	@printf "\n========== Validating the Kiali CR ==========\n"
-	${ROOTDIR}/crd-docs/bin/validate-kiali-cr.sh --kiali-cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_kiali.yaml
+	${ROOTDIR}/crd-docs/bin/validate-kiali-cr.sh --kiali-cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1_kiali.yaml
 	@printf "\n========== Validating the OSSMConsole CR ==========\n"
-	${ROOTDIR}/crd-docs/bin/validate-ossmconsole-cr.sh --cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_ossmconsole.yaml
+	${ROOTDIR}/crd-docs/bin/validate-ossmconsole-cr.sh --cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1_ossmconsole.yaml
 
 .gen-crd-doc-kiali:
 	mkdir -p ${OUTDIR}/crd-docs
@@ -103,6 +103,64 @@ validate-cr:
 
 ## gen-crd-doc: Generates documentation for the Kiali CR and OSSMConsole CR configuration
 gen-crd-doc: .gen-crd-doc-kiali .gen-crd-doc-ossmconsole
+
+## sync-crds: Synchronizes all CRD files from the golden copies
+sync-crds:
+	@echo "Synchronizing Kiali CRD files from golden copy: crd-docs/crd/kiali.io_kialis.yaml"
+	
+	@if [ -d "../helm-charts/kiali-operator/crds" ]; then \
+		echo "  -> helm-charts/kiali-operator/crds/crds.yaml (with YAML document separators)"; \
+		echo "---" > ../helm-charts/kiali-operator/crds/crds.yaml; \
+		cat crd-docs/crd/kiali.io_kialis.yaml >> ../helm-charts/kiali-operator/crds/crds.yaml; \
+		echo "..." >> ../helm-charts/kiali-operator/crds/crds.yaml; \
+	else \
+		echo "  -> helm-charts/kiali-operator/crds/crds.yaml (SKIPPED - directory not found)"; \
+	fi
+	
+	@echo "  -> manifests/kiali-ossm/manifests/kiali.crd.yaml (direct copy)"
+	@cp crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-ossm/manifests/kiali.crd.yaml
+	
+	@echo "  -> manifests/kiali-upstream/2.12.0/manifests/kiali.crd.yaml (direct copy)"
+	@cp crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-upstream/2.12.0/manifests/kiali.crd.yaml
+	
+	@echo "Synchronizing OSSMConsole CRD files from golden copy: crd-docs/crd/kiali.io_ossmconsoles.yaml"
+	
+	@echo "  -> manifests/kiali-ossm/manifests/ossmconsole.crd.yaml (direct copy)"
+	@cp crd-docs/crd/kiali.io_ossmconsoles.yaml manifests/kiali-ossm/manifests/ossmconsole.crd.yaml
+	
+	@echo "CRD synchronization complete."
+
+## validate-crd-sync: Validates that all CRD files are in sync with the golden copies
+validate-crd-sync:
+	@echo "Validating CRD synchronization..."
+	@temp_dir=$$(mktemp -d) && \
+	trap "rm -rf $$temp_dir" EXIT && \
+	if [ -d "../helm-charts/kiali-operator/crds" ]; then \
+		echo "---" > $$temp_dir/expected-helm.yaml; \
+		cat crd-docs/crd/kiali.io_kialis.yaml >> $$temp_dir/expected-helm.yaml; \
+		echo "..." >> $$temp_dir/expected-helm.yaml; \
+		if ! diff -q $$temp_dir/expected-helm.yaml ../helm-charts/kiali-operator/crds/crds.yaml >/dev/null 2>&1; then \
+			echo "ERROR: Helm CRD is out of sync! Run 'make sync-crds' to fix."; \
+			exit 1; \
+		fi; \
+	else \
+		echo "Skipping Helm CRD validation (directory not found)"; \
+	fi && \
+	if ! diff -q crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-ossm/manifests/kiali.crd.yaml >/dev/null 2>&1; then \
+		echo "ERROR: OSSM Kiali CRD is out of sync! Run 'make sync-crds' to fix."; \
+		exit 1; \
+	fi && \
+	if ! diff -q crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-upstream/2.12.0/manifests/kiali.crd.yaml >/dev/null 2>&1; then \
+		echo "ERROR: Upstream Kiali CRD is out of sync! Run 'make sync-crds' to fix."; \
+		exit 1; \
+	fi && \
+	if ! diff -q crd-docs/crd/kiali.io_ossmconsoles.yaml manifests/kiali-ossm/manifests/ossmconsole.crd.yaml >/dev/null 2>&1; then \
+		echo "ERROR: OSSM OSSMConsole CRD is out of sync! Run 'make sync-crds' to fix."; \
+		exit 1; \
+	fi && \
+	echo "✓ All CRD files are in sync with the golden copies"
+
+
 
 # Ensure "docker buildx" is available and enabled. For more details, see: https://github.com/docker/buildx/blob/master/README.md
 # This does a few things:

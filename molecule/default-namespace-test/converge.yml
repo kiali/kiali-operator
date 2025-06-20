@@ -29,7 +29,7 @@
   - name: Remove the Kiali CR so we can see the operator purge the doomed resources
     k8s:
       state: absent
-      api_version: kiali.io/v1alpha1
+      api_version: kiali.io/v1
       kind: Kiali
       namespace: "{{ cr_namespace }}"
       name: "{{ custom_resource.metadata.name }}"

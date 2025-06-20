@@ -28,7 +28,7 @@ all:
     # Make sure these match those in dev-ossmconsole-cr.yaml.
 
     _kiali_io_ossmconsole:
-      apiVersion: kiali.io/v1alpha1
+      apiVersion: kiali.io/v1
       kind: OSSMConsole
       metadata:
         name: ossmconsole

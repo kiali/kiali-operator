@@ -68,7 +68,7 @@
       msg: "{{ status_response.json }}"  
 
   - set_fact:
-      current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+      current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
   - name: Check if Grafana status is present
     set_fact:

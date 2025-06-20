@@ -1,7 +1,7 @@
 # KUBERNETES/NON-OPENSHIFT WATCHES YAML WITH NAMESPACE WATCHING
 ---
 # The normal Kiali CR processing playbook
-- version: v1alpha1
+- version: v1
   group: kiali.io
   kind: Kiali
   playbook: playbooks/kiali-deploy.yml

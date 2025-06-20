@@ -1,6 +1,6 @@
 - name: Wait for Kiali CR changes to take effect
   k8s_info:
-    api_version: kiali.io/v1alpha1
+    api_version: kiali.io/v1
     kind: Kiali
     name: "{{ custom_resource.metadata.name }}"
     namespace: "{{ cr_namespace }}"
