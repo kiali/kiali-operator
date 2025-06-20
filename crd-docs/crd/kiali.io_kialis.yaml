@@ -2,6 +2,9 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: kialis.kiali.io
+  labels:
+    app: kiali-operator
+    app.kubernetes.io/name: kiali-operator
 spec:
   group: kiali.io
   names:
@@ -1588,7 +1591,7 @@ spec:
                     description: |
                       The maximum duration, in seconds, before timing out writes of the HTTP response back to the client. Default is 30.
 
-                      In OpenShift clusters, the route request time out should be also increased as the default is 30 seconds. 
-                      This can be done by annotating the specific route with `haproxy.router.openshift.io/timeout`. 
+                      In OpenShift clusters, the route request time out should be also increased as the default is 30 seconds.
+                      This can be done by annotating the specific route with `haproxy.router.openshift.io/timeout`.
                       See https://docs.openshift.com/container-platform/4.16/networking/routes/route-configuration.html#nw-configuring-route-timeouts_route-configuration for further details.
                     type: integer
