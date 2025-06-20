@@ -10,7 +10,7 @@
 
 - name: Get Kiali CR if present
   set_fact:
-    kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
+    kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
 - debug:
     msg: "Present Kiali CR: {{ kiali_cr }}"
 

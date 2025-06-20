@@ -32,7 +32,7 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "kiali.io/v1alpha1",
+          "apiVersion": "kiali.io/v1",
           "kind": "Kiali",
           "metadata": {
             "name": "kiali"
@@ -49,7 +49,7 @@ metadata:
           }
         },
         {
-          "apiVersion": "kiali.io/v1alpha1",
+          "apiVersion": "kiali.io/v1",
           "kind": "OSSMConsole",
           "metadata": {
             "name": "ossmconsole"
@@ -152,7 +152,7 @@ spec:
       description: A configuration file for a Kiali installation.
       displayName: Kiali
       kind: Kiali
-      version: v1alpha1
+      version: v1
       resources:
       - kind: Deployment
         version: apps/v1
@@ -198,7 +198,7 @@ spec:
       description: A configuration file for a OpenShift Service Mesh Console installation.
       displayName: OpenShift Service Mesh Console
       kind: OSSMConsole
-      version: v1alpha1
+      version: v1
       resources:
       - kind: Deployment
         version: apps/v1

@@ -16,7 +16,7 @@ all:
     # Make sure these match those in dev-kiali-cr.yaml.
 
     _kiali_io_kiali:
-      apiVersion: kiali.io/v1alpha1
+      apiVersion: kiali.io/v1
       kind: Kiali
       metadata:
         name: kiali

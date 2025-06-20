@@ -1,6 +1,6 @@
 - name: Get OSSMConsole CR if present
   set_fact:
-    ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+    ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
 - name: Get OSSMConsole Pod
   k8s_info:

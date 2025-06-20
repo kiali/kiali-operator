@@ -19,7 +19,7 @@
     ignore_errors: yes
     vars:
       current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:00Z') }}"
-      kiali_cr_list: "{{ query('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali') }}"
+      kiali_cr_list: "{{ query('kubernetes.core.k8s', api_version='kiali.io/v1', kind='Kiali') }}"
     k8s:
       definition:
         apiVersion: "{{ item.apiVersion }}"

@@ -3,7 +3,7 @@ kind: Namespace
 metadata:
   name: dev-ossmconsole
 ---
-apiVersion: kiali.io/v1alpha1
+apiVersion: kiali.io/v1
 kind: OSSMConsole
 metadata:
   name: ossmconsole

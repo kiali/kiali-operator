@@ -11,7 +11,7 @@
       custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
     k8s:
       state: absent
-      api_version: kiali.io/v1alpha1
+      api_version: kiali.io/v1
       kind: OSSMConsole
       namespace: "{{ ossmconsole_cr_namespace }}"
       name: "{{ custom_resource.metadata.name }}"
