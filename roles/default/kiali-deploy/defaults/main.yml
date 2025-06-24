@@ -306,6 +306,8 @@ kiali_defaults:
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "60s"
+      tracing:
+        limit: 100
     validations:
       ignore: ["KIA1301"]
       skip_wildcard_gateway_hosts: false

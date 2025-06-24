@@ -488,6 +488,8 @@ spec:
       # default: namespaces is an empty list
       namespaces: ["istio-system"]
       refresh_interval: "1m"
+      tracing:
+        limit: 100
     validations:
       ignore: ["KIA1301"]
       skip_wildcard_gateway_hosts: false
