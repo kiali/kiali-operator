@@ -277,7 +277,7 @@ spec:
           type: "none"
           use_kiali_token: false
           username: ""
-        cache_duration: 10
+        cache_duration: 7
         cache_enabled: true
         cache_expiration: 300
         # default: custom_headers is empty
@@ -339,11 +339,11 @@ spec:
       istio_canary_revision:
         current: "1-9-9"
         upgrade: "1-10-2"
+      #istiod_deployment_name
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
       istio_sidecar_annotation: "sidecar.istio.io/status"
-      # default: istio_sidecar_injector_config_map_name is undefined
-      istiod_deployment_name: "istiod"
+      #istio_sidecar_injector_config_map_name
       istiod_pod_monitoring_port: 15014
       root_namespace: ""
       url_service_version: ""
@@ -357,7 +357,7 @@ spec:
         type: "none"
         use_kiali_token: false
         username: ""
-      cache_duration: 10
+      cache_duration: 7
       cache_enabled: true
       cache_expiration: 300
       # default: custom_headers is empty
@@ -470,7 +470,6 @@ spec:
         include_istio_resources: true
         include_validations: true
         show_include_toggles: false
-      metrics_per_refresh: "1m"
       # default: metrics_inbound is undefined
       metrics_inbound:
         aggregations:
@@ -485,6 +484,7 @@ spec:
           label: "topology_istio_io_network"
         - display_name: "Istio Revision"
           label: "istio_io_rev"
+      metrics_per_refresh: "1m"
       # default: namespaces is an empty list
       namespaces: ["istio-system"]
       refresh_interval: "1m"
