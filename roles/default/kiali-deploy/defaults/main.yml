@@ -85,6 +85,8 @@ kiali_defaults:
       sampler_rate: "1"
       time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: ""
+    network_policy:
+      enabled: true
     node_selector: {}
     pod_annotations:
       proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
@@ -121,7 +123,7 @@ kiali_defaults:
       discovery_enabled: "auto"
       enabled: true
       is_core: false
-      namespace_label: ""
+      namespace_label: "namespace"
       prometheus:
         auth:
           ca_file: ""
@@ -305,7 +307,7 @@ kiali_defaults:
         aggregations: []
       metrics_per_refresh: "1m"
       namespaces: []
-      refresh_interval: "60s"
+      refresh_interval: "1m"
       tracing:
         limit: 100
     validations:
