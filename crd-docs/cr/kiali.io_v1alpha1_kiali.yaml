@@ -209,6 +209,8 @@ spec:
       sampler_rate: "1"
       time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: "istio-system"
+    network_policy:
+      enabled: true
     # default: node_selector is empty
     node_selector:
       nodeSelector: "nodeSelectorValue"
