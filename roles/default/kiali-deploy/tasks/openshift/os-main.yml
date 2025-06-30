@@ -41,6 +41,7 @@
     - "{{ 'templates/openshift/service.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "{{ 'templates/openshift/hpa.yaml' if ((kiali_vars.deployment.hpa.spec | length > 0) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
     - "{{ 'templates/openshift/route.yaml' if ((kiali_vars.deployment.ingress.enabled|bool == True) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
+    - "{{ 'templates/openshift/networkpolicy.yaml' if ((kiali_vars.deployment.network_policy.enabled|bool == True) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
   when:
   - is_openshift == True
 
@@ -54,6 +55,17 @@
   when:
   - is_openshift == True
   - kiali_vars.deployment.ingress.enabled|bool == False
+
+- name: Delete NetworkPolicy on OpenShift if disabled
+  k8s:
+    state: absent
+    api_version: "networking.k8s.io/v1"
+    kind: "NetworkPolicy"
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.network_policy.enabled|bool == False
 
 - include_tasks: update-status-progress.yml
   vars:
