@@ -224,6 +224,8 @@ spec:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
   apiservicedefinitions: {}
   relatedImages:
+  - name: operator
+    image: "${KIALI_OPERATOR}"
   - name: kiali_default
     image: "${KIALI_2_11}"
   - name: kiali_v2_11
@@ -242,8 +244,6 @@ spec:
     image: "${OSSMCONSOLE_2_4}"
   - name: ossmconsole_v1_73
     image: "${OSSMCONSOLE_1_73}"
-  - name: operator
-    image: "${KIALI_OPERATOR}"
   install:
     strategy: deployment
     spec:
