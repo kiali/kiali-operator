@@ -1,0 +1,62 @@
+name: Tag Release Creator
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_branch:
+        description: Branch to tag
+        required: true
+        default: v2.11
+        type: string
+      target_commit:
+        description: Commit hash to tag (if empty, uses HEAD of the branch)
+        required: false
+        type: string
+
+jobs:
+  release_tag:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.inputs.tag_branch }}
+        # We need to fetch the full history to check if the commit exists
+        fetch-depth: 0
+
+    - name: Configure git
+      run: |
+        git config user.email 'kiali-dev@googlegroups.com'
+        git config user.name 'kiali-bot'
+
+    - name: Validate target commit
+      run: |
+        # Set target commit to HEAD if empty
+        if [ -z "${{ inputs.target_commit }}" ]; then
+          TARGET_COMMIT=$(git rev-parse HEAD)
+          echo "No target commit specified, using HEAD: $TARGET_COMMIT"
+        else
+          TARGET_COMMIT="${{ inputs.target_commit }}"
+          echo "Using specified target commit: $TARGET_COMMIT"
+        fi
+
+        # Check if commit exists in the specified branch
+        if ! git merge-base --is-ancestor $TARGET_COMMIT HEAD 2>/dev/null; then
+          echo "Error: Commit $TARGET_COMMIT not found in branch ${{ github.event.inputs.tag_branch }}"
+          exit 1
+        fi
+
+        echo "Commit $TARGET_COMMIT is valid and exists in branch ${{ github.event.inputs.tag_branch }}"
+        echo "TARGET_COMMIT=$TARGET_COMMIT" >> $GITHUB_ENV
+
+    - name: Create Release Tag in kiali/kiali-operator
+      run: |
+        RELEASE_VERSION=$(sed -rn 's/^VERSION \?= (.*)/\1/p' Makefile)
+
+        echo "Creating release tag $RELEASE_VERSION for commit $TARGET_COMMIT"
+
+        # Create the release tag
+        git push origin $TARGET_COMMIT:refs/tags/$RELEASE_VERSION
+
+        # Delete the bump version tag if it exists
+        git push origin --delete refs/tags/$RELEASE_VERSION-ossm || true
