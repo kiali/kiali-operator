@@ -22,9 +22,12 @@ OPERATOR_QUAY_TAG ?= ${OPERATOR_QUAY_NAME}:${OPERATOR_CONTAINER_VERSION}
 # Determine if we should use Docker OR Podman - value must be one of "docker" or "podman"
 DORP ?= docker
 
-# The version of the SDK this Makefile will download if needed, and the corresponding base image
-OPERATOR_SDK_VERSION ?= 1.36.0
-OPERATOR_BASE_IMAGE_VERSION ?= v${OPERATOR_SDK_VERSION}
+# The version of OPM this Makefile will download if needed, and the corresponding base image
+# Note: operator-sdk and opm are both part of operator-framework and released together
+# Auto-discover OPM version using GitHub API to ensure compatibility with operator-framework releases
+# You can override this by setting OPM_VERSION explicitly: make validate OPM_VERSION=v1.50.0
+OPM_VERSION ?= $(shell result=$$(curl -s --max-time 5 https://api.github.com/repos/operator-framework/operator-registry/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null); if [ -n "$$result" ]; then echo "$$result"; else echo "v1.56.0"; fi)
+OPERATOR_BASE_IMAGE_VERSION ?= v1.37.2
 OPERATOR_BASE_IMAGE_REPO ?= quay.io/operator-framework/ansible-operator
 
 .PHONY: help
@@ -38,25 +41,25 @@ help: Makefile
 clean:
 	@rm -rf ${OUTDIR}
 
-.download-operator-sdk-if-needed:
-	@if [ "$(shell which operator-sdk 2>/dev/null || echo -n "")" == "" ]; then \
-	  mkdir -p "${OUTDIR}/operator-sdk-install" ;\
-	  if [ -x "${OUTDIR}/operator-sdk-install/operator-sdk" ]; then \
-	    echo "You do not have operator-sdk installed in your PATH. Will use the one found here: ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
+.download-opm-if-needed:
+	@if [ "$(shell which opm 2>/dev/null || echo -n "")" == "" ]; then \
+	  mkdir -p "${OUTDIR}/opm-install" ;\
+	  if [ -x "${OUTDIR}/opm-install/opm" ]; then \
+	    echo "You do not have opm installed in your PATH. Will use the one found here: ${OUTDIR}/opm-install/opm" ;\
 	  else \
-	    echo "You do not have operator-sdk installed in your PATH. The binary will be downloaded to ${OUTDIR}/operator-sdk-install/operator-sdk" ;\
-	    curl -L https://github.com/operator-framework/operator-sdk/releases/download/v${OPERATOR_SDK_VERSION}/operator-sdk_linux_$$(test "$$(uname -m)" == "x86_64" && echo "amd64" || uname -m) > "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
-	    chmod +x "${OUTDIR}/operator-sdk-install/operator-sdk" ;\
+	    echo "You do not have opm installed in your PATH. The binary will be downloaded to ${OUTDIR}/opm-install/opm" ;\
+	    curl -L https://github.com/operator-framework/operator-registry/releases/download/${OPM_VERSION}/linux-$$(test "$$(uname -m)" == "x86_64" && echo "amd64" || uname -m)-opm > "${OUTDIR}/opm-install/opm" ;\
+	    chmod +x "${OUTDIR}/opm-install/opm" ;\
 	  fi ;\
 	fi
 
-.ensure-operator-sdk-exists: .download-operator-sdk-if-needed
-	@$(eval OP_SDK ?= $(shell which operator-sdk 2>/dev/null || echo "${OUTDIR}/operator-sdk-install/operator-sdk"))
-	@"${OP_SDK}" version
+.ensure-opm-exists: .download-opm-if-needed
+	@$(eval OPM ?= $(shell which opm 2>/dev/null || echo "${OUTDIR}/opm-install/opm"))
+	@"${OPM}" version
 
-## get-operator-sdk: Downloads the Operator SDK CLI if it is not already in PATH.
-get-operator-sdk: .ensure-operator-sdk-exists
-	@echo Operator SDK location: ${OP_SDK}
+## get-opm: Downloads the OPM CLI if it is not already in PATH.
+get-opm: .ensure-opm-exists
+	@echo OPM location: ${OPM}
 
 ## build: Build Kiali operator container image.
 .PHONY: build
@@ -80,11 +83,25 @@ else
 endif
 
 ## validate: Checks the latest version of the OLM bundle metadata for correctness.
-validate: .ensure-operator-sdk-exists
-	@printf "==========\nValidating kiali-ossm metadata\n==========\n"
-	@mkdir -p ${OUTDIR}/kiali-ossm && rm -rf ${OUTDIR}/kiali-ossm/* && cp -R ./manifests/kiali-ossm ${OUTDIR} && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR="registry.redhat.io/openshift-service-mesh/kiali-rhel9-operator:2.4.5" KIALI_OPERATOR_VERSION="2.4.5" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm/manifests/kiali.clusterserviceversion.yaml && ${OP_SDK} bundle validate --verbose ${OUTDIR}/kiali-ossm
-	@printf "==========\nValidating the latest version of kiali-upstream metadata\n==========\n"
-	@for d in $$(find . -type d -name "[0-9]*" | grep -E "/[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1); do ${OP_SDK} bundle --verbose validate $$d; done
+validate: .ensure-opm-exists
+	@printf "========== Validating kiali-ossm metadata ==========\n"
+	@mkdir -p ${OUTDIR}/kiali-ossm-validation/bundle && rm -rf ${OUTDIR}/kiali-ossm-validation/* && mkdir -p ${OUTDIR}/kiali-ossm-validation/bundle && cp -R ./manifests/kiali-ossm/manifests ${OUTDIR}/kiali-ossm-validation/bundle/ && cp -R ./manifests/kiali-ossm/metadata ${OUTDIR}/kiali-ossm-validation/bundle/ && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR="registry.redhat.io/openshift-service-mesh/kiali-rhel9-operator:2.4.5" KIALI_OPERATOR_VERSION="2.4.5" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm-validation/bundle/manifests/kiali.clusterserviceversion.yaml; \
+	if ${OPM} render ${OUTDIR}/kiali-ossm-validation/bundle --output yaml > ${OUTDIR}/kiali-ossm-validation/catalog.yaml 2>/dev/null; then \
+		printf "✓ kiali-ossm bundle structure is valid and can be rendered\n"; \
+	else \
+		printf "✗ kiali-ossmundle rendering failed - check manifest syntax\n"; \
+		exit 1; \
+	fi
+	@printf "========== Validating the latest version of kiali-upstream metadata ==========\n"
+	@for d in $$(find . -type d -name "[0-9]*" | grep -E "/[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1); do \
+		mkdir -p ${OUTDIR}/validation/bundle && rm -rf ${OUTDIR}/validation/* && mkdir -p ${OUTDIR}/validation/bundle && cp -R $$d/manifests ${OUTDIR}/validation/bundle/ && cp -R $$d/metadata ${OUTDIR}/validation/bundle/; \
+		if ${OPM} render ${OUTDIR}/validation/bundle --output yaml > ${OUTDIR}/validation/catalog.yaml 2>/dev/null; then \
+			printf "✓ [$$d] bundle structure is valid and can be rendered\n"; \
+		else \
+			printf "✗ [$$d] bundle rendering failed - check manifest syntax\n"; \
+			exit 1; \
+		fi; \
+	done
 
 ## validate-cr: Ensures the example CR is valid according to the CRD schema
 validate-cr:
