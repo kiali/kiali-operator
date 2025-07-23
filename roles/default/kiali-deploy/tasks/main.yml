@@ -505,7 +505,7 @@
 
 - include_tasks: get-discovery-selector-namespaces.yml
 
-# What if there is no co-located control plane?
+# If Istio and Kiali are not co-located, the user will need to explicitly set discovery selectors themselves to tell Kiali where that namespace is.
 - name: Make sure the Kiali deployment namespace and the Istio control plane namespace are accessible
   set_fact:
     discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
