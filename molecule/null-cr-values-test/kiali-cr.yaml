@@ -74,7 +74,6 @@ spec:
     istio:
       component_status: null
       istio_identity_domain: null
-      istio_namespace: null
       istio_sidecar_annotation: null
       url_service_version: null
 

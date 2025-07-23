@@ -340,7 +340,6 @@ spec:
         upgrade: "1-10-2"
       istio_identity_domain: "svc.cluster.local"
       istio_injection_annotation: "sidecar.istio.io/inject"
-      istio_namespace: "istio-system"
       istio_sidecar_annotation: "sidecar.istio.io/status"
       # default: istio_sidecar_injector_config_map_name is undefined
       istiod_deployment_name: "istiod"
