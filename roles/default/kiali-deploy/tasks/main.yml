@@ -508,7 +508,7 @@
 # What if there is no co-located control plane?
 - name: Make sure the Kiali deployment namespace and the Istio control plane namespace are accessible
   set_fact:
-    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.deployment.namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
+    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
 
 - name: Listing of all namespaces that are accessible to Kiali
   debug:
