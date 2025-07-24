@@ -3,9 +3,24 @@
   connection: local
   collections:
   - kubernetes.core
-  vars:
-    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
+  - name: Read dynamic node port from file
+    slurp:
+      src: /tmp/kiali_dynamic_node_port
+    register: port_file
+
+  - name: Set dynamic node port variable from file
+    set_fact:
+      dynamic_node_port: "{{ port_file.content | b64decode | trim | int }}"
+
+  - name: Set cluster type for template
+    set_fact:
+      is_kind: "{{ True if lookup('env', 'MOLECULE_CLUSTER_TYPE') == 'kind' else False }}"
+
+  - name: Load Kiali CR template now that all variables are defined
+    set_fact:
+      custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
@@ -53,7 +68,7 @@
       http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'match', '^(http|tcp)$') | first }}"
     assert:
       that:
-      - http_port.nodePort == 32444
+      - http_port.nodePort == (dynamic_node_port | int)
     when:
     - kiali_configmap.deployment.service_type == "NodePort"
   - name: If we are NOT configured with NodePort as service type, and NOT on KinD, make sure there is no nodePort in the service

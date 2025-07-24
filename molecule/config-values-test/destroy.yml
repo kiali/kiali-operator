@@ -1,0 +1,12 @@
+- name: Cleanup temp files
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+  - name: Clean up temporary port file
+    file:
+      path: /tmp/kiali_dynamic_node_port
+      state: absent
+    ignore_errors: yes
+
+- import_playbook: ../default/destroy.yml

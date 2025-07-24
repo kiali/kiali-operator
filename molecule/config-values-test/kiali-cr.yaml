@@ -16,4 +16,4 @@ spec:
     image_version: "{{ kiali.image_version }}"
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   server:
-    node_port: 32444
+    node_port: {{ dynamic_node_port | default(0) }}

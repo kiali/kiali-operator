@@ -1,0 +1,37 @@
+- name: Find dynamic node port before preparing Kiali
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+  - name: Find an unused node port
+    shell: |
+      for port in $(seq 30000 32767); do
+        if ! ss -tuln | grep -q ":$port "; then
+          echo $port
+          exit 0
+        fi
+      done
+      echo "ERROR: No unused ports found in range 30000-32767"
+      exit 1
+    register: unused_port_result
+    changed_when: false
+
+  - name: Verify a port was found
+    fail:
+      msg: "Failed to find an unused node port: {{ unused_port_result.stderr }}"
+    when: unused_port_result.rc != 0 or unused_port_result.stdout == ""
+
+  - name: Set dynamic node port variable and save to file
+    set_fact:
+      dynamic_node_port: "{{ unused_port_result.stdout | int }}"
+
+  - name: Save dynamic port to file for later use
+    copy:
+      content: "{{ dynamic_node_port }}"
+      dest: /tmp/kiali_dynamic_node_port
+
+  - name: Display selected node port
+    debug:
+      msg: "Using dynamic node port: {{ dynamic_node_port }}"
+
+- import_playbook: ../default/prepare.yml
