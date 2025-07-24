@@ -4,7 +4,6 @@ metadata:
   name: kiali
 spec:
   version: {{ kiali.spec_version }}
-  istio_namespace: {{ istio.control_plane_namespace }}
   auth:
     strategy: header
   deployment:

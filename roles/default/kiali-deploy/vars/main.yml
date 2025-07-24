@@ -14,7 +14,6 @@
 
 kiali_vars:
   installation_tag: "{{ installation_tag | default(kiali_defaults.installation_tag) }}"
-  istio_namespace: "{{ istio_namespace | default(kiali_defaults.istio_namespace) }}"
   version: "{{ version | default(kiali_defaults.version) }}"
 
   additional_display_details: |

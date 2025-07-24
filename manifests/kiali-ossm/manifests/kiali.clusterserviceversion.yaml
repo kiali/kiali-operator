@@ -39,7 +39,6 @@ metadata:
           },
           "spec": {
             "version": "default",
-            "istio_namespace": "istio-system",
             "deployment": {
               "logger": {
                 "log_level": "info"
@@ -172,11 +171,6 @@ spec:
       - displayName: Version
         description: "The version of the Kiali Server to install. This is specified in the form 'vX.Y'. Check the documentation for the values that are valid and supported. When not specified, or when set to the string 'default', the latest supported version of the Kiali Server will be installed. Default: default"
         path: version
-        x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'
-      - displayName: Istio Namespace
-        description: "The namespace where the Istio control plane is installed. Default: istio-system"
-        path: deployment.istio_namespace
         x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
       - displayName: Log Level
