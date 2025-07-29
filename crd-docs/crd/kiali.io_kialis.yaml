@@ -969,7 +969,7 @@ spec:
                               description: "The name of the GatewayClass."
                               type: string
                       gateway_api_classes_label_selector:
-                        description: "Label selector for auto-discovering K8s Gateway API Classes. Used if `gateway_api_classes` is unset. When left empty then all K8s Gateway API Classes will be loaded."
+                        description: "Label selector for auto-discovering K8s Gateway API Classes. Used if `gateway_api_classes` is unset and `cluster_wide_access` is set `true` for Kiali. When left empty then all K8s Gateway API Classes will be loaded."
                         type: string
                       ingress_gateway_namespace:
                         description: "The namespace where Istio IngressGateway component is read for a status check. When left empty, then `istio_namespace` value is used."
