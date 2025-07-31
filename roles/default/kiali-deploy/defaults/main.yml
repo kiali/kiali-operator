@@ -9,7 +9,6 @@
 
 kiali_defaults:
   installation_tag: ""
-  istio_namespace: ""
   version: "default"
 
   additional_display_details:
@@ -45,6 +44,7 @@ kiali_defaults:
       enabled: true
       label: "kiali.io/multiCluster=true"
     clusters: []
+    ignore_home_cluster: false
     kiali_urls: []
 
   custom_dashboards: []

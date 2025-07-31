@@ -4,8 +4,6 @@ metadata:
   name: kiali
 spec:
   version: {{ kiali.spec_version }}
-  # this test will try to use as many defaults as we can
-  istio_namespace: {{ istio.control_plane_namespace }}
   deployment:
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     ingress:

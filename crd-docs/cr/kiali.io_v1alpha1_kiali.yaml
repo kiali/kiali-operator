@@ -12,8 +12,6 @@ spec:
 
   installation_tag: ""
 
-  istio_namespace: ""
-
   version: "default"
 
   auth:
@@ -47,6 +45,7 @@ spec:
       enabled: true
       label: "kiali.io/multiCluster=true"
     clusters: []
+    ignore_home_cluster: false
     kiali_urls: []
 
   # default: custom_dashboards is an empty list
