@@ -956,7 +956,7 @@ spec:
                         description: "The port which kiali will open to fetch envoy config data information."
                         type: integer
                       gateway_api_classes:
-                        description: "A list declaring all the Gateways used in Istio. If left empty or undefined, the default is a single list item whose name is `Istio` and class_name is `istio`."
+                        description: "A list declaring all the Gateway API Classes used in Istio. If empty or undefined, Kiali attempts to auto-discover Gateway Classes if `cluster_wide_access` is set `true` for Kiali; otherwise, it defaults to `istio`, `istio-remote`, and adds `istio-waypoint` for Ambient mode or `istio-east-west` for multicluster setup."
                         type: array
                         items:
                           type: object
@@ -968,7 +968,7 @@ spec:
                               description: "The name of the GatewayClass."
                               type: string
                       gateway_api_classes_label_selector:
-                        description: "Label selector for auto-discovering K8s Gateway API Classes. Used if `gateway_api_classes` is unset. When left empty then all K8s Gateway API Classes will be loaded."
+                        description: "Label selector for auto-discovering K8s Gateway API Classes. Used if `gateway_api_classes` is unset and `cluster_wide_access` is set `true` for Kiali. When left empty then all K8s Gateway API Classes will be loaded."
                         type: string
                       ingress_gateway_namespace:
                         description: "The namespace where Istio IngressGateway component is read for a status check. When left empty, the control plane namespace is used. e.g. `istio-system`."
