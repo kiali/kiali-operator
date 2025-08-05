@@ -327,25 +327,13 @@ spec:
     istio:
       component_status:
         enabled: true
-      config_map_name: "istio"
       egress_gateway_namespace: ""
-      envoy_admin_local_port: 15000
       gateway_api_classes: []
       gateway_api_classes_label_selector: ""
       ingress_gateway_namespace: ""
       istio_api_enabled: true
-      # default: istio_canary_revision is undefined
-      istio_canary_revision:
-        current: "1-9-9"
-        upgrade: "1-10-2"
       istio_identity_domain: "svc.cluster.local"
-      istio_injection_annotation: "sidecar.istio.io/inject"
-      istio_sidecar_annotation: "sidecar.istio.io/status"
-      # default: istio_sidecar_injector_config_map_name is undefined
-      istiod_deployment_name: "istiod"
-      istiod_pod_monitoring_port: 15014
       root_namespace: ""
-      url_service_version: ""
       validation_reconcile_interval: "1m"
     prometheus:
       auth:
