@@ -199,8 +199,9 @@ spec:
                           description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
                           type: string
                   ignore_home_cluster:
-                    description: "Set to true for an external Kiali deployment, or if Kiali should not try to discover Istio on the home cluster. When set to `true`, it is required to set `kubernetes_config.cluster_name`. When not set, this value will default to `false`."
+                    description: "Set to true for an external Kiali deployment, or if Kiali should not try to discover Istio on the home cluster. When set to `true`, it is required to set `kubernetes_config.cluster_name`."
                     type: boolean
+                    default: false
                   kiali_urls:
                     description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
                     type: array
@@ -333,8 +334,9 @@ spec:
                           description: "The name of the secret that is to be mounted to the Kiali pod's file system. The name of the custom secret must not be the same name as one created by the operator. Names such as `kiali`, `kiali-cert-secret`, and `kiali-cabundle` should not be used as a custom secret name because the operator may want to create one with one of those names."
                           type: string
                         optional:
-                          description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This will default to 'false' if not specified. This is ignored if `csi` is specified - CSI secrets must exist when specified."
+                          description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This is ignored if `csi` is specified - CSI secrets must exist when specified."
                           type: boolean
+                          default: false
                   discovery_selectors:
                     description: |
                       Discovery selectors used to determine which namespaces are accessible to Kiali and which namespaces are visible to Kiali users.
@@ -773,6 +775,7 @@ spec:
                     enabled:
                       description: Determines if the Kiali traffic graph should incorporate the extension's metrics.
                       type: boolean
+                      default: false
                     name:
                       description: The name that is used to identify the metric time series for the extension.
                       type: string
@@ -1001,9 +1004,11 @@ spec:
                                 is_core:
                                   description: "Whether the component is to be considered a core component for your deployment."
                                   type: boolean
+                                  default: false
                                 is_proxy:
                                   description: "Whether the component is a native Envoy proxy."
                                   type: boolean
+                                  default: false
                                 namespace:
                                   description: "The namespace where the component is installed. It defaults to the Istio control plane namespace (e.g. `istio-system`). Note that the Istio documentation suggests you install the ingress and egress to different namespaces, so you most likely will want to explicitly set this namespace value for the ingress and egress components."
                                   type: string
@@ -1396,6 +1401,7 @@ spec:
                                 auto_select:
                                   description: "If true this option will be selected and take effect automatically. Note that only one option in the list can have this value be set to true."
                                   type: boolean
+                                  default: false
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
                                   type: string
@@ -1411,6 +1417,7 @@ spec:
                                 auto_select:
                                   description: "If true this option will be selected and take effect automatically. Note that only one option in the list can have this value be set to true."
                                   type: boolean
+                                  default: false
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
                                   type: string
