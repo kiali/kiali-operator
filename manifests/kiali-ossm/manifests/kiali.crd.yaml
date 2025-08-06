@@ -86,7 +86,7 @@ spec:
                 type: string
 
               istio_namespace:
-                description: "DEPRECATED: This setting is deprecated and will be ignored. The namespace where Istio is installed is now autodetected. If left empty, it was previously assumed to be the same namespace as where Kiali is installed (i.e. `deployment.namespace`)."
+                description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The namespace where Istio is installed is now autodetected. If left empty, it was previously assumed to be the same namespace as where Kiali is installed (i.e. `deployment.namespace`)."
                 type: string
 
               version:
@@ -1062,13 +1062,13 @@ spec:
                             type: boolean
                             default: true
                       config_map_name:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The name of the istio control plane config map is now autodetected based on revision."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istio control plane config map is now autodetected based on revision."
                         type: string
                       egress_gateway_namespace:
                         description: "The namespace where Istio EgressGateway component is read for a status check. When left empty, the control plane namespace is used. e.g. `istio-system`."
                         type: string
                       envoy_admin_local_port:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The port which Kiali will open to fetch envoy config data information is now hardcoded to the standard Envoy port."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The port which Kiali will open to fetch envoy config data information is now hardcoded to the standard Envoy port."
                         type: integer
                         default: 15000
                       gateway_api_class_name:
@@ -1097,7 +1097,7 @@ spec:
                         type: boolean
                         default: true
                       istio_canary_revision:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. Canary upgrade/downgrade functionality now autodetects canary revisions from running istiod pods."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. Canary upgrade/downgrade functionality now autodetects canary revisions from running istiod pods."
                         type: object
                         properties:
                           current:
@@ -1107,32 +1107,32 @@ spec:
                             description: "The installed Istio canary revision to upgrade to."
                             type: string
                       istiod_deployment_name:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The name of the istiod deployment is now autodetected."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istiod deployment is now autodetected."
                         type: string
                       istio_identity_domain:
                         description: "The annotation used by Istio to identify domains."
                         type: string
                         default: "svc.cluster.local"
                       istio_injection_annotation:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The name of the field that annotates a workload to indicate a sidecar should be automatically injected by Istio is now hardcoded to the standard value."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the field that annotates a workload to indicate a sidecar should be automatically injected by Istio is now hardcoded to the standard value."
                         type: string
                         default: "sidecar.istio.io/inject"
                       istio_sidecar_annotation:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The pod annotation used by Istio to identify the sidecar is now hardcoded to the standard value."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The pod annotation used by Istio to identify the sidecar is now hardcoded to the standard value."
                         type: string
                         default: "sidecar.istio.io/status"
                       istio_sidecar_injector_config_map_name:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The name of the istio-sidecar-injector config map is now autodetected based on revision."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istio-sidecar-injector config map is now autodetected based on revision."
                         type: string
                       istiod_pod_monitoring_port:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The monitoring port of the IstioD pod is now autodetected from the deployment args."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The monitoring port of the IstioD pod is now autodetected from the deployment args."
                         type: integer
                         default: 15014
                       root_namespace:
                         description: "The namespace to treat as the administrative root namespace for Istio configuration."
                         type: string
                       url_service_version:
-                        description: "DEPRECATED: This setting is deprecated and will be ignored. The Istio service used to determine the Istio version is now autodetected from services."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The Istio service used to determine the Istio version is now autodetected from services."
                         type: string
                       validation_reconcile_interval:
                         description: "Configures how often Kiali will validate Istio configuration. Validations cannot be disabled at the moment but you can set this to a long period of time. Accepts a golang duration string e.g. '1h' or '30m'."
