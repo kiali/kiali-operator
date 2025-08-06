@@ -56,6 +56,31 @@ spec:
                       description: "The name of the annotation whose value is used to determine what icon to display. The annotation name itself can be anything, but note that the value of that annotation must be one of: `rest`, `grpc`, and `graphql` - any other value is ignored."
                       type: string
 
+              api:
+                description: "DEPRECATED AFTER v1.73: These settings control how the Kiali API should be accessed."
+                type: object
+                properties:
+                  namespaces:
+                    description: "DEPRECATED AFTER v1.73: Settings for the API namespaces feature."
+                    type: object
+                    properties:
+                      exclude:
+                        description: "DEPRECATED AFTER v1.73: A list of namespace names that will be excluded from Kiali API."
+                        type: array
+                        items:
+                          type: string
+                      include:
+                        description: "DEPRECATED AFTER v1.73: A list of namespace names that will be included in Kiali API."
+                        type: array
+                        items:
+                          type: string
+                      label_selector_exclude:
+                        description: "DEPRECATED AFTER v1.73: A Kubernetes label selector expression that will be used to exclude namespaces."
+                        type: string
+                      label_selector_include:
+                        description: "DEPRECATED AFTER v1.73: A Kubernetes label selector expression that will be used to include namespaces."
+                        type: string
+
               installation_tag:
                 description: "Tag used to identify a particular instance/installation of the Kiali server. This is merely a human-readable string that will be used within Kiali to help a user identify the Kiali being used (e.g. in the Kiali UI title bar). See `deployment.instance_name` for the setting used to customize Kiali resource names that are created."
                 type: string
@@ -158,6 +183,12 @@ spec:
                     description: "To learn more about these settings and how to configure the OpenShift authentication strategy, read the documentation at https://kiali.io/docs/configuration/authentication/openshift/"
                     type: object
                     properties:
+                      auth_timeout:
+                        description: "DEPRECATED AFTER v1.73: The amount of time in seconds Kiali will wait for a response from the OpenShift API when requesting authentication information."
+                        type: integer
+                      client_id_prefix:
+                        description: "DEPRECATED AFTER v1.73: A prefix that will be applied to the OpenShift OAuth client identifier."
+                        type: string
                       redirect_uris:
                         description: "The OAuthClient redirect URIs. You normally do not have to set this unless you are creating remote cluster resources (see `deployment.remote_cluster_resources_only`) with `auth.strategy` set to `openshift`."
                         type: array
@@ -259,6 +290,11 @@ spec:
               deployment:
                 type: object
                 properties:
+                  accessible_namespaces:
+                    description: "DEPRECATED AFTER v1.73: A list of namespaces Kiali is allowed to access. This replaces discovery selectors."
+                    type: array
+                    items:
+                      type: string
                   additional_service_yaml:
                     description: "Additional custom yaml to add to the service definition. This is used mainly to customize the service type. For example, if the `deployment.service_type` is set to 'LoadBalancer' and you want to set the loadBalancerIP, you can do so here with: `additional_service_yaml: { 'loadBalancerIP': '78.11.24.19' }`. Another example would be if the `deployment.service_type` is set to 'ExternalName' you will need to configure the name via: `additional_service_yaml: { 'externalName': 'my.kiali.example.com' }`. A final example would be if external IPs need to be set: `additional_service_yaml: { 'externalIPs': ['80.11.12.10'] }`"
                     type: object
@@ -760,6 +796,9 @@ spec:
                       * If `deployment.image_version` is 'lastrelease', `version_label` will be fixed to the last Kiali release version string.
                       * If `deployment.image_version` is anything else, `version_label` will be that value, too.
                     type: string
+                  verbose_mode:
+                    description: "DEPRECATED AFTER v1.73: When true, Kiali will log additional debug information about its operations."
+                    type: boolean
                   view_only_mode:
                     description: "When true, Kiali will be in 'view only' mode, allowing the user to view and retrieve management and monitoring data for the service mesh, but not allow the user to modify the service mesh."
                     type: boolean
@@ -977,8 +1016,14 @@ spec:
                       health_check_url:
                         description: "Used in the Components health feature. This is the URL which Kiali will ping to determine whether the component is reachable or not. It defaults to `internal_url` when not provided."
                         type: string
+                      in_cluster_url:
+                        description: "DEPRECATED AFTER v1.73: The URL used for in-cluster access to Grafana."
+                        type: string
                       internal_url:
                         description: "The URL used by Kiali to perform requests and queries to Grafana. An example would be `http://grafana.istio-system:3000`. This URL can contain query parameters if needed, such as '?orgId=1'. If not defined, it will default to `http://grafana.<istio namespace>:3000`."
+                        type: string
+                      url:
+                        description: "DEPRECATED AFTER v1.73: The URL used to access Grafana from external sources."
                         type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
@@ -1026,6 +1071,9 @@ spec:
                         description: "DEPRECATED: This setting is deprecated and will be ignored. The port which Kiali will open to fetch envoy config data information is now hardcoded to the standard Envoy port."
                         type: integer
                         default: 15000
+                      gateway_api_class_name:
+                        description: "DEPRECATED AFTER v1.73: The name of the Gateway API Class used by Istio."
+                        type: string
                       gateway_api_classes:
                         description: "A list declaring all the Gateway API Classes used in Istio. If empty or undefined, Kiali attempts to auto-discover Gateway Classes if `cluster_wide_access` is set `true` for Kiali; otherwise, it defaults to `istio`, `istio-remote`, and adds `istio-waypoint` for Ambient mode or `istio-east-west` for multicluster setup."
                         type: array
@@ -1225,8 +1273,14 @@ spec:
                       health_check_url:
                         description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
                         type: string
+                      in_cluster_url:
+                        description: "DEPRECATED AFTER v1.73: The URL used for in-cluster access to the tracing service."
+                        type: string
                       internal_url:
                         description: "The URL used by Kiali to perform requests and queries to the tracing backend which enables further integration between Kiali and the tracing server. When not provided, Kiali will only show external links using the `external_url` setting. Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the `use_grpc` value. Example: http://tracing.istio-system:16685"
+                        type: string
+                      url:
+                        description: "DEPRECATED AFTER v1.73: The URL used to access the tracing service from external sources."
                         type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
@@ -1366,6 +1420,62 @@ spec:
                 description: "Kiali features that can be enabled or disabled."
                 type: object
                 properties:
+                  certificates_information_indicators:
+                    description: "DEPRECATED AFTER v1.73: Settings for certificate information indicators."
+                    type: object
+                    properties:
+                      enabled:
+                        description: "DEPRECATED AFTER v1.73: When true, certificate information indicators will be displayed."
+                        type: boolean
+                      secrets:
+                        description: "DEPRECATED AFTER v1.73: List of secrets that contain certificate information."
+                        type: array
+                        items:
+                          type: string
+                  clustering:
+                    description: "DEPRECATED AFTER v1.73: Multi-cluster related features."
+                    type: object
+                    properties:
+                      autodetect_secrets:
+                        description: "DEPRECATED AFTER v1.73: Settings to allow cluster secrets to be auto-detected."
+                        type: object
+                        properties:
+                          enabled:
+                            description: "DEPRECATED AFTER v1.73: If true then remote cluster secrets will be autodetected."
+                            type: boolean
+                          label:
+                            description: "DEPRECATED AFTER v1.73: The name and value of a label that exists on all remote cluster secrets."
+                            type: string
+                      clusters:
+                        description: "DEPRECATED AFTER v1.73: A list of clusters that the Kiali Server can access."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              description: "DEPRECATED AFTER v1.73: The name of the cluster."
+                              type: string
+                            secret_name:
+                              description: "DEPRECATED AFTER v1.73: The name of the secret that contains the credentials necessary to connect to the remote cluster."
+                              type: string
+                      kiali_urls:
+                        description: "DEPRECATED AFTER v1.73: A map between cluster name, instance name and namespace to a Kiali URL."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            cluster_name:
+                              description: "DEPRECATED AFTER v1.73: The name of the cluster."
+                              type: string
+                            instance_name:
+                              description: "DEPRECATED AFTER v1.73: The instance name of this Kiali installation."
+                              type: string
+                            namespace:
+                              description: "DEPRECATED AFTER v1.73: The namespace into which Kiali is installed."
+                              type: string
+                            url:
+                              description: "DEPRECATED AFTER v1.73: The URL of Kiali in the cluster."
+                              type: string
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array
