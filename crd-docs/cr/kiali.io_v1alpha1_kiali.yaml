@@ -327,10 +327,8 @@ spec:
     istio:
       component_status:
         enabled: true
-      egress_gateway_namespace: ""
       gateway_api_classes: []
       gateway_api_classes_label_selector: ""
-      ingress_gateway_namespace: ""
       istio_api_enabled: true
       istio_identity_domain: "svc.cluster.local"
       root_namespace: ""
