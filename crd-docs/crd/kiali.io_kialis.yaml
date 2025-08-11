@@ -946,9 +946,6 @@ spec:
                           enabled:
                             description: "Determines if Istio component statuses will be displayed in the Kiali masthead indicator."
                             type: boolean
-                      egress_gateway_namespace:
-                        description: "The namespace where Istio EgressGateway component is read for a status check. When left empty, the control plane namespace is used. e.g. `istio-system`."
-                        type: string
                       gateway_api_classes:
                         description: "A list declaring all the Gateway API Classes used in Istio. If empty or undefined, Kiali attempts to auto-discover Gateway Classes if `cluster_wide_access` is set `true` for Kiali; otherwise, it defaults to `istio`, `istio-remote`, and adds `istio-waypoint` for Ambient mode or `istio-east-west` for multicluster setup."
                         type: array
@@ -963,9 +960,6 @@ spec:
                               type: string
                       gateway_api_classes_label_selector:
                         description: "Label selector for auto-discovering K8s Gateway API Classes. Used if `gateway_api_classes` is unset and `cluster_wide_access` is set `true` for Kiali. When left empty then all K8s Gateway API Classes will be loaded."
-                        type: string
-                      ingress_gateway_namespace:
-                        description: "The namespace where Istio IngressGateway component is read for a status check. When left empty, the control plane namespace is used. e.g. `istio-system`."
                         type: string
                       istio_api_enabled:
                         description: "Indicates if Kiali has access to istiod. true by default."
