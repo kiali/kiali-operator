@@ -182,15 +182,9 @@ kiali_defaults:
       gateway_api_classes_label_selector: ""
       ingress_gateway_namespace: ""
       istio_api_enabled: true
-      #istio_canary_revision:
-        #current: prod
-        #upgrade: canary
       istio_identity_domain: "svc.cluster.local"
-      istio_injection_annotation: "sidecar.istio.io/inject"
-      istio_sidecar_annotation: "sidecar.istio.io/status"
-      istiod_pod_monitoring_port: 15014
       root_namespace: ""
-      validation_reconcile_interval: 1m
+      validation_reconcile_interval: "1m"
     prometheus:
       auth:
         ca_file: ""
