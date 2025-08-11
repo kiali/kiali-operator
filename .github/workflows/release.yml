@@ -266,12 +266,10 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
       run: |
-        export PATH="$PATH:$GITHUB_WORKSPACE/_output/operator-sdk-install"
-
         sed -i -r "s/^VERSION \?= (.*)/VERSION \?= $NEXT_VERSION-SNAPSHOT/" Makefile
 
         # Using versions without the prefix 'v'
-        ./manifests/create-new-version.sh -nv ${NEXT_VERSION:1} -ov ${RELEASE_VERSION:1} -om kiali-upstream/
+        ./manifests/create-new-version.sh -nv ${NEXT_VERSION:1} -ov ${RELEASE_VERSION:1} --verify-bundle false -om kiali-upstream/
         ### DO NOT PERFORM COMMUNITY CATALOG WORK
         ### ./manifests/create-new-version.sh -nv ${NEXT_VERSION:1} -ov ${RELEASE_VERSION:1} -om kiali-community/
 
