@@ -258,7 +258,7 @@ jobs:
     - name: Configure Operator SDK
       if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
       run: |
-        make get-operator-sdk
+        make get-opm
 
     - name: Create a PR to prepare for next version
       env:
