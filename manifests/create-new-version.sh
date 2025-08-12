@@ -71,7 +71,7 @@ Valid options:
       built) and the new version is 2.0, the replace version must be 1.1.
       Default: the same value as specified by --old-version
   -vb|--verify-bundle <true|false>
-      Verify the validity of the bundle metadata via the operator-sdk tool. You must have operator-sdk
+      Verify the validity of the bundle metadata via the opm tool. You must have opm
       installed and in your PATH for this to work.
       Default: true
 HELPMSG
@@ -101,10 +101,13 @@ if [ -z "${OLD_VERSION}" ]; then
   exit 1
 fi
 
+# Ensure opm is available, either in PATH or in the _output directory
 if [ "${VERIFY_BUNDLE}" == "true" ]; then
-  if ! which operator-sdk > /dev/null 2>&1 ; then
-    echo "You do not have operator-sdk in your PATH. Cannot verify the metadata."
-    echo "To disable this check, use the '--verify-manifest=false' option."
+  OPM=$(which opm 2>/dev/null || echo "${SCRIPT_DIR}/../_output/opm-install/opm")
+  if [ ! -x "${OPM}" ]; then
+    echo "You do not have opm in your PATH or in ${SCRIPT_DIR}/../_output/opm-install/opm"
+    echo "Run 'make get-opm' from the kiali-operator directory to download it,"
+    echo "or install opm in your PATH, or disable this check with '--verify-bundle=false'."
     exit 1
   fi
 fi
@@ -197,13 +200,15 @@ if [ ! -s /tmp/kiali-manifest-changes.txt ]; then
   exit 1
 fi
 
-# Verify the correctness using operator-sdk tool
+# Verify the correctness using opm tool
 
 if [ "${VERIFY_BUNDLE}" == "true" ]; then
-  echo "Verifying the correctness of the bundle metadata via: operator-sdk bundle validate ${NEW_VERSION_NEW_MANIFEST_DIR}"
-  if ! operator-sdk bundle validate ${NEW_VERSION_NEW_MANIFEST_DIR} ; then
+  echo "Verifying the correctness of the bundle metadata via: ${OPM} render ${NEW_VERSION_NEW_MANIFEST_DIR}"
+  if ! ${OPM} render ${NEW_VERSION_NEW_MANIFEST_DIR} --output yaml > /dev/null ; then
     echo "Failed to verify the bundle metadata. Check the errors and correct them before publishing the bundle."
     exit 1
+  else
+    echo "✓ Bundle structure is valid and can be rendered"
   fi
 else
   echo "Skipping bundle verification"
