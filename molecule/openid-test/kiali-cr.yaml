@@ -22,5 +22,9 @@ spec:
     image_version: "{{ kiali.image_version }}"
     namespace: {{ kiali.install_namespace }}
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    probes:
+      readiness:
+        initial_delay_seconds: 2
+        period_seconds: 5
   server:
     node_port: 32080
