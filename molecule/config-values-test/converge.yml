@@ -501,3 +501,37 @@
       - kiali_configmap.kiali_internal | length == 2
       - kiali_configmap.kiali_internal['first_internal_setting'] == 111
       - kiali_configmap.kiali_internal['second_internal_setting'].foo == 'bar'
+
+  # Custom assertions for initContainers test
+  - name: Assert that the deployment has initContainers
+    assert:
+      that:
+      - kiali_deployment.resources | length == 1
+      - kiali_deployment.resources[0].spec.template.spec.initContainers is defined
+      - kiali_deployment.resources[0].spec.template.spec.initContainers | length == 2
+      fail_msg: "Kiali deployment should have 2 initContainers"
+
+  - name: Assert that the first initContainer is configured correctly
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].name == "init-test-container"
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].image == "registry.access.redhat.com/ubi9/ubi-minimal:latest"
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].command is defined
+      fail_msg: "First initContainer should be 'init-test-container'"
+
+  - name: Assert that the second initContainer is configured correctly
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].name == "istio-proxy-init"
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].image == "registry.access.redhat.com/ubi9/ubi-minimal:latest"
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env is defined
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env | selectattr('name', 'equalto', 'INIT_TEST_VAR') | list | length == 1
+      fail_msg: "Second initContainer should be 'istio-proxy-init' with INIT_TEST_VAR environment variable"
+
+  - name: Assert that the main Kiali container is still present
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.template.spec.containers is defined
+      - kiali_deployment.resources[0].spec.template.spec.containers | length >= 1
+      - kiali_deployment.resources[0].spec.template.spec.containers[0].name == "kiali"
+      fail_msg: "Main Kiali container should still be present as the first container"

@@ -58,6 +58,10 @@ spec:
         {{ kiali_vars.deployment.dns.config | to_nice_yaml(indent=0) | trim | indent(8) }}
 {% endif %}
 {% endif %}
+{% if kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0 %}
+      initContainers:
+        {{ kiali_vars.deployment.additional_pod_init_containers_yaml | to_nice_yaml(indent=0) | trim | indent(8) }}
+{% endif %}
       containers:
       - image: {{ kiali_vars.deployment.image_name }}{{ '@' + kiali_vars.deployment.image_digest if kiali_vars.deployment.image_digest != '' else '' }}:{{ kiali_vars.deployment.image_version }}
         imagePullPolicy: {{ kiali_vars.deployment.image_pull_policy }}
