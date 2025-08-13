@@ -645,6 +645,7 @@ spec:
           - extensions.istio.io
           - telemetry.istio.io
           - gateway.networking.k8s.io
+          - inference.networking.x-k8s.io
           resources: ["*"]
           verbs:
           - get
