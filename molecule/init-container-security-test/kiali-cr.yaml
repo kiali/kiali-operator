@@ -1,0 +1,44 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  deployment:
+    additional_pod_init_containers_yaml:
+    # Test 1: Basic initContainer that should get security context applied
+    - name: security-test-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['sh', '-c', 'echo "Security test init container" && sleep 2']
+      securityContext:
+        runAsUser: 1001
+    # Test 2: InitContainer that tries to override security context (should be overridden)
+    - name: privilege-attempt-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['sh', '-c', 'echo "Privilege attempt init container" && sleep 2']
+      securityContext:
+        privileged: true
+        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        runAsUser: 1002
+        capabilities:
+          add: ['SYS_ADMIN']
+    # Test 3: Another basic initContainer to test consistent security enforcement
+    - name: consistency-test-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['sh', '-c', 'echo "Consistency test init container" && sleep 2']
+      securityContext:
+        runAsUser: 1003
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    ingress:
+      enabled: true
+    logger:
+      log_level: debug
+    namespace: {{ kiali.install_namespace }}
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+  server:
+    node_port: 32445

@@ -161,4 +161,10 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'extra_labels': current_cr.spec.deployment.extra_labels }}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.additional_pod_init_containers_yaml #}
+      {% if kiali_vars.deployment.additional_pod_init_containers_yaml is defined and kiali_vars.deployment.additional_pod_init_containers_yaml | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('additional_pod_init_containers_yaml') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'additional_pod_init_containers_yaml': current_cr.spec.deployment.additional_pod_init_containers_yaml }}, recursive=True) %}
+      {% endif %}
+      {# #}
       {{ kiali_vars }}
