@@ -338,9 +338,7 @@ spec:
         ca_file: ""
         insecure_skip_verify: false
         password: ""
-        token: ""
         type: "none"
-        use_kiali_token: false
         username: ""
       dashboards:
         - name: "Istio Service Dashboard"

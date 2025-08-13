@@ -1153,17 +1153,10 @@ spec:
                           password:
                             description: "Password to be used when making requests to Perses, for basic authentication. May refer to a secret."
                             type: string
-                          token:
-                            description: "Token / API key to access Perses, for token-based authentication. May refer to a secret."
-                            type: string
                           type:
-                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Perses server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
+                            description: "The type of authentication to use when contacting the server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
                             type: string
                             default: "none"
-                          use_kiali_token:
-                            description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Perses (in this case, `auth.token` config is ignored)."
-                            type: boolean
-                            default: false
                           username:
                             description: "Username to be used when making requests to Perses with `basic` authentication. May refer to a secret."
                             type: string
