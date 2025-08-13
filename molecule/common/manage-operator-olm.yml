@@ -1,0 +1,136 @@
+---
+# This playbook manages the Kiali operator when it's installed via OLM
+# It patches the CSV to set environment variables instead of patching the deployment directly
+
+- name: Get all CSVs in operator namespace
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    namespace: "{{ kiali.operator_namespace }}"
+  register: all_csvs_result
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Find Kiali CSV
+  set_fact:
+    kiali_csvs: "{{ all_csvs_result.resources | selectattr('metadata.name', 'match', 'kiali-operator.*') | list }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Fail if no Kiali CSV found
+  fail:
+    msg: "No Kiali CSV found in {{ kiali.operator_namespace }} namespace"
+  when:
+    - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+    - kiali_csvs | length == 0
+
+- name: Extract CSV name
+  set_fact:
+    csv_name: "{{ kiali_csvs[0].metadata.name }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Get current CSV environment variables
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ csv_name }}"
+    namespace: "{{ kiali.operator_namespace }}"
+  register: current_csv
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index
+  set_fact:
+    allow_security_context_override_index: "{{ idx }}"
+  loop: "{{ current_csv.resources[0].spec.install.spec.deployments[0].spec.template.spec.containers[0].env }}"
+  loop_control:
+    index_var: idx
+  when:
+    - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+    - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
+
+- name: Patch CSV to update ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable
+  kubernetes.core.k8s_json_patch:
+    api_version: operators.coreos.com/v1alpha1
+    kind: ClusterServiceVersion
+    name: "{{ csv_name }}"
+    namespace: "{{ kiali.operator_namespace }}"
+    patch:
+    - op: replace
+      path: "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/{{ allow_security_context_override_index }}/value"
+      value: "{{ manage_operator.allow_security_context_override | default('false') }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Get current Subscription to find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index
+  k8s_info:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: kiali-subscription
+    namespace: "{{ kiali.operator_namespace }}"
+  register: current_subscription
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index in Subscription
+  set_fact:
+    subscription_allow_security_context_override_index: "{{ idx }}"
+  loop: "{{ current_subscription.resources[0].spec.config.env }}"
+  loop_control:
+    index_var: idx
+  when:
+    - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+    - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
+
+- name: Patch Subscription to update ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable
+  kubernetes.core.k8s_json_patch:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: kiali-subscription
+    namespace: "{{ kiali.operator_namespace }}"
+    patch:
+    - op: replace
+      path: "/spec/config/env/{{ subscription_allow_security_context_override_index }}/value"
+      value: "{{ manage_operator.allow_security_context_override | default('false') }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Wait for operator pod to be restarted after Subscription change
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ kiali.operator_namespace }}"
+    label_selectors:
+    - app.kubernetes.io/name = kiali-operator
+  register: operator_pods_result
+  until: >
+    operator_pods_result.resources | length == 1 and
+    operator_pods_result.resources[0].status.conditions is defined and
+    (operator_pods_result.resources[0].status.conditions | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length > 0)
+  retries: 24
+  delay: 5
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Verify operator environment variable ALLOW_SECURITY_CONTEXT_OVERRIDE
+  vars:
+    operator_container: "{{ operator_pods_result.resources[0].spec.containers | selectattr('name', 'equalto', 'operator') | first }}"
+    allow_override_env: "{{ operator_container.env | selectattr('name', 'equalto', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') | first }}"
+  assert:
+    that:
+    - allow_override_env.value == (manage_operator.allow_security_context_override | default('false'))
+    fail_msg: "ALLOW_SECURITY_CONTEXT_OVERRIDE is [{{ allow_override_env.value }}] but should be [{{ manage_operator.allow_security_context_override | default('false') }}]"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Wait for Kiali deployment to be updated after operator reconciliation
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: kiali
+    namespace: "{{ kiali.install_namespace }}"
+  register: kiali_deployment
+  until:
+  - kiali_deployment is success
+  - kiali_deployment.resources | length == 1
+  - kiali_deployment.resources[0].status is defined
+  - kiali_deployment.resources[0].status.replicas is defined
+  - kiali_deployment.resources[0].status.availableReplicas is defined
+  - kiali_deployment.resources[0].status.availableReplicas == kiali_deployment.resources[0].status.replicas
+  retries: 60
+  delay: 5
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - manage_operator.wait_for_kiali_reconciliation | default(true)

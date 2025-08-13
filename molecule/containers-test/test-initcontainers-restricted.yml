@@ -1,0 +1,172 @@
+# Test init containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false
+# Security guardrails should be enforced
+
+# Security guardrails validation for initContainers
+- name: Assert that the deployment has initContainers
+  assert:
+    that:
+    - kiali_deployment.resources | length == 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers | length == 5
+    fail_msg: "Kiali deployment should have 5 custom initContainers"
+
+- name: Assert that security guardrails are enforced on first initContainer
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.allowPrivilegeEscalation == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.privileged == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.capabilities.drop == ['ALL']
+    # Test that runAsUser is preserved when user provides it (even on OpenShift, SCCs may change value but should be numeric)
+    - >-
+      (not is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.runAsUser == 1001) or
+      (is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.runAsUser is number)
+    fail_msg: "First initContainer should have restrictive security context enforced by operator and preserve user's runAsUser"
+
+- name: Assert that security guardrails override user-provided security context on second initContainer
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.allowPrivilegeEscalation == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.privileged == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.readOnlyRootFilesystem == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.capabilities.drop == ['ALL']
+    # Test that runAsUser is preserved even when other dangerous settings are overridden (SCCs may change value on OpenShift)
+    - >-
+      (not is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.runAsUser == 1002) or
+      (is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.runAsUser is number)
+    fail_msg: "Second initContainer should have security context overridden by operator but preserve user's runAsUser"
+
+- name: Assert that security guardrails are enforced on third initContainer
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.allowPrivilegeEscalation == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.privileged == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.readOnlyRootFilesystem == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.capabilities.drop == ['ALL']
+    # Test that runAsUser is preserved when user provides it (SCCs may change value on OpenShift)
+    - >-
+      (not is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.runAsUser == 1003) or
+      (is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.runAsUser is number)
+    fail_msg: "Third initContainer should have restrictive security context enforced by operator and preserve user's runAsUser"
+
+- name: Assert that security guardrails are enforced on fourth initContainer without runAsUser
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.allowPrivilegeEscalation == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.privileged == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.readOnlyRootFilesystem == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.capabilities.drop == ['ALL']
+    # Test that runAsUser is preserved when user provides it (SCCs may change value on OpenShift)
+    - >-
+      (not is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.runAsUser == 1000) or
+      (is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.runAsUser is number)
+    fail_msg: "Fourth initContainer should have restrictive security context enforced by operator but preserve user's runAsUser"
+
+- name: Assert that security guardrails are enforced on fifth initContainer with volume mount
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.allowPrivilegeEscalation == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.privileged == false
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.readOnlyRootFilesystem == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.capabilities.drop == ['ALL']
+    # Test that runAsUser is preserved when user provides it (SCCs may change value on OpenShift)
+    - >-
+      (not is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.runAsUser == 1005) or
+      (is_openshift and kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.runAsUser is number)
+    fail_msg: "Fifth initContainer should have restrictive security context enforced by operator and preserve user's runAsUser"
+
+- name: Assert that volume mount security is enforced (secret volumes forced read-only)
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].volumeMounts is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].volumeMounts | length == 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].volumeMounts[0].name == "kiali-secret"
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].volumeMounts[0].mountPath == "/test-secret"
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].volumeMounts[0].readOnly == true
+    fail_msg: "Volume mount for secret should be forced to read-only by operator"
+
+# Test environment variables are preserved
+- name: Assert that environment variables are preserved in initContainers
+  assert:
+    that:
+    # First init container env vars
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].env is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].env | length >= 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].env | selectattr('name', 'equalto', 'INIT_TEST_VAR') | selectattr('value', 'equalto', 'test-value') | list | length == 1
+    # Second init container env vars
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env | length >= 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env | selectattr('name', 'equalto', 'PRIVILEGE_TEST_VAR') | selectattr('value', 'equalto', 'should-be-overridden') | list | length == 1
+    # Third init container env vars
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].env is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].env | length >= 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].env | selectattr('name', 'equalto', 'CONSISTENCY_TEST_VAR') | selectattr('value', 'equalto', 'consistency-value') | list | length == 1
+    # Fourth init container env vars
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].env is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].env | length >= 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].env | selectattr('name', 'equalto', 'NO_USER_TEST_VAR') | selectattr('value', 'equalto', 'no-user-value') | list | length == 1
+    # Fifth init container env vars
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].env is defined
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].env | length >= 1
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].env | selectattr('name', 'equalto', 'VOLUME_TEST_VAR') | selectattr('value', 'equalto', 'volume-test-value') | list | length == 1
+    fail_msg: "Environment variables should be preserved in initContainers"
+
+# Wait for pod to be running (init containers may take longer on OpenShift)
+- import_tasks: ../common/wait_for_kiali_running.yml
+
+# Get pod info for status validation
+- import_tasks: ../asserts/pod_asserts.yml
+
+# Test pod status and init container completion
+- name: Assert that Kiali pod has the expected initContainers
+  vars:
+    kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    kiali_pod_status: "{{ kiali_pod.resources[0].status }}"
+    # Filter to only our custom init containers (exclude istio-init)
+    custom_init_containers: "{{ kiali_pod_spec.initContainers | selectattr('name', 'match', '^(security-test-init|privilege-attempt-init|consistency-test-init|no-user-init|volume-test-init)$') | list }}"
+  assert:
+    that:
+    - kiali_pod.resources | length > 0
+    - kiali_pod_spec.initContainers is defined
+    - custom_init_containers | length == 5
+    # Check init container statuses if available (pod might still be initializing)
+    - kiali_pod_status.initContainerStatuses is defined
+    - kiali_pod_status.initContainerStatuses | length >= 5  # At least our 5 + possibly istio-init
+    fail_msg: "Kiali pod should have 5 custom initContainers configured (found {{ custom_init_containers | length }})"
+
+- name: Wait for init containers to complete if pod is still initializing
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ kiali.install_namespace }}"
+    label_selectors:
+    - "app.kubernetes.io/name=kiali"
+  register: kiali_pod_final_check
+  until:
+  - kiali_pod_final_check is success
+  - kiali_pod_final_check.resources | length > 0
+  - kiali_pod_final_check.resources[0].status.phase in ["Running", "Succeeded"]
+  retries: 60
+  delay: 5
+  ignore_errors: yes  # Allow test to continue even if pod doesn't reach Running state
+
+- name: Final status check - verify init containers ran
+  vars:
+    kiali_pod_status: "{{ kiali_pod_final_check.resources[0].status }}"
+  debug:
+    msg: |
+      Final pod status: {{ kiali_pod_status.phase }}
+      Init container statuses:
+      {% for status in kiali_pod_status.initContainerStatuses | default([]) %}
+      - {{ status.name }}: ready={{ status.ready | default(false) }}, started={{ status.started | default(false) }}
+      {% endfor %}

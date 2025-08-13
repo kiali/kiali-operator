@@ -28,6 +28,7 @@
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
     - "app.kubernetes.io/name={{ instance_name }}"
+    container: kiali
   register: kiali_logs
   ignore_errors: yes
   when:

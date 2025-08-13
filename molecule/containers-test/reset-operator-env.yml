@@ -1,0 +1,26 @@
+---
+- name: Reset Operator Environment Variables
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - debug:
+      msg: "Restoring ALLOW_SECURITY_CONTEXT_OVERRIDE to true to match the starting value"
+
+  - import_tasks: "../common/manage-operator-olm.yml"
+    vars:
+      manage_operator:
+        allow_security_context_override: "true"
+        wait_for_kiali_reconciliation: false  # No need to wait for reconciliation during cleanup
+    when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+    ignore_errors: yes
+
+  - import_tasks: ../common/manage-operator.yml
+    vars:
+      manage_operator:
+        allow_security_context_override: "true"
+        wait_for_kiali_reconciliation: false  # No need to wait for reconciliation during cleanup
+    when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+    ignore_errors: yes

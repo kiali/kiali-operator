@@ -1,0 +1,99 @@
+---
+- name: Create OpenShift Security Context Constraints
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # Create OpenShift Security Context Constraints only if running on OpenShift
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Create privileged Security Context Constraint for containers-test
+    k8s:
+      state: present
+      definition:
+        apiVersion: security.openshift.io/v1
+        kind: SecurityContextConstraints
+        metadata:
+          name: kiali-containers-test-privileged
+          annotations:
+            kubernetes.io/description: "Security Context Constraint for Kiali containers-test that allows privileged containers"
+        allowHostDirVolumePlugin: false
+        allowHostIPC: false
+        allowHostNetwork: false
+        allowHostPID: false
+        allowHostPorts: false
+        allowPrivilegedContainer: true
+        allowedCapabilities:
+        - '*'
+        allowedUnsafeSysctls:
+        - '*'
+        defaultAddCapabilities: null
+        fsGroup:
+          type: RunAsAny
+        priority: 30
+        readOnlyRootFilesystem: false
+        requiredDropCapabilities: null
+        runAsUser:
+          type: RunAsAny
+        seLinuxContext:
+          type: RunAsAny
+        supplementalGroups:
+          type: RunAsAny
+        users:
+        - "system:serviceaccount:{{ kiali.install_namespace }}:kiali-service-account"
+        - "system:serviceaccount:{{ kiali.install_namespace }}:default"
+        volumes:
+        - configMap
+        - downwardAPI
+        - emptyDir
+        - persistentVolumeClaim
+        - projected
+        - secret
+    when:
+    - is_openshift == True
+
+  - name: Create anyuid Security Context Constraint for containers-test
+    k8s:
+      state: present
+      definition:
+        apiVersion: security.openshift.io/v1
+        kind: SecurityContextConstraints
+        metadata:
+          name: kiali-containers-test-anyuid
+          annotations:
+            kubernetes.io/description: "Security Context Constraint for Kiali containers-test that allows any user ID"
+        allowHostDirVolumePlugin: false
+        allowHostIPC: false
+        allowHostNetwork: false
+        allowHostPID: false
+        allowHostPorts: false
+        allowPrivilegedContainer: false
+        allowedCapabilities:
+        - '*'
+        allowedUnsafeSysctls: []
+        defaultAddCapabilities: null
+        fsGroup:
+          type: RunAsAny
+        priority: 25
+        readOnlyRootFilesystem: false
+        requiredDropCapabilities: null
+        runAsUser:
+          type: RunAsAny
+        seLinuxContext:
+          type: RunAsAny
+        supplementalGroups:
+          type: RunAsAny
+        users:
+        - "system:serviceaccount:{{ kiali.install_namespace }}:kiali-service-account"
+        - "system:serviceaccount:{{ kiali.install_namespace }}:default"
+        volumes:
+        - configMap
+        - downwardAPI
+        - emptyDir
+        - persistentVolumeClaim
+        - projected
+        - secret
+    when:
+    - is_openshift == True
