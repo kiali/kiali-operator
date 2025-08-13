@@ -52,6 +52,8 @@ kiali_defaults:
   custom_dashboards: []
 
   deployment:
+    additional_pod_containers_yaml: []
+    additional_pod_init_containers_yaml: []
     #additional_service_yaml:
     affinity:
       node: {}
