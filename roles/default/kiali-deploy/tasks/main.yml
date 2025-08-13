@@ -143,6 +143,13 @@
   - kiali_vars.deployment.namespace != current_cr.metadata.namespace
   - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
 
+- name: Only allow ad-hoc initContainers when appropriate
+  fail:
+    msg: "The operator is forbidden from installing additional initContainers into the Kiali pod."
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+  - lookup('env', 'ALLOW_AD_HOC_INIT_CONTAINERS') | default('false', True) != "true"
+
 - name: Make sure instance_name follows the DNS label standard because it will be a Service name
   fail:
     msg: "The value for deployment.instance_name [{{ kiali_vars.deployment.instance_name }}] does not follow the DNS label standard as defined in RFC 1123. In short, it must only contain lowercase alphanumeric characters or '-'."

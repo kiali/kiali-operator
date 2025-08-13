@@ -5,6 +5,16 @@ metadata:
 spec:
   version: {{ kiali.spec_version }}
   deployment:
+    additional_pod_init_containers_yaml:
+    - name: init-test-container
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['sh', '-c', 'echo "Init container started" && sleep 3 && echo "Init container completed"']
+    - name: istio-proxy-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['sh', '-c', 'echo "Second init container started" && sleep 3 && echo "Second init container completed"']
+      env:
+      - name: "INIT_TEST_VAR"
+        value: "test-value"
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     ingress:
       enabled: true
