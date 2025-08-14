@@ -83,7 +83,7 @@ else
 endif
 
 ## validate: Checks the latest version of the OLM bundle metadata for correctness.
-validate: .ensure-opm-exists
+validate: .ensure-opm-exists verify-kiali-server-permissions
 	@printf "========== Validating kiali-ossm metadata ==========\n"
 	@mkdir -p ${OUTDIR}/kiali-ossm-validation/bundle && rm -rf ${OUTDIR}/kiali-ossm-validation/* && mkdir -p ${OUTDIR}/kiali-ossm-validation/bundle && cp -R ./manifests/kiali-ossm/manifests ${OUTDIR}/kiali-ossm-validation/bundle/ && cp -R ./manifests/kiali-ossm/metadata ${OUTDIR}/kiali-ossm-validation/bundle/ && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR="registry.redhat.io/openshift-service-mesh/kiali-rhel9-operator:2.4.5" KIALI_OPERATOR_VERSION="2.4.5" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm-validation/bundle/manifests/kiali.clusterserviceversion.yaml; \
 	if ${OPM} render ${OUTDIR}/kiali-ossm-validation/bundle --output yaml > ${OUTDIR}/kiali-ossm-validation/catalog.yaml 2>/dev/null; then \
@@ -109,6 +109,11 @@ validate-cr:
 	${ROOTDIR}/crd-docs/bin/validate-kiali-cr.sh --kiali-cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_kiali.yaml
 	@printf "\n========== Validating the OSSMConsole CR ==========\n"
 	${ROOTDIR}/crd-docs/bin/validate-ossmconsole-cr.sh --cr-file ${ROOTDIR}/crd-docs/cr/kiali.io_v1alpha1_ossmconsole.yaml
+
+## verify-kiali-server-permissions: Verifies that Kiali Server permissions are correctly mirrored in operator roles
+verify-kiali-server-permissions:
+	@printf "\n========== Verifying Kiali Server Permissions ==========\n"
+	${ROOTDIR}/hack/verify-kiali-server-permissions.sh
 
 .gen-crd-doc-kiali:
 	mkdir -p ${OUTDIR}/crd-docs
