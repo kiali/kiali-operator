@@ -62,6 +62,8 @@
       - "--set"
       - "allowAdHocOSSMConsoleImage=true"
       - "--set"
+      - "allowAdHocInitContainers=true"
+      - "--set"
       - "allowSecurityContextOverride=true"
       - "--set"
       - "cr.create=false"

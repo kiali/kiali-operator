@@ -243,6 +243,12 @@ spec:
               deployment:
                 type: object
                 properties:
+                  additional_pod_init_containers_yaml:
+                    description: "Additional initContainers to add to the list of pod initContainers. Use this to add initContainer(s) to the Kiali pod. Use with care since initContainers may cause the Kiali container itself to operate incorrectly. It is up to the user who added the additional initContainers to ensure it works properly inside the Kiali pod; Kiali makes no guarantee additional initContainers will work."
+                    type: array
+                    items:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
                   additional_service_yaml:
                     description: "Additional custom yaml to add to the service definition. This is used mainly to customize the service type. For example, if the `deployment.service_type` is set to 'LoadBalancer' and you want to set the loadBalancerIP, you can do so here with: `additional_service_yaml: { 'loadBalancerIP': '78.11.24.19' }`. Another example would be if the `deployment.service_type` is set to 'ExternalName' you will need to configure the name via: `additional_service_yaml: { 'externalName': 'my.kiali.example.com' }`. A final example would be if external IPs need to be set: `additional_service_yaml: { 'externalIPs': ['80.11.12.10'] }`"
                     type: object
