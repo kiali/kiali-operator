@@ -276,7 +276,7 @@ spec:
           type: "none"
           use_kiali_token: false
           username: ""
-        cache_duration: 10
+        cache_duration: 7
         cache_enabled: true
         cache_expiration: 300
         # default: custom_headers is empty
@@ -342,7 +342,7 @@ spec:
         type: "none"
         use_kiali_token: false
         username: ""
-      cache_duration: 10
+      cache_duration: 7
       cache_enabled: true
       cache_expiration: 300
       # default: custom_headers is empty
@@ -390,7 +390,7 @@ spec:
         cache_enabled: true
         datasource_uid: ""
         org_id: ""
-        url_format: ""
+        url_format: "grafana"
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
@@ -455,7 +455,6 @@ spec:
         include_istio_resources: true
         include_validations: true
         show_include_toggles: false
-      metrics_per_refresh: "1m"
       # default: metrics_inbound is undefined
       metrics_inbound:
         aggregations:
@@ -470,6 +469,7 @@ spec:
           label: "topology_istio_io_network"
         - display_name: "Istio Revision"
           label: "istio_io_rev"
+      metrics_per_refresh: "1m"
       # default: namespaces is an empty list
       namespaces: ["istio-system"]
       refresh_interval: "1m"
