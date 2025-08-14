@@ -18,7 +18,7 @@ spec:
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
 {% if kiali.discovery_selectors %}
     discovery_selectors:
-      default: "{{ kiali.discovery_selectors }}"
+      default: {{ kiali.discovery_selectors }}
       overrides:
         Kubernetes:
         - matchLabels:
