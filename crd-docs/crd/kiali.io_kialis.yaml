@@ -244,7 +244,7 @@ spec:
                 type: object
                 properties:
                   additional_pod_init_containers_yaml:
-                    description: "Additional initContainers to add to the list of pod initContainers. Use this to add initContainer(s) to the Kiali pod. Use with care since initContainers may cause the Kiali container itself to operate incorrectly. It is up to the user who added the additional initContainers to ensure it works properly inside the Kiali pod; Kiali makes no guarantee additional initContainers will work."
+                    description: "Additional initContainers to add to the list of pod initContainers. Use this to add initContainer(s) to the Kiali pod. SECURITY: The operator will forcibly apply a restrictive security context to all initContainers (allowPrivilegeEscalation: false, privileged: false, readOnlyRootFilesystem: true, runAsNonRoot: true, capabilities dropped). Secret-backed volumes are automatically forced to read-only. These security guardrails cannot be overridden and help prevent privilege escalation and filesystem-based attacks. Use with care since initContainers may cause the Kiali container itself to operate incorrectly. It is up to the user who added the additional initContainers to ensure it works properly inside the Kiali pod; Kiali makes no guarantee additional initContainers will work."
                     type: array
                     items:
                       type: object
@@ -1553,7 +1553,7 @@ spec:
                     description: |
                       The maximum duration, in seconds, before timing out writes of the HTTP response back to the client. Default is 30.
 
-                      In OpenShift clusters, the route request time out should be also increased as the default is 30 seconds. 
-                      This can be done by annotating the specific route with `haproxy.router.openshift.io/timeout`. 
+                      In OpenShift clusters, the route request time out should be also increased as the default is 30 seconds.
+                      This can be done by annotating the specific route with `haproxy.router.openshift.io/timeout`.
                       See https://docs.openshift.com/container-platform/4.16/networking/routes/route-configuration.html#nw-configuring-route-timeouts_route-configuration for further details.
                     type: integer

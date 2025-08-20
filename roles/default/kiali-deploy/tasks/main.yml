@@ -729,6 +729,99 @@
   - kiali_vars.clustering.clusters | length > 0
   - (item.secret_name is not defined) or (item.secret_name != "kiali-multi-cluster-secret")
 
+# Security guardrails for user-defined initContainers.
+#
+# These tasks implement security protections against:
+# 1. Privilege Escalation: Enforces restrictive security context (same as main Kiali container)
+# 2. Filesystem-based Attacks: Prevents write access to sensitive volumes
+# 3. Environment Tampering: Ensures initContainers run with minimal privileges
+#
+# The security context enforced includes:
+# - allowPrivilegeEscalation: false
+# - privileged: false
+# - readOnlyRootFilesystem: true
+# - runAsNonRoot: true
+# - capabilities: drop ALL
+#
+# Secret-backed volumes are automatically forced to read-only.
+# These security settings cannot be overridden by user-defined initContainers.
+
+- name: Identify secret-backed volumes in Kiali deployment
+  set_fact:
+    kiali_secret_volume_names: >-
+      {{
+        ([
+          'kiali-secret',
+          'kiali-multi-cluster-secret'
+        ] +
+        (kiali_deployment_secret_volumes | list) +
+        (kiali_deployment_remote_cluster_secret_volumes | list) +
+        (kiali_vars.deployment.custom_secrets | selectattr('csi', 'undefined') | map(attribute='name') | list))
+        | unique
+      }}
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+
+- name: Validate initContainer volume mount security
+  vars:
+    kiali_unsafe_volume_mounts: >-
+      {{
+        kiali_vars.deployment.additional_pod_init_containers_yaml
+        | selectattr('volumeMounts', 'defined')
+        | map(attribute='volumeMounts')
+        | flatten
+        | selectattr('name', 'in', kiali_secret_volume_names)
+        | selectattr('readOnly', 'defined')
+        | selectattr('readOnly', 'equalto', false)
+        | list
+      }}
+    kiali_unsafe_volume_names: >-
+      {{
+        kiali_unsafe_volume_mounts
+        | map(attribute='name')
+        | unique
+        | list
+      }}
+  fail:
+    msg: "User-defined initContainers cannot mount these secret-backed volumes as read-write; they must be mounted read-only for security purposes: {{ kiali_unsafe_volume_names | join(', ') }}"
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+  - kiali_unsafe_volume_mounts|length > 0
+
+- name: Apply security guardrails to user-defined initContainers
+  vars:
+    # Define the mandatory security context
+    kiali_mandatory_security_context:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop: ['ALL']
+    # Apply security guardrails to each initContainer using pure Ansible
+    kiali_secured_init_containers: >-
+      {%- set secured_containers = [] -%}
+      {%- for container in kiali_vars.deployment.additional_pod_init_containers_yaml -%}
+        {%- set secured_container = container | combine({'securityContext': kiali_mandatory_security_context}, recursive=true) -%}
+        {%- if 'volumeMounts' in secured_container -%}
+          {%- set secured_mounts = [] -%}
+          {%- for mount in secured_container.volumeMounts -%}
+            {%- set secured_mount = mount.copy() -%}
+            {%- if mount.name in kiali_secret_volume_names -%}
+              {%- set _ = secured_mount.update({'readOnly': true}) -%}
+            {%- endif -%}
+            {%- set _ = secured_mounts.append(secured_mount) -%}
+          {%- endfor -%}
+          {%- set _ = secured_container.update({'volumeMounts': secured_mounts}) -%}
+        {%- endif -%}
+        {%- set _ = secured_containers.append(secured_container) -%}
+      {%- endfor -%}
+      {{ secured_containers }}
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'additional_pod_init_containers_yaml': kiali_secured_init_containers}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+
 # The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
 
 - name: Find current configmap, if it exists

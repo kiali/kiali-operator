@@ -1,0 +1,61 @@
+- name: Init Container Security Test
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+
+  # Get the deployment to check initContainers security context
+  - name: Get Kiali Deployment for security validation
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/name=kiali"
+    register: kiali_deployment
+
+  # Security guardrails validation for initContainers
+  - name: Assert that the deployment has initContainers
+    assert:
+      that:
+      - kiali_deployment.resources | length == 1
+      - kiali_deployment.resources[0].spec.template.spec.initContainers is defined
+      - kiali_deployment.resources[0].spec.template.spec.initContainers | length == 3
+      fail_msg: "Kiali deployment should have 3 initContainers"
+
+  - name: Assert that security guardrails are enforced on first initContainer
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext is defined
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.allowPrivilegeEscalation == false
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.privileged == false
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem == true
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.runAsNonRoot == true
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.capabilities.drop == ['ALL']
+      fail_msg: "First initContainer should have restrictive security context enforced by operator"
+
+  - name: Assert that security guardrails override user-provided security context on second initContainer
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext is defined
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.allowPrivilegeEscalation == false
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.privileged == false
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.readOnlyRootFilesystem == true
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.runAsNonRoot == true
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.capabilities.drop == ['ALL']
+      fail_msg: "Second initContainer should have security context overridden by operator (user attempt to set privileged=true should be blocked)"
+
+  - name: Assert that security guardrails are enforced on third initContainer
+    assert:
+      that:
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext is defined
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.allowPrivilegeEscalation == false
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.privileged == false
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.readOnlyRootFilesystem == true
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.runAsNonRoot == true
+      - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.capabilities.drop == ['ALL']
+      fail_msg: "Third initContainer should have restrictive security context enforced by operator"

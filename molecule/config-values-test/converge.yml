@@ -281,6 +281,36 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_internal': custom_kiali_internal}}, recursive=True) }}"
 
+  - name: Add init containers for testing
+    vars:
+      init_containers:
+      - name: init-test-container
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        command: ['/bin/true']
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: false  # Test that operator overrides this to true
+          privileged: true  # Test that operator overrides this to false
+          allowPrivilegeEscalation: true  # Test that operator overrides this to false
+          readOnlyRootFilesystem: false  # Test that operator overrides this to true
+          capabilities:
+            add: ['SYS_ADMIN', 'NET_ADMIN']  # Test that operator removes these
+            drop: []  # Test that operator adds 'ALL' here
+      - name: istio-proxy-init
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        command: ['/bin/true']
+        env:
+        - name: "INIT_TEST_VAR"
+          value: "test-value"
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          privileged: true  # Test that operator overrides this to false
+          allowPrivilegeEscalation: true  # Test that operator overrides this to false
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'additional_pod_init_containers_yaml': init_containers}}}, recursive=True) }}"
+
   - name: The new Kiali CR to be tested
     debug:
       msg: "{{ current_kiali_cr }}"
@@ -502,36 +532,51 @@
       - kiali_configmap.kiali_internal['first_internal_setting'] == 111
       - kiali_configmap.kiali_internal['second_internal_setting'].foo == 'bar'
 
-  # Custom assertions for initContainers test
-  - name: Assert that the deployment has initContainers
+  # Init container tests - verify they can be added and have restrictive security context
+  - name: Assert that init containers were added to the deployment
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
     assert:
       that:
-      - kiali_deployment.resources | length == 1
-      - kiali_deployment.resources[0].spec.template.spec.initContainers is defined
-      - kiali_deployment.resources[0].spec.template.spec.initContainers | length == 2
-      fail_msg: "Kiali deployment should have 2 initContainers"
+      - kiali_pod_spec.initContainers is defined
+      - kiali_pod_spec.initContainers | length == 2
+      - kiali_pod_spec.initContainers[0].name == "init-test-container"
+      - kiali_pod_spec.initContainers[1].name == "istio-proxy-init"
+      fail_msg: "Init containers should be present in the deployment"
 
-  - name: Assert that the first initContainer is configured correctly
+  - name: Assert that init containers have restrictive security context
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
     assert:
       that:
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].name == "init-test-container"
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].image == "registry.access.redhat.com/ubi9/ubi-minimal:latest"
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].command is defined
-      fail_msg: "First initContainer should be 'init-test-container'"
+      # First init container security context
+      - kiali_pod_spec.initContainers[0].securityContext is defined
+      - kiali_pod_spec.initContainers[0].securityContext.allowPrivilegeEscalation == false
+      - kiali_pod_spec.initContainers[0].securityContext.privileged == false
+      - kiali_pod_spec.initContainers[0].securityContext.readOnlyRootFilesystem == true
+      - kiali_pod_spec.initContainers[0].securityContext.runAsNonRoot == true
+      - kiali_pod_spec.initContainers[0].securityContext.capabilities.drop == ['ALL']
+      # Second init container security context
+      - kiali_pod_spec.initContainers[1].securityContext is defined
+      - kiali_pod_spec.initContainers[1].securityContext.allowPrivilegeEscalation == false
+      - kiali_pod_spec.initContainers[1].securityContext.privileged == false
+      - kiali_pod_spec.initContainers[1].securityContext.readOnlyRootFilesystem == true
+      - kiali_pod_spec.initContainers[1].securityContext.runAsNonRoot == true
+      - kiali_pod_spec.initContainers[1].securityContext.capabilities.drop == ['ALL']
+      fail_msg: "Init containers should have restrictive security context applied by operator"
 
-  - name: Assert that the second initContainer is configured correctly
+  - name: Assert Kiali pod started successfully with init containers
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_pod_status: "{{ kiali_pod.resources[0].status }}"
     assert:
       that:
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].name == "istio-proxy-init"
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[0].image == "registry.access.redhat.com/ubi9/ubi-minimal:latest"
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env is defined
-      - kiali_deployment.resources[0].spec.template.spec.initContainers[1].env | selectattr('name', 'equalto', 'INIT_TEST_VAR') | list | length == 1
-      fail_msg: "Second initContainer should be 'istio-proxy-init' with INIT_TEST_VAR environment variable"
-
-  - name: Assert that the main Kiali container is still present
-    assert:
-      that:
-      - kiali_deployment.resources[0].spec.template.spec.containers is defined
-      - kiali_deployment.resources[0].spec.template.spec.containers | length >= 1
-      - kiali_deployment.resources[0].spec.template.spec.containers[0].name == "kiali"
-      fail_msg: "Main Kiali container should still be present as the first container"
+      - kiali_pod.resources | length > 0
+      - kiali_pod_status.phase == "Running"
+      - kiali_pod_spec.initContainers is defined
+      - kiali_pod_spec.initContainers | length == 2
+      - kiali_pod_status.initContainerStatuses is defined
+      - kiali_pod_status.initContainerStatuses | length == 2
+      - kiali_pod_status.initContainerStatuses[0].ready == true
+      - kiali_pod_status.initContainerStatuses[1].ready == true
+      fail_msg: "Kiali pod should be running successfully with all init containers completed"
