@@ -143,12 +143,12 @@
   - kiali_vars.deployment.namespace != current_cr.metadata.namespace
   - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
 
-- name: Only allow ad-hoc initContainers when appropriate
+- name: Only allow ad-hoc containers when appropriate
   fail:
-    msg: "The operator is forbidden from installing additional initContainers into the Kiali pod."
+    msg: "The operator is forbidden from installing additional containers into the Kiali pod."
   when:
-  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
-  - lookup('env', 'ALLOW_AD_HOC_INIT_CONTAINERS') | default('false', True) != "true"
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
+  - lookup('env', 'ALLOW_AD_HOC_CONTAINERS') | default('false', True) != "true"
 
 - name: Make sure instance_name follows the DNS label standard because it will be a Service name
   fail:
@@ -760,13 +760,13 @@
         | unique
       }}
   when:
-  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
 
-- name: Validate initContainer volume mount security
+- name: Validate container volume mount security
   vars:
     kiali_unsafe_volume_mounts: >-
       {{
-        kiali_vars.deployment.additional_pod_init_containers_yaml
+        kiali_vars.deployment.additional_pod_containers_yaml
         | selectattr('volumeMounts', 'defined')
         | map(attribute='volumeMounts')
         | flatten
@@ -783,12 +783,12 @@
         | list
       }}
   fail:
-    msg: "User-defined initContainers cannot mount these secret-backed volumes as read-write; they must be mounted read-only for security purposes: {{ kiali_unsafe_volume_names | join(', ') }}"
+    msg: "User-defined containers cannot mount these secret-backed volumes as read-write; they must be mounted read-only for security purposes: {{ kiali_unsafe_volume_names | join(', ') }}"
   when:
-  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
   - kiali_unsafe_volume_mounts|length > 0
 
-- name: Apply security guardrails to user-defined initContainers
+- name: Apply security guardrails to user-defined containers
   vars:
     # Define the mandatory security context
     kiali_mandatory_security_context:
@@ -798,11 +798,17 @@
       runAsNonRoot: true
       capabilities:
         drop: ['ALL']
-    # Apply security guardrails to each initContainer using pure Ansible
-    kiali_secured_init_containers: >-
+    # Apply security guardrails to each container using pure Ansible
+    # If ALLOW_SECURITY_CONTEXT_OVERRIDE is true, preserve user-provided security contexts
+    # Otherwise, apply mandatory security context
+    kiali_secured_containers: >-
       {%- set secured_containers = [] -%}
-      {%- for container in kiali_vars.deployment.additional_pod_init_containers_yaml -%}
-        {%- set secured_container = container | combine({'securityContext': kiali_mandatory_security_context}, recursive=true) -%}
+      {%- for container in kiali_vars.deployment.additional_pod_containers_yaml -%}
+        {%- if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == "true" and 'securityContext' in container and container.securityContext -%}
+          {%- set secured_container = container.copy() -%}
+        {%- else -%}
+          {%- set secured_container = container | combine({'securityContext': kiali_mandatory_security_context}) -%}
+        {%- endif -%}
         {%- if 'volumeMounts' in secured_container -%}
           {%- set secured_mounts = [] -%}
           {%- for mount in secured_container.volumeMounts -%}
@@ -818,9 +824,9 @@
       {%- endfor -%}
       {{ secured_containers }}
   set_fact:
-    kiali_vars: "{{ kiali_vars | combine({'deployment': {'additional_pod_init_containers_yaml': kiali_secured_init_containers}}, recursive=True) }}"
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'additional_pod_containers_yaml': kiali_secured_containers}}, recursive=True) }}"
   when:
-  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
 

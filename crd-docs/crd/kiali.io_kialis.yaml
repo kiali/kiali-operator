@@ -243,8 +243,8 @@ spec:
               deployment:
                 type: object
                 properties:
-                  additional_pod_init_containers_yaml:
-                    description: "Additional initContainers to add to the list of pod initContainers. Use this to add initContainer(s) to the Kiali pod. SECURITY: The operator will forcibly apply a restrictive security context to all initContainers (allowPrivilegeEscalation: false, privileged: false, readOnlyRootFilesystem: true, runAsNonRoot: true, capabilities dropped). Secret-backed volumes are automatically forced to read-only. These security guardrails cannot be overridden and help prevent privilege escalation and filesystem-based attacks. Use with care since initContainers may cause the Kiali container itself to operate incorrectly. It is up to the user who added the additional initContainers to ensure it works properly inside the Kiali pod; Kiali makes no guarantee additional initContainers will work."
+                  additional_pod_containers_yaml:
+                    description: "Additional containers to add to the list of pod containers. Use this to add container(s) to the Kiali pod. SECURITY: By default, the operator will forcibly apply a restrictive security context to all containers (allowPrivilegeEscalation: false, privileged: false, readOnlyRootFilesystem: true, runAsNonRoot: true, capabilities dropped). However, if the operator's ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable is set to 'true', containers can define their own security contexts which will be preserved. Secret-backed volumes are automatically forced to read-only regardless of the security context override setting. Use with care since containers may cause the Kiali container itself to operate incorrectly. It is up to the user who added the additional containers to ensure it works properly inside the Kiali pod; Kiali makes no guarantee additional containers will work."
                     type: array
                     items:
                       type: object
