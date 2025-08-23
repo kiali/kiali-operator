@@ -62,7 +62,7 @@
       - "--set"
       - "allowAdHocOSSMConsoleImage=true"
       - "--set"
-      - "allowAdHocInitContainers=true"
+      - "allowAdHocContainers=true"
       - "--set"
       - "allowSecurityContextOverride=true"
       - "--set"

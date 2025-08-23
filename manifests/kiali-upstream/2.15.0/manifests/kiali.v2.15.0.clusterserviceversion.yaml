@@ -249,7 +249,7 @@ spec:
                   value: "false"
                 - name: ALLOW_AD_HOC_KIALI_IMAGE
                   value: "false"
-                - name: ALLOW_AD_HOC_INIT_CONTAINERS
+                - name: ALLOW_AD_HOC_CONTAINERS
                   value: "false"
                 - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
                   value: "false"
