@@ -662,11 +662,6 @@ spec:
           - list
           - watch
           - patch
-        - apiGroups: ["project.openshift.io"]
-          resources:
-          - projects
-          verbs:
-          - get
         - apiGroups: ["authentication.k8s.io"]
           resources:
           - tokenreviews
