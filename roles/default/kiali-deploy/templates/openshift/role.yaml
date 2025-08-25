@@ -78,11 +78,6 @@ rules:
   - list
   - watch
   - patch
-- apiGroups: ["project.openshift.io"]
-  resources:
-  - projects
-  verbs:
-  - get
 - apiGroups: ["route.openshift.io"]
   resources:
   - routes
