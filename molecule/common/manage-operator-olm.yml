@@ -55,7 +55,7 @@
     patch:
     - op: replace
       path: "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/{{ allow_security_context_override_index }}/value"
-      value: "{{ kiali.operator.allow_security_context_override | default('false') }}"
+      value: "{{ manage_operator.allow_security_context_override | default('false') }}"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
 - name: Get current Subscription to find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index
@@ -86,7 +86,7 @@
     patch:
     - op: replace
       path: "/spec/config/env/{{ subscription_allow_security_context_override_index }}/value"
-      value: "{{ kiali.operator.allow_security_context_override | default('false') }}"
+      value: "{{ manage_operator.allow_security_context_override | default('false') }}"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
 - name: Wait for operator pod to be restarted after Subscription change
@@ -111,8 +111,8 @@
     allow_override_env: "{{ operator_container.env | selectattr('name', 'equalto', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') | first }}"
   assert:
     that:
-    - allow_override_env.value == (kiali.operator.allow_security_context_override | default('false'))
-    fail_msg: "ALLOW_SECURITY_CONTEXT_OVERRIDE is [{{ allow_override_env.value }}] but should be [{{ kiali.operator.allow_security_context_override | default('false') }}]"
+    - allow_override_env.value == (manage_operator.allow_security_context_override | default('false'))
+    fail_msg: "ALLOW_SECURITY_CONTEXT_OVERRIDE is [{{ allow_override_env.value }}] but should be [{{ manage_operator.allow_security_context_override | default('false') }}]"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
 - name: Wait for Kiali deployment to be updated after operator reconciliation
@@ -131,4 +131,6 @@
   - kiali_deployment.resources[0].status.availableReplicas == kiali_deployment.resources[0].status.replicas
   retries: 60
   delay: 5
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - manage_operator.wait_for_kiali_reconciliation | default(true)

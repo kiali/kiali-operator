@@ -35,7 +35,7 @@
               - name: ALLOW_AD_HOC_CONTAINERS
                 value: "true"
               - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
-                value: "{{ operator_allow_security_context_override | default('false') }}"
+                value: "{{ manage_operator.allow_security_context_override | default('false') }}"
               - name: ALLOW_ALL_ACCESSIBLE_NAMESPACES
                 value: "true"
               - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
@@ -75,7 +75,7 @@
   vars:
     operator_container: "{{ operator_pods_result.resources[0].spec.containers | selectattr('name', 'equalto', 'operator') | first }}"
     allow_override_env: "{{ operator_container.env | selectattr('name', 'equalto', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') | first }}"
-    expected_value: "{{ operator_allow_security_context_override | default('false') }}"
+    expected_value: "{{ manage_operator.allow_security_context_override | default('false') }}"
   assert:
     that:
     - allow_override_env is defined
@@ -105,4 +105,5 @@
       type: Available
       status: "True"
     wait_timeout: 300
-  when: wait_for_kiali_reconciliation | default(true)
+  when:
+  - manage_operator.wait_for_kiali_reconciliation | default(true)

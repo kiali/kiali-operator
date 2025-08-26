@@ -1,0 +1,51 @@
+# Test additional containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+# Custom security contexts should be preserved
+
+# Dynamically determine container indices by name in deployment (for override test)
+- name: Find security-test-container index in deployment (override test)
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    security_test_container_index_override: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'security-test-container'
+
+- name: Find privilege-attempt-container index in deployment (override test)
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    privilege_attempt_container_index_override: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'privilege-attempt-container'
+
+# Test that custom security contexts are preserved when ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+- name: Assert that custom security context is preserved on security-test-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[security_test_container_index_override | int].name == 'security-test-container'
+    - deployment_containers[security_test_container_index_override | int].securityContext is defined
+    - deployment_containers[security_test_container_index_override | int].securityContext.runAsUser == 1001
+    # When ALLOW_SECURITY_CONTEXT_OVERRIDE=true, operator doesn't add missing fields - only preserves what user specified
+    fail_msg: "Security-test-container should preserve custom runAsUser when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+
+- name: Assert that custom security context is preserved on privilege-attempt-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[privilege_attempt_container_index_override | int].name == 'privilege-attempt-container'
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext is defined
+    # User-provided values should be preserved
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext.privileged == true
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext.allowPrivilegeEscalation == true
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext.readOnlyRootFilesystem == false
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext.runAsNonRoot == false
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext.runAsUser == 1002
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext.capabilities.add == ['SYS_ADMIN']
+    fail_msg: "Privilege-attempt-container should preserve all custom security context settings when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"

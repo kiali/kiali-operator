@@ -5,6 +5,7 @@ metadata:
 spec:
   version: {{ kiali.spec_version }}
   deployment:
+    # Additional init containers from init-container-security-test
     additional_pod_init_containers_yaml:
     # Test 1: Basic initContainer that should get security context applied
     - name: security-test-init
