@@ -28,17 +28,7 @@ source_repository_ref: {{ .SourceRepositoryRef }}
 
 ### Validating your OSSMConsole CR
 
-A tool is available to allow you to check your own OSSMConsole CR to ensure it is valid. Simply download [the validation script](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-ossmconsole-cr.sh) and run it, passing in the location of the OSSMConsole CRD you wish to validate with (e.g. the latest version is found [here](https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_ossmconsoles.yaml)) and the location of your OSSMConsole CR. You must be connected to/logged into a cluster for this validation tool to work.
-
-For example, to validate an OSSMConsole CR named `ossmconsole` in the namespace `istio-system` using the latest version of the OSSMConsole CRD, run the following:
-<pre>
-bash <(curl -sL https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/bin/validate-ossmconsole-cr.sh) \
-  -crd https://raw.githubusercontent.com/kiali/kiali-operator/master/crd-docs/crd/kiali.io_ossmconsoles.yaml \
-  --cr-name ossmconsole \
-  -n istio-system
-</pre>
-
-For additional help in using this validation tool, pass it the `--help` option.
+The OSSMConsole CR has a CRD Schema so it will be validated when you create or update it in your cluster.
 
 <h3 id="property-details">Properties</h3>
 

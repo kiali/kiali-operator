@@ -135,10 +135,10 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'version_label': new_version_label }}}, recursive=True) }}"
 
-  - name: Make sure health_config rates are defined
+  - name: Make sure health_config rate items are defined
     vars:
       custom_health_config:
-        rates:
+        rate:
         - namespace: "bookinfo"
           tolerance:
           - code: "404"
@@ -310,19 +310,19 @@
   - name: Make sure the custom health config made it to the config map
     assert:
       that:
-      - kiali_configmap.health_config.rates | length == 2
-      - kiali_configmap.health_config.rates[0].namespace == "bookinfo"
-      - kiali_configmap.health_config.rates[0].tolerance | length == 2
-      - kiali_configmap.health_config.rates[0].tolerance[0].code == "404"
-      - kiali_configmap.health_config.rates[0].tolerance[0].failure == 10
-      - kiali_configmap.health_config.rates[0].tolerance[0].protocol == "http"
-      - kiali_configmap.health_config.rates[0].tolerance[1].code == "[45]\\d[^\\D4]"
-      - kiali_configmap.health_config.rates[0].tolerance[1].failure is not defined
-      - kiali_configmap.health_config.rates[0].tolerance[1].protocol == "http"
-      - kiali_configmap.health_config.rates[1].namespace == ".*"
-      - kiali_configmap.health_config.rates[1].tolerance | length == 2
-      - kiali_configmap.health_config.rates[1].tolerance[0].degraded == 30
-      - kiali_configmap.health_config.rates[1].tolerance[1].code == "[5]\\d\\d"
+      - kiali_configmap.health_config.rate | length == 2
+      - kiali_configmap.health_config.rate[0].namespace == "bookinfo"
+      - kiali_configmap.health_config.rate[0].tolerance | length == 2
+      - kiali_configmap.health_config.rate[0].tolerance[0].code == "404"
+      - kiali_configmap.health_config.rate[0].tolerance[0].failure == 10
+      - kiali_configmap.health_config.rate[0].tolerance[0].protocol == "http"
+      - kiali_configmap.health_config.rate[0].tolerance[1].code == "[45]\\d[^\\D4]"
+      - kiali_configmap.health_config.rate[0].tolerance[1].failure is not defined
+      - kiali_configmap.health_config.rate[0].tolerance[1].protocol == "http"
+      - kiali_configmap.health_config.rate[1].namespace == ".*"
+      - kiali_configmap.health_config.rate[1].tolerance | length == 2
+      - kiali_configmap.health_config.rate[1].tolerance[0].degraded == 30
+      - kiali_configmap.health_config.rate[1].tolerance[1].code == "[5]\\d\\d"
 
   - name: Make sure the host aliases made it to the pod
     vars:

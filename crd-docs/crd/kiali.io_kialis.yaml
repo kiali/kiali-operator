@@ -2,6 +2,9 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   name: kialis.kiali.io
+  labels:
+    app: kiali-operator
+    app.kubernetes.io/name: kiali-operator
 spec:
   group: kiali.io
   names:
@@ -53,8 +56,37 @@ spec:
                       description: "The name of the annotation whose value is used to determine what icon to display. The annotation name itself can be anything, but note that the value of that annotation must be one of: `rest`, `grpc`, and `graphql` - any other value is ignored."
                       type: string
 
+              api:
+                description: "DEPRECATED AFTER v1.73: These settings control how the Kiali API should be accessed."
+                type: object
+                properties:
+                  namespaces:
+                    description: "DEPRECATED AFTER v1.73: Settings for the API namespaces feature."
+                    type: object
+                    properties:
+                      exclude:
+                        description: "DEPRECATED AFTER v1.73: A list of namespace names that will be excluded from Kiali API."
+                        type: array
+                        items:
+                          type: string
+                      include:
+                        description: "DEPRECATED AFTER v1.73: A list of namespace names that will be included in Kiali API."
+                        type: array
+                        items:
+                          type: string
+                      label_selector_exclude:
+                        description: "DEPRECATED AFTER v1.73: A Kubernetes label selector expression that will be used to exclude namespaces."
+                        type: string
+                      label_selector_include:
+                        description: "DEPRECATED AFTER v1.73: A Kubernetes label selector expression that will be used to include namespaces."
+                        type: string
+
               installation_tag:
                 description: "Tag used to identify a particular instance/installation of the Kiali server. This is merely a human-readable string that will be used within Kiali to help a user identify the Kiali being used (e.g. in the Kiali UI title bar). See `deployment.instance_name` for the setting used to customize Kiali resource names that are created."
+                type: string
+
+              istio_namespace:
+                description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The namespace where Istio is installed is now autodetected. If left empty, it was previously assumed to be the same namespace as where Kiali is installed (i.e. `deployment.namespace`)."
                 type: string
 
               version:
@@ -79,6 +111,7 @@ spec:
                   custom Kiali image must be compatible with the rest of the configuration and resources the
                   operator will install).
                 type: string
+                default: "default"
 
               auth:
                 type: object
@@ -108,7 +141,8 @@ spec:
                     properties:
                       additional_request_params:
                         type: object
-                        x-kubernetes-preserve-unknown-fields: true
+                        additionalProperties:
+                          type: string
                       allowed_domains:
                         type: array
                         items:
@@ -121,18 +155,21 @@ spec:
                         type: string
                       authentication_timeout:
                         type: integer
+                        default: 300
                       authorization_endpoint:
                         type: string
                       client_id:
                         type: string
                       disable_rbac:
                         type: boolean
+                        default: false
                       http_proxy:
                         type: string
                       https_proxy:
                         type: string
                       insecure_skip_verify_tls:
                         type: boolean
+                        default: false
                       issuer_uri:
                         type: string
                       scopes:
@@ -141,10 +178,17 @@ spec:
                           type: string
                       username_claim:
                         type: string
+                        default: "sub"
                   openshift:
                     description: "To learn more about these settings and how to configure the OpenShift authentication strategy, read the documentation at https://kiali.io/docs/configuration/authentication/openshift/"
                     type: object
                     properties:
+                      auth_timeout:
+                        description: "DEPRECATED AFTER v1.73: The amount of time in seconds Kiali will wait for a response from the OpenShift API when requesting authentication information."
+                        type: integer
+                      client_id_prefix:
+                        description: "DEPRECATED AFTER v1.73: A prefix that will be applied to the OpenShift OAuth client identifier."
+                        type: string
                       redirect_uris:
                         description: "The OAuthClient redirect URIs. You normally do not have to set this unless you are creating remote cluster resources (see `deployment.remote_cluster_resources_only`) with `auth.strategy` set to `openshift`."
                         type: array
@@ -168,9 +212,11 @@ spec:
                       enabled:
                         description: "If true then remote cluster secrets will be autodetected during the installation of the Kiali Server Deployment. Any remote cluster secrets found in the Kiali deployment namespace will be mounted to the Kiali Server's file system. If false, you can still manually specify the remote cluster secret information in the 'clusters' setting if you wish to utilize multicluster features."
                         type: boolean
+                        default: true
                       label:
-                        description: "The name and value of a label that exists on all remote cluster secrets. Default is 'kiali.io/multiCluster=true'."
+                        description: "The name and value of a label that exists on all remote cluster secrets."
                         type: string
+                        default: "kiali.io/multiCluster=true"
                   clusters:
                     description: "A list of clusters that the Kiali Server can access. You need to specify the remote clusters here if 'autodetect_secrets.enabled' is false."
                     type: array
@@ -184,8 +230,9 @@ spec:
                           description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
                           type: string
                   ignore_home_cluster:
-                    description: "Set to true for an external Kiali deployment, or if Kiali should not try to discover Istio on the home cluster. When set to `true`, it is required to set `kubernetes_config.cluster_name`. When not set, this value will default to `false`."
+                    description: "Set to true for an external Kiali deployment, or if Kiali should not try to discover Istio on the home cluster. When set to `true`, it is required to set `kubernetes_config.cluster_name`."
                     type: boolean
+                    default: false
                   kiali_urls:
                     description: "A map between cluster name, instance name and namespace to a Kiali URL. Will be used showing the Mesh page's Kiali URLs. The Kiali service's 'kiali.io/external-url' annotation will be overridden when this property is set."
                     type: array
@@ -243,6 +290,11 @@ spec:
               deployment:
                 type: object
                 properties:
+                  accessible_namespaces:
+                    description: "DEPRECATED AFTER v1.73: A list of namespaces Kiali is allowed to access. This replaces discovery selectors."
+                    type: array
+                    items:
+                      type: string
                   additional_service_yaml:
                     description: "Additional custom yaml to add to the service definition. This is used mainly to customize the service type. For example, if the `deployment.service_type` is set to 'LoadBalancer' and you want to set the loadBalancerIP, you can do so here with: `additional_service_yaml: { 'loadBalancerIP': '78.11.24.19' }`. Another example would be if the `deployment.service_type` is set to 'ExternalName' you will need to configure the name via: `additional_service_yaml: { 'externalName': 'my.kiali.example.com' }`. A final example would be if external IPs need to be set: `additional_service_yaml: { 'externalIPs': ['80.11.12.10'] }`"
                     type: object
@@ -261,12 +313,14 @@ spec:
                         type: object
                         x-kubernetes-preserve-unknown-fields: true
                   cluster_wide_access:
-                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces. When true, this provides more efficient caching within the Kiali server. It must be `true` if `deployment.discovery_selectors.default` is left unset. To limit the namespaces for which Kiali has permissions, set to `false` and define the desired selectors in `deployment.discovery_selectors.default`. When not set, this value will default to `true`."
+                    description: "Determines if the Kiali server will be granted cluster-wide permissions to see all namespaces. When true, this provides more efficient caching within the Kiali server. It must be `true` if `deployment.discovery_selectors.default` is left unset. To limit the namespaces for which Kiali has permissions, set to `false` and define the desired selectors in `deployment.discovery_selectors.default`."
                     type: boolean
+                    default: true
                   configmap_annotations:
                     description: "Custom annotations to be created on the Kiali ConfigMap."
                     type: object
-                    x-kubernetes-preserve-unknown-fields: true
+                    additionalProperties:
+                      type: string
                   custom_envs:
                     description: "Defines additional environment variables to be set in the Kiali server pod. This is typically used for (but not limited to) setting proxy environment variables such as HTTP_PROXY, HTTPS_PROXY, and/or NO_PROXY."
                     type: array
@@ -316,8 +370,9 @@ spec:
                           description: "The name of the secret that is to be mounted to the Kiali pod's file system. The name of the custom secret must not be the same name as one created by the operator. Names such as `kiali`, `kiali-cert-secret`, and `kiali-cabundle` should not be used as a custom secret name because the operator may want to create one with one of those names."
                           type: string
                         optional:
-                          description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This will default to 'false' if not specified. This is ignored if `csi` is specified - CSI secrets must exist when specified."
+                          description: "Indicates if the secret may or may not exist at the time the Kiali pod starts. This is ignored if `csi` is specified - CSI secrets must exist when specified."
                           type: boolean
+                          default: false
                   discovery_selectors:
                     description: |
                       Discovery selectors used to determine which namespaces are accessible to Kiali and which namespaces are visible to Kiali users.
@@ -424,7 +479,8 @@ spec:
                       as an extra label, it will be silently ignored because that is one of the labels the operator
                       creates on all resources.
                     type: object
-                    x-kubernetes-preserve-unknown-fields: true
+                    additionalProperties:
+                      type: string
                   host_aliases:
                     description: |
                       This is content for the Kubernetes 'hostAliases' setting for the Kiali server.
@@ -488,6 +544,7 @@ spec:
                   image_pull_policy:
                     description: "The Kubernetes pull policy for the Kiali deployment. This is overridden to be 'Always' if `deployment.image_version` is set to 'latest'."
                     type: string
+                    default: "IfNotPresent"
                   image_pull_secrets:
                     description: "The names of the secrets to be used when container images are to be pulled."
                     type: array
@@ -520,10 +577,12 @@ spec:
                       additional_labels:
                         description: "Additional labels to add to the Ingress (or Route if on OpenShift). These are added to the labels that are created by default; these do not override the default labels."
                         type: object
-                        x-kubernetes-preserve-unknown-fields: true
+                        additionalProperties:
+                          type: string
                       class_name:
                         description: "If `class_name` is a non-empty string, it will be used as the 'spec.ingressClassName' in the created Kubernetes Ingress resource. This setting is ignored if on OpenShift. This is also ignored if `override_yaml.spec` is defined (i.e. you must define the 'ingressClassName' directly in your override yaml)."
                         type: string
+                        default: "nginx"
                       enabled:
                         description: "Determines if the Kiali endpoint should be exposed externally. If 'true', an Ingress will be created if on Kubernetes or a Route if on OpenShift. If left undefined, this will be 'false' on Kubernetes and 'true' on OpenShift."
                         type: boolean
@@ -579,6 +638,7 @@ spec:
                   instance_name:
                     description: "The instance name of this Kiali installation. This instance name will be the prefix prepended to the names of all Kiali resources created by the operator and will be used to label those resources as belonging to this Kiali installation instance. You cannot change this instance name after a Kiali CR is created. If you attempt to change it, the operator will abort with an error. If you want to change it, you must first delete the original Kiali CR and create a new one. Note that this does not affect the name of the auto-generated signing key secret. If you do not supply a signing key, the operator will create one for you in a secret, but that secret will always be named 'kiali-signing-key' and shared across all Kiali instances in the same deployment namespace. If you want a different signing key secret, you are free to create your own and tell the operator about it via `login_token.signing_key`. See the docs on that setting for more details. Note also that if you are setting this value, you may also want to change the `installation_tag` setting, but this is not required."
                     type: string
+                    default: "kiali"
                   logger:
                     description: "Configures the logger that emits messages to the Kiali server pod logs."
                     type: object
@@ -587,17 +647,21 @@ spec:
                         description: "The lowest priority of messages to log. Must be one of: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`."
                         type: string
                         enum: ["trace", "debug", "info", "warn", "error", "fatal"]
+                        default: "info"
                       log_format:
                         description: "Indicates if the logs should be written with one log message per line or using a JSON format. Must be one of: `text` or `json`."
                         type: string
                         enum: ["text", "json"]
+                        default: "text"
                       sampler_rate:
                         description: "With this setting every sampler_rate-th message will be logged. By default, every message is logged. As an example, setting this to `'2'` means every other message will be logged. The value of this setting is a string but must be parsable as an integer."
                         type: string
                         pattern: "^[0-9]+$"
+                        default: "1"
                       time_field_format:
                         description: "The log message timestamp format. This supports a golang time format (see https://golang.org/pkg/time/)"
                         type: string
+                        default: "2006-01-02T15:04:05Z07:00"
                   namespace:
                     description: "The namespace into which Kiali is to be installed. If this is empty or not defined, the default will be the namespace where the Kiali CR is located."
                     type: string
@@ -616,7 +680,8 @@ spec:
                       To retain the default behavior while adding your own annotations,
                       make sure to include this value alongside your custom annotations.
                     type: object
-                    x-kubernetes-preserve-unknown-fields: true
+                    additionalProperties:
+                      type: string
                   pod_labels:
                     description: |
                       Custom labels to be created on the Kiali pod.
@@ -625,7 +690,8 @@ spec:
                       sidecar.istio.io/inject: "true"
                       ```
                     type: object
-                    x-kubernetes-preserve-unknown-fields: true
+                    additionalProperties:
+                      type: string
                   priority_class_name:
                     description: "The priorityClassName used to assign the priority of the Kiali pod."
                     type: string
@@ -639,32 +705,42 @@ spec:
                         properties:
                           initial_delay_seconds:
                             type: integer
+                            default: 5
                           period_seconds:
                             type: integer
+                            default: 30
                       readiness:
                         description: "Configures the readiness probe of the Kiali pod."
                         type: object
                         properties:
                           initial_delay_seconds:
                             type: integer
+                            default: 5
                           period_seconds:
                             type: integer
+                            default: 30
                       startup:
                         description: "Configures the startup probe of the Kiali pod."
                         type: object
                         properties:
                           failure_threshold:
                             type: integer
+                            default: 6
                           initial_delay_seconds:
                             type: integer
+                            default: 30
                           period_seconds:
                             type: integer
+                            default: 10
                   remote_cluster_resources_only:
                     description: "When `true`, only those resources necessary for a remote Kiali Server to access this cluster are created (such as the service account and roles/bindings). There will be no Kiali Server deployment/pod created when this is `true`."
                     type: boolean
+                    default: false
                   replicas:
                     description: "The replica count for the Kiail deployment. If `deployment.hpa` is specified, this setting is ignored."
                     type: integer
+                    default: 1
+                    minimum: 1
                   resources:
                     description: |
                       Defines compute resources that are to be given to the Kiali pod's container. The value is a dict as defined by Kubernetes. See the Kubernetes documentation (https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container).
@@ -685,6 +761,7 @@ spec:
                   secret_name:
                     description: "The name of a secret used by the Kiali. This secret is optionally used when configuring the OpenID authentication strategy. Consult the OpenID docs for more information at https://kiali.io/docs/configuration/authentication/openid/"
                     type: string
+                    default: "kiali"
                   security_context:
                     description: "Custom security context to be placed on the server container. The entire security context on the container will be the value of this setting if the operator is configured to allow it. Note that, as a security measure, a cluster admin may have configured the Kiali operator to not allow portions of this override setting - in this case you can specify additional security context settings but you cannot replace existing, default ones."
                     type: object
@@ -692,7 +769,8 @@ spec:
                   service_annotations:
                     description: "Custom annotations to be created on the Kiali Service resource."
                     type: object
-                    x-kubernetes-preserve-unknown-fields: true
+                    additionalProperties:
+                      type: string
                   service_type:
                     description: "The Kiali service type. Kubernetes determines what values are valid. Common values are 'NodePort', 'ClusterIP', and 'LoadBalancer'."
                     type: string
@@ -718,9 +796,13 @@ spec:
                       * If `deployment.image_version` is 'lastrelease', `version_label` will be fixed to the last Kiali release version string.
                       * If `deployment.image_version` is anything else, `version_label` will be that value, too.
                     type: string
+                  verbose_mode:
+                    description: "DEPRECATED AFTER v1.73: When true, Kiali will log additional debug information about its operations."
+                    type: boolean
                   view_only_mode:
                     description: "When true, Kiali will be in 'view only' mode, allowing the user to view and retrieve management and monitoring data for the service mesh, but not allow the user to modify the service mesh."
                     type: boolean
+                    default: false
 
               extensions:
                 description: |
@@ -732,6 +814,7 @@ spec:
                     enabled:
                       description: Determines if the Kiali traffic graph should incorporate the extension's metrics.
                       type: boolean
+                      default: false
                     name:
                       description: The name that is used to identify the metric time series for the extension.
                       type: string
@@ -763,18 +846,24 @@ spec:
                       discovery_auto_threshold:
                         description: "Threshold of the number of pods, for a given Application or Workload, above which dashboards discovery will be skipped. This setting only takes effect when `discovery_enabled` is set to 'auto'."
                         type: integer
+                        default: 10
                       discovery_enabled:
-                        description: "Enable, disable or set 'auto' mode to the dashboards discovery process. If set to 'true', Kiali will always try to discover dashboards based on metrics. Note that this can generate performance penalties while discovering dashboards for workloads having many pods (thus many metrics). When set to 'auto', Kiali will skip dashboards discovery for workloads with more than a configured threshold of pods (see `discovery_auto_threshold`). When discovery is disabled or auto/skipped, it is still possible to tie workloads with dashboards through annotations on pods (refer to the doc https://kiali.io/docs/configuration/custom-dashboard/#pod-annotations). Value must be one of: `true`, `false`, `auto`."
+                        description: "Enable, disable or set 'auto' mode to the dashboards discovery process. If set to 'true', Kiali will always try to discover dashboards based on metrics. Note that this can generate performance penalties while discovering dashboards for workloads having many pods (thus many metrics). When set to 'auto', Kiali will skip dashboards discovery for workloads with more than a configured threshold of pods (see `discovery_auto_threshold`). When discovery is disabled or auto/skipped, it is still possible to tie workloads with dashboards through annotations on pods (refer to the doc https://kiali.io/docs/configuration/custom-dashboard/#pod-annotations). Value must be a string and be one of: `true`, `false`, `auto`."
                         type: string
+                        enum: ["true", "false", "auto"]
+                        default: "auto"
                       enabled:
                         description: "Enable or disable custom dashboards, including the dashboards discovery process."
                         type: boolean
+                        default: true
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
+                        default: false
                       namespace_label:
                         description: "The Prometheus label name used for identifying namespaces in metrics for custom dashboards. The default is `namespace` but you may want to use `kubernetes_namespace` depending on your Prometheus configuration."
                         type: string
+                        default: "namespace"
                       prometheus:
                         description: "The Prometheus configuration defined here refers to the Prometheus instance that is dedicated to fetching metrics for custom dashboards. This means you can obtain these metrics for the custom dashboards from a Prometheus instance that is different from the one that Istio uses. If this section is omitted, the same Prometheus that is used to obtain the Istio metrics will also be used for retrieving custom dashboard metrics."
                         type: object
@@ -789,6 +878,7 @@ spec:
                               insecure_skip_verify:
                                 description: "Set true to skip verifying certificate validity when Kiali contacts Prometheus over https."
                                 type: boolean
+                                default: false
                               password:
                                 description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret."
                                 type: string
@@ -796,37 +886,45 @@ spec:
                                 description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret."
                                 type: string
                               type:
-                                description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
+                                description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
                                 type: string
+                                default: "none"
                               use_kiali_token:
                                 description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Prometheus (in this case, `auth.token` config is ignored)."
                                 type: boolean
+                                default: false
                               username:
                                 description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret."
                                 type: string
                           cache_duration:
                             description: "Prometheus caching duration expressed in seconds."
                             type: integer
+                            default: 7
                           cache_enabled:
                             description: "Enable/disable Prometheus caching used for Health services."
                             type: boolean
+                            default: true
                           cache_expiration:
                             description: "Prometheus caching expiration expressed in seconds."
                             type: integer
+                            default: 300
                           custom_headers:
                             description: "A set of name/value settings that will be passed as headers when requests are sent to Prometheus."
                             type: object
-                            x-kubernetes-preserve-unknown-fields: true
+                            additionalProperties:
+                              type: string
                           health_check_url:
                             description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
                             type: string
                           is_core:
                             description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                             type: boolean
+                            default: true
                           query_scope:
                             description: "A set of labelName/labelValue settings applied to every Prometheus query. Used to narrow unified metrics to only those scoped to the Kiali instance."
                             type: object
-                            x-kubernetes-preserve-unknown-fields: true
+                            additionalProperties:
+                              type: string
                           thanos_proxy:
                             description: "Define this section if Prometheus is to be queried through a Thanos proxy. Kiali will still use the `url` setting to query for Prometheus metrics so make sure that is set appropriately."
                             type: object
@@ -834,12 +932,15 @@ spec:
                               enabled:
                                 description: "Set to true when a Thanos proxy is in front of Prometheus."
                                 type: boolean
+                                default: false
                               retention_period:
                                 description: "Thanos Retention period value expresed as a string."
                                 type: string
+                                default: "7d"
                               scrape_interval:
                                 description: "Thanos Scrape interval value expresed as a string."
                                 type: string
+                                default: "30s"
                           url:
                             description: "The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod. If empty, the default will assume Prometheus is in the Istio control plane namespace; e.g. `http://prometheus.istio-system:9090`."
                             type: string
@@ -857,6 +958,7 @@ spec:
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Grafana over https."
                             type: boolean
+                            default: false
                           password:
                             description: "Password to be used when making requests to Grafana, for basic authentication. May refer to a secret."
                             type: string
@@ -864,11 +966,13 @@ spec:
                             description: "Token / API key to access Grafana, for token-based authentication. May refer to a secret."
                             type: string
                           type:
-                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Grafana server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
+                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Grafana server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
                             type: string
+                            default: "none"
                           use_kiali_token:
                             description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Grafana (in this case, `auth.token` config is ignored)."
                             type: boolean
+                            default: false
                           username:
                             description: "Username to be used when making requests to Grafana with `basic` authentication. May refer to a secret."
                             type: string
@@ -905,18 +1009,26 @@ spec:
                       enabled:
                         description: "When true, Grafana support will be enabled in Kiali."
                         type: boolean
+                        default: true
                       external_url:
                         description: "The URL that the Kiali UI uses when displaying Grafana links to the user. This URL must be accessible to clients external to the cluster (e.g. a browser) in order for the integration to work properly. If empty, an attempt to auto-discover it is made. This URL can contain query parameters if needed, such as '?orgId=1'."
                         type: string
                       health_check_url:
                         description: "Used in the Components health feature. This is the URL which Kiali will ping to determine whether the component is reachable or not. It defaults to `internal_url` when not provided."
                         type: string
+                      in_cluster_url:
+                        description: "DEPRECATED AFTER v1.73: The URL used for in-cluster access to Grafana."
+                        type: string
                       internal_url:
                         description: "The URL used by Kiali to perform requests and queries to Grafana. An example would be `http://grafana.istio-system:3000`. This URL can contain query parameters if needed, such as '?orgId=1'. If not defined, it will default to `http://grafana.<istio namespace>:3000`."
+                        type: string
+                      url:
+                        description: "DEPRECATED AFTER v1.73: The URL used to access Grafana from external sources."
                         type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
+                        default: false
                   istio:
                     description: "Istio configuration that Kiali needs to know about in order to observe the mesh."
                     type: object
@@ -937,15 +1049,31 @@ spec:
                                 is_core:
                                   description: "Whether the component is to be considered a core component for your deployment."
                                   type: boolean
+                                  default: false
                                 is_proxy:
                                   description: "Whether the component is a native Envoy proxy."
                                   type: boolean
+                                  default: false
                                 namespace:
                                   description: "The namespace where the component is installed. It defaults to the Istio control plane namespace (e.g. `istio-system`). Note that the Istio documentation suggests you install the ingress and egress to different namespaces, so you most likely will want to explicitly set this namespace value for the ingress and egress components."
                                   type: string
                           enabled:
                             description: "Determines if Istio component statuses will be displayed in the Kiali masthead indicator."
                             type: boolean
+                            default: true
+                      config_map_name:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istio control plane config map is now autodetected based on revision."
+                        type: string
+                      egress_gateway_namespace:
+                        description: "The namespace where Istio EgressGateway component is read for a status check. When left empty, the control plane namespace is used. e.g. `istio-system`."
+                        type: string
+                      envoy_admin_local_port:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The port which Kiali will open to fetch envoy config data information is now hardcoded to the standard Envoy port."
+                        type: integer
+                        default: 15000
+                      gateway_api_class_name:
+                        description: "DEPRECATED AFTER v1.73: The name of the Gateway API Class used by Istio."
+                        type: string
                       gateway_api_classes:
                         description: "A list declaring all the Gateway API Classes used in Istio. If empty or undefined, Kiali attempts to auto-discover Gateway Classes if `cluster_wide_access` is set `true` for Kiali; otherwise, it defaults to `istio`, `istio-remote`, and adds `istio-waypoint` for Ambient mode or `istio-east-west` for multicluster setup."
                         type: array
@@ -962,17 +1090,51 @@ spec:
                         description: "Label selector for auto-discovering K8s Gateway API Classes. Used if `gateway_api_classes` is unset and `cluster_wide_access` is set `true` for Kiali. When left empty then all K8s Gateway API Classes will be loaded."
                         type: string
                       istio_api_enabled:
-                        description: "Indicates if Kiali has access to istiod. true by default."
+                        description: "Indicates if Kiali has access to istiod."
                         type: boolean
+                        default: true
+                      istio_canary_revision:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. Canary upgrade/downgrade functionality now autodetects canary revisions from running istiod pods."
+                        type: object
+                        properties:
+                          current:
+                            description: "DEPRECATED AFTER v2.11: The currently installed Istio revision."
+                            type: string
+                          upgrade:
+                            description: "DEPRECATED AFTER v2.11: The installed Istio canary revision to upgrade to."
+                            type: string
+                      istiod_deployment_name:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istiod deployment is now autodetected."
+                        type: string
                       istio_identity_domain:
                         description: "The annotation used by Istio to identify domains."
                         type: string
+                        default: "svc.cluster.local"
+                      istio_injection_annotation:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the field that annotates a workload to indicate a sidecar should be automatically injected by Istio is now hardcoded to the standard value."
+                        type: string
+                        default: "sidecar.istio.io/inject"
+                      istio_sidecar_annotation:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The pod annotation used by Istio to identify the sidecar is now hardcoded to the standard value."
+                        type: string
+                        default: "sidecar.istio.io/status"
+                      istio_sidecar_injector_config_map_name:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istio-sidecar-injector config map is now autodetected based on revision."
+                        type: string
+                      istiod_pod_monitoring_port:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The monitoring port of the IstioD pod is now autodetected from the deployment args."
+                        type: integer
+                        default: 15014
                       root_namespace:
                         description: "The namespace to treat as the administrative root namespace for Istio configuration."
+                        type: string
+                      url_service_version:
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The Istio service used to determine the Istio version is now autodetected from services."
                         type: string
                       validation_reconcile_interval:
                         description: "Configures how often Kiali will validate Istio configuration. Validations cannot be disabled at the moment but you can set this to a long period of time. Accepts a golang duration string e.g. '1h' or '30m'."
                         type: string
+                        default: "1m"
                   prometheus:
                     description: "The Prometheus configuration defined here refers to the Prometheus instance that is used by Istio to store its telemetry."
                     type: object
@@ -987,6 +1149,7 @@ spec:
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Prometheus over https."
                             type: boolean
+                            default: false
                           password:
                             description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret."
                             type: string
@@ -996,35 +1159,43 @@ spec:
                           type:
                             description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
                             type: string
+                            default: "none"
                           use_kiali_token:
                             description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Prometheus (in this case, `auth.token` config is ignored)."
                             type: boolean
+                            default: false
                           username:
                             description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret."
                             type: string
                       cache_duration:
                         description: "Prometheus caching duration expressed in seconds."
                         type: integer
+                        default: 7
                       cache_enabled:
                         description: "Enable/disable Prometheus caching used for Health services."
                         type: boolean
+                        default: true
                       cache_expiration:
                         description: "Prometheus caching expiration expressed in seconds."
                         type: integer
+                        default: 300
                       custom_headers:
                         description: "A set of name/value settings that will be passed as headers when requests are sent to Prometheus."
                         type: object
-                        x-kubernetes-preserve-unknown-fields: true
+                        additionalProperties:
+                          type: string
                       health_check_url:
                         description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
                         type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
+                        default: true
                       query_scope:
                         description: "A set of labelName/labelValue settings applied to every Prometheus query. Used to narrow unified metrics to only those scoped to the Kiali instance."
                         type: object
-                        x-kubernetes-preserve-unknown-fields: true
+                        additionalProperties:
+                          type: string
                       thanos_proxy:
                         description: "Define this section if Prometheus is to be queried through a Thanos proxy. Kiali will still use the `url` setting to query for Prometheus metrics so make sure that is set appropriately."
                         type: object
@@ -1032,12 +1203,15 @@ spec:
                           enabled:
                             description: "Set to true when a Thanos proxy is in front of Prometheus."
                             type: boolean
+                            default: false
                           retention_period:
                             description: "Thanos Retention period value expresed as a string."
                             type: string
+                            default: "7d"
                           scrape_interval:
                             description: "Thanos Scrape interval value expresed as a string."
                             type: string
+                            default: "30s"
                       url:
                         description: "The URL used to query the Prometheus Server. This URL must be accessible from the Kiali pod. If empty, the default will assume Prometheus is in the Istio control plane namespace; e.g. `http://prometheus.istio-system:9090`."
                         type: string
@@ -1055,6 +1229,7 @@ spec:
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts the Tracing server over https."
                             type: boolean
+                            default: false
                           password:
                             description: "Password to be used when making requests to the Tracing server, for basic authentication. May refer to a secret."
                             type: string
@@ -1064,60 +1239,80 @@ spec:
                           type:
                             description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Tracing server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
                             type: string
+                            default: "none"
                           use_kiali_token:
                             description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to the Tracing server (in this case, `auth.token` config is ignored)."
                             type: boolean
+                            default: false
                           username:
                             description: "Username to be used when making requests to the Tracing server with `basic` authentication. May refer to a secret."
                             type: string
                       custom_headers:
                         description: "A set of name/value settings that will be passed as headers when requests are sent to the Tracing backend."
                         type: object
-                        x-kubernetes-preserve-unknown-fields: true
+                        additionalProperties:
+                          type: string
                       disable_version_check:
-                        description: "When true, the version of the Tracing backend will not be retrieved. This will mean Kiali will not be able to display the version of your Tracing component in the Kiali UI. This may be needed in order to avoid Kiali reporting errors in cases where the full version endpoint is not accessible or is unknown. A common use case is when using Jaeger with gRPC and the HTTP endpoint is not deployed in the standard port (80). Defaults to `false`"
+                        description: "When true, the version of the Tracing backend will not be retrieved. This will mean Kiali will not be able to display the version of your Tracing component in the Kiali UI. This may be needed in order to avoid Kiali reporting errors in cases where the full version endpoint is not accessible or is unknown. A common use case is when using Jaeger with gRPC and the HTTP endpoint is not deployed in the standard port (80)."
                         type: boolean
+                        default: false
                       enabled:
                         description: "When true, connections to the Tracing server are enabled. `internal_url` and/or `external_url` need to be provided."
                         type: boolean
+                        default: false
                       external_url:
                         description: "The URL that the Kiali UI uses when displaying Tracing UI links to the user. This URL must be accessible to clients external to the cluster (e.g. a browser) in order to generate valid links. If the tracing service is deployed with a QUERY_BASE_PATH set, set this URL like https://<hostname>/<QUERY_BASE_PATH>; for example, https://tracing-service:8080/jaeger"
                         type: string
                       grpc_port:
-                        description: "Set port number when `use_grpc` is true and `provider` is `tempo`. By default is `9095`"
+                        description: "Set port number when `use_grpc` is true and `provider` is `tempo`."
                         type: integer
+                        default: 9095
                       health_check_url:
                         description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
+                        type: string
+                      in_cluster_url:
+                        description: "DEPRECATED AFTER v1.73: The URL used for in-cluster access to the tracing service."
                         type: string
                       internal_url:
                         description: "The URL used by Kiali to perform requests and queries to the tracing backend which enables further integration between Kiali and the tracing server. When not provided, Kiali will only show external links using the `external_url` setting. Note: Jaeger v1.20+ has separated ports for GRPC(16685) and HTTP(16686) requests. Make sure you use the appropriate port according to the `use_grpc` value. Example: http://tracing.istio-system:16685"
                         type: string
+                      url:
+                        description: "DEPRECATED AFTER v1.73: The URL used to access the tracing service from external sources."
+                        type: string
                       is_core:
                         description: "Used in the Components health feature. When true, the unhealthy scenarios will be raised as errors. Otherwise, they will be raised as a warning."
                         type: boolean
+                        default: false
                       namespace_selector:
                         description: "Kiali use this boolean to find traces with a namespace selector : service.namespace."
                         type: boolean
+                        default: true
                       provider:
                         description: "The trace provider to get the traces from. Value must be one of: `jaeger` or `tempo`."
                         type: string
+                        enum: ["jaeger", "tempo"]
+                        default: "jaeger"
                       query_scope:
                         description: "A set of tagKey/tagValue settings applied to every Jaeger query. Used to narrow unified traces to only those scoped to the Kiali instance."
                         type: object
-                        x-kubernetes-preserve-unknown-fields: true
+                        additionalProperties:
+                          type: string
                       query_timeout:
                         description: "The amount of time in seconds Kiali will wait for a response from 'jaeger-query' service when fetching traces."
                         type: integer
+                        default: 5
                       tempo_config:
                         description: "Settings used to configure the access url to the Tempo Datasource in Grafana."
                         type: object
                         properties:
                           cache_capacity:
-                            description: "When `cache_enabled` is true, the number of traces saved in the cache. 200 by default."
+                            description: "When `cache_enabled` is true, the number of traces saved in the cache."
                             type: integer
+                            default: 200
                           cache_enabled:
                             description: "A FIFO cache with the last `cache_capacity` traces viewed."
                             type: boolean
+                            default: true
                           datasource_uid:
                             description: "The unique identifier (uid) of the Tempo datasource in Grafana."
                             type: string
@@ -1127,9 +1322,12 @@ spec:
                           url_format:
                             description: "The URL format for the external url. Can be 'jaeger' or 'grafana'. Default to 'grafana'. Grafana will need a Grafana url in the Grafana settings."
                             type: string
+                            enum: ["jaeger", "grafana"]
+                            default: "grafana"
                       use_grpc:
-                        description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it). If not specified, this will defalt to 'true'."
+                        description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it)."
                         type: boolean
+                        default: true
                       whitelist_istio_system:
                         description: "Kiali will get the traces of these services found in the Istio control plane namespace."
                         type: array
@@ -1198,15 +1396,19 @@ spec:
                   egress_gateway_label:
                     description: "The selector label for Egress Gateway workload. This is typically `istio=egressgateway`."
                     type: string
+                    default: "istio=egressgateway"
                   ingress_gateway_label:
                     description: "The selector label for Ingress Gateway workload. This is typically `istio=ingressgateway`."
                     type: string
+                    default: "istio=ingressgateway"
                   injection_label_name:
                     description: "The name of the label used to instruct Istio to automatically inject sidecar proxies when applications are deployed."
                     type: string
+                    default: "istio-injection"
                   injection_label_rev:
                     description: "The label used to identify the Istio revision."
                     type: string
+                    default: "istio.io/rev"
                   version_label_name:
                     description: "If using a single scheme for app/version labeling, set this to the version label name being used. This is typically `version` or `app.kubernetes.io/version`. The default is unset, and Kiali will handle mixed schemes."
                     type: string
@@ -1215,6 +1417,62 @@ spec:
                 description: "Kiali features that can be enabled or disabled."
                 type: object
                 properties:
+                  certificates_information_indicators:
+                    description: "DEPRECATED AFTER v1.73: Settings for certificate information indicators."
+                    type: object
+                    properties:
+                      enabled:
+                        description: "DEPRECATED AFTER v1.73: When true, certificate information indicators will be displayed."
+                        type: boolean
+                      secrets:
+                        description: "DEPRECATED AFTER v1.73: List of secrets that contain certificate information."
+                        type: array
+                        items:
+                          type: string
+                  clustering:
+                    description: "DEPRECATED AFTER v1.73: Multi-cluster related features."
+                    type: object
+                    properties:
+                      autodetect_secrets:
+                        description: "DEPRECATED AFTER v1.73: Settings to allow cluster secrets to be auto-detected."
+                        type: object
+                        properties:
+                          enabled:
+                            description: "DEPRECATED AFTER v1.73: If true then remote cluster secrets will be autodetected."
+                            type: boolean
+                          label:
+                            description: "DEPRECATED AFTER v1.73: The name and value of a label that exists on all remote cluster secrets."
+                            type: string
+                      clusters:
+                        description: "DEPRECATED AFTER v1.73: A list of clusters that the Kiali Server can access."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              description: "DEPRECATED AFTER v1.73: The name of the cluster."
+                              type: string
+                            secret_name:
+                              description: "DEPRECATED AFTER v1.73: The name of the secret that contains the credentials necessary to connect to the remote cluster."
+                              type: string
+                      kiali_urls:
+                        description: "DEPRECATED AFTER v1.73: A map between cluster name, instance name and namespace to a Kiali URL."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            cluster_name:
+                              description: "DEPRECATED AFTER v1.73: The name of the cluster."
+                              type: string
+                            instance_name:
+                              description: "DEPRECATED AFTER v1.73: The instance name of this Kiali installation."
+                              type: string
+                            namespace:
+                              description: "DEPRECATED AFTER v1.73: The namespace into which Kiali is installed."
+                              type: string
+                            url:
+                              description: "DEPRECATED AFTER v1.73: The URL of Kiali in the cluster."
+                              type: string
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array
@@ -1224,12 +1482,15 @@ spec:
                   istio_annotation_action:
                     description: "Flag to enable/disable an Action to edit annotations."
                     type: boolean
+                    default: true
                   istio_injection_action:
                     description: "Flag to enable/disable an Action to label a namespace for automatic Istio Sidecar injection."
                     type: boolean
+                    default: true
                   istio_upgrade_action:
                     description: "Flag to activate the Kiali functionality of upgrading namespaces to point to an installed Istio Canary revision."
                     type: boolean
+                    default: false
                   ui_defaults:
                     description: "Default settings for the UI. These defaults apply to all users."
                     type: object
@@ -1247,6 +1508,7 @@ spec:
                                 auto_select:
                                   description: "If true this option will be selected and take effect automatically. Note that only one option in the list can have this value be set to true."
                                   type: boolean
+                                  default: false
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
                                   type: string
@@ -1262,6 +1524,7 @@ spec:
                                 auto_select:
                                   description: "If true this option will be selected and take effect automatically. Note that only one option in the list can have this value be set to true."
                                   type: boolean
+                                  default: false
                                 description:
                                   description: "Human-readable text to let the user know what the expression does."
                                   type: string
@@ -1273,9 +1536,10 @@ spec:
                             type: object
                             properties:
                               animation:
-                                description: "The traffic animation style. Value must be one of: `dash` or `point`. Default is `point`."
+                                description: "The traffic animation style. Value must be one of: `dash` or `point`."
                                 type: string
                                 enum: ["dash", "point"]
+                                default: "point"
                           traffic:
                             description: "These settings determine which rates are used to determine graph traffic."
                             type: object
@@ -1284,18 +1548,22 @@ spec:
                                 description: "Ambient traffic is reported by ztunnel and/or waypoints. Value must be one of: `none`, `total`, `waypoint`, or `ztunnel`."
                                 type: string
                                 enum: ["none", "total", "waypoint", "ztunnel"]
+                                default: "total"
                               grpc:
                                 description: "gRPC traffic is measured in requests or sent/received/total messages. Value must be one of: `none`, `requests`, `sent`, `received`, or `total`."
                                 type: string
                                 enum: ["none", "requests", "sent", "received", "total"]
+                                default: "requests"
                               http:
                                 description: "HTTP traffic is measured in requests. Value must be one of: `none` or `requests`."
                                 type: string
                                 enum: ["none", "requests"]
+                                default: "requests"
                               tcp:
                                 description: "TCP traffic is measured in sent/received/total bytes. Only request traffic supplies response codes. Value must be one of: `none`, `sent`, `received`, or `total`."
                                 type: string
                                 enum: ["none", "sent", "received", "total"]
+                                default: "sent"
                       i18n:
                         description: "Default settings for the i18n values."
                         type: object
@@ -1304,8 +1572,9 @@ spec:
                             description: "Default language used in Kiali application."
                             type: string
                           show_selector:
-                            description: "If true Kiali masthead displays language selector icon. Default is false."
+                            description: "If true Kiali masthead displays language selector icon."
                             type: boolean
+                            default: false
                       list:
                         description: "Default settings for the List views (Apps, Workloads, etc)."
                         type: object
@@ -1313,19 +1582,19 @@ spec:
                           include_health:
                             description: "Include Health column (by default) for applicable list views. Setting to false can improve performance."
                             type: boolean
+                            default: true
                           include_istio_resources:
                             description: "Include Istio resources (by default) in Details column for applicable list views. Setting to false can improve performance."
                             type: boolean
+                            default: true
                           include_validations:
                             description: "Include Configuration validation column (by default) for applicable list views. Setting to false can improve performance."
                             type: boolean
+                            default: true
                           show_include_toggles:
-                            description: "If true list pages display checkbox toggles for the include options, Otherwise the configured settings are applied but can not be changed by the user. Default is false."
+                            description: "If true list pages display checkbox toggles for the include options, Otherwise the configured settings are applied but can not be changed by the user."
                             type: boolean
-                      metrics_per_refresh:
-                        description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
-                        type: string
-                        enum: ["1m", "2m", "5m", "10m", "30m", "1h", "3h", "6h", "12h", "1d", "7d", "30d"]
+                            default: false
                       metrics_inbound:
                         description: |
                           Additional label aggregation for inbound metric pages in detail pages.
@@ -1380,6 +1649,11 @@ spec:
                                   type: string
                                 label:
                                   type: string
+                      metrics_per_refresh:
+                        description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
+                        type: string
+                        enum: ["1m", "2m", "5m", "10m", "30m", "1h", "3h", "6h", "12h", "1d", "7d", "30d"]
+                        default: "1m"
                       namespaces:
                         description: "Default selections for the namespace selection dropdown. Non-existent or inaccessible namespaces will be ignored. Omit or set to an empty array for no default namespaces."
                         type: array
@@ -1389,13 +1663,15 @@ spec:
                         description: "The automatic refresh interval for pages offering automatic refresh. `Manual` requires user action even for initial page load. Value must be one of: `pause`, `manual`, `10s`, `15s`, `30s`, `1m`, `5m` or `15m`"
                         type: string
                         enum: ["pause", "manual", "10s", "15s", "30s", "1m", "5m", "15m"]
+                        default: "1m"
                       tracing:
                         description: "Default settings for the Tracing UI."
                         type: object
                         properties:
                           limit:
-                            description: "The default limit for the number of traces that will be fetched. It can be customized in the UI. 100 by default, must be a number between 10 and 1000."
+                            description: "The default limit for the number of traces that will be fetched. It can be customized in the UI. It must be a number between 10 and 1000."
                             type: integer
+                            default: 100
                             minimum: 10
                             maximum: 1000
                   validations:
@@ -1411,6 +1687,7 @@ spec:
                       skip_wildcard_gateway_hosts:
                         description: "The KIA0301 validation checks duplicity of host and port combinations across all Istio Gateways. This includes also Gateways with '*' in hosts. But Istio considers such a Gateway with a wildcard in hosts as the last in order, after the Gateways with FQDN in hosts. This option is to skip Gateways with wildcards in hosts from the KIA0301 validations but still keep Gateways with FQDN hosts."
                         type: boolean
+                        default: false
 
               kiali_internal:
                 description: "Unstructured section for internal testing and debugging features."
@@ -1424,12 +1701,15 @@ spec:
                   burst:
                     description: "The Burst value of the Kubernetes client."
                     type: integer
+                    default: 200
                   cache_duration:
                     description: "The ratio interval (expressed in seconds) used for the cache to perform a full refresh. Only used when `cache_enabled` is true."
                     type: integer
+                    default: 300
                   cache_token_namespace_duration:
                     description: "This Kiali cache is a list of namespaces per user. This is typically a short-lived cache compared with the duration of the namespace cache defined by the `cache_duration` setting. This is specified in seconds."
                     type: integer
+                    default: 10
                   cluster_name:
                     description: "The name of the cluster Kiali is deployed in. This is also known as the home cluster. This is only used in multi cluster environments. This must be set when `clustering.ignore_home_cluster=true`. If not set, Kiali will try to auto detect the cluster name from the Istiod deployment or use the default 'Kubernetes'."
                     type: string
@@ -1441,6 +1721,7 @@ spec:
                   qps:
                     description: "The QPS value of the Kubernetes client."
                     type: integer
+                    default: 175
 
               login_token:
                 type: object
@@ -1448,6 +1729,7 @@ spec:
                   expiration_seconds:
                     description: "A user's login token expiration specified in seconds. This is applicable to token and header auth strategies only."
                     type: integer
+                    default: 86400
                   signing_key:
                     description: "The signing key used to generate tokens for user authentication. Because this is potentially sensitive, you have the option to store this value in a secret. If you store this signing key value in a secret, you must indicate what key in what secret by setting this value to a string in the form of `secret:<secretName>:<secretKey>`. If left as an empty string, a secret with a random signing key will be generated for you. The signing key must be 16, 24 or 32 byte long."
                     type: string
@@ -1462,15 +1744,20 @@ spec:
                   audit_log:
                     description: "When true, allows additional audit logging on write operations."
                     type: boolean
+                    default: true
                   cors_allow_all:
                     description: "When true, allows the web console to send requests to other domains other than where the console came from. Typically used for development environments only."
                     type: boolean
+                    default: false
                   gzip_enabled:
                     description: "When true, Kiali serves http requests with gzip enabled (if the browser supports it) when the requests are over 1400 bytes."
                     type: boolean
+                    default: true
                   node_port:
                     description: "If `deployment.service_type` is 'NodePort' and this value is set, then this is the node port that the Kiali service will listen to."
                     type: integer
+                    minimum: 1
+                    maximum: 65535
                   observability:
                     description: "Settings to enable observability into the Kiali server itself."
                     type: object
@@ -1482,22 +1769,30 @@ spec:
                           enabled:
                             description: "When true, the metrics endpoint will be available for Prometheus to scrape."
                             type: boolean
+                            default: true
                           port:
                             description: "The port that the server will bind to in order to receive metric requests. This is the port Prometheus will need to scrape when collecting metrics from Kiali."
                             type: integer
+                            default: 9090
+                            minimum: 1
+                            maximum: 65535
                       tracing:
                         description: "Settings that control how the Kiali server itself emits its own tracing data."
                         type: object
                         properties:
                           collector_type:
-                            description: "The collector type to use. Value must be one of: `jaeger` or `otel`."
+                            description: "The collector type to use. Today the only valid value is `otel`."
                             type: string
+                            enum: ["otel"]
+                            default: "otel"
                           collector_url:
-                            description: "The URL used to determine where the Kiali server tracing data will be stored."
+                            description: "Usd to determine where the Kiali server tracing data will be stored."
                             type: string
+                            default: "jaeger-collector.istio-system:4318"
                           enabled:
                             description: "When true, the Kiali server itself will product its own tracing data."
                             type: boolean
+                            default: false
                           otel:
                             description: "Specific properties when the collector type is `otel`."
                             type: object
@@ -1506,17 +1801,24 @@ spec:
                                 description: "The name of the CA cert; this is used when `tls_enabled` is `true` and `skip_verify` is `false`."
                                 type: string
                               protocol:
-                                description: "Protocol. Supported values are: `http`, `https` or `grpc`."
+                                description: "Protocol. Value must be one of: `http`, `https` or `grpc`."
                                 type: string
+                                enum: ["http", "https", "grpc"]
+                                default: "http"
                               skip_verify:
                                 description: "If true, TLS certificate verification will not be performed. This is an unsecure option and is recommended only for testing."
                                 type: boolean
+                                default: false
                               tls_enabled:
                                 description: "Enable TLS for the collector. This must be specified when `protocol` is `https` or `grpc`. When you set this to `true`, you must also set a `ca_name` or set `skip_verify` to true."
                                 type: boolean
+                                default: false
                   port:
                     description: "The port that the server will bind to in order to receive console and API requests."
                     type: integer
+                    default: 20001
+                    minimum: 1
+                    maximum: 65535
                   profiler:
                     description: "Controls the internal profiler used to debug the internals of Kiali"
                     type: object
@@ -1524,9 +1826,11 @@ spec:
                       enabled:
                         description: "When 'true', the profiler will be enabled and accessible at /debug/pprof/ on the Kiali endpoint."
                         type: boolean
+                        default: false
                   require_auth:
                     description: "When true, the /api endpoint will require users to authenticate themselves. When false, users need not authenticate with Kiali in order to get basic runtime info about the server via the /api endpoint. This setting is ignored if auth.strategy is 'anonymous'."
                     type: boolean
+                    default: false
                   web_fqdn:
                     description: "Defines the public domain where Kiali is being served. This is the 'domain' part of the URL (usually it's a fully-qualified domain name). For example, `kiali.example.org`. When empty, Kiali will try to guess this value from HTTP headers. On non-OpenShift clusters, you must populate this value if you want to enable cross-linking between Kiali instances in a multi-cluster setup."
                     type: string
@@ -1545,9 +1849,10 @@ spec:
                     enum: ["", "http", "https"]
                   write_timeout:
                     description: |
-                      The maximum duration, in seconds, before timing out writes of the HTTP response back to the client. Default is 30.
+                      The maximum duration, in seconds, before timing out writes of the HTTP response back to the client.
 
-                      In OpenShift clusters, the route request time out should be also increased as the default is 30 seconds. 
-                      This can be done by annotating the specific route with `haproxy.router.openshift.io/timeout`. 
+                      In OpenShift clusters, the route request time out should be also increased.
+                      This can be done by annotating the specific route with `haproxy.router.openshift.io/timeout`.
                       See https://docs.openshift.com/container-platform/4.16/networking/routes/route-configuration.html#nw-configuring-route-timeouts_route-configuration for further details.
                     type: integer
+                    default: 30
