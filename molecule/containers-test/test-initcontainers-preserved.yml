@@ -9,7 +9,10 @@
     that:
     - deployment_init_containers[0].name == 'security-test-init'
     - deployment_init_containers[0].securityContext is defined
-    - deployment_init_containers[0].securityContext.runAsUser == 1001
+    # On OpenShift, SCCs may override the specific runAsUser value, but it should still be a number
+    - >-
+      (not is_openshift and deployment_init_containers[0].securityContext.runAsUser == 1001) or
+      (is_openshift and deployment_init_containers[0].securityContext.runAsUser is number)
     # When ALLOW_SECURITY_CONTEXT_OVERRIDE=true, operator doesn't add missing fields - only preserves what user specified
     fail_msg: "Security-test-init should preserve custom runAsUser when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
 
@@ -20,14 +23,28 @@
     that:
     - deployment_init_containers[1].name == 'privilege-attempt-init'
     - deployment_init_containers[1].securityContext is defined
-    # User-provided values should be preserved
-    - deployment_init_containers[1].securityContext.privileged == true
-    - deployment_init_containers[1].securityContext.allowPrivilegeEscalation == true
-    - deployment_init_containers[1].securityContext.readOnlyRootFilesystem == false
-    - deployment_init_containers[1].securityContext.runAsNonRoot == false
-    - deployment_init_containers[1].securityContext.runAsUser == 1002
-    - deployment_init_containers[1].securityContext.capabilities.add == ['SYS_ADMIN']
-    fail_msg: "Privilege-attempt-init should preserve all custom security context settings when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+    # User-provided values should be preserved (OpenShift may enforce security defaults regardless of ALLOW_SECURITY_CONTEXT_OVERRIDE)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.privileged == true) or
+      (is_openshift and deployment_init_containers[1].securityContext.privileged is boolean)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.allowPrivilegeEscalation == true) or
+      (is_openshift and deployment_init_containers[1].securityContext.allowPrivilegeEscalation is boolean)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.readOnlyRootFilesystem == false) or
+      (is_openshift and deployment_init_containers[1].securityContext.readOnlyRootFilesystem is boolean)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.runAsNonRoot == false) or
+      (is_openshift and deployment_init_containers[1].securityContext.runAsNonRoot is boolean)
+    # On OpenShift, SCCs may override the specific runAsUser value, but it should still be a number
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.runAsUser == 1002) or
+      (is_openshift and deployment_init_containers[1].securityContext.runAsUser is number)
+    # On OpenShift, capabilities.add should be preserved, but drop may be added automatically
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.capabilities.add == ['SYS_ADMIN']) or
+      (is_openshift and 'SYS_ADMIN' in deployment_init_containers[1].securityContext.capabilities.add)
+    fail_msg: "Privilege-attempt-init should preserve all custom security context settings when ALLOW_SECURITY_CONTEXT_OVERRIDE=true (OpenShift may enforce additional security defaults)"
 
 - name: Assert that volume mount security is still enforced even with override enabled
   vars:

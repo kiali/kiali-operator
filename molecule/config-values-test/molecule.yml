@@ -13,8 +13,8 @@ provisioner:
     defaults:
       callbacks_enabled: junit
   playbooks:
-    destroy: ../default/destroy.yml
-    prepare: ../default/prepare.yml
+    destroy: ./destroy-config-values-test.yml
+    prepare: ./prepare-config-values-test.yml
     cleanup: ../default/cleanup.yml
   inventory:
     group_vars:

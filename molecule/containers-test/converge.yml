@@ -9,6 +9,7 @@
     initcontainers_cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/containers-test/kiali-cr-initcontainers.yaml"
   tasks:
   - import_tasks: ../common/tasks.yml
+  - include_tasks: ../common/cluster-info.yml
 
   ##############################################################################
   # PHASE 1: Containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false

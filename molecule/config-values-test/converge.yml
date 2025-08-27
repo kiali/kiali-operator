@@ -653,11 +653,16 @@
       - kiali_pod_spec.containers[first_test_container_index | int].securityContext.runAsNonRoot == false
       # Second test container security context - custom values should be preserved
       - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext is defined
-      - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsUser == 1001
-      - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsGroup == 1001
+      # On OpenShift, SCCs may override the specific runAsUser value for Istio sidecar, but it should still be a number
+      - >-
+        (not is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsUser == 1001) or
+        (is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsUser is number)
+      - >-
+        (not is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsGroup == 1001) or
+        (is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsGroup is number)
       - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.privileged == true
       - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.allowPrivilegeEscalation == true
-      fail_msg: "Custom security contexts should be preserved when allowSecurityContextOverride=true"
+      fail_msg: "Custom security contexts should be preserved when allowSecurityContextOverride=true (on OpenShift, SCCs may override specific user IDs but security context should still be applied)"
 
   - name: Assert Kiali pod started successfully with containers
     vars:

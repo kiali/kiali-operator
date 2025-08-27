@@ -1,7 +1,7 @@
 # Test additional containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false
 # Security guardrails should be enforced
 
-# Initialize container indices 
+# Initialize container indices
 - name: Initialize container indices
   set_fact:
     kiali_container_index: "-1"
