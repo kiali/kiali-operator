@@ -1148,7 +1148,7 @@ spec:
                         type: integer
                         default: 15014
                       root_namespace:
-                        description: "The namespace to treat as the administrative root namespace for Istio configuration."
+                        description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The namespace to treat as the administrative root namespace for Istio configuration."
                         type: string
                       url_service_version:
                         description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The Istio service used to determine the Istio version is now autodetected from services."
