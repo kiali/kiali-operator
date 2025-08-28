@@ -232,11 +232,6 @@
       {# Initialize #}
       {% set kv = kiali_vars %}
 
-      {# Set default root namespace #}
-      {% if kv.external_services.istio.root_namespace == "" %}
-      {% set kv = kv | combine({'external_services': {'istio': {'root_namespace': kv.deployment.namespace}}}, recursive=True) %}
-      {% endif %}
-
       {# Set default Grafana internal_url #}
       {% if kv.external_services.grafana.internal_url is not defined %}
       {% set kv = kv | combine({'external_services': {'grafana': {'internal_url': 'http://grafana.' + kv.deployment.namespace + ':3000'}}}, recursive=True) %}
@@ -506,9 +501,10 @@
 - include_tasks: get-discovery-selector-namespaces.yml
 
 # If Istio and Kiali are not co-located, the user will need to explicitly set discovery selectors themselves to tell Kiali where that namespace is.
-- name: Make sure the Kiali deployment namespace and the Istio control plane namespace are accessible
+# TODO: Is there a way to ensure the Istio control plane namespace(s) are also accessible?
+- name: Make sure the Kiali deployment namespace is accessible
   set_fact:
-    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace, kiali_vars.external_services.istio.root_namespace ]) | unique | sort }}"
+    discovery_selector_namespaces: "{{ ((discovery_selector_namespaces | default([])) + [ kiali_vars.deployment.namespace ]) | unique | sort }}"
 
 - name: Listing of all namespaces that are accessible to Kiali
   debug:
