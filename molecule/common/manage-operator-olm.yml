@@ -2,11 +2,11 @@
 # This playbook manages the Kiali operator when it's installed via OLM
 # It patches the CSV to set environment variables instead of patching the deployment directly
 
-- name: Get all CSVs in operators namespace
+- name: Get all CSVs in operator namespace
   k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
-    namespace: operators
+    namespace: "{{ kiali.operator_namespace }}"
   register: all_csvs_result
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
@@ -17,7 +17,7 @@
 
 - name: Fail if no Kiali CSV found
   fail:
-    msg: "No Kiali CSV found in operators namespace"
+    msg: "No Kiali CSV found in {{ kiali.operator_namespace }} namespace"
   when:
     - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
     - kiali_csvs | length == 0
@@ -32,7 +32,7 @@
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
     name: "{{ csv_name }}"
-    namespace: operators
+    namespace: "{{ kiali.operator_namespace }}"
   register: current_csv
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
@@ -51,7 +51,7 @@
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
     name: "{{ csv_name }}"
-    namespace: operators
+    namespace: "{{ kiali.operator_namespace }}"
     patch:
     - op: replace
       path: "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/{{ allow_security_context_override_index }}/value"
@@ -63,7 +63,7 @@
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
     name: kiali-subscription
-    namespace: operators
+    namespace: "{{ kiali.operator_namespace }}"
   register: current_subscription
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
@@ -82,7 +82,7 @@
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
     name: kiali-subscription
-    namespace: operators
+    namespace: "{{ kiali.operator_namespace }}"
     patch:
     - op: replace
       path: "/spec/config/env/{{ subscription_allow_security_context_override_index }}/value"
@@ -93,7 +93,7 @@
   k8s_info:
     api_version: v1
     kind: Pod
-    namespace: operators
+    namespace: "{{ kiali.operator_namespace }}"
     label_selectors:
     - app.kubernetes.io/name = kiali-operator
   register: operator_pods_result
