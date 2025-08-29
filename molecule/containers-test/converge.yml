@@ -1,0 +1,148 @@
+- name: Combined Containers and Init Containers Security Test
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    containers_cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/containers-test/kiali-cr-containers.yaml"
+    custom_resource: "{{ lookup('template', containers_cr_file_path) | from_yaml }}"
+    initcontainers_cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/containers-test/kiali-cr-initcontainers.yaml"
+  tasks:
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../common/cluster-info.yml
+
+  # Operator is installed in the prepare phase, so we can use the default value of ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+
+  ##############################################################################
+  # PHASE 1: Containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+  ##############################################################################
+  - name: "PHASE 1: Test additional containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+    debug:
+      msg: "Testing containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true - custom security contexts should be preserved"
+
+  # Test containers security with override=true - custom settings should be preserved
+  - include_tasks: test-containers-preserved.yml
+
+  ##############################################################################
+  # PHASE 2: Init Containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+  ##############################################################################
+  - name: "PHASE 2: Switch to testing init containers"
+    debug:
+      msg: "Switching Kiali CR to test init containers instead of regular containers"
+
+  # Wait for any ongoing reconciliation to complete
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+  # Update Kiali CR to use init containers instead of regular containers
+  - name: Load init containers CR template
+    set_fact:
+      new_kiali_cr: "{{ lookup('template', initcontainers_cr_file_path) | from_yaml }}"
+
+  - name: Debug init containers CR
+    debug:
+      msg: |
+        Switching to init containers CR with {{ new_kiali_cr.spec.deployment.additional_pod_init_containers_yaml | length }} init containers:
+        {% for container in new_kiali_cr.spec.deployment.additional_pod_init_containers_yaml %}
+        - {{ container.name }}
+        {% endfor %}
+
+  - name: Update Kiali CR to use init containers configuration
+    k8s:
+      namespace: '{{ cr_namespace }}'
+      definition: "{{ new_kiali_cr }}"
+
+  # Wait for operator to process the CR changes and update deployment
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+  # Wait for new pod to be created after deployment change
+  - name: Wait for Kiali pod to be recreated with init containers
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/name=kiali"
+    register: kiali_pods_after_change
+    until:
+    - kiali_pods_after_change is success
+    - kiali_pods_after_change.resources | length == 1
+    - kiali_pods_after_change.resources[0].spec.initContainers is defined
+    - kiali_pods_after_change.resources[0].spec.initContainers | length >= 5  # At least 5 (our 5 + possibly istio-init)
+    retries: 30
+    delay: 5
+
+  # Refresh the deployment and pod info after reconciliation
+  - include_tasks: ../common/tasks.yml
+
+  # Debug what was actually created
+  - name: Debug actual deployment init containers
+    vars:
+      deployment_init_containers: "{{ kiali_deployment.resources[0].spec.template.spec.initContainers | default([]) }}"
+    debug:
+      msg: |
+        Deployment has {{ deployment_init_containers | length }} init containers:
+        {% for container in deployment_init_containers %}
+        - {{ container.name }}
+        {% endfor %}
+
+  - name: Debug actual pod init containers
+    vars:
+      pod_init_containers: "{{ kiali_pod.resources[0].spec.initContainers | default([]) }}"
+    debug:
+      msg: |
+        Pod has {{ pod_init_containers | length }} init containers:
+        {% for container in pod_init_containers %}
+        - {{ container.name }}
+        {% endfor %}
+
+  # Test init containers security with override=true - custom settings should be preserved
+  - include_tasks: test-initcontainers-preserved.yml
+
+  ##############################################################################
+  # PHASE 3: Containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false
+  ##############################################################################
+  - name: "PHASE 3: Test additional containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false"
+    debug:
+      msg: "Starting tests with additional containers and ALLOW_SECURITY_CONTEXT_OVERRIDE=false"
+
+  # Set operator to ALLOW_SECURITY_CONTEXT_OVERRIDE=false
+  - include_tasks: "../common/manage-operator-olm.yml"
+    vars:
+      manage_operator:
+        allow_security_context_override: "false"
+        wait_for_kiali_reconciliation: true
+    when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+  - include_tasks: ../common/manage-operator.yml
+    vars:
+      manage_operator:
+        allow_security_context_override: "false"
+        wait_for_kiali_reconciliation: true
+    when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+
+  # Refresh the deployment and pod info after reconciliation
+  - include_tasks: ../common/tasks.yml
+
+  # Test containers security with override=false - these should be restricted
+  - include_tasks: test-containers-restricted.yml
+
+  ##############################################################################
+  # PHASE 4: Init Containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false
+  ##############################################################################
+  - name: "PHASE 4: Test init containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false"
+    debug:
+      msg: "Testing init containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false - security guardrails should be enforced"
+
+  # Refresh the deployment and pod info after reconciliation
+  - include_tasks: ../common/tasks.yml
+
+  # Test init containers security with override=false - these should be restricted
+  - include_tasks: test-initcontainers-restricted.yml
+
+  ##############################################################################
+  # FINISHED
+  ##############################################################################
+
+  - name: "COMBINED CONTAINERS TEST: All tests completed successfully"
+    debug:
+      msg: "Successfully completed all container and init container security tests with both ALLOW_SECURITY_CONTEXT_OVERRIDE=false and ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
