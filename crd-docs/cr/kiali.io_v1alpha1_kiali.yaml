@@ -333,6 +333,35 @@ spec:
       istio_identity_domain: "svc.cluster.local"
       root_namespace: ""
       validation_reconcile_interval: "1m"
+    perses:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        type: "none"
+        username: ""
+      dashboards:
+        - name: "Istio Service Dashboard"
+          variables:
+            datasource: "var-datasource"
+            namespace: "var-namespace"
+            service: "var-service"
+        - name: "Istio Workload Dashboard"
+          variables:
+            datasource: "var-datasource"
+            namespace: "var-namespace"
+            workload: "var-workload"
+        - name: "Istio Mesh Dashboard"
+        - name: "Istio Control Plane Dashboard"
+        - name: "Istio Performance Dashboard"
+        - name: "Istio Wasm Extension Dashboard"
+      enabled: false
+      external_url: ""
+      health_check_url: ""
+      # default: internal_url is undefined
+      internal_url: ""
+      is_core: false
+      project: "istio"
     prometheus:
       auth:
         ca_file: ""

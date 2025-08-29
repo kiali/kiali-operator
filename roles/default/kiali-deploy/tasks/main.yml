@@ -672,6 +672,16 @@
       {% set d = d | combine({'grafana-token': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
+      {# Prepare the secret volume for perses username #}
+      {% if kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth.username | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'perses-username': {'secret_name': kiali_vars.external_services.perses.auth.username | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.username | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for perses password #}
+      {% if kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth.password | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'perses-password': {'secret_name': kiali_vars.external_services.perses.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
       {# Prepare the secret volume for login token signing key #}
       {% if kiali_vars.login_token.signing_key | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
