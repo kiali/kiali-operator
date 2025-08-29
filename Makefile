@@ -131,20 +131,20 @@ sync-crds:
 	@echo "Synchronizing Kiali CRD from golden copy: crd-docs/crd/kiali.io_kialis.yaml"
 
 	@if [ -d "../helm-charts/kiali-operator/crds" ]; then \
-		echo "  -> helm-charts/kiali-operator/crds/crds.yaml (with YAML document separators)"; \
+		echo "  -> helm-charts/kiali-operator/crds/crds.yaml - with YAML document separators"; \
 		echo "---" > ../helm-charts/kiali-operator/crds/crds.yaml; \
 		cat crd-docs/crd/kiali.io_kialis.yaml >> ../helm-charts/kiali-operator/crds/crds.yaml; \
 		echo "..." >> ../helm-charts/kiali-operator/crds/crds.yaml; \
 	else \
-		echo "  -> helm-charts/kiali-operator/crds/crds.yaml (SKIPPED - directory not found)"; \
+		echo "  -> helm-charts/kiali-operator/crds/crds.yaml - SKIPPED - directory not found"; \
 	fi
 
-	@echo "  -> manifests/kiali-ossm/manifests/kiali.crd.yaml (direct copy)"
+	@echo "  -> manifests/kiali-ossm/manifests/kiali.crd.yaml - direct copy"
 	@cp crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-ossm/manifests/kiali.crd.yaml
 
 	@latest_version=$$(ls -1 manifests/kiali-upstream/ | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$$" | sort -V | tail -n 1); \
 	if [ -n "$$latest_version" ]; then \
-		echo "  -> manifests/kiali-upstream/$$latest_version/manifests/kiali.crd.yaml (direct copy)"; \
+		echo "  -> manifests/kiali-upstream/$$latest_version/manifests/kiali.crd.yaml - direct copy"; \
 		cp crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-upstream/$$latest_version/manifests/kiali.crd.yaml; \
 	else \
 		echo "ERROR: No version directories found under manifests/kiali-upstream/"; \
@@ -153,8 +153,34 @@ sync-crds:
 
 	@echo "Synchronizing OSSMConsole CRD from golden copy: crd-docs/crd/kiali.io_ossmconsoles.yaml"
 
-	@echo "  -> manifests/kiali-ossm/manifests/ossmconsole.crd.yaml (direct copy)"
+	@echo "  -> manifests/kiali-ossm/manifests/ossmconsole.crd.yaml - direct copy"
 	@cp crd-docs/crd/kiali.io_ossmconsoles.yaml manifests/kiali-ossm/manifests/ossmconsole.crd.yaml
+
+	@if [ -d "../helm-charts/kiali-operator/templates" ]; then \
+		echo "  -> helm-charts/kiali-operator/templates/ossmconsole-crd.yaml - updating CRD content while preserving template structure"; \
+		template_file="../helm-charts/kiali-operator/templates/ossmconsole-crd.yaml"; \
+		temp_file=$$(mktemp); \
+		trap "rm -f $$temp_file" EXIT; \
+		start_line=$$(grep -n "^---$$" "$$template_file" | head -1 | cut -d: -f1); \
+		if [ -z "$$start_line" ]; then \
+			echo "ERROR: Could not find YAML document start marker --- in $$template_file"; \
+			exit 1; \
+		fi; \
+		head -n "$$start_line" "$$template_file" > "$$temp_file"; \
+		cat crd-docs/crd/kiali.io_ossmconsoles.yaml >> "$$temp_file"; \
+		end_line=$$(grep -n "^\\.\\.\\.$$" "$$template_file" | tail -1 | cut -d: -f1); \
+		if [ -n "$$end_line" ]; then \
+			tail -n +"$$end_line" "$$template_file" >> "$$temp_file"; \
+		else \
+			after_crd_line=$$(grep -n "^{{-" "$$template_file" | tail -1 | cut -d: -f1); \
+			if [ -n "$$after_crd_line" ]; then \
+				tail -n +"$$after_crd_line" "$$template_file" >> "$$temp_file"; \
+			fi; \
+		fi; \
+		mv "$$temp_file" "$$template_file"; \
+	else \
+		echo "  -> helm-charts/kiali-operator/templates/ossmconsole-crd.yaml - SKIPPED - directory not found"; \
+	fi
 
 	@echo "CRD synchronization complete."
 
@@ -169,22 +195,54 @@ validate-crd-sync:
 		exit 1; \
 	fi && \
 	if [ -d "../helm-charts/kiali-operator/crds" ]; then \
-		echo "---" > $$temp_dir/expected-helm.yaml; \
-		cat crd-docs/crd/kiali.io_kialis.yaml >> $$temp_dir/expected-helm.yaml; \
-		echo "..." >> $$temp_dir/expected-helm.yaml; \
-		if ! diff -q $$temp_dir/expected-helm.yaml ../helm-charts/kiali-operator/crds/crds.yaml >/dev/null 2>&1; then \
-			echo "ERROR: Helm CRD is out of sync! Run 'make sync-crds' to fix."; \
+		echo "Validating helm-charts Kiali CRD synchronization..."; \
+		echo "---" > "$$temp_dir/expected-helm-kiali.yaml"; \
+		cat crd-docs/crd/kiali.io_kialis.yaml >> "$$temp_dir/expected-helm-kiali.yaml"; \
+		echo "..." >> "$$temp_dir/expected-helm-kiali.yaml"; \
+		if ! diff -q "$$temp_dir/expected-helm-kiali.yaml" ../helm-charts/kiali-operator/crds/crds.yaml >/dev/null 2>&1; then \
+			echo "ERROR: Helm Kiali CRD is out of sync! Run 'make sync-crds' to fix."; \
 			exit 1; \
 		fi; \
+		echo "✓ Helm-charts Kiali CRD is in sync"; \
+		if [ -f "../helm-charts/kiali-operator/templates/ossmconsole-crd.yaml" ]; then \
+			echo "Validating helm-charts OSSMConsole CRD template..."; \
+			template_file="../helm-charts/kiali-operator/templates/ossmconsole-crd.yaml"; \
+			start_line=$$(grep -n "^---$$" "$$template_file" | head -1 | cut -d: -f1); \
+			if [ -z "$$start_line" ]; then \
+				echo "ERROR: Could not find YAML document start marker --- in $$template_file"; \
+				exit 1; \
+			fi; \
+			end_line=$$(grep -n "^\\.\\.\\.$$" "$$template_file" | tail -1 | cut -d: -f1); \
+			if [ -n "$$end_line" ]; then \
+				end_content_line=$$((end_line - 1)); \
+			else \
+				after_crd_line=$$(grep -n "^{{-" "$$template_file" | tail -1 | cut -d: -f1); \
+				if [ -n "$$after_crd_line" ]; then \
+					end_content_line=$$((after_crd_line - 1)); \
+				else \
+					end_content_line=$$(wc -l < "$$template_file"); \
+				fi; \
+			fi; \
+			start_content_line=$$((start_line + 1)); \
+			sed -n "$${start_content_line},$${end_content_line}p" "$$template_file" > "$$temp_dir/template-crd-content.yaml"; \
+			if ! diff -q crd-docs/crd/kiali.io_ossmconsoles.yaml "$$temp_dir/template-crd-content.yaml" >/dev/null 2>&1; then \
+				echo "ERROR: Helm OSSMConsole CRD template content is out of sync! Run 'make sync-crds' to fix."; \
+				exit 1; \
+			fi; \
+			echo "✓ Helm-charts OSSMConsole CRD template is in sync"; \
+		else \
+			echo "WARNING: OSSMConsole CRD template not found in helm-charts"; \
+		fi; \
 	else \
-		echo "Skipping Helm CRD validation (directory not found)"; \
+		echo "WARNING: Skipping helm-charts CRD validation - ../helm-charts directory not found"; \
+		echo "  This is normal during CI builds where helm-charts repo is not checked out"; \
 	fi && \
 	if ! diff -q crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-ossm/manifests/kiali.crd.yaml >/dev/null 2>&1; then \
 		echo "ERROR: OSSM Kiali CRD is out of sync! Run 'make sync-crds' to fix."; \
 		exit 1; \
 	fi && \
 	if ! diff -q crd-docs/crd/kiali.io_kialis.yaml manifests/kiali-upstream/$$latest_version/manifests/kiali.crd.yaml >/dev/null 2>&1; then \
-		echo "ERROR: Upstream Kiali CRD ($$latest_version) is out of sync! Run 'make sync-crds' to fix."; \
+		echo "ERROR: Upstream Kiali CRD [$$latest_version] is out of sync! Run 'make sync-crds' to fix."; \
 		exit 1; \
 	fi && \
 	if ! diff -q crd-docs/crd/kiali.io_ossmconsoles.yaml manifests/kiali-ossm/manifests/ossmconsole.crd.yaml >/dev/null 2>&1; then \

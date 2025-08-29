@@ -201,10 +201,20 @@ jobs:
     - name: Set version to release
       run: sed -i -r "s/^VERSION \?= (.*)/VERSION \?= $RELEASE_VERSION/" Makefile
 
+    - name: Validate CRD synchronization using make targets
+      run: |
+        echo "========== Validating CRD Synchronization for Operator Release =========="
+
+        # Validate only the kiali-operator CRDs (helm-charts will be skipped automatically)
+        echo "Running validate-crd-sync from kiali-operator repository..."
+        make validate-crd-sync
+
+        echo "✓ Kiali-operator CRD validations passed"
+
     - name: Build and push image
       run: |
         docker login -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
-        
+
         make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay
 
     - name: Configure git
