@@ -158,11 +158,13 @@ kiali_defaults:
           datasource: "var-datasource"
           namespace: "var-namespace"
           service: "var-service"
+          version: "var-version"
       - name: "Istio Workload Dashboard"
         variables:
           datasource: "var-datasource"
           namespace: "var-namespace"
           workload: "var-workload"
+          version: "var-version"
       - name: "Istio Mesh Dashboard"
       - name: "Istio Control Plane Dashboard"
       - name: "Istio Performance Dashboard"
@@ -171,7 +173,7 @@ kiali_defaults:
       enabled: true
       external_url: ""
       health_check_url: ""
-      #internal_url
+      internal_url: "http://grafana.istio-system:3000"
       is_core: false
     istio:
       component_status:
@@ -195,11 +197,13 @@ kiali_defaults:
             datasource: "var-datasource"
             namespace: "var-namespace"
             service: "var-service"
+            version: "var-version"
         - name: "Istio Workload Dashboard"
           variables:
             datasource: "var-datasource"
             namespace: "var-namespace"
             workload: "var-workload"
+            version: "var-version"
         - name: "Istio Mesh Dashboard"
         - name: "Istio Control Plane Dashboard"
         - name: "Istio Performance Dashboard"
@@ -207,7 +211,7 @@ kiali_defaults:
       enabled: false
       external_url: ""
       health_check_url: ""
-      #internal_url
+      internal_url: "http://perses.istio-system:4000"
       is_core: false
       project: "istio"
     prometheus:
@@ -320,6 +324,13 @@ kiali_defaults:
         show_include_toggles: false
       i18n:
         show_selector: false
+      mesh:
+        find_options:
+        - description: "Find: unhealthy nodes"
+          expression: "! healthy"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
       metrics_inbound:
         aggregations: []
       metrics_outbound:
@@ -370,12 +381,13 @@ kiali_defaults:
           protocol: "http"
           skip_verify: false
           tls_enabled: false
+        sampling_rate: 0.5
     port: 20001
     profiler:
       enabled: false
     require_auth: false
     web_fqdn: ""
-    web_history_mode: ""
+    web_history_mode: "browser"
     web_port: ""
     web_root: ""
     web_schema: ""
