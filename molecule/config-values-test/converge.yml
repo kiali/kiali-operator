@@ -501,3 +501,36 @@
       - kiali_configmap.kiali_internal | length == 2
       - kiali_configmap.kiali_internal['first_internal_setting'] == 111
       - kiali_configmap.kiali_internal['second_internal_setting'].foo == 'bar'
+
+  # Test the comprehensive Kiali CR from kiali-cr-all.yaml
+  # First delete the existing CR, then create the new one and verify it works
+
+  - name: Delete the existing Kiali CR
+    k8s:
+      state: absent
+      api_version: kiali.io/v1alpha1
+      kind: Kiali
+      namespace: "{{ cr_namespace }}"
+      name: "{{ custom_resource.metadata.name }}"
+
+  - name: Wait for Kiali CR to be completely removed
+    k8s_info:
+      api_version: kiali.io/v1alpha1
+      kind: Kiali
+      namespace: "{{ cr_namespace }}"
+      name: "{{ custom_resource.metadata.name }}"
+    register: kiali_cr_check
+    until: kiali_cr_check.resources | length == 0
+    retries: "{{ wait_retries|int }}"
+    delay: 5
+
+  - name: Create the comprehensive Kiali CR from kiali-cr-all-yaml
+    vars:
+      kiali_cr_all_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/config-values-test/kiali-cr-all-yaml"
+      kiali_cr_all: "{{ lookup('template', kiali_cr_all_file_path) | from_yaml }}"
+    k8s:
+      namespace: "{{ cr_namespace }}"
+      definition: "{{ kiali_cr_all }}"
+
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
