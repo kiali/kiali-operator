@@ -34,6 +34,7 @@ kiali_defaults:
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
     openshift:
+      insecure_skip_verify_tls: false
       #redirect_uris:
       #token_inactivity_timeout:
       #token_max_age:
@@ -182,7 +183,9 @@ kiali_defaults:
       gateway_api_classes_label_selector: ""
       istio_api_enabled: true
       istio_identity_domain: "svc.cluster.local"
+      istiod_polling_interval_seconds: 20
       root_namespace: ""
+      validation_change_detection_enabled: true
       validation_reconcile_interval: "1m"
     perses:
       auth:
