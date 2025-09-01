@@ -1485,30 +1485,6 @@ spec:
                 description: "Defines specific labels used by Istio that Kiali needs to know about."
                 type: object
                 properties:
-                  ambient_namespace_label:
-                    description: "The label used to identify ambient namespaces."
-                    type: string
-                    default: "istio.io/dataplane-mode"
-                  ambient_namespace_label_value:
-                    description: "The value of the ambient namespace label."
-                    type: string
-                    default: "ambient"
-                  ambient_waypoint_gateway_label:
-                    description: "The label used to identify ambient waypoint gateways."
-                    type: string
-                    default: "gateway.networking.k8s.io/gateway-name"
-                  ambient_waypoint_label:
-                    description: "The label used to identify ambient waypoint."
-                    type: string
-                    default: "gateway.istio.io/managed"
-                  ambient_waypoint_label_value:
-                    description: "The value of the ambient waypoint label."
-                    type: string
-                    default: "istio.io-mesh-controller"
-                  ambient_waypoint_use_label:
-                    description: "The label used to specify waypoint usage."
-                    type: string
-                    default: "istio.io/use-waypoint"
                   app_label_name:
                     description: "If using a single scheme for app/version labeling, set this to the app label name being used. This is typically `app` or `app.kubernetes.io/name`. The default is unset, and Kiali will handle mixed schemes."
                     type: string

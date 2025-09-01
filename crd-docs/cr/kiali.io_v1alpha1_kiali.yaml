@@ -447,12 +447,6 @@ spec:
     private_key_file: ""
 
   istio_labels:
-    ambient_namespace_label: "istio.io/dataplane-mode"
-    ambient_namespace_label_value: "ambient"
-    ambient_waypoint_gateway_label: "gateway.networking.k8s.io/gateway-name"
-    ambient_waypoint_label: "gateway.istio.io/managed"
-    ambient_waypoint_label_value: "istio.io-mesh-controller"
-    ambient_waypoint_use_label: "istio.io/use-waypoint"
     app_label_name: ""
     egress_gateway_label: "istio=egressgateway"
     ingress_gateway_label: "istio=ingressgateway"
