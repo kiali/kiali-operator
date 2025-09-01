@@ -209,7 +209,7 @@ kiali_defaults:
       health_check_url: ""
       #internal_url
       is_core: false
-      project: ""
+      project: "istio"
     prometheus:
       auth:
         ca_file: ""
@@ -257,7 +257,7 @@ kiali_defaults:
         cache_enabled: true
         datasource_uid: ""
         org_id: ""
-        url_format: ""
+        url_format: "grafana"
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
@@ -318,6 +318,8 @@ kiali_defaults:
         include_istio_resources: true
         include_validations: true
         show_include_toggles: false
+      i18n:
+        show_selector: false
       metrics_inbound:
         aggregations: []
       metrics_outbound:
