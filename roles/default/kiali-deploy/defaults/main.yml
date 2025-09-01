@@ -391,7 +391,7 @@ kiali_defaults:
     web_port: ""
     web_root: ""
     web_schema: ""
-    write_timeout: 30
+    write_timeout: "60s"
 
 # These variables are outside of the kiali_defaults. Their values will be
 # auto-detected by the role and are not meant to be set by the user.
