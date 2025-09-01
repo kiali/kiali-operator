@@ -308,11 +308,13 @@ spec:
           datasource: "var-datasource"
           namespace: "var-namespace"
           service: "var-service"
+          version: "var-version"
       - name: "Istio Workload Dashboard"
         variables:
           datasource: "var-datasource"
           namespace: "var-namespace"
           workload: "var-workload"
+          version: "var-version"
       - name: "Istio Mesh Dashboard"
       - name: "Istio Control Plane Dashboard"
       - name: "Istio Performance Dashboard"
@@ -321,8 +323,7 @@ spec:
       enabled: true
       external_url: ""
       health_check_url: ""
-      # default: internal_url is undefined
-      internal_url: ""
+      internal_url: "http://grafana.istio-system:3000"
       is_core: false
     istio:
       component_status:
@@ -331,7 +332,9 @@ spec:
       gateway_api_classes_label_selector: ""
       istio_api_enabled: true
       istio_identity_domain: "svc.cluster.local"
+      istiod_polling_interval_seconds: 20
       root_namespace: ""
+      validation_change_detection_enabled: true
       validation_reconcile_interval: "1m"
     perses:
       auth:
@@ -341,25 +344,26 @@ spec:
         type: "none"
         username: ""
       dashboards:
-        - name: "Istio Service Dashboard"
-          variables:
-            datasource: "var-datasource"
-            namespace: "var-namespace"
-            service: "var-service"
-        - name: "Istio Workload Dashboard"
-          variables:
-            datasource: "var-datasource"
-            namespace: "var-namespace"
-            workload: "var-workload"
-        - name: "Istio Mesh Dashboard"
-        - name: "Istio Control Plane Dashboard"
-        - name: "Istio Performance Dashboard"
-        - name: "Istio Wasm Extension Dashboard"
+      - name: "Istio Service Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          service: "var-service"
+          version: "var-version"
+      - name: "Istio Workload Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          workload: "var-workload"
+          version: "var-version"
+      - name: "Istio Mesh Dashboard"
+      - name: "Istio Control Plane Dashboard"
+      - name: "Istio Performance Dashboard"
+      - name: "Istio Wasm Extension Dashboard"
       enabled: false
       external_url: ""
       health_check_url: ""
-      # default: internal_url is undefined
-      internal_url: ""
+      internal_url: "http://perses.istio-system:4000"
       is_core: false
       project: "istio"
     prometheus:
@@ -484,6 +488,13 @@ spec:
         include_istio_resources: true
         include_validations: true
         show_include_toggles: false
+      mesh:
+        find_options:
+        - description: "Find: unhealthy nodes"
+          expression: "! healthy"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
       # default: metrics_inbound is undefined
       metrics_inbound:
         aggregations:
@@ -543,13 +554,14 @@ spec:
           protocol: "http"
           skip_verify: false
           tls_enabled: false
+        sampling_rate: 0.5
     port: 20001
     profiler:
       enabled: false
     require_auth: false
     web_fqdn: ""
-    web_history_mode: ""
+    web_history_mode: "browser"
     web_port: ""
     web_root: ""
     web_schema: ""
-    write_timeout: 30
+    write_timeout: "60s"

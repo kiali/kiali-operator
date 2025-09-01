@@ -1,0 +1,274 @@
+# This is a Kiali CR that contains almost all the possible settings
+# as defined in the Kiali CRD schema. Some are not defined here; they are tested in
+# other places and molecule tests (e.g. deployment.affinity).
+#
+# All values are set to their default values except where otherwise noted.
+#
+# The purpose of this is to make sure we can create a CR that contains all the possible settings
+# and that it installs with no Kiali CRD validation errors and Kiali deploys with no issues.
+
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+
+  additional_display_details:
+  - title: "API Documentation"
+    annotation: "kiali.io/api-spec"
+    icon_annotation: "kiali.io/api-type"
+
+  auth:
+    strategy: "anonymous"
+
+  installation_tag: "config-values-test-installation"
+
+  clustering:
+    autodetect_secrets:
+      enabled: false
+      label: "kiali.io/multiCluster=true"
+    clusters:
+    - name: "remote-cluster-1"
+      #secret_name: "remote-cluster-secret" # we can't set this otherwise Kiali won't start because this secret doesn't exist
+    ignore_home_cluster: false
+    kiali_urls:
+    - cluster_name: "east"
+      instance_name: "kiali"
+      namespace: "istio-system"
+      url: "https://kiali.east.example.com"
+
+  custom_dashboards:
+  - name: "custom-app-dashboard"
+    title: "Custom Application Metrics"
+    items:
+    - chart:
+        name: "Request Rate"
+        spans: 6
+        metricName: "request_rate"
+        dataType: "raw"
+
+  deployment:
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    image_digest: ""
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    ingress:
+      enabled: true
+    logger:
+      log_level: info
+    namespace: {{ kiali.install_namespace }}
+    remote_cluster_resources_only: false
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+
+  extensions:
+  - enabled: false
+    name: "custom-extension"
+
+  external_services:
+    custom_dashboards:
+      discovery_auto_threshold: 10
+      discovery_enabled: "auto"
+      enabled: false
+      is_core: false
+      namespace_label: "namespace"
+    grafana:
+      dashboards:
+      - name: "Istio Service Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          service: "var-service"
+          version: "var-version"
+      - name: "Istio Workload Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          workload: "var-workload"
+          version: "var-version"
+      - name: "Istio Mesh Dashboard"
+      - name: "Istio Control Plane Dashboard"
+      - name: "Istio Performance Dashboard"
+      - name: "Istio Wasm Extension Dashboard"
+    istio:
+      component_status:
+        components:
+        - app_label: "istiod"
+          is_core: true
+          is_proxy: false
+          namespace: "istio-system"
+        enabled: true
+      egress_gateway_namespace: "istio-egress"
+      gateway_api_classes:
+      - name: "istio"
+        class_name: "istio"
+      gateway_api_classes_label_selector: "app=istio-gateway"
+      istio_api_enabled: true
+      istio_identity_domain: "svc.cluster.local"
+      istiod_polling_interval_seconds: 20
+      validation_change_detection_enabled: true
+      validation_reconcile_interval: "1m"
+    perses:
+      dashboards:
+      - name: "Istio Service Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          service: "var-service"
+          version: "var-version"
+      - name: "Istio Workload Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          workload: "var-workload"
+          version: "var-version"
+      - name: "Istio Mesh Dashboard"
+      - name: "Istio Control Plane Dashboard"
+      - name: "Istio Performance Dashboard"
+      - name: "Istio Wasm Extension Dashboard"
+      enabled: false
+      external_url: "https://perses.example.com"
+      internal_url: "http://perses.istio-system:4000"
+      project: "istio-monitoring"
+    prometheus:
+      custom_headers:
+        X-Prometheus-Header: "prometheus-value"
+      query_scope:
+        mesh_id: "mesh-1"
+        cluster: "primary"
+      thanos_proxy:
+        enabled: false
+        retention_period: "30d"
+        scrape_interval: "15s"
+    tracing:
+      custom_headers:
+        X-Jaeger-Header: "jaeger-value"
+      disable_version_check: false
+      enabled: false
+      grpc_port: 9095
+      namespace_selector: true
+      provider: "jaeger"
+      query_timeout: 5
+      tempo_config:
+        cache_capacity: 200
+        cache_enabled: true
+        datasource_uid: "tempo-uid"
+        org_id: "1"
+        url_format: "grafana"
+      use_grpc: false
+      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
+
+  health_config:
+    rate:
+    - namespace: ".*"
+      kind: ".*"
+      name: ".*"
+      tolerance:
+      - protocol: "http"
+        direction: ".*"
+        code: "[45]xx"
+        degraded: 10
+        failure: 20
+      - protocol: "grpc"
+        direction: "inbound"
+        code: "[1-9]|1[0-6]"
+        degraded: 5
+        failure: 15
+
+  istio_labels:
+    app_label_name: "app.kubernetes.io/name"
+    egress_gateway_label: "istio=egressgateway"
+    ingress_gateway_label: "istio=ingressgateway"
+    injection_label_name: "istio-injection"
+    injection_label_rev: "istio.io/rev"
+    version_label_name: "app.kubernetes.io/version"
+
+  kiali_feature_flags:
+    disabled_features: []
+    istio_annotation_action: true
+    istio_injection_action: true
+    istio_upgrade_action: true
+    ui_defaults:
+      graph:
+        find_options:
+        - description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+          auto_select: false
+        settings:
+          animation: "point"
+        traffic:
+          ambient: "total"
+          grpc: "requests"
+          http: "requests"
+          tcp: "sent"
+      i18n:
+        language: "en"
+        show_selector: true
+      list:
+        include_health: false
+        include_istio_resources: false
+        include_validations: false
+        show_include_toggles: true
+      mesh:
+        find_options:
+        - description: "Find: unhealthy nodes"
+          expression: "! healthy"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+      metrics_inbound:
+        aggregations:
+        - display_name: "Istio Network"
+          label: "topology_istio_io_network"
+      metrics_outbound:
+        aggregations:
+        - display_name: "Source Workload"
+          label: "source_workload"
+      metrics_per_refresh: "1m"
+      namespaces: []
+      refresh_interval: "1m"
+      tracing:
+        limit: 100
+    validations:
+      ignore: ["KIA0101", "KIA0201"]
+      skip_wildcard_gateway_hosts: true
+
+  kubernetes_config:
+    burst: 200
+    cache_duration: 300
+    cache_token_namespace_duration: 10
+    cluster_name: "Kubernetes"
+    excluded_workloads: ["CronJob", "DeploymentConfig", "Job", "ReplicationController"]
+    qps: 175
+
+  server:
+    address: "0.0.0.0"
+    audit_log: true
+    cors_allow_all: false
+    gzip_enabled: true
+    node_port: 32444
+    observability:
+      metrics:
+        enabled: true
+        port: 9090
+      tracing:
+        collector_type: "otel"
+        collector_url: "jaeger-collector.istio-system:4318"
+        enabled: false
+        otel:
+          ca_name: "jaeger-ca"
+          protocol: "http"
+          skip_verify: false
+          tls_enabled: false
+        sampling_rate: 0.5
+    port: 20001
+    profiler:
+      enabled: false
+    require_auth: true
+    web_fqdn: ""
+    web_history_mode: "browser"
+    web_port: ""
+    web_root: ""
+    web_schema: ""
+    write_timeout: "60s"

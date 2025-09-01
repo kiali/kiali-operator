@@ -17,3 +17,4 @@ spec:
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   server:
     node_port: 32444
+    write_timeout: 60 # using integer format; string format ("60s") also works (this is tested in converge.yaml)
