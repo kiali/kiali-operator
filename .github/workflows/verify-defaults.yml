@@ -1,0 +1,45 @@
+name: Verify CRD Defaults
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      # CRD files
+      - 'crd-docs/crd/kiali.io_kialis.yaml'
+      - 'crd-docs/crd/kiali.io_ossmconsoles.yaml'
+      # Ansible defaults files
+      - 'roles/default/kiali-deploy/defaults/main.yml'
+      - 'roles/default/ossmconsole-deploy/defaults/main.yml'
+      # Verification script itself
+      - 'hack/verify-crd-defaults.sh'
+      # Makefile changes that might affect verification
+      - 'Makefile'
+  push:
+    branches: [master]
+    paths:
+      # CRD files
+      - 'crd-docs/crd/kiali.io_kialis.yaml'
+      - 'crd-docs/crd/kiali.io_ossmconsoles.yaml'
+      # Ansible defaults files
+      - 'roles/default/kiali-deploy/defaults/main.yml'
+      - 'roles/default/ossmconsole-deploy/defaults/main.yml'
+      # Verification script itself
+      - 'hack/verify-crd-defaults.sh'
+      # Makefile changes that might affect verification
+      - 'Makefile'
+
+jobs:
+  verify-defaults:
+    name: Verify CRD Defaults Match Ansible Defaults
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Install yq
+      run: |
+        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo chmod +x /usr/local/bin/yq
+
+    - name: Verify CRD defaults match Ansible defaults
+      run: make verify-defaults
