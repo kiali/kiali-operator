@@ -45,6 +45,7 @@ kiali_defaults:
       enabled: true
       label: "kiali.io/multiCluster=true"
     clusters: []
+    enable_exec_provider: false
     ignore_home_cluster: false
     kiali_urls: []
 

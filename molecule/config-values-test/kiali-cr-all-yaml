@@ -31,6 +31,7 @@ spec:
     clusters:
     - name: "remote-cluster-1"
       #secret_name: "remote-cluster-secret" # we can't set this otherwise Kiali won't start because this secret doesn't exist
+    enable_exec_provider: false
     ignore_home_cluster: false
     kiali_urls:
     - cluster_name: "east"
@@ -186,8 +187,6 @@ spec:
     version_label_name: "app.kubernetes.io/version"
 
   kiali_feature_flags:
-    clustering:
-      enable_exec_provider: false
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true
