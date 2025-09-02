@@ -178,6 +178,7 @@ kiali_defaults:
       is_core: false
     istio:
       component_status:
+        components: []
         enabled: true
       gateway_api_classes: []
       gateway_api_classes_label_selector: ""
@@ -284,6 +285,8 @@ kiali_defaults:
     version_label_name: ""
 
   kiali_feature_flags:
+    clustering:
+      enable_exec_provider: false
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true

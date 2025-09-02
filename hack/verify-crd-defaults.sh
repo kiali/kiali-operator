@@ -65,11 +65,14 @@ PROPERTIES_TO_IGNORE=(
     "deployment.custom_secrets.items.optional"
     "extensions.items.enabled"
     "external_services.istio.component_status.components.items.is_core"
+    "external_services.istio.component_status.components.items.is_multicluster"
     "external_services.istio.component_status.components.items.is_proxy"
     "kiali_feature_flags.ui_defaults.graph.find_options.items.auto_select"
     "kiali_feature_flags.ui_defaults.graph.hide_options.items.auto_select"
     "kiali_feature_flags.ui_defaults.mesh.find_options.items.auto_select"
     "kiali_feature_flags.ui_defaults.mesh.hide_options.items.auto_select"
+    "kiali_feature_flags.ui_defaults.metrics_inbound.aggregations.items.single_selection"
+    "kiali_feature_flags.ui_defaults.metrics_outbound.aggregations.items.single_selection"
 )
 
 # Function to add a skipped property to the report
