@@ -234,6 +234,10 @@ spec:
                         secret_name:
                           description: "The name of the secret that contains the credentials necessary to connect to the remote cluster. This secret must exist in the Kiali deployment namespace. If a secret name is not provided then it's assumed that the cluster is inaccessible."
                           type: string
+                  enable_exec_provider:
+                    description: "Flag to enable exec provider for clustering authentication."
+                    type: boolean
+                    default: false
                   ignore_home_cluster:
                     description: "Set to true for an external Kiali deployment, or if Kiali should not try to discover Istio on the home cluster. When set to `true`, it is required to set `kubernetes_config.cluster_name`."
                     type: boolean
@@ -1554,6 +1558,10 @@ spec:
                             secret_name:
                               description: "DEPRECATED AFTER v1.73: The name of the secret that contains the credentials necessary to connect to the remote cluster."
                               type: string
+                      enable_exec_provider:
+                        description: "DEPRECATED AFTER v1.73: Flag to enable exec provider for clustering authentication."
+                        type: boolean
+                        default: false
                       kiali_urls:
                         description: "DEPRECATED AFTER v1.73: A map between cluster name, instance name and namespace to a Kiali URL."
                         type: array
@@ -1572,14 +1580,6 @@ spec:
                             url:
                               description: "DEPRECATED AFTER v1.73: The URL of Kiali in the cluster."
                               type: string
-                  clustering:
-                    description: "Multi-cluster related feature flags."
-                    type: object
-                    properties:
-                      enable_exec_provider:
-                        description: "Flag to enable exec provider for clustering authentication."
-                        type: boolean
-                        default: false
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array
