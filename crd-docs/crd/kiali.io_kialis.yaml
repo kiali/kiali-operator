@@ -1064,6 +1064,10 @@ spec:
                                   description: "Whether the component is a native Envoy proxy."
                                   type: boolean
                                   default: false
+                                is_multicluster:
+                                  description: "Whether the component is a multi-cluster component."
+                                  type: boolean
+                                  default: false
                                 namespace:
                                   description: "The namespace where the component is installed. It defaults to the Istio control plane namespace (e.g. `istio-system`). Note that the Istio documentation suggests you install the ingress and egress to different namespaces, so you most likely will want to explicitly set this namespace value for the ingress and egress components."
                                   type: string
@@ -1568,6 +1572,14 @@ spec:
                             url:
                               description: "DEPRECATED AFTER v1.73: The URL of Kiali in the cluster."
                               type: string
+                  clustering:
+                    description: "Multi-cluster related feature flags."
+                    type: object
+                    properties:
+                      enable_exec_provider:
+                        description: "Flag to enable exec provider for clustering authentication."
+                        type: boolean
+                        default: false
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array
@@ -1753,6 +1765,10 @@ spec:
                                   type: string
                                 label:
                                   type: string
+                                single_selection:
+                                  description: "Flag to indicate if only one option can be selected for this aggregation."
+                                  type: boolean
+                                  default: false
                       metrics_outbound:
                         description: |
                           Additional label aggregation for outbound metric pages in detail pages.
@@ -1780,6 +1796,10 @@ spec:
                                   type: string
                                 label:
                                   type: string
+                                single_selection:
+                                  description: "Flag to indicate if only one option can be selected for this aggregation."
+                                  type: boolean
+                                  default: false
                       metrics_per_refresh:
                         description: "Duration of metrics to fetch on each refresh. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
                         type: string

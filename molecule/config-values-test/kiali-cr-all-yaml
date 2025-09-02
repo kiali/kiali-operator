@@ -97,6 +97,7 @@ spec:
         - app_label: "istiod"
           is_core: true
           is_proxy: false
+          is_multicluster: false
           namespace: "istio-system"
         enabled: true
       egress_gateway_namespace: "istio-egress"
@@ -185,6 +186,8 @@ spec:
     version_label_name: "app.kubernetes.io/version"
 
   kiali_feature_flags:
+    clustering:
+      enable_exec_provider: false
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true
@@ -221,10 +224,12 @@ spec:
         aggregations:
         - display_name: "Istio Network"
           label: "topology_istio_io_network"
+          single_selection: false
       metrics_outbound:
         aggregations:
         - display_name: "Source Workload"
           label: "source_workload"
+          single_selection: false
       metrics_per_refresh: "1m"
       namespaces: []
       refresh_interval: "1m"

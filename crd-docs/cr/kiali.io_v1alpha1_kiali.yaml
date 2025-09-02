@@ -327,6 +327,7 @@ spec:
       is_core: false
     istio:
       component_status:
+        components: []
         enabled: true
       gateway_api_classes: []
       gateway_api_classes_label_selector: ""
@@ -455,6 +456,8 @@ spec:
     version_label_name: ""
 
   kiali_feature_flags:
+    clustering:
+      enable_exec_provider: false
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true
@@ -500,15 +503,19 @@ spec:
         aggregations:
         - display_name: "Istio Network"
           label: "topology_istio_io_network"
+          single_selection: false
         - display_name: "Istio Revision"
           label: "istio_io_rev"
+          single_selection: false
       # default: metrics_outbound is undefined
       metrics_outbound:
         aggregations:
         - display_name: "Istio Network"
           label: "topology_istio_io_network"
+          single_selection: false
         - display_name: "Istio Revision"
           label: "istio_io_rev"
+          single_selection: false
       metrics_per_refresh: "1m"
       # default: namespaces is an empty list
       namespaces: ["istio-system"]
