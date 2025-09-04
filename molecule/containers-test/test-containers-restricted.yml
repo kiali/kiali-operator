@@ -1,0 +1,168 @@
+# Test additional containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=false
+# Security guardrails should be enforced
+
+# Initialize container indices
+- name: Initialize container indices
+  set_fact:
+    kiali_container_index: "-1"
+    istio_proxy_container_index: "-1"
+    consistency_test_container_index: "-1"
+    security_test_container_index: "-1"
+    privilege_attempt_container_index: "-1"
+
+# Dynamically determine container indices by name in deployment
+- name: Find security-test-container index in deployment
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    security_test_container_index: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'security-test-container'
+
+- name: Find privilege-attempt-container index in deployment
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    privilege_attempt_container_index: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'privilege-attempt-container'
+
+- name: Find consistency-test-container index in deployment
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    consistency_test_container_index: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'consistency-test-container'
+
+- name: Find istio-proxy container index in deployment
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    istio_proxy_container_index: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'istio-proxy'
+
+- name: Debug container indices
+  debug:
+    msg: "Container indices - security-test: {{ security_test_container_index }}, privilege-attempt: {{ privilege_attempt_container_index }}, consistency-test: {{ consistency_test_container_index }}, istio-proxy: {{ istio_proxy_container_index }}"
+
+# Security guardrails validation for containers
+- name: Assert that the deployment has additional containers
+  assert:
+    that:
+    - kiali_deployment.resources | length == 1
+    - kiali_deployment.resources[0].spec.template.spec.containers is defined
+    - kiali_deployment.resources[0].spec.template.spec.containers | length >= 5
+    fail_msg: "Kiali deployment should have at least 5 containers (our 4 custom ones including istio-proxy, plus the main kiali container)"
+
+- name: Assert that security guardrails are enforced on security-test-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[security_test_container_index | int].name == 'security-test-container'
+    - deployment_containers[security_test_container_index | int].securityContext is defined
+    - deployment_containers[security_test_container_index | int].securityContext.allowPrivilegeEscalation == false
+    - deployment_containers[security_test_container_index | int].securityContext.privileged == false
+    - deployment_containers[security_test_container_index | int].securityContext.readOnlyRootFilesystem == true
+    - deployment_containers[security_test_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[security_test_container_index | int].securityContext.capabilities.drop == ['ALL']
+    fail_msg: "Security-test-container should have restrictive security context enforced by operator"
+
+- name: Assert that security guardrails override user-provided security context on privilege-attempt-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[privilege_attempt_container_index | int].name == 'privilege-attempt-container'
+    - deployment_containers[privilege_attempt_container_index | int].securityContext is defined
+    - deployment_containers[privilege_attempt_container_index | int].securityContext.allowPrivilegeEscalation == false
+    - deployment_containers[privilege_attempt_container_index | int].securityContext.privileged == false
+    - deployment_containers[privilege_attempt_container_index | int].securityContext.readOnlyRootFilesystem == true
+    - deployment_containers[privilege_attempt_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[privilege_attempt_container_index | int].securityContext.capabilities.drop == ['ALL']
+    fail_msg: "Privilege-attempt-container should have security context overridden by operator (user attempt to set privileged=true should be blocked)"
+
+- name: Assert that security guardrails are enforced on consistency-test-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[consistency_test_container_index | int].name == 'consistency-test-container'
+    - deployment_containers[consistency_test_container_index | int].securityContext is defined
+    - deployment_containers[consistency_test_container_index | int].securityContext.allowPrivilegeEscalation == false
+    - deployment_containers[consistency_test_container_index | int].securityContext.privileged == false
+    - deployment_containers[consistency_test_container_index | int].securityContext.readOnlyRootFilesystem == true
+    - deployment_containers[consistency_test_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[consistency_test_container_index | int].securityContext.capabilities.drop == ['ALL']
+    fail_msg: "Consistency-test-container should have restrictive security context enforced by operator"
+
+- name: Assert that security guardrails are enforced on istio-proxy container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[istio_proxy_container_index | int].name == 'istio-proxy'
+    - deployment_containers[istio_proxy_container_index | int].securityContext is defined
+    - deployment_containers[istio_proxy_container_index | int].securityContext.allowPrivilegeEscalation == false
+    - deployment_containers[istio_proxy_container_index | int].securityContext.privileged == false
+    - deployment_containers[istio_proxy_container_index | int].securityContext.readOnlyRootFilesystem == true
+    - deployment_containers[istio_proxy_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[istio_proxy_container_index | int].securityContext.capabilities.drop == ['ALL']
+    fail_msg: "Istio-proxy container should have restrictive security context enforced by operator"
+
+# Verify Istio sidecar injection configuration
+- name: Assert that Kiali pod template has correct Istio sidecar injection annotations
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.metadata.annotations is defined
+    - kiali_deployment.resources[0].spec.template.metadata.annotations['proxy.istio.io/config'] is defined
+    - kiali_deployment.resources[0].spec.template.metadata.annotations['proxy.istio.io/config'] == '{ "holdApplicationUntilProxyStarts": true }'
+    fail_msg: "Kiali pod should have proxy.istio.io/config annotation for proper sidecar startup ordering"
+
+- name: Assert that Kiali pod template has correct Istio sidecar injection labels
+  assert:
+    that:
+    - kiali_deployment.resources[0].spec.template.metadata.labels is defined
+    - kiali_deployment.resources[0].spec.template.metadata.labels['sidecar.istio.io/inject'] is defined
+    - kiali_deployment.resources[0].spec.template.metadata.labels['sidecar.istio.io/inject'] == 'true'
+    fail_msg: "Kiali pod should have sidecar.istio.io/inject=true label for Istio sidecar injection"
+
+# Find container indices in the actual Pod (after Istio injection)
+- name: Find istio-proxy container index in Pod
+  vars:
+    kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+  set_fact:
+    pod_istio_proxy_container_index: "{{ my_idx }}"
+  loop: "{{ kiali_pod_spec.containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'istio-proxy'
+
+- name: Assert that Istio sidecar injection replaced the 'auto' image
+  vars:
+    kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+  assert:
+    that:
+    - kiali_pod_spec.containers[pod_istio_proxy_container_index | int].image is defined
+    - kiali_pod_spec.containers[pod_istio_proxy_container_index | int].image != 'auto'
+    - kiali_pod_spec.containers[pod_istio_proxy_container_index | int].image is match('.*istio.*|.*proxyv2.*')
+    fail_msg: "Istio sidecar injection should have replaced the 'auto' image with the actual Istio proxy image, but found: {{ kiali_pod_spec.containers[pod_istio_proxy_container_index | int].image }}"
+
+- name: Assert that deployment still has 'auto' image in template (before Istio injection)
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[istio_proxy_container_index | int].image is defined
+    - deployment_containers[istio_proxy_container_index | int].image == 'auto'
+    fail_msg: "Deployment template should still have 'auto' image as specified in the CR (Istio injection happens at Pod creation time)"

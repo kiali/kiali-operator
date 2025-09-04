@@ -1,0 +1,10 @@
+- name: Get information about the cluster
+  set_fact:
+    api_groups: "{{ lookup('kubernetes.core.k8s', cluster_info='api_groups') }}"
+
+- name: Determine the cluster type
+  set_fact:
+    is_openshift: "{{ True if 'operator.openshift.io' in api_groups else False }}"
+    is_k8s: "{{ False if 'operator.openshift.io' in api_groups else True }}"
+    is_minikube: "{{ True if lookup('env', 'MOLECULE_CLUSTER_TYPE') == 'minikube' else False }}"
+    is_kind: "{{ True if lookup('env', 'MOLECULE_CLUSTER_TYPE') == 'kind' else False }}"
