@@ -116,6 +116,37 @@
       that:
       - kiali_configmap.kiali_internal | length == 0
 
+  # TEST: NetworkPolicy should be created by default since it's enabled in the CR
+  - name: Get NetworkPolicy resource (initial state)
+    k8s_info:
+      api_version: networking.k8s.io/v1
+      kind: NetworkPolicy
+      namespace: "{{ kiali.install_namespace }}"
+      name: "{{ kiali.instance_name | default('kiali') }}"
+    register: networkpolicy_result_initial
+
+  - name: Test that NetworkPolicy is created when network_policy.enabled=true (initial state)
+    assert:
+      that:
+      - networkpolicy_result_initial.resources | length == 1
+      - networkpolicy_result_initial.resources[0].kind == "NetworkPolicy"
+      - networkpolicy_result_initial.resources[0].metadata.name == (kiali.instance_name | default('kiali'))
+      - networkpolicy_result_initial.resources[0].spec.podSelector.matchLabels["app.kubernetes.io/name"] == "kiali"
+      - networkpolicy_result_initial.resources[0].spec.podSelector.matchLabels["app.kubernetes.io/instance"] == (kiali.instance_name | default('kiali'))
+      - networkpolicy_result_initial.resources[0].spec.policyTypes == ["Ingress"]
+      - networkpolicy_result_initial.resources[0].spec.ingress | length == 1
+      - networkpolicy_result_initial.resources[0].spec.ingress[0].ports | length >= 1
+      - networkpolicy_result_initial.resources[0].spec.ingress[0].ports | selectattr('port', 'equalto', kiali_configmap.server.port) | list | length == 1
+      fail_msg: "NetworkPolicy should exist and be properly configured"
+
+  - name: Test that NetworkPolicy includes metrics port when metrics are enabled (initial state)
+    assert:
+      that:
+      - networkpolicy_result_initial.resources[0].spec.ingress[0].ports | selectattr('port', 'equalto', kiali_configmap.server.observability.metrics.port) | list | length == 1
+      fail_msg: "NetworkPolicy should include metrics port when metrics are enabled"
+    when:
+    - kiali_configmap.server.observability.metrics.enabled | bool
+
   # This test will change some config settings to make sure things work like we expect.
   # We will add additional tasks and asserts in the future to test other config changes.
   # We load in the current kiali CR and then alter it with new config and deploy that new CR.
@@ -280,6 +311,10 @@
           foo: bar
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_internal': custom_kiali_internal}}, recursive=True) }}"
+
+  - name: Disable NetworkPolicy to test removal
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'network_policy': {'enabled': false}}}}, recursive=True) }}"
 
   - name: The new Kiali CR to be tested
     debug:
@@ -501,6 +536,21 @@
       - kiali_configmap.kiali_internal | length == 2
       - kiali_configmap.kiali_internal['first_internal_setting'] == 111
       - kiali_configmap.kiali_internal['second_internal_setting'].foo == 'bar'
+
+  # TEST: NetworkPolicy should be removed after disabling network_policy.enabled
+  - name: Get NetworkPolicy resource (after disable)
+    k8s_info:
+      api_version: networking.k8s.io/v1
+      kind: NetworkPolicy
+      namespace: "{{ kiali.install_namespace }}"
+      name: "{{ kiali.instance_name | default('kiali') }}"
+    register: networkpolicy_result_disabled
+
+  - name: Test that NetworkPolicy is removed when network_policy.enabled=false
+    assert:
+      that:
+      - networkpolicy_result_disabled.resources | length == 0
+      fail_msg: "NetworkPolicy should be removed when disabled"
 
   # Test the comprehensive Kiali CR from kiali-cr-all.yaml
   # First delete the existing CR, then create the new one and verify it works

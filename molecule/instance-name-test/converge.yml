@@ -65,6 +65,7 @@
       apiServ: "v1"
       apiSvcA: "v1"
       apiIngr: "networking.k8s.io/{{ 'v1' if (lookup('k8s', kind='Ingress', api_version='networking.k8s.io/v1', errors='ignore') is iterable) else 'v1beta1' }}"
+      apiNetP: "networking.k8s.io/v1"
       apiRout: "route.openshift.io/v1"
 
   # TODO This confirms the behavior that we expect but is likely faulty.
@@ -86,6 +87,7 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
+      - query('k8s', kind='NetworkPolicy',  namespace=queryNamespace, api_version=apiNetP, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     - app.kubernetes.io/instance=kialitwo
@@ -103,6 +105,7 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
+      - query('k8s', kind='NetworkPolicy',  namespace=queryNamespace, api_version=apiNetP, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     - app.kubernetes.io/instance=kialitwo
@@ -151,6 +154,7 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 1
+      - query('k8s', kind='NetworkPolicy',  namespace=queryNamespace, api_version=apiNetP, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     when:
@@ -167,6 +171,7 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 1
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 1
       - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 1
+      - query('k8s', kind='NetworkPolicy',  namespace=queryNamespace, api_version=apiNetP, label_selector=item) | length == 1
     loop:
     - app.kubernetes.io/instance=kiali
     when:
@@ -185,6 +190,7 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
       - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=item) | length == 0
+      - query('k8s', kind='NetworkPolicy',  namespace=queryNamespace, api_version=apiNetP, label_selector=item) | length == 0
     loop:
     - app.kubernetes.io/instance=kialitwo
     when:
@@ -201,6 +207,7 @@
       - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=item) | length == 0
       - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=item) | length == 0
       - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=item) | length == 0
+      - query('k8s', kind='NetworkPolicy',  namespace=queryNamespace, api_version=apiNetP, label_selector=item) | length == 0
     loop:
     - app.kubernetes.io/instance=kialitwo
     when:

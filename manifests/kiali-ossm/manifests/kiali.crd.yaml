@@ -675,6 +675,14 @@ spec:
                   namespace:
                     description: "The namespace into which Kiali is to be installed. If this is empty or not defined, the default will be the namespace where the Kiali CR is located."
                     type: string
+                  network_policy:
+                    description: "Configures if the Kiali server pod should be protected by a NetworkPolicy resource that restricts both ingress and egress traffic."
+                    type: object
+                    properties:
+                      enabled:
+                        description: "If true, a NetworkPolicy resource is created to restrict traffic to the Kiali server pod. The NetworkPolicy will allow ingress traffic only to the Kiali server API port and, if enabled, the metrics port."
+                        type: boolean
+                        default: true
                   node_selector:
                     description: "A set of node labels that dictate onto which node the Kiali pod will be deployed."
                     type: object
