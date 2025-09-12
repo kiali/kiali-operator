@@ -334,7 +334,6 @@ spec:
       istio_api_enabled: true
       istio_identity_domain: "svc.cluster.local"
       istiod_polling_interval_seconds: 20
-      root_namespace: ""
       validation_change_detection_enabled: true
       validation_reconcile_interval: "1m"
     perses:
