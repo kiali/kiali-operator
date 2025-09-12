@@ -23,3 +23,7 @@ spec:
     additional_service_yaml:
       externalName: my.kiali.example.com
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    probes:
+      readiness:
+        initial_delay_seconds: 2
+        period_seconds: 5

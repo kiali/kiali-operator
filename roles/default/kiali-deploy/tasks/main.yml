@@ -143,6 +143,20 @@
   - kiali_vars.deployment.namespace != current_cr.metadata.namespace
   - lookup('env', 'ALLOW_AD_HOC_KIALI_NAMESPACE') | default('false', True) != "true"
 
+- name: Only allow ad-hoc containers when appropriate
+  fail:
+    msg: "The operator is forbidden from installing additional containers into the Kiali pod."
+  when:
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
+  - lookup('env', 'ALLOW_AD_HOC_CONTAINERS') | default('false', True) != "true"
+
+- name: Only allow ad-hoc initContainers when appropriate
+  fail:
+    msg: "The operator is forbidden from installing additional initContainers into the Kiali pod."
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+  - lookup('env', 'ALLOW_AD_HOC_CONTAINERS') | default('false', True) != "true"
+
 - name: Make sure instance_name follows the DNS label standard because it will be a Service name
   fail:
     msg: "The value for deployment.instance_name [{{ kiali_vars.deployment.instance_name }}] does not follow the DNS label standard as defined in RFC 1123. In short, it must only contain lowercase alphanumeric characters or '-'."
@@ -727,6 +741,276 @@
   - kiali_vars.deployment.remote_cluster_resources_only|bool == False
   - kiali_vars.clustering.clusters | length > 0
   - (item.secret_name is not defined) or (item.secret_name != "kiali-multi-cluster-secret")
+
+# Security guardrails for user-defined initContainers.
+#
+# These tasks implement security protections against:
+# 1. Privilege Escalation: Enforces restrictive security context (same as main Kiali container)
+# 2. Filesystem-based Attacks: Prevents write access to sensitive volumes
+# 3. Environment Tampering: Ensures initContainers run with minimal privileges
+#
+# The security context enforced includes:
+# - allowPrivilegeEscalation: false
+# - privileged: false
+# - readOnlyRootFilesystem: true
+# - runAsNonRoot: true
+# - capabilities: drop ALL
+#
+# Secret-backed volumes are automatically forced to read-only.
+# These security settings cannot be overridden by user-defined initContainers.
+
+- name: Identify secret-backed volumes in Kiali deployment
+  set_fact:
+    kiali_secret_volume_names: >-
+      {{
+        ([
+          'kiali-secret',
+          'kiali-multi-cluster-secret'
+        ] +
+        (kiali_deployment_secret_volumes | list) +
+        (kiali_deployment_remote_cluster_secret_volumes | list) +
+        (kiali_vars.deployment.custom_secrets | selectattr('csi', 'undefined') | map(attribute='name') | list))
+        | unique
+      }}
+  when:
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0 or kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+
+- name: Validate container volume mount security
+  vars:
+    kiali_unsafe_volume_mounts: >-
+      {{
+        kiali_vars.deployment.additional_pod_containers_yaml
+        | selectattr('volumeMounts', 'defined')
+        | map(attribute='volumeMounts')
+        | flatten
+        | selectattr('name', 'in', kiali_secret_volume_names)
+        | selectattr('readOnly', 'defined')
+        | selectattr('readOnly', 'equalto', false)
+        | list
+      }}
+    kiali_unsafe_volume_names: >-
+      {{
+        kiali_unsafe_volume_mounts
+        | map(attribute='name')
+        | unique
+        | list
+      }}
+  fail:
+    msg: "User-defined containers cannot mount these secret-backed volumes as read-write; they must be mounted read-only for security purposes: {{ kiali_unsafe_volume_names | join(', ') }}"
+  when:
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
+  - kiali_unsafe_volume_mounts|length > 0
+
+# Note: initContainer volume mount security is automatically enforced
+# by the security guardrails below which force secret volumes to readOnly: true
+
+- name: Apply security guardrails to user-defined containers
+  vars:
+    # Define the mandatory security context
+    kiali_mandatory_security_context:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop: ['ALL']
+    # Apply security guardrails to each container using pure Ansible
+    # If ALLOW_SECURITY_CONTEXT_OVERRIDE is true, preserve user-provided security contexts
+    # Otherwise, apply mandatory security context
+    kiali_secured_containers: >-
+      {%- set secured_containers = [] -%}
+      {%- for container in kiali_vars.deployment.additional_pod_containers_yaml -%}
+        {%- if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == "true" and 'securityContext' in container and container.securityContext -%}
+          {%- set secured_container = container.copy() -%}
+        {%- else -%}
+          {%- set secured_container = container | combine({'securityContext': kiali_mandatory_security_context}) -%}
+        {%- endif -%}
+        {%- if 'volumeMounts' in secured_container -%}
+          {%- set secured_mounts = [] -%}
+          {%- for mount in secured_container.volumeMounts -%}
+            {%- set secured_mount = mount.copy() -%}
+            {%- if mount.name in kiali_secret_volume_names -%}
+              {%- set _ = secured_mount.update({'readOnly': true}) -%}
+            {%- endif -%}
+            {%- set _ = secured_mounts.append(secured_mount) -%}
+          {%- endfor -%}
+          {%- set _ = secured_container.update({'volumeMounts': secured_mounts}) -%}
+        {%- endif -%}
+        {%- set _ = secured_containers.append(secured_container) -%}
+      {%- endfor -%}
+      {{ secured_containers }}
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'additional_pod_containers_yaml': kiali_secured_containers}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
+
+- name: Log security context overrides for additional containers
+  vars:
+    kiali_privileged_containers: >-
+      {{
+        kiali_vars.deployment.additional_pod_containers_yaml
+        | selectattr('securityContext', 'defined')
+        | selectattr('securityContext.privileged', 'defined')
+        | selectattr('securityContext.privileged', 'equalto', true)
+        | map(attribute='name')
+        | list
+      }}
+    kiali_privilege_escalation_containers: >-
+      {{
+        kiali_vars.deployment.additional_pod_containers_yaml
+        | selectattr('securityContext', 'defined')
+        | selectattr('securityContext.allowPrivilegeEscalation', 'defined')
+        | selectattr('securityContext.allowPrivilegeEscalation', 'equalto', true)
+        | map(attribute='name')
+        | list
+      }}
+    kiali_dangerous_capabilities_containers: >-
+      {%- set dangerous_caps = ['SYS_ADMIN', 'NET_ADMIN', 'SYS_TIME', 'SYS_MODULE', 'SYS_PTRACE'] -%}
+      {%- set containers_with_dangerous_caps = [] -%}
+      {%- for container in kiali_vars.deployment.additional_pod_containers_yaml -%}
+        {%- if container.securityContext is defined and container.securityContext.capabilities is defined and container.securityContext.capabilities.add is defined -%}
+          {%- set has_dangerous_cap = false -%}
+          {%- for cap in container.securityContext.capabilities.add -%}
+            {%- if cap in dangerous_caps -%}
+              {%- set has_dangerous_cap = true -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if has_dangerous_cap -%}
+            {%- set _ = containers_with_dangerous_caps.append(container.name) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ containers_with_dangerous_caps | list }}
+    kiali_writable_root_containers: >-
+      {{
+        kiali_vars.deployment.additional_pod_containers_yaml
+        | selectattr('securityContext', 'defined')
+        | selectattr('securityContext.readOnlyRootFilesystem', 'defined')
+        | selectattr('securityContext.readOnlyRootFilesystem', 'equalto', false)
+        | map(attribute='name')
+        | list
+      }}
+  debug:
+    msg: >-
+      SECURITY INFO: Additional containers security analysis:
+      - Container names: {{ kiali_vars.deployment.additional_pod_containers_yaml | map(attribute='name') | join(', ') }}
+      - ALLOW_SECURITY_CONTEXT_OVERRIDE: {{ lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') | default('false') }}
+      - Security behavior: {{ 'User security contexts preserved (if provided)' if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == 'true' else 'Mandatory restrictive security context applied' }}
+      {% if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == "true" and (kiali_privileged_containers|length > 0 or kiali_privilege_escalation_containers|length > 0 or kiali_dangerous_capabilities_containers|length > 0 or kiali_writable_root_containers|length > 0) -%}
+      - SECURITY ALERT: Containers with elevated privileges detected:
+        * Privileged containers (privileged: true): {{ kiali_privileged_containers | join(', ') if kiali_privileged_containers else 'None' }}
+        * Privilege escalation allowed: {{ kiali_privilege_escalation_containers | join(', ') if kiali_privilege_escalation_containers else 'None' }}
+        * Dangerous capabilities: {{ kiali_dangerous_capabilities_containers | join(', ') if kiali_dangerous_capabilities_containers else 'None' }}
+        * Writable root filesystem: {{ kiali_writable_root_containers | join(', ') if kiali_writable_root_containers else 'None' }}
+      {%- else -%}
+      - No elevated privileges detected in containers or security contexts enforced by operator
+      {%- endif %}
+  when:
+  - kiali_vars.deployment.additional_pod_containers_yaml|length > 0
+
+- name: Apply security guardrails to user-defined initContainers
+  vars:
+    # Define the mandatory security context
+    kiali_mandatory_security_context:
+      allowPrivilegeEscalation: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      capabilities:
+        drop: ['ALL']
+    # Apply security guardrails to each initContainer using pure Ansible
+    # If ALLOW_SECURITY_CONTEXT_OVERRIDE is true, preserve user-provided security contexts
+    # Otherwise, apply mandatory security context
+    kiali_secured_init_containers: >-
+      {%- set secured_containers = [] -%}
+      {%- for container in kiali_vars.deployment.additional_pod_init_containers_yaml -%}
+        {%- if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == "true" and 'securityContext' in container and container.securityContext -%}
+          {%- set secured_container = container.copy() -%}
+        {%- else -%}
+          {%- set secured_container = container | combine({'securityContext': kiali_mandatory_security_context}) -%}
+        {%- endif -%}
+        {%- if 'volumeMounts' in secured_container -%}
+          {%- set secured_mounts = [] -%}
+          {%- for mount in secured_container.volumeMounts -%}
+            {%- set secured_mount = mount.copy() -%}
+            {%- if mount.name in kiali_secret_volume_names -%}
+              {%- set _ = secured_mount.update({'readOnly': true}) -%}
+            {%- endif -%}
+            {%- set _ = secured_mounts.append(secured_mount) -%}
+          {%- endfor -%}
+          {%- set _ = secured_container.update({'volumeMounts': secured_mounts}) -%}
+        {%- endif -%}
+        {%- set _ = secured_containers.append(secured_container) -%}
+      {%- endfor -%}
+      {{ secured_containers }}
+  set_fact:
+    kiali_vars: "{{ kiali_vars | combine({'deployment': {'additional_pod_init_containers_yaml': kiali_secured_init_containers}}, recursive=True) }}"
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
+
+- name: Log security context overrides for additional initContainers
+  vars:
+    kiali_privileged_init_containers: >-
+      {{
+        kiali_vars.deployment.additional_pod_init_containers_yaml
+        | selectattr('securityContext', 'defined')
+        | selectattr('securityContext.privileged', 'defined')
+        | selectattr('securityContext.privileged', 'equalto', true)
+        | map(attribute='name')
+        | list
+      }}
+    kiali_privilege_escalation_init_containers: >-
+      {{
+        kiali_vars.deployment.additional_pod_init_containers_yaml
+        | selectattr('securityContext', 'defined')
+        | selectattr('securityContext.allowPrivilegeEscalation', 'defined')
+        | selectattr('securityContext.allowPrivilegeEscalation', 'equalto', true)
+        | map(attribute='name')
+        | list
+      }}
+    kiali_dangerous_capabilities_init_containers: >-
+      {%- set dangerous_caps = ['SYS_ADMIN', 'NET_ADMIN', 'SYS_TIME', 'SYS_MODULE', 'SYS_PTRACE'] -%}
+      {%- set containers_with_dangerous_caps = [] -%}
+      {%- for container in kiali_vars.deployment.additional_pod_init_containers_yaml -%}
+        {%- if container.securityContext is defined and container.securityContext.capabilities is defined and container.securityContext.capabilities.add is defined -%}
+          {%- set has_dangerous_cap = false -%}
+          {%- for cap in container.securityContext.capabilities.add -%}
+            {%- if cap in dangerous_caps -%}
+              {%- set has_dangerous_cap = true -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if has_dangerous_cap -%}
+            {%- set _ = containers_with_dangerous_caps.append(container.name) -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ containers_with_dangerous_caps | list }}
+    kiali_writable_root_init_containers: >-
+      {{
+        kiali_vars.deployment.additional_pod_init_containers_yaml
+        | selectattr('securityContext', 'defined')
+        | selectattr('securityContext.readOnlyRootFilesystem', 'defined')
+        | selectattr('securityContext.readOnlyRootFilesystem', 'equalto', false)
+        | map(attribute='name')
+        | list
+      }}
+  debug:
+    msg: >-
+      SECURITY INFO: InitContainers deployed with security analysis:
+      - InitContainer names: {{ kiali_vars.deployment.additional_pod_init_containers_yaml | map(attribute='name') | join(', ') }}
+      - ALLOW_SECURITY_CONTEXT_OVERRIDE: {{ lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') | default('false') }}
+      - Security behavior: {{ 'User security contexts preserved (if provided)' if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == 'true' else 'Mandatory restrictive security context applied' }}
+      {% if lookup('env', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') == "true" and (kiali_privileged_init_containers|length > 0 or kiali_privilege_escalation_init_containers|length > 0 or kiali_dangerous_capabilities_init_containers|length > 0 or kiali_writable_root_init_containers|length > 0) -%}
+      - SECURITY ALERT: InitContainers with elevated privileges detected:
+        * Privileged initContainers (privileged: true): {{ kiali_privileged_init_containers | join(', ') if kiali_privileged_init_containers else 'None' }}
+        * Privilege escalation allowed: {{ kiali_privilege_escalation_init_containers | join(', ') if kiali_privilege_escalation_init_containers else 'None' }}
+        * Dangerous capabilities: {{ kiali_dangerous_capabilities_init_containers | join(', ') if kiali_dangerous_capabilities_init_containers else 'None' }}
+        * Writable root filesystem: {{ kiali_writable_root_init_containers | join(', ') if kiali_writable_root_init_containers else 'None' }}
+      {%- else -%}
+      - No elevated privileges detected in initContainers or security contexts enforced by operator
+      {%- endif %}
+  when:
+  - kiali_vars.deployment.additional_pod_init_containers_yaml|length > 0
 
 # The following few tasks read the current Kiali configmap (if one exists) in order to find out how Kiali is currently configured.
 

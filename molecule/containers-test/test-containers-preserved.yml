@@ -1,0 +1,68 @@
+# Test additional containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+# Custom security contexts should be preserved
+
+# Dynamically determine container indices by name in deployment (for override test)
+- name: Find security-test-container index in deployment (override test)
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    security_test_container_index_override: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'security-test-container'
+
+- name: Find privilege-attempt-container index in deployment (override test)
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  set_fact:
+    privilege_attempt_container_index_override: "{{ my_idx }}"
+  loop: "{{ deployment_containers }}"
+  loop_control:
+    index_var: my_idx
+  when: item.name == 'privilege-attempt-container'
+
+# Test that custom security contexts are preserved when ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+- name: Assert that custom security context is preserved on security-test-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[security_test_container_index_override | int].name == 'security-test-container'
+    - deployment_containers[security_test_container_index_override | int].securityContext is defined
+    # On OpenShift, SCCs may override the specific runAsUser value, but it should still be a number
+    - >-
+      (not is_openshift and deployment_containers[security_test_container_index_override | int].securityContext.runAsUser == 1001) or
+      (is_openshift and deployment_containers[security_test_container_index_override | int].securityContext.runAsUser is number)
+    # When ALLOW_SECURITY_CONTEXT_OVERRIDE=true, operator doesn't add missing fields - only preserves what user specified
+    fail_msg: "Security-test-container should preserve custom runAsUser when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+
+- name: Assert that custom security context is preserved on privilege-attempt-container
+  vars:
+    deployment_containers: "{{ kiali_deployment.resources[0].spec.template.spec.containers }}"
+  assert:
+    that:
+    - deployment_containers[privilege_attempt_container_index_override | int].name == 'privilege-attempt-container'
+    - deployment_containers[privilege_attempt_container_index_override | int].securityContext is defined
+    # User-provided values should be preserved (OpenShift may enforce security defaults regardless of ALLOW_SECURITY_CONTEXT_OVERRIDE)
+    - >-
+      (not is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.privileged == true) or
+      (is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.privileged is boolean)
+    - >-
+      (not is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.allowPrivilegeEscalation == true) or
+      (is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.allowPrivilegeEscalation is boolean)
+    - >-
+      (not is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.readOnlyRootFilesystem == false) or
+      (is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.readOnlyRootFilesystem is boolean)
+    - >-
+      (not is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.runAsNonRoot == false) or
+      (is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.runAsNonRoot is boolean)
+    # On OpenShift, SCCs may override the specific runAsUser value, but it should still be a number
+    - >-
+      (not is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.runAsUser == 1002) or
+      (is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.runAsUser is number)
+    # On OpenShift, capabilities.add should be preserved, but drop may be added automatically
+    - >-
+      (not is_openshift and deployment_containers[privilege_attempt_container_index_override | int].securityContext.capabilities.add == ['SYS_ADMIN']) or
+      (is_openshift and 'SYS_ADMIN' in deployment_containers[privilege_attempt_container_index_override | int].securityContext.capabilities.add)
+    fail_msg: "Privilege-attempt-container should preserve all custom security context settings when ALLOW_SECURITY_CONTEXT_OVERRIDE=true (OpenShift may enforce additional security defaults)"
