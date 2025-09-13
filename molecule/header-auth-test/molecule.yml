@@ -24,10 +24,14 @@ provisioner:
         wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
         istio:
           control_plane_namespace: istio-system
+        nip_io_base_url: "{{ lookup('env', 'MOLECULE_MINIKUBE_IP') | regex_replace('\\.', '-') }}.nip.io"
+        hydra:
+          admin_port: 30448
+          public_port: 30967
         proxy:
           username: admin@example.com
           password: password
-          url: "http://kiali-proxy.{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}.nip.io:30805"
+          url: "http://kiali-proxy.{{ nip_io_base_url }}:30805"
         kiali:
           spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
           install_namespace: istio-system
