@@ -56,4 +56,4 @@ jobs:
     if: ${{ inputs.bump_next_version }}
     uses: ./.github/workflows/bump-release-version.yml
     with:
-      tag_branches: ${{ inputs.tag_branch }}
+      tag_branch: ${{ inputs.tag_branch }}
