@@ -1,0 +1,355 @@
+# OIDC Authentication Handshaking Test (Steps 1-10)
+# Reusable test that validates complete OAuth2/OIDC authentication flow
+# Works with any OAuth2 client configured in Kiali's auth.openid.client_id
+
+---
+- name: "Reset: Clear all facts from previous handshaking run to ensure clean slate"
+  set_fact:
+    auth_endpoint: ""
+    auth2_endpoint: ""
+    kiali_cookies: ""
+    hydra_cookies: ""
+    openid_login_endpoint: ""
+    login_challenge: ""
+    final_kiali_endpoint: ""
+    authorization_code: ""
+    oauth_state: ""
+    step1_response: ""
+    step2_response: ""
+    step3_response: ""
+    step4_response: ""
+    step5_response: ""
+    step6_response: ""
+    step7_response: ""
+    step8_response: ""
+    step9_response: ""
+    step10_response: ""
+
+- name: "Step 1: Send request to Kiali auth info endpoint and expect OpenID strategy configuration"
+  uri:
+    url: "{{ kiali_base_url }}/api/auth/info"
+    return_content: yes
+    validate_certs: false
+  register: step1_response
+
+- name: "Step 1: DEBUG: Log Kiali auth info request and response"
+  vars:
+    msg: |
+      === Send request to Kiali auth info endpoint and expect OpenID Connect strategy configuration ===
+      Request URL: {{ kiali_base_url }}/api/auth/info
+      Request cookies sent: None
+      Response status code: {{ step1_response.status }}
+      Response cookies received: {{ step1_response.set_cookie if step1_response.set_cookie is defined else 'None' }}
+      Response content: {{ step1_response.json }}
+      Strategy: {{ step1_response.json.strategy }}
+      Authorization endpoint: {{ step1_response.json.authorizationEndpoint }}
+      Session info: {{ step1_response.json.sessionInfo }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 1: Assert that the auth info is for openid"
+  assert:
+    that:
+    - step1_response.json.strategy == "openid"
+    - step1_response.json.authorizationEndpoint is search("openid_redirect")
+    - step1_response.json.sessionInfo.keys() | length == 0
+
+- name: "Step 1: Set the auth endpoint for next step"
+  set_fact:
+    auth_endpoint: "{{ step1_response.json.authorizationEndpoint }}"
+
+- name: "Step 2: Send request to Kiali OpenID redirect endpoint and expect redirect to Hydra with nonce cookie"
+  uri:
+    url: "{{ auth_endpoint }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+  register: step2_response
+
+- name: "Step 2: DEBUG: Log Kiali OpenID redirect request and response"
+  vars:
+    msg: |
+      === Send request to Kiali OpenID redirect endpoint and expect redirect to Hydra with nonce cookie ===
+      Request URL: {{ auth_endpoint }}
+      Request cookies sent: None
+      Response status code: {{ step2_response.status }}
+      Response cookies received: {{ step2_response.set_cookie if step2_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step2_response.location }}
+      OAuth2 redirect URL: {{ step2_response.location }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 2: Assert that Kiali auth endpoint returned valid redirect data"
+  assert:
+    that:
+    - step2_response.location is defined
+    - step2_response.set_cookie is defined
+    - step2_response.set_cookie is search("kiali-token-nonce-.+")
+
+- name: "Step 2: Extract OAuth2 parameters and cookies for next step"
+  set_fact:
+    auth2_endpoint: "{{ step2_response.location | regex_replace('hydra.*\\.ory\\.svc\\.cluster\\.local:4444', nip_io_base_url + ':' + hydra.public_port|string) }}"
+    kiali_cookies: "{{ step2_response.set_cookie | regex_replace('.*(kiali-token-nonce-.+=[^;]+[^,]*).*', '\\1') if step2_response.set_cookie is defined else '' }}"
+    hydra_cookies: ""
+
+- name: "Step 3: Send request to Hydra authorization endpoint and expect redirect to login UI with CSRF cookie"
+  uri:
+    url: "{{ auth2_endpoint }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+  register: step3_response
+
+- name: "Step 3: DEBUG: Log Hydra authorization request and response"
+  vars:
+    msg: |
+      === Send request to Hydra authorization endpoint and expect redirect to login UI with CSRF cookie ===
+      Request URL: {{ auth2_endpoint }}
+      Request cookies sent: None
+      Response status code: {{ step3_response.status }}
+      Response cookies received: {{ step3_response.set_cookie if step3_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step3_response.location }}
+      Login challenge URL: {{ step3_response.location }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 3: Assert that Hydra authorization endpoint returned redirect with login challenge"
+  assert:
+    that:
+    - step3_response.location is defined
+    - step3_response.location is search("login_challenge=")
+
+- name: "Step 3: Extract Hydra CSRF cookies for next step"
+  set_fact:
+    hydra_cookies: "{{ step3_response.set_cookie | regex_replace('.*(ory_hydra_login_csrf[^;]+).*', '\\1') if step3_response.set_cookie is defined else '' }}"
+
+- name: "Step 4: Send request to Hydra login UI and expect login form with challenge field"
+  uri:
+    url: "{{ step3_response.location }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 200
+  register: step4_response
+
+- name: "Step 4: DEBUG: Log Hydra login UI request and response"
+  vars:
+    msg: |
+      === Send request to Hydra login UI and expect login form with challenge field ===
+      Request URL: {{ step3_response.location }}
+      Request cookies sent: {{ hydra_cookies }}
+      Response status code: {{ step4_response.status }}
+      Response cookies received: {{ step4_response.set_cookie if step4_response.set_cookie is defined else 'None' }}
+      Response content (first 200 chars): {{ (step4_response.content[:200] + '...') if step4_response.content|length > 200 else step4_response.content }}
+      Login form URL: {{ step4_response.url }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 4: Assert that login UI returned valid form with login challenge"
+  assert:
+    that:
+    - step4_response.url is defined
+    - step4_response.content is search("login_challenge")
+
+- name: "Step 4: Extract login parameters for next step"
+  set_fact:
+    openid_login_endpoint: "{{ step4_response.url }}"
+    login_challenge: "{{ step4_response.url | regex_replace('.*login_challenge=([^&]+).*', '\\1') | urldecode }}"
+    hydra_cookies: "{{ step4_response.set_cookie | regex_replace('.*(ory_hydra[^;]+).*', '\\1') if step4_response.set_cookie is defined and step4_response.set_cookie != '' else hydra_cookies }}"
+
+- name: "Step 5: Submit login form with credentials and expect redirect with login verifier"
+  uri:
+    url: "{{ openid_login_endpoint }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+    method: POST
+    body_format: form-urlencoded
+    body:
+      email: "{{ openid.username }}"
+      password: "{{ openid.password }}"
+      challenge: "{{ login_challenge }}"
+  register: step5_response
+
+- name: "Step 5: DEBUG: Log login form submission request and response"
+  vars:
+    msg: |
+      === Submit login form with credentials and expect redirect with login verifier ===
+      Request URL: {{ openid_login_endpoint }}
+      Request cookies sent: {{ hydra_cookies }}
+      Response status code: {{ step5_response.status }}
+      Response cookies received: {{ step5_response.set_cookie if step5_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step5_response.location }}
+      Login verifier URL: {{ step5_response.location }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 5: Update Hydra cookies from login response"
+  vars:
+    new_cookies: "{{ step5_response.set_cookie | regex_findall('(ory_hydra[^;]+)') | join('; ') if step5_response.set_cookie is defined else '' }}"
+  set_fact:
+    hydra_cookies: "{{ (hydra_cookies + '; ' + new_cookies) if (new_cookies != '' and hydra_cookies != '') else (new_cookies if new_cookies != '' else hydra_cookies) }}"
+
+- name: "Step 6: Send request to Hydra with login verifier and expect consent challenge redirect"
+  uri:
+    url: "{{ step5_response.location }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+  register: step6_response
+
+- name: "Step 6: DEBUG: Log login verifier request and response"
+  vars:
+    msg: |
+      === Send request to Hydra with login verifier and expect consent challenge redirect ===
+      Request URL: {{ step5_response.location }}
+      Request cookies sent: {{ hydra_cookies }}
+      Response status code: {{ step6_response.status }}
+      Response cookies received: {{ step6_response.set_cookie if step6_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step6_response.location }}
+      Consent challenge URL: {{ step6_response.location }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 6: Update Hydra cookies from login verifier response"
+  vars:
+    new_cookies: "{{ step6_response.set_cookie | regex_findall('(ory_hydra[^;]+)') | join('; ') if step6_response.set_cookie is defined else '' }}"
+  set_fact:
+    hydra_cookies: "{{ (hydra_cookies + '; ' + new_cookies) if (new_cookies != '' and hydra_cookies != '') else (new_cookies if new_cookies != '' else hydra_cookies) }}"
+
+- name: "Step 7: Send request to Hydra consent endpoint and expect auto-approval with consent verifier"
+  uri:
+    url: "{{ step6_response.location }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+  register: step7_response
+
+- name: "Step 7: DEBUG: Log consent request and response"
+  vars:
+    msg: |
+      === Send request to Hydra consent endpoint and expect auto-approval with consent verifier ===
+      Request URL: {{ step6_response.location }}
+      Request cookies sent: {{ hydra_cookies }}
+      Response status code: {{ step7_response.status }}
+      Response cookies received: {{ step7_response.set_cookie if step7_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step7_response.location }}
+      Consent verifier URL: {{ step7_response.location }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 7: Update Hydra cookies from consent response"
+  vars:
+    new_cookies: "{{ step7_response.set_cookie | regex_findall('(ory_hydra[^;]+)') | join('; ') if step7_response.set_cookie is defined else '' }}"
+  set_fact:
+    hydra_cookies: "{{ (hydra_cookies + '; ' + new_cookies) if (new_cookies != '' and hydra_cookies != '') else (new_cookies if new_cookies != '' else hydra_cookies) }}"
+
+- name: "Step 8: Send request to Hydra with consent verifier and expect authorization code redirect to Kiali"
+  uri:
+    url: "{{ step7_response.location }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 303
+  register: step8_response
+
+- name: "Step 8: DEBUG: Log consent verifier request and authorization code response"
+  vars:
+    msg: |
+      === Send request to Hydra with consent verifier and expect authorization code redirect to Kiali ===
+      Request URL: {{ step7_response.location }}
+      Request cookies sent: {{ hydra_cookies }}
+      Response status code: {{ step8_response.status }}
+      Response cookies received: {{ step8_response.set_cookie if step8_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step8_response.location }}
+      Authorization code callback URL: {{ step8_response.location }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 8: Assert authorization code callback received"
+  assert:
+    that:
+    - step8_response.location is defined
+    - step8_response.location is search("code=")
+    - step8_response.location is search("state=")
+
+- name: "Step 8: Extract authorization code parameters for next step"
+  set_fact:
+    final_kiali_endpoint: "{{ step8_response.location }}"
+    authorization_code: "{{ step8_response.location | regex_replace('.*code=([^&]+).*', '\\1') }}"
+    oauth_state: "{{ step8_response.location | regex_replace('.*state=([^&]+).*', '\\1') }}"
+
+- name: "Step 9: Send request to Kiali callback endpoint with authorization code and expect successful authentication"
+  uri:
+    url: "{{ final_kiali_endpoint }}"
+    headers:
+      Cookie: "{{ kiali_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+  register: step9_response
+
+- name: "Step 9: DEBUG: Log Kiali callback request and response"
+  vars:
+    msg: |
+      === Send request to Kiali callback endpoint with authorization code and expect successful authentication ===
+      Request URL: {{ final_kiali_endpoint }}
+      Request cookies sent: {{ kiali_cookies }}
+      Response status code: {{ step9_response.status }}
+      Response cookies received: {{ step9_response.set_cookie if step9_response.set_cookie is defined else 'None' }}
+      Response location header: {{ step9_response.location if step9_response.location is defined else 'None' }}
+      Authorization code used: {{ authorization_code }}
+      OAuth state used: {{ oauth_state }}
+      Response content (first 200 chars): {{ (step9_response.content[:200] + '...') if step9_response.content is defined and step9_response.content|length > 200 else (step9_response.content if step9_response.content is defined else 'None') }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 9: Extract session cookies from successful authentication"
+  vars:
+    new_kiali_cookies: "{{ step9_response.set_cookie | regex_findall('(kiali-token[^;]+)') | join('; ') if step9_response.set_cookie is defined else '' }}"
+  set_fact:
+    kiali_cookies: "{{ (kiali_cookies + '; ' + new_kiali_cookies) if (new_kiali_cookies != '' and kiali_cookies != '') else (new_kiali_cookies if new_kiali_cookies != '' else kiali_cookies) }}"
+
+- name: "Step 10: Send request to Kiali protected API endpoint and expect successful namespace list"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces"
+    headers:
+      Cookie: "{{ kiali_cookies }}"
+    return_content: yes
+    validate_certs: false
+    status_code: 200
+  register: step10_response
+
+- name: "Step 10: DEBUG: Log authenticated API request and response"
+  vars:
+    msg: |
+      === Send request to Kiali protected API endpoint and expect successful namespace list ===
+      Request URL: {{ kiali_base_url }}/api/namespaces
+      Request cookies sent: {{ kiali_cookies }}
+      Response status code: {{ step10_response.status }}
+      Response cookies received: {{ step10_response.set_cookie if step10_response.set_cookie is defined else 'None' }}
+      Response content: {{ step10_response.content if step10_response.content is defined else 'None' }}
+      JSON response: {{ step10_response.json if step10_response.json is defined else 'None' }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 10: Assert that we were able to get the list of namespaces"
+  assert:
+    that:
+    - step10_response.json | length > 0
