@@ -6,9 +6,9 @@
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
-  - import_tasks: ../common/tasks.yml
-  - import_tasks: ../asserts/pod_asserts.yml
-  - import_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
   
   - name: Get statuses from Istio components
     uri:
@@ -36,11 +36,11 @@
       - tracing_healthy == 'Healthy'
 
   # Update Jaeger URL to a bad URL just to test a bad integration
-  - import_tasks: update-jaeger-url.yml
-  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
-  - import_tasks: ../common/wait_for_kiali_running.yml
-  - import_tasks: ../common/tasks.yml
-  - import_tasks: ../asserts/pod_asserts.yml
+  - include_tasks: update-jaeger-url.yml
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+  - include_tasks: ../asserts/pod_asserts.yml
 
   - name: Get statuses from Istio components
     uri:
@@ -53,9 +53,6 @@
     debug:
       msg: "{{ status_response.json }}"  
 
-  - set_fact:
-      current_kiali_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name) }}"
-
   - name: Check if Jaeger status is present
     set_fact:
       tracing_error: "{{ item.status }}"
@@ -66,3 +63,157 @@
     assert:
       that:
       - tracing_error is defined
+
+  # Wait for the operator to finish reconciling the bad URL change, and get the last kiali_cr
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+
+  # Create external access to Jaeger for testing - cluster-specific approach
+  - name: Create NodePort service for external Jaeger access (Minikube/Kind)
+    kubernetes.core.k8s:
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: jaeger-query-external
+          namespace: istio-system
+        spec:
+          type: NodePort
+          selector:
+            app: jaeger
+          ports:
+          - name: jaeger-query
+            port: 16686
+            targetPort: 16686
+            nodePort: 30686
+          - name: jaeger-query-grpc
+            port: 16685
+            targetPort: 16685
+            nodePort: 30685
+    when: is_minikube or is_kind
+
+  - name: Create Route for external Jaeger access (OpenShift)
+    kubernetes.core.k8s:
+      definition:
+        apiVersion: route.openshift.io/v1
+        kind: Route
+        metadata:
+          name: jaeger-query-external
+          namespace: istio-system
+        spec:
+          to:
+            kind: Service
+            name: tracing
+          port:
+            targetPort: 16685
+    when: is_openshift
+
+  # Determine external Jaeger URL based on cluster type
+  - name: Set Jaeger external URL for Minikube
+    set_fact:
+      jaeger_external_url: "http://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}:30686"
+    when: is_minikube
+
+  - name: Set Jaeger external URL for Kind
+    set_fact:
+      jaeger_external_url: "http://localhost:30686"
+    when: is_kind
+
+  - name: Get OpenShift Route for Jaeger
+    kubernetes.core.k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: jaeger-query-external
+      namespace: istio-system
+    register: jaeger_route
+    when: is_openshift
+
+  - name: Set Jaeger external URL for OpenShift
+    set_fact:
+      jaeger_external_url: "https://{{ jaeger_route.resources[0].spec.host }}"
+    when: is_openshift and jaeger_route.resources | length > 0
+
+  # Ensure Jaeger external URL was determined
+  - name: Assert that Jaeger external URL is available
+    assert:
+      that:
+      - jaeger_external_url is defined
+      fail_msg: |
+        Failed to determine Jaeger external URL for cluster type.
+        - is_minikube: {{ is_minikube }}
+        - is_kind: {{ is_kind }}
+        - is_openshift: {{ is_openshift }}
+        - jaeger_external_url: {{ jaeger_external_url | default('NOT DEFINED') }}
+      success_msg: "Jaeger external URL determined: {{ jaeger_external_url }}"
+
+  # Configure Istio to send traces to Jaeger instead of Zipkin (after Jaeger services exist)
+  - name: Get current Istio mesh configuration
+    kubernetes.core.k8s_info:
+      api_version: v1
+      kind: ConfigMap
+      namespace: istio-system
+      name: istio
+    register: istio_configmap
+
+  - name: Parse current mesh configuration
+    set_fact:
+      current_mesh_config: "{{ istio_configmap.resources[0].data.mesh | from_yaml }}"
+
+  - name: Update mesh config to use Jaeger for tracing
+    set_fact:
+      updated_mesh_config: "{{ current_mesh_config | combine({'defaultProviders': {'tracing': ['jaeger']}}, recursive=True) }}"
+
+  - name: Patch Istio ConfigMap with Jaeger tracing configuration
+    kubernetes.core.k8s:
+      api_version: v1
+      kind: ConfigMap
+      namespace: istio-system
+      name: istio
+      definition:
+        data:
+          mesh: "{{ updated_mesh_config | to_nice_yaml }}"
+      merge_type: merge
+
+  - name: Restart istiod to pick up new tracing configuration
+    kubernetes.core.k8s:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: istio-system
+      name: istiod
+      definition:
+        spec:
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+
+  - name: Wait for istiod to restart
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: istio-system
+      name: istiod
+      wait: true
+      wait_condition:
+        type: Progressing
+        status: "True"
+        reason: NewReplicaSetAvailable
+      wait_timeout: 300
+
+  # Update Kiali CR with both internal and external Jaeger URLs for testing
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      current_kiali_cr: "{{ kiali_cr }}"
+      updated_tracing_config: "{{ current_kiali_cr.spec.external_services.tracing | combine({'enabled': true, 'external_url': jaeger_external_url + '/jaeger', 'internal_url': 'http://tracing.istio-system:16685/jaeger'}) }}"
+      updated_external_services: "{{ current_kiali_cr.spec.external_services | combine({'tracing': updated_tracing_config}) }}"
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': current_kiali_cr.spec | combine({'external_services': updated_external_services})}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/wait_for_kiali_running.yml
+  - include_tasks: ../common/tasks.yml
+
+  # Run X-Request-Id propagation tests
+  - include_tasks: test-x-request-id-simple.yml
+
+  # Run comprehensive end-to-end tracing test
+  - include_tasks: test-x-request-id-propagation.yml
