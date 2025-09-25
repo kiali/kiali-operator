@@ -26,7 +26,6 @@ spec:
       api_proxy_ca_data: ""
       api_token: "id_token"
       authentication_timeout: 300
-      authorization_endpoint: ""
       client_id: ""
       disable_rbac: false
       http_proxy: ""
@@ -35,6 +34,11 @@ spec:
       issuer_uri: ""
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
+      discovery_override:
+        authorization_endpoint: ""
+        token_endpoint: ""
+        userinfo_endpoint: ""
+        jwks_uri: ""
     openshift:
       #redirect_uris:
       #token_inactivity_timeout:

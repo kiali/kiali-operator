@@ -157,8 +157,6 @@ spec:
                       authentication_timeout:
                         type: integer
                         default: 300
-                      authorization_endpoint:
-                        type: string
                       client_id:
                         type: string
                       disable_rbac:
@@ -177,6 +175,22 @@ spec:
                         type: array
                         items:
                           type: string
+                      discovery_override:
+                        type: object
+                        description: "Optional configuration to override OpenID Connect auto-discovery. Use when the IdP restricts access to /.well-known/openid-configuration endpoint."
+                        properties:
+                          authorization_endpoint:
+                            type: string
+                            description: "The URL of the provider's authorization endpoint."
+                          token_endpoint:
+                            type: string
+                            description: "The URL of the provider's token endpoint."
+                          userinfo_endpoint:
+                            type: string
+                            description: "The URL of the provider's UserInfo endpoint."
+                          jwks_uri:
+                            type: string
+                            description: "The URL of the provider's JWK Set document."
                       username_claim:
                         type: string
                         default: "sub"
