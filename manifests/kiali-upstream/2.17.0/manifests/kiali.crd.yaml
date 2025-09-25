@@ -173,10 +173,19 @@ spec:
                         default: false
                       issuer_uri:
                         type: string
+                      jwks_uri:
+                        type: string
+                        description: "The URL of the provider's JWK Set document. This field is optional and enables explicit endpoint configuration for environments where auto-discovery is restricted."
                       scopes:
                         type: array
                         items:
                           type: string
+                      token_endpoint:
+                        type: string
+                        description: "The URL of the provider's token endpoint. This field is optional and enables explicit endpoint configuration for environments where auto-discovery is restricted."
+                      userinfo_endpoint:
+                        type: string
+                        description: "The URL of the provider's UserInfo endpoint. This field is optional and enables explicit endpoint configuration for environments where auto-discovery is restricted."
                       username_claim:
                         type: string
                         default: "sub"
