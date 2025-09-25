@@ -10,11 +10,6 @@ spec:
       client_id: {{ openid.client_id }}
       insecure_skip_verify_tls: true
       issuer_uri: {{ openid.issuer_uri }}
-      # Optional explicit endpoints for security-hardened environments
-      # authorization_endpoint: {{ openid.authorization_endpoint | default("") }}
-      # token_endpoint: {{ openid.token_endpoint | default("") }}
-      # userinfo_endpoint: {{ openid.userinfo_endpoint | default("") }}
-      # jwks_uri: {{ openid.jwks_uri | default("") }}
       username_claim: {{ openid.username_claim }}
   deployment:
     ingress:
