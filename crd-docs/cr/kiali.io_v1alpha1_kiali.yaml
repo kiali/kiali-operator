@@ -33,13 +33,13 @@ spec:
       https_proxy: ""
       insecure_skip_verify_tls: false
       issuer_uri: ""
-      # Optional: Explicit OIDC endpoints for security-hardened environments
-      # These enable authentication when IdP restricts access to /.well-known/openid-configuration
-      jwks_uri: ""
       scopes: ["openid", "profile", "email"]
-      token_endpoint: ""
-      userinfo_endpoint: ""
       username_claim: "sub"
+      discovery_override:
+        authorization_endpoint: ""
+        token_endpoint: ""
+        userinfo_endpoint: ""
+        jwks_uri: ""
     openshift:
       #redirect_uris:
       #token_inactivity_timeout:
