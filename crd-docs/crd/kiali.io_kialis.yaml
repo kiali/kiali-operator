@@ -157,8 +157,6 @@ spec:
                       authentication_timeout:
                         type: integer
                         default: 300
-                      authorization_endpoint:
-                        type: string
                       client_id:
                         type: string
                       disable_rbac:
