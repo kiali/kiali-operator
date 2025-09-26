@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ kiali_vars.deployment.instance_name }}
+  namespace: "{{ kiali_vars.deployment.namespace }}"
+  labels: {{ kiali_resource_metadata_labels }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kiali
+      app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
+  policyTypes:
+  - Ingress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: {{ kiali_vars.server.port }}
+{% if kiali_vars.server.observability.metrics.enabled|bool == True %}
+    - protocol: TCP
+      port: {{ kiali_vars.server.observability.metrics.port }}
+{% endif %}
