@@ -1,4 +1,3 @@
-# Test X-Request-Id propagation from Kiali to Prometheus through tracing
 - name: Test X-Request-Id propagation to Prometheus calls
   block:
   - name: Generate unique test request ID
@@ -9,13 +8,10 @@
     debug:
       msg: "Testing X-Request-Id propagation with ID: {{ test_request_id }}"
 
-  # Wait a bit to ensure Kiali tracing is fully initialized
   - name: Wait for Kiali tracing to be ready
     wait_for:
       timeout: 10
-    delegate_to: localhost
 
-  # Call Kiali graph API that definitely triggers Prometheus calls
   - name: Call Kiali graph API with X-Request-Id header to trigger Prometheus calls
     uri:
       url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces=istio-system&duration=60s&graphType=workload"
@@ -31,41 +27,65 @@
     debug:
       msg: "Graph API response status: {{ graph_response.status | default('failed') }}"
 
+  - name: Call Kiali service metrics API to test Prometheus client instrumentation
+    uri:
+      url: "{{ kiali_base_url }}/api/crippled"
+      method: GET
+      validate_certs: no
+      headers:
+        X-Request-Id: "{{ test_request_id }}-metrics"
+      return_content: yes
+    register: metrics_response
+    ignore_errors: yes
+
+  - name: Verify metrics API response
+    debug:
+      msg: "Metrics API response status: {{ metrics_response.status | default('failed') }}"
+
   - name: Define current Kiali CR which is the last kiali_cr common/tasks.yml found
     set_fact:
       current_kiali_cr: "{{ kiali_cr }}"
 
-  # Query Jaeger to find traces with our test request ID
   - name: Get Jaeger external query URL from Kiali CR
     set_fact:
       jaeger_query_url: "{{ current_kiali_cr.spec.external_services.tracing.external_url.split('/jaeger')[0] if '/jaeger' in current_kiali_cr.spec.external_services.tracing.external_url else current_kiali_cr.spec.external_services.tracing.external_url }}"
 
-  # Query Jaeger directly for traces with our request_id tag and GraphNamespaces operation
-  - name: Query Jaeger for traces with our request_id tag (with retries)
+  - name: Query Jaeger for GraphNamespaces traces with our request_id tag
     uri:
       url: "{{ jaeger_query_url }}/jaeger/api/traces?service=kiali.istio-system&tag=request_id:{{ test_request_id }}&operation=GraphNamespaces&limit=10"
       method: GET
       validate_certs: no
       return_content: yes
-    register: jaeger_request_id_traces
+    register: jaeger_graph_traces
     ignore_errors: yes
-    retries: 5
-    delay: 60
-    until: jaeger_request_id_traces.json is defined and jaeger_request_id_traces.json.data is defined and jaeger_request_id_traces.json.data | length > 0
+    retries: 3
+    delay: 30
+    until: jaeger_graph_traces.json is defined and jaeger_graph_traces.json.data is defined and jaeger_graph_traces.json.data | length > 0
 
-  - name: Set final Jaeger query result
+  - name: Query Jaeger for metrics traces with Prometheus client spans
+    uri:
+      url: "{{ jaeger_query_url }}/jaeger/api/traces?service=kiali.istio-system&tag=request_id:{{ test_request_id }}-metrics&limit=10"
+      method: GET
+      validate_certs: no
+      return_content: yes
+    register: jaeger_metrics_traces
+    ignore_errors: yes
+    retries: 3
+    delay: 30
+    until: jaeger_metrics_traces.json is defined and jaeger_metrics_traces.json.data is defined and jaeger_metrics_traces.json.data | length > 0
+
+  - name: Set final Jaeger query results (combine both graph and metrics traces)
     set_fact:
-      jaeger_recent_traces: "{{ jaeger_request_id_traces }}"
-      matching_traces: "{{ jaeger_request_id_traces.json.data if jaeger_request_id_traces.json is defined and jaeger_request_id_traces.json.data is defined else [] }}"
+      graph_traces: "{{ jaeger_graph_traces.json.data if jaeger_graph_traces.json is defined and jaeger_graph_traces.json.data is defined else [] }}"
+      metrics_traces: "{{ jaeger_metrics_traces.json.data if jaeger_metrics_traces.json is defined and jaeger_metrics_traces.json.data is defined else [] }}"
 
-  # Display actual trace data containing X-Request-Id for verification
   - name: Display traces containing our X-Request-Id for verification
     debug:
       msg: |
-        TRACE VERIFICATION: Found {{ matching_traces | length }} trace(s) with X-Request-Id {{ test_request_id }}
+        TRACE VERIFICATION: Found {{ graph_traces | length }} trace(s) with X-Request-Id {{ test_request_id }}
 
         Trace Details:
-        {% for trace in matching_traces[:1] %}
+        {% for trace in graph_traces[:1] %}
         Trace {{ loop.index }}:
         - Trace ID: {{ trace.traceID }}
         - Service: {{ trace.processes.p1.serviceName if trace.processes.p1 is defined else 'unknown' }}
@@ -88,7 +108,31 @@
         - GraphNamespaces, BuildNamespacesTrafficMap: These call Prometheus for metrics
         - HTTP client spans with prometheus URLs: Direct evidence
         - Package tags showing 'prometheus' or 'metrics': Related operations
-    when: matching_traces | length > 0
+    when: graph_traces | length > 0
+
+  - name: Display metrics traces with Prometheus client spans
+    debug:
+      msg: |
+        METRICS TRACE VERIFICATION: Found {{ metrics_traces | length }} trace(s) with X-Request-Id {{ test_request_id }}-metrics
+
+        {% for trace in metrics_traces[:1] %}
+        Metrics Trace {{ loop.index }}:
+        - Trace ID: {{ trace.traceID }}
+        - Service: {{ trace.processes.p1.serviceName if trace.processes.p1 is defined else 'unknown' }}
+        - Total Spans: {{ trace.spans | length }}
+        PROMETHEUS CLIENT SPANS (looking for package: prometheus):
+        {% for span in trace.spans %}
+        * {{ span.operationName }} ({{ span.duration }}µs)
+        {% if span.tags is defined %}
+        {% for tag in span.tags %}
+        {% if tag.key in ['package', 'request_id', 'namespace', 'service', 'metricName'] %}
+          - {{ tag.key }}: {{ tag.value }}
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+    when: metrics_traces | length > 0
 
   - name: Assert that Jaeger external URL is properly configured
     assert:
@@ -101,7 +145,6 @@
         - jaeger_query_url: {{ jaeger_query_url | default('NOT DEFINED') }}
       success_msg: "Using Jaeger query URL: {{ jaeger_query_url }}"
 
-  # Check what services are available in Jaeger after trace collection
   - name: Query Jaeger for available services
     uri:
       url: "{{ jaeger_query_url }}/jaeger/api/services"
@@ -115,95 +158,39 @@
     debug:
       msg: "Available services in Jaeger: {{ jaeger_services.json.data if jaeger_services.json is defined and jaeger_services.json.data is defined else 'none' }}"
 
-  # Query for recent traces from kiali service
-  - name: Query Jaeger for recent traces (kiali service)
-    uri:
-      url: "{{ jaeger_query_url }}/jaeger/api/traces?service=kiali.istio-system&start={{ (ansible_date_time.epoch | int - 300) * 1000000 }}&end={{ ansible_date_time.epoch | int * 1000000 }}&limit=100"
-      method: GET
-      validate_certs: no
-      return_content: yes
-    register: jaeger_recent_traces
-    ignore_errors: yes
 
-  - name: Search for traces with our request ID in the recent traces
-    set_fact:
-      matching_traces: "{{ jaeger_recent_traces.json.data | selectattr('spans', 'defined') | list if (jaeger_recent_traces.json is defined and jaeger_recent_traces.json.data is defined) else [] }}"
-
-  - name: Display recent traces count
-    debug:
-      msg: "Recent Kiali traces found: {{ matching_traces | length if matching_traces is defined else 'none' }}"
-
-  # Search for our X-Request-Id in trace data using simple string search
-  - name: Search for traces containing our request ID
-    set_fact:
-      request_id_found_in_traces: true
-      traces_with_request_id: "{{ traces_with_request_id | default([]) + [trace] }}"
-    loop: "{{ matching_traces | default([]) }}"
-    loop_control:
-      loop_var: trace
-    when:
-    - (trace | to_json) is search(test_request_id)
-    vars:
-      traces_with_request_id: []
-
-  # Also set the span tags flag if we found any traces
-  - name: Set span tags flag if traces found
-    set_fact:
-      request_id_in_span_tags: true
-    when: request_id_found_in_traces | default(false)
-
-  - name: Display X-Request-Id propagation results
-    debug:
-      msg: "Found {{ traces_with_request_id | length if traces_with_request_id is defined else 0 }} trace(s) with X-Request-Id {{ test_request_id }}"
-  - name: Verify X-Request-Id propagation in traces (warning only for now)
-    debug:
-      msg: "WARNING: No traces found with X-Request-Id {{ test_request_id }} - X-Request-Id propagation may not be working as expected"
-    when: request_id_traces is not defined or request_id_traces | length == 0
-
-  # Additional verification: Look for Prometheus-related spans in the traces
-  - name: Search for Prometheus calls in traces with our request ID
-    set_fact:
-      prometheus_spans: "{{ prometheus_spans | default([]) + trace.spans | selectattr('operationName', 'search', 'prometheus|Prometheus') | list }}"
-    loop: "{{ request_id_traces | default([]) }}"
-    loop_control:
-      loop_var: trace
-    when:
-    - trace.spans is defined
-    vars:
-      prometheus_spans: []
-
-  - name: Verify Prometheus spans contain X-Request-Id
-    debug:
-      msg: "Found {{ prometheus_spans | length if prometheus_spans is defined else 0 }} Prometheus-related spans in traces with our request ID"
-    when: prometheus_spans is defined
-
-  # Final verification - check if X-Request-Id actually made it into Jaeger traces
-  - name: Assert X-Request-Id is found in Jaeger trace data
+  - name: Assert X-Request-Id is found in Jaeger trace data (graph and metrics)
     assert:
       that:
       - graph_response.status == 200
-      - jaeger_recent_traces.status == 200
-      - matching_traces | length > 0
+      - metrics_response.status == 200
+      - jaeger_graph_traces.status == 200
+      - jaeger_metrics_traces.status == 200
+      - graph_traces | length > 0
+      - metrics_traces | length > 0
       fail_msg: |
         X-Request-Id not found in Jaeger trace data:
         - Graph API response: {{ graph_response.status | default('failed') }}
-        - Jaeger query status: {{ jaeger_recent_traces.status | default('failed') }}
-        - Traces with our request_id: {{ matching_traces | length if matching_traces is defined else 0 }}
+        - Metrics API response: {{ metrics_response.status | default('failed') }}
+        - Graph Jaeger query status: {{ jaeger_graph_traces.status | default('failed') }}
+        - Metrics Jaeger query status: {{ jaeger_metrics_traces.status | default('failed') }}
+        - Graph traces with request_id: {{ graph_traces | length if graph_traces is defined else 0 }}
+        - Metrics traces with request_id: {{ metrics_traces | length if metrics_traces is defined else 0 }}
         - Available services: {{ jaeger_services.json.data | length if jaeger_services.json is defined and jaeger_services.json.data is defined else 0 }}
         FAILURE: X-Request-Id propagation to tracing backend is not working properly.
-      success_msg: "SUCCESS: X-Request-Id {{ test_request_id }} found in Jaeger trace data! End-to-end tracing correlation is working - found {{ matching_traces | length }} trace(s)."
+      success_msg: "SUCCESS: X-Request-Id found in both graph ({{ graph_traces | length }}) and metrics ({{ metrics_traces | length }}) traces! Complete Prometheus client tracing is working."
 
-  # Report detailed results
   - name: Report end-to-end tracing correlation results
     debug:
       msg: |
         End-to-end X-Request-Id tracing correlation test results:
         - Test Request ID: {{ test_request_id }}
         - Graph API response: {{ graph_response.status | default('failed') }}
-        - Jaeger query status: {{ jaeger_recent_traces.status | default('failed') }}
-        - Recent traces found: {{ matching_traces | length if matching_traces is defined else 0 }}
-        - Traces with request ID: {{ traces_with_request_id | length if traces_with_request_id is defined else 0 }}
-        - Prometheus spans found: {{ prometheus_spans | length if prometheus_spans is defined else 0 }}
+        - Metrics API response: {{ metrics_response.status | default('failed') }}
+        - Graph Jaeger query status: {{ jaeger_graph_traces.status | default('failed') }}
+        - Metrics Jaeger query status: {{ jaeger_metrics_traces.status | default('failed') }}
+        - Graph traces found: {{ graph_traces | length if graph_traces is defined else 0 }}
+        - Metrics traces found: {{ metrics_traces | length if metrics_traces is defined else 0 }}
 
   rescue:
   - name: Display troubleshooting information on failure
@@ -214,9 +201,11 @@
         Kiali Base URL: {{ kiali_base_url }}
         Jaeger Query URL: {{ jaeger_query_url | default('not determined') }}
         Graph API Status: {{ graph_response.status | default('failed') }}
-        Jaeger Query Status: {{ jaeger_recent_traces.status | default('failed') }}
-        Recent Traces Count: {{ matching_traces | length if matching_traces is defined else 'unknown' }}
-        Traces with Request ID: {{ traces_with_request_id | length if traces_with_request_id is defined else 'unknown' }}
+        Metrics API Status: {{ metrics_response.status | default('failed') }}
+        Graph Jaeger Query Status: {{ jaeger_graph_traces.status | default('failed') }}
+        Metrics Jaeger Query Status: {{ jaeger_metrics_traces.status | default('failed') }}
+        Graph Traces Count: {{ graph_traces | length if graph_traces is defined else 'unknown' }}
+        Metrics Traces Count: {{ metrics_traces | length if metrics_traces is defined else 'unknown' }}
 
   - name: Fail the test with detailed error information
     fail:
