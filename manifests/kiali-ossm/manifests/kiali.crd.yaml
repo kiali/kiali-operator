@@ -1442,7 +1442,7 @@ spec:
                           url_format:
                             description: "The URL format for the external url. Can be 'jaeger', 'grafana' or 'openshift'. Default to 'jaeger'. Grafana will need a Grafana url in the Grafana settings. Openshift will need the name, namespace and tenant in the `tempo_config` settings."
                             type: string
-                            enum: [ "jaeger", "grafana", "openshift" ]
+                            enum: ["jaeger", "grafana", "openshift"]
                             default: "jaeger"
                       use_grpc:
                         description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it)."
