@@ -106,7 +106,9 @@
             kind: Service
             name: tracing
           port:
-            targetPort: 16685
+            targetPort: http-query
+          tls:
+            termination: edge
     when: is_openshift
 
   # Determine external Jaeger URL based on cluster type
@@ -129,10 +131,18 @@
     register: jaeger_route
     when: is_openshift
 
+  - name: Debug Jaeger Route information
+    debug:
+      msg: |
+        Jaeger Route debug info:
+        - Route found: {{ jaeger_route.resources | length > 0 if jaeger_route.resources is defined else false }}
+        - Route resources: {{ jaeger_route.resources if jaeger_route.resources is defined else 'undefined' }}
+    when: is_openshift
+
   - name: Set Jaeger external URL for OpenShift
     set_fact:
       jaeger_external_url: "https://{{ jaeger_route.resources[0].spec.host }}"
-    when: is_openshift and jaeger_route.resources | length > 0
+    when: is_openshift and jaeger_route.resources is defined and jaeger_route.resources | length > 0
 
   # Ensure Jaeger external URL was determined
   - name: Assert that Jaeger external URL is available
@@ -201,11 +211,16 @@
         reason: NewReplicaSetAvailable
       wait_timeout: 300
 
+  # Debug the Jaeger external URL before updating Kiali CR
+  - name: Debug Jaeger external URL before CR update
+    debug:
+      msg: "Jaeger external URL to be used: {{ jaeger_external_url | default('NOT DEFINED') }}"
+
   # Update Kiali CR with both internal and external Jaeger URLs for testing
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
       current_kiali_cr: "{{ kiali_cr }}"
-      updated_tracing_config: "{{ current_kiali_cr.spec.external_services.tracing | combine({'enabled': true, 'external_url': jaeger_external_url + '/jaeger', 'internal_url': 'http://tracing.istio-system:16685/jaeger'}) }}"
+      updated_tracing_config: "{{ current_kiali_cr.spec.external_services.tracing | combine({'enabled': true, 'external_url': (jaeger_external_url | default('')) + '/jaeger', 'internal_url': 'http://tracing.istio-system:16685/jaeger'}) }}"
       updated_external_services: "{{ current_kiali_cr.spec.external_services | combine({'tracing': updated_tracing_config}) }}"
       new_kiali_cr: "{{ current_kiali_cr | combine({'spec': current_kiali_cr.spec | combine({'external_services': updated_external_services})}, recursive=True) }}"
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml

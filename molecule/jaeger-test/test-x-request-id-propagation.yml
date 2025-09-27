@@ -46,9 +46,20 @@
     set_fact:
       current_kiali_cr: "{{ kiali_cr }}"
 
+  - name: Debug Kiali CR tracing configuration
+    debug:
+      msg: |
+        Kiali CR tracing config:
+        - external_url: {{ current_kiali_cr.spec.external_services.tracing.external_url | default('NOT DEFINED') }}
+        - enabled: {{ current_kiali_cr.spec.external_services.tracing.enabled | default('NOT DEFINED') }}
+
   - name: Get Jaeger external query URL from Kiali CR
     set_fact:
-      jaeger_query_url: "{{ current_kiali_cr.spec.external_services.tracing.external_url.split('/jaeger')[0] if '/jaeger' in current_kiali_cr.spec.external_services.tracing.external_url else current_kiali_cr.spec.external_services.tracing.external_url }}"
+      jaeger_query_url: "{{ current_kiali_cr.spec.external_services.tracing.external_url | regex_replace('/jaeger$', '') }}"
+
+  - name: Debug extracted Jaeger query URL
+    debug:
+      msg: "Extracted Jaeger query URL: {{ jaeger_query_url }}"
 
   - name: Query Jaeger for GraphNamespaces traces with our request_id tag
     uri:
