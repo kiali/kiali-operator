@@ -117,7 +117,7 @@
 
   - name: Set Jaeger external URL for Kind
     set_fact:
-      jaeger_external_url: "http://localhost:30686"
+      jaeger_external_url: "http://{{ lookup('env', 'MOLECULE_KIND_IP') }}:30686"
     when: is_kind
 
   - name: Get OpenShift Route for Jaeger
