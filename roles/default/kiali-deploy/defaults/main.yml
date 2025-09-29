@@ -24,6 +24,7 @@ kiali_defaults:
       api_proxy_ca_data: ""
       api_token: "id_token"
       authentication_timeout: 300
+      authorization_endpoint: ""
       client_id: ""
       disable_rbac: false
       http_proxy: ""

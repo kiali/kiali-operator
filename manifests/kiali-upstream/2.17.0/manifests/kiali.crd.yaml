@@ -157,6 +157,9 @@ spec:
                       authentication_timeout:
                         type: integer
                         default: 300
+                      authorization_endpoint:
+                        type: string
+                        description: "DEPRECATED: Use auth.openid.discovery_override.authorization_endpoint instead. The URL of the provider's authorization endpoint."
                       client_id:
                         type: string
                       disable_rbac:
