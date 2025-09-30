@@ -1,0 +1,112 @@
+# Simple test for X-Request-Id propagation by checking Kiali logs
+- name: Test X-Request-Id propagation by checking Kiali logs
+  block:
+  - name: Generate unique test request ID
+    set_fact:
+      test_request_id: "molecule-test-{{ ansible_date_time.epoch }}-{{ 999999 | random }}"
+  
+  - name: Display test request ID for debugging
+    debug:
+      msg: "Testing X-Request-Id propagation with ID: {{ test_request_id }}"
+
+  # Make a call to a Kiali API that triggers Prometheus queries
+  - name: Call Kiali graph API with X-Request-Id header to trigger Prometheus calls
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces=istio-system&duration=60s&graphType=workload"
+      method: GET
+      validate_certs: no
+      headers:
+        X-Request-Id: "{{ test_request_id }}"
+      return_content: yes
+    register: api_response
+    ignore_errors: yes
+
+  - name: Verify API response
+    debug:
+      msg: "API response status: {{ api_response.status | default('failed') }}"
+
+  # Wait a moment for logs to be written
+  - name: Wait for logs to be written
+    wait_for:
+      timeout: 5
+    delegate_to: localhost
+
+  # Get Kiali pod logs to check for X-Request-Id propagation
+  - name: Get Kiali pod for log checking
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_info
+
+  - name: Get Kiali pod logs
+    kubernetes.core.k8s_log:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      name: "{{ kiali_pod_info.resources[0].metadata.name }}"
+      tail_lines: 100
+    register: kiali_logs
+    when: kiali_pod_info.resources | length > 0
+
+  # Look for log lines that contain BOTH our request ID AND prometheus context
+  - name: Search for log lines containing both our request ID and Prometheus context
+    set_fact:
+      prometheus_request_correlation_found: true
+    when: 
+    - kiali_logs.log is defined
+    - kiali_logs.log | regex_search('.*' + test_request_id + '.*prometheus.*', ignorecase=True) or 
+      kiali_logs.log | regex_search('.*prometheus.*' + test_request_id + '.*', ignorecase=True)
+
+  - name: Search for log lines containing both our request ID and X-Request-Id handling
+    set_fact:
+      request_id_correlation_found: true
+    when: 
+    - kiali_logs.log is defined
+    - kiali_logs.log | regex_search('.*' + test_request_id + '.*(x-request-id|request-id).*', ignorecase=True) or
+      kiali_logs.log | regex_search('.*(x-request-id|request-id).*' + test_request_id + '.*', ignorecase=True)
+
+  # Display results
+  - name: Display X-Request-Id propagation test results
+    debug:
+      msg: |
+        X-Request-Id propagation test results:
+        - Test Request ID: {{ test_request_id }}
+        - API call status: {{ api_response.status | default('failed') }}
+        - Prometheus + Request ID correlation found: {{ prometheus_request_correlation_found | default(false) }}
+        - X-Request-Id + Request ID correlation found: {{ request_id_correlation_found | default(false) }}
+
+  # Success assertion - both API success and meaningful correlation
+  - name: Assert X-Request-Id propagation is working
+    assert:
+      that:
+      - api_response.status == 200
+      - prometheus_request_correlation_found | default(false) or request_id_correlation_found | default(false)
+      fail_msg: |
+        X-Request-Id propagation test failed:
+        - Graph API call status: {{ api_response.status | default('failed') }}
+        - Prometheus + Request ID correlation: {{ prometheus_request_correlation_found | default(false) }}
+        - X-Request-Id + Request ID correlation: {{ request_id_correlation_found | default(false) }}
+        We need to see our request ID in the same log context as Prometheus or X-Request-Id handling.
+      success_msg: "SUCCESS: X-Request-Id correlation found! Graph API returned {{ api_response.status }} and meaningful correlation was detected in logs."
+
+  rescue:
+  - name: Display troubleshooting information on failure
+    debug:
+      msg: |
+        X-Request-Id propagation test failed. Troubleshooting info:
+        Test Request ID: {{ test_request_id }}
+        Kiali Base URL: {{ kiali_base_url }}
+        API Status: {{ api_response.status | default('failed') }}
+        Prometheus + Request ID correlation: {{ prometheus_request_correlation_found | default(false) }}
+        X-Request-Id + Request ID correlation: {{ request_id_correlation_found | default(false) }}
+        Recent Kiali logs (last 20 lines):
+        {{ kiali_logs.log.split('\n')[-20:] | join('\n') if kiali_logs.log is defined else 'No logs available' }}
+
+  - name: Fail the test with detailed error information
+    fail:
+      msg: "X-Request-Id propagation test failed - see troubleshooting information above"

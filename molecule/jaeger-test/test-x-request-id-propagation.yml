@@ -1,0 +1,223 @@
+- name: Test X-Request-Id propagation to Prometheus calls
+  block:
+  - name: Generate unique test request ID
+    set_fact:
+      test_request_id: "jaeger-test-{{ ansible_date_time.epoch }}-{{ 999999999 | random }}"
+
+  - name: Display test request ID for debugging
+    debug:
+      msg: "Testing X-Request-Id propagation with ID: {{ test_request_id }}"
+
+  - name: Wait for Kiali tracing to be ready
+    wait_for:
+      timeout: 10
+
+  - name: Call Kiali graph API with X-Request-Id header to trigger Prometheus calls
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces=istio-system&duration=60s&graphType=workload"
+      method: GET
+      validate_certs: no
+      headers:
+        X-Request-Id: "{{ test_request_id }}"
+      return_content: yes
+    register: graph_response
+    ignore_errors: yes
+
+  - name: Verify graph API response
+    debug:
+      msg: "Graph API response status: {{ graph_response.status | default('failed') }}"
+
+  - name: Call Kiali service metrics API to test Prometheus client instrumentation
+    uri:
+      url: "{{ kiali_base_url }}/api/crippled"
+      method: GET
+      validate_certs: no
+      headers:
+        X-Request-Id: "{{ test_request_id }}-metrics"
+      return_content: yes
+    register: metrics_response
+    ignore_errors: yes
+
+  - name: Verify metrics API response
+    debug:
+      msg: "Metrics API response status: {{ metrics_response.status | default('failed') }}"
+
+  - name: Define current Kiali CR which is the last kiali_cr common/tasks.yml found
+    set_fact:
+      current_kiali_cr: "{{ kiali_cr }}"
+
+  - name: Debug Kiali CR tracing configuration
+    debug:
+      msg: |
+        Kiali CR tracing config:
+        - external_url: {{ current_kiali_cr.spec.external_services.tracing.external_url | default('NOT DEFINED') }}
+        - enabled: {{ current_kiali_cr.spec.external_services.tracing.enabled | default('NOT DEFINED') }}
+
+  - name: Get Jaeger external query URL from Kiali CR
+    set_fact:
+      jaeger_query_url: "{{ current_kiali_cr.spec.external_services.tracing.external_url | regex_replace('/jaeger$', '') }}"
+
+  - name: Debug extracted Jaeger query URL
+    debug:
+      msg: "Extracted Jaeger query URL: {{ jaeger_query_url }}"
+
+  - name: Query Jaeger for GraphNamespaces traces with our request_id tag
+    uri:
+      url: "{{ jaeger_query_url }}/jaeger/api/traces?service=kiali.istio-system&tag=request_id:{{ test_request_id }}&operation=GraphNamespaces&limit=10"
+      method: GET
+      validate_certs: no
+      return_content: yes
+    register: jaeger_graph_traces
+    ignore_errors: yes
+    retries: 3
+    delay: 30
+    until: jaeger_graph_traces.json is defined and jaeger_graph_traces.json.data is defined and jaeger_graph_traces.json.data | length > 0
+
+  - name: Query Jaeger for metrics traces with Prometheus client spans
+    uri:
+      url: "{{ jaeger_query_url }}/jaeger/api/traces?service=kiali.istio-system&tag=request_id:{{ test_request_id }}-metrics&limit=10"
+      method: GET
+      validate_certs: no
+      return_content: yes
+    register: jaeger_metrics_traces
+    ignore_errors: yes
+    retries: 3
+    delay: 30
+    until: jaeger_metrics_traces.json is defined and jaeger_metrics_traces.json.data is defined and jaeger_metrics_traces.json.data | length > 0
+
+  - name: Set final Jaeger query results (combine both graph and metrics traces)
+    set_fact:
+      graph_traces: "{{ jaeger_graph_traces.json.data if jaeger_graph_traces.json is defined and jaeger_graph_traces.json.data is defined else [] }}"
+      metrics_traces: "{{ jaeger_metrics_traces.json.data if jaeger_metrics_traces.json is defined and jaeger_metrics_traces.json.data is defined else [] }}"
+
+  - name: Display traces containing our X-Request-Id for verification
+    debug:
+      msg: |
+        TRACE VERIFICATION: Found {{ graph_traces | length }} trace(s) with X-Request-Id {{ test_request_id }}
+
+        Trace Details:
+        {% for trace in graph_traces[:1] %}
+        Trace {{ loop.index }}:
+        - Trace ID: {{ trace.traceID }}
+        - Service: {{ trace.processes.p1.serviceName if trace.processes.p1 is defined else 'unknown' }}
+        - Total Spans: {{ trace.spans | length }}
+
+        ALL SPANS IN TRACE (looking for Prometheus-related operations):
+        {% for span in trace.spans %}
+        * {{ span.operationName }} ({{ span.duration }}µs)
+        {% if span.tags is defined %}
+        {% for tag in span.tags %}
+        {% if tag.key in ['url.path', 'http.url', 'http.target', 'package', 'request_id'] %}
+          - {{ tag.key }}: {{ tag.value }}
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+
+        ANALYSIS: Look for operations that might indicate Prometheus calls:
+        - GraphNamespaces, BuildNamespacesTrafficMap: These call Prometheus for metrics
+        - HTTP client spans with prometheus URLs: Direct evidence
+        - Package tags showing 'prometheus' or 'metrics': Related operations
+    when: graph_traces | length > 0
+
+  - name: Display metrics traces with Prometheus client spans
+    debug:
+      msg: |
+        METRICS TRACE VERIFICATION: Found {{ metrics_traces | length }} trace(s) with X-Request-Id {{ test_request_id }}-metrics
+
+        {% for trace in metrics_traces[:1] %}
+        Metrics Trace {{ loop.index }}:
+        - Trace ID: {{ trace.traceID }}
+        - Service: {{ trace.processes.p1.serviceName if trace.processes.p1 is defined else 'unknown' }}
+        - Total Spans: {{ trace.spans | length }}
+        PROMETHEUS CLIENT SPANS (looking for package: prometheus):
+        {% for span in trace.spans %}
+        * {{ span.operationName }} ({{ span.duration }}µs)
+        {% if span.tags is defined %}
+        {% for tag in span.tags %}
+        {% if tag.key in ['package', 'request_id', 'namespace', 'service', 'metricName'] %}
+          - {{ tag.key }}: {{ tag.value }}
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        {% endfor %}
+        {% endfor %}
+    when: metrics_traces | length > 0
+
+  - name: Assert that Jaeger external URL is properly configured
+    assert:
+      that:
+      - current_kiali_cr.spec.external_services.tracing is defined
+      - jaeger_query_url is defined
+      fail_msg: |
+        Jaeger external URL is not properly configured in Kiali CR:
+        - tracing config: {{ current_kiali_cr.spec.external_services.tracing | default('NOT DEFINED') }}
+        - jaeger_query_url: {{ jaeger_query_url | default('NOT DEFINED') }}
+      success_msg: "Using Jaeger query URL: {{ jaeger_query_url }}"
+
+  - name: Query Jaeger for available services
+    uri:
+      url: "{{ jaeger_query_url }}/jaeger/api/services"
+      method: GET
+      validate_certs: no
+      return_content: yes
+    register: jaeger_services
+    ignore_errors: yes
+
+  - name: Display available services in Jaeger
+    debug:
+      msg: "Available services in Jaeger: {{ jaeger_services.json.data if jaeger_services.json is defined and jaeger_services.json.data is defined else 'none' }}"
+
+
+  - name: Assert X-Request-Id is found in Jaeger trace data (graph and metrics)
+    assert:
+      that:
+      - graph_response.status == 200
+      - metrics_response.status == 200
+      - jaeger_graph_traces.status == 200
+      - jaeger_metrics_traces.status == 200
+      - graph_traces | length > 0
+      - metrics_traces | length > 0
+      fail_msg: |
+        X-Request-Id not found in Jaeger trace data:
+        - Graph API response: {{ graph_response.status | default('failed') }}
+        - Metrics API response: {{ metrics_response.status | default('failed') }}
+        - Graph Jaeger query status: {{ jaeger_graph_traces.status | default('failed') }}
+        - Metrics Jaeger query status: {{ jaeger_metrics_traces.status | default('failed') }}
+        - Graph traces with request_id: {{ graph_traces | length if graph_traces is defined else 0 }}
+        - Metrics traces with request_id: {{ metrics_traces | length if metrics_traces is defined else 0 }}
+        - Available services: {{ jaeger_services.json.data | length if jaeger_services.json is defined and jaeger_services.json.data is defined else 0 }}
+        FAILURE: X-Request-Id propagation to tracing backend is not working properly.
+      success_msg: "SUCCESS: X-Request-Id found in both graph ({{ graph_traces | length }}) and metrics ({{ metrics_traces | length }}) traces! Complete Prometheus client tracing is working."
+
+  - name: Report end-to-end tracing correlation results
+    debug:
+      msg: |
+        End-to-end X-Request-Id tracing correlation test results:
+        - Test Request ID: {{ test_request_id }}
+        - Graph API response: {{ graph_response.status | default('failed') }}
+        - Metrics API response: {{ metrics_response.status | default('failed') }}
+        - Graph Jaeger query status: {{ jaeger_graph_traces.status | default('failed') }}
+        - Metrics Jaeger query status: {{ jaeger_metrics_traces.status | default('failed') }}
+        - Graph traces found: {{ graph_traces | length if graph_traces is defined else 0 }}
+        - Metrics traces found: {{ metrics_traces | length if metrics_traces is defined else 0 }}
+
+  rescue:
+  - name: Display troubleshooting information on failure
+    debug:
+      msg: |
+        X-Request-Id propagation test failed. Troubleshooting info:
+        Test Request ID: {{ test_request_id }}
+        Kiali Base URL: {{ kiali_base_url }}
+        Jaeger Query URL: {{ jaeger_query_url | default('not determined') }}
+        Graph API Status: {{ graph_response.status | default('failed') }}
+        Metrics API Status: {{ metrics_response.status | default('failed') }}
+        Graph Jaeger Query Status: {{ jaeger_graph_traces.status | default('failed') }}
+        Metrics Jaeger Query Status: {{ jaeger_metrics_traces.status | default('failed') }}
+        Graph Traces Count: {{ graph_traces | length if graph_traces is defined else 'unknown' }}
+        Metrics Traces Count: {{ metrics_traces | length if metrics_traces is defined else 'unknown' }}
+
+  - name: Fail the test with detailed error information
+    fail:
+      msg: "X-Request-Id propagation test failed - see troubleshooting information above"
