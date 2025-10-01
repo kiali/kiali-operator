@@ -459,6 +459,7 @@ spec:
   kiali_feature_flags:
     clustering:
       enable_exec_provider: false
+    # default: custom_workload_types is an empty list
     custom_workload_types:
     - group: "argoproj.io"
       version: "v1alpha1"
