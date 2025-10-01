@@ -115,12 +115,17 @@
   - kiali_route.resources | length > 0
 
 # To avoid problems with Ingress/Minikube conflicts, if installing multiple kiali instances set web_root to the instance name
-- name: Determine the Kiali Ingress URL on minikube
+- name: Determine the Kiali URL on minikube
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
     web_root: "{{ kiali_configmap.server.web_root if kiali_configmap.server.web_root != '/' else '' }}"
+    service_type: "{{ kiali_service.resources[0].spec.type }}"
+    http_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'equalto', 'http') | map(attribute='port') | first }}"
+    node_port: "{{ kiali_service.resources[0].spec.ports | selectattr('name', 'equalto', 'http') | map(attribute='nodePort') | first | default('NONE') }}"
+    ingress_enabled: "{{ kiali_configmap.deployment.ingress.enabled | default(false) }}"
+    ingress_port: "{{ '80' if ingress_enabled else '' }}"
   set_fact:
-    kiali_base_url: "https://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}{{ web_root }}"
+    kiali_base_url: "http://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}:{{ ingress_port if ingress_enabled else (node_port if (service_type == 'NodePort' and node_port != 'NONE') else http_port) }}{{ web_root }}"
   when:
   - is_minikube == True
   - kiali_configmap.deployment.remote_cluster_resources_only == False
