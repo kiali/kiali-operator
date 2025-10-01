@@ -187,6 +187,10 @@ spec:
     version_label_name: "app.kubernetes.io/version"
 
   kiali_feature_flags:
+    custom_workload_types:
+    - group: "argoproj.io"
+      version: "v1alpha1"
+      kind: "Rollout"
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true
