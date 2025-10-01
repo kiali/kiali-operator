@@ -1,0 +1,65 @@
+name: Check Helm Chart PR
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'crd-docs/crd/**'
+
+jobs:
+  validate-crd-sync:
+    name: Validate CRD Synchronization with Helm Charts
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check if helm-charts branch and PR exist
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        HELM_REPO="${{ github.event.pull_request.head.repo.owner.login }}/helm-charts"
+        BRANCH="${{ github.event.pull_request.head.ref }}"
+        FORK_OWNER="${{ github.event.pull_request.head.repo.owner.login }}"
+        BASE_REPO_OWNER="${{ github.repository_owner }}"
+
+        # Check if branch exists
+        if ! curl -s -f -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/$HELM_REPO/branches/$BRANCH" > /dev/null; then
+          echo "ERROR: Branch '$BRANCH' not found in helm-charts repository '$HELM_REPO'"
+          echo "When changing a CRD, you must create a corresponding branch in your helm-charts fork."
+          exit 1
+        fi
+
+        echo "Found branch '$BRANCH' in helm-charts repository '$HELM_REPO'"
+
+        # Check if PR exists in main helm-charts repo
+        if [ "$FORK_OWNER" != "$BASE_REPO_OWNER" ]; then
+          # For fork PRs, look for PRs from the fork
+          helm_prs=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$BASE_REPO_OWNER/helm-charts/pulls?state=open&head=${FORK_OWNER}:${BRANCH}")
+        else
+          # For main repo PRs, look for PRs from the main repo
+          helm_prs=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$BASE_REPO_OWNER/helm-charts/pulls?state=open&head=${BASE_REPO_OWNER}:${BRANCH}")
+        fi
+
+        pr_count=$(echo "$helm_prs" | jq length)
+
+        if [ "$pr_count" -eq 0 ]; then
+          echo "ERROR: No corresponding PR found in main helm-charts repository"
+          echo "When changing a CRD, you must create a PR in the main helm-charts repository from your fork."
+          exit 1
+        fi
+
+        echo "Found corresponding helm-charts PR(s):"
+        echo "$helm_prs" | jq -r '.[] | "  - #\(.number): \(.title)"'
+
+    - name: Check out helm-charts PR
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ github.event.pull_request.head.repo.owner.login }}/helm-charts
+        ref: ${{ github.event.pull_request.head.ref }}
+
+    - name: Validate CRD sync
+      run: |
+        # Run the validation - this will exit with non-zero if CRDs are not in sync
+        make validate-crd-sync KIALI_OPERATOR_ORG_REPO_REF="${{ github.event.pull_request.head.repo.owner.login }}/${{ github.event.pull_request.head.repo.name }}/${{ github.event.pull_request.head.ref }}"
