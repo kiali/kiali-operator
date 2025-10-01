@@ -23,22 +23,22 @@ jobs:
       id: determine-tests
       run: |
         cd kiali-operator
-        
+
         # Always run config-values-test
         TESTS_TO_RUN="config-values-test"
-        
+
         # Check if any specific molecule tests were modified
         CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
         echo "Changed files:"
         echo "$CHANGED_FILES"
-        
+
         # Extract molecule test names from changed files
         CHANGED_MOLECULE_TESTS=$(echo "$CHANGED_FILES" | grep '^molecule/' | cut -d'/' -f2 | grep -E '.*-test$' | sort -u)
-        
+
         if [ -n "$CHANGED_MOLECULE_TESTS" ]; then
           echo "Detected changes in molecule tests:"
           echo "$CHANGED_MOLECULE_TESTS"
-          
+
           # Add changed tests to the list (avoid duplicates)
           for test in $CHANGED_MOLECULE_TESTS; do
             if [[ "$TESTS_TO_RUN" != *"$test"* ]]; then
@@ -46,51 +46,53 @@ jobs:
             fi
           done
         fi
-        
+
         echo "Tests to run: $TESTS_TO_RUN"
-        
+
         # Validate that we have tests to run
         if [ -z "$TESTS_TO_RUN" ]; then
           echo "ERROR: No tests determined to run"
           exit 1
         fi
-        
+
         echo "TESTS_TO_RUN=$TESTS_TO_RUN" >> $GITHUB_OUTPUT
 
     - name: Determine Kiali server and helm-charts source branches and forks
       id: determine-sources
       run: |
         # Priority: PR branch in author's fork -> PR branch in kiali repo -> master in kiali repo
-        
-        # Get the PR branch name
+
+        # Get the PR branch name and repository info
         PR_BRANCH="${{ github.head_ref }}"
         PR_AUTHOR="${{ github.actor }}"
-        
+        PR_REPO="${{ github.event.pull_request.head.repo.full_name }}"
+
         echo "PR branch: $PR_BRANCH"
         echo "PR author: $PR_AUTHOR"
-        
+        echo "PR repository: $PR_REPO"
+
         # Function to find branch/fork for a given repository
         find_repo_source() {
           local repo_name="$1"
           local repo_var_prefix="$2"
-          
+
           echo "=== Finding source for $repo_name ==="
-          
+
           local branch_var="${repo_var_prefix}_BRANCH"
           local fork_var="${repo_var_prefix}_FORK"
-          
+
           # Candidate branches to try
           CANDIDATE_BRANCHES=("$PR_BRANCH" "master")
-          
+
           for branch in "${CANDIDATE_BRANCHES[@]}"; do
             echo "Evaluating $repo_name branch candidate: [$branch]"
-            
+
             # Skip empty candidates
             if [ -z "$branch" ]; then
               echo " -> branch skipped (empty)"
               continue
             fi
-            
+
             # Determine candidate owners based on branch
             CANDIDATE_OWNERS=()
             if [ "$branch" = "master" ]; then
@@ -106,12 +108,12 @@ jobs:
               fi
               CANDIDATE_OWNERS+=("kiali")
             fi
-            
+
             # Check each owner for the branch
             for owner in "${CANDIDATE_OWNERS[@]}"; do
               repo_url="https://github.com/${owner}/${repo_name}.git"
               echo "Evaluating $repo_name branch [$branch] of owner [$owner]: $repo_url"
-              
+
               if git ls-remote --exit-code --heads "$repo_url" "refs/heads/$branch" >/dev/null 2>&1; then
                 echo " -> branch [$branch] exists in ${owner}/${repo_name}"
                 eval "${branch_var}=\"$branch\""
@@ -123,27 +125,34 @@ jobs:
             done
             echo " -> branch [$branch] not found in candidate owners"
           done
-          
+
           # Default fallback
           echo "Using fallback: master branch from kiali/${repo_name}"
           eval "${branch_var}=\"master\""
           eval "${fork_var}=\"kiali/${repo_name}\""
           return 1
         }
-        
+
+        # For kiali-operator, use the PR source directly since we know it exists
+        KIALI_OPERATOR_FORK="$PR_REPO"
+        KIALI_OPERATOR_BRANCH="$PR_BRANCH"
+        echo "Selected kiali-operator source: ${KIALI_OPERATOR_FORK}:${KIALI_OPERATOR_BRANCH}"
+
         # Find Kiali server source
         find_repo_source "kiali" "KIALI"
         echo "Selected Kiali server source: ${KIALI_FORK}:${KIALI_BRANCH}"
-        
+
         # Find helm-charts source
         find_repo_source "helm-charts" "HELM"
         echo "Selected helm-charts source: ${HELM_FORK}:${HELM_BRANCH}"
-        
+
         # Output the results
         echo "KIALI_BRANCH=$KIALI_BRANCH" >> $GITHUB_OUTPUT
         echo "KIALI_FORK=$KIALI_FORK" >> $GITHUB_OUTPUT
         echo "HELM_BRANCH=$HELM_BRANCH" >> $GITHUB_OUTPUT
         echo "HELM_FORK=$HELM_FORK" >> $GITHUB_OUTPUT
+        echo "KIALI_OPERATOR_BRANCH=$KIALI_OPERATOR_BRANCH" >> $GITHUB_OUTPUT
+        echo "KIALI_OPERATOR_FORK=$KIALI_OPERATOR_FORK" >> $GITHUB_OUTPUT
 
     - name: Install Helm
       uses: Azure/setup-helm@v4.3.1
@@ -153,21 +162,21 @@ jobs:
     - name: Checkout and run molecule tests
       run: |
         set -e
-        
+
         echo "=== Configuration ==="
         echo "Tests to run: ${{ steps.determine-tests.outputs.TESTS_TO_RUN }}"
         echo "Kiali server source: ${{ steps.determine-sources.outputs.KIALI_FORK }}:${{ steps.determine-sources.outputs.KIALI_BRANCH }}"
         echo "Helm charts source: ${{ steps.determine-sources.outputs.HELM_FORK }}:${{ steps.determine-sources.outputs.HELM_BRANCH }}"
-        echo "Operator source: ${{ github.repository }}:${{ github.head_ref }}"
+        echo "Operator source: ${{ steps.determine-sources.outputs.KIALI_OPERATOR_FORK }}:${{ steps.determine-sources.outputs.KIALI_OPERATOR_BRANCH }}"
         echo "Istio version: Will be determined by ci-kind-molecule-tests.sh"
-        
+
         # Clone the kiali server repository to get the ci-kind-molecule-tests.sh script
         echo "=== Cloning Kiali server repository ==="
         git clone --single-branch --branch ${{ steps.determine-sources.outputs.KIALI_BRANCH }} https://github.com/${{ steps.determine-sources.outputs.KIALI_FORK }}.git kiali-server-temp
-        
+
         # Run the molecule tests using the script from the server repo
         cd kiali-server-temp
-        
+
         echo "=== Running molecule tests ==="
         ./hack/ci-kind-molecule-tests.sh \
           --client-exe $(which kubectl) \
@@ -184,5 +193,5 @@ jobs:
           --kiali-branch ${{ steps.determine-sources.outputs.KIALI_BRANCH }} \
           --helm-fork ${{ steps.determine-sources.outputs.HELM_FORK }} \
           --helm-branch ${{ steps.determine-sources.outputs.HELM_BRANCH }} \
-          --kiali-operator-fork ${{ github.repository }} \
-          --kiali-operator-branch ${{ github.head_ref }}
+          --kiali-operator-fork ${{ steps.determine-sources.outputs.KIALI_OPERATOR_FORK }} \
+          --kiali-operator-branch ${{ steps.determine-sources.outputs.KIALI_OPERATOR_BRANCH }}
