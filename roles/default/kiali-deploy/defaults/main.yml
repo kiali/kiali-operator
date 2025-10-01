@@ -289,6 +289,7 @@ kiali_defaults:
   kiali_feature_flags:
     clustering:
       enable_exec_provider: false
+    custom_workload_types: []
     disabled_features: []
     istio_annotation_action: true
     istio_injection_action: true

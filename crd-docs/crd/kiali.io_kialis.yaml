@@ -1588,6 +1588,22 @@ spec:
                             url:
                               description: "DEPRECATED AFTER v1.73: The URL of Kiali in the cluster."
                               type: string
+                  custom_workload_types:
+                    description: "Enable observability tabs (Traffic, Logs, Metrics, Traces) for custom workload types beyond the built-in Kubernetes controllers."
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        group:
+                          description: "The API group of the custom workload type (e.g., 'argoproj.io')."
+                          type: string
+                        version:
+                          description: "The API version of the custom workload type (e.g., 'v1alpha1')."
+                          type: string
+                        kind:
+                          description: "The kind of the custom workload type (e.g., 'Rollout')."
+                          type: string
+                      required: ["group", "version", "kind"]
                   disabled_features:
                     description: "There may be some features that admins do not want to be accessible to users (even in 'view only' mode). In this case, this setting allows you to disable one or more of those features entirely."
                     type: array
