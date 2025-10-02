@@ -200,6 +200,7 @@ jobs:
           -ci true \
           --operator-installer helm \
           --olm-enabled false \
+          --hydra-enabled true \
           --use-dev-images true \
           --kiali-fork ${{ steps.determine-sources.outputs.KIALI_FORK }} \
           --kiali-branch ${{ steps.determine-sources.outputs.KIALI_BRANCH }} \
