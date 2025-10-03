@@ -1428,16 +1428,16 @@ spec:
                             description: "The unique identifier (uid) of the Tempo datasource in Grafana."
                             type: string
                           name:
-                            description: "The name of the Tempo instance for the URL `openshift` in the Plugin UI."
+                            description: "The name of the Tempo instance for the `url_format` of `openshift` in the Plugin UI."
                             type: string
                           namespace:
-                            description: "The namespace of the Tempo instance for the URL `openshift` in the Plugin UI."
+                            description: "The namespace of the Tempo instance for the `url_format` of `openshift` in the Plugin UI."
                             type: string
                           org_id:
                             description: "The Id of the organization that the dashboard is in. Default to 1 (the first and default organization)."
                             type: string
                           tenant:
-                            description: "The name of the Tempo tenant for the URL `openshift` in the Plugin UI."
+                            description: "The name of the Tempo tenant for the `url_format` of `openshift` in the Plugin UI."
                             type: string
                           url_format:
                             description: "The URL format for the external url. Can be 'jaeger', 'grafana' or 'openshift'. Default to 'jaeger'. Grafana will need a Grafana url in the Grafana settings. Openshift will need the name, namespace and tenant in the `tempo_config` settings."
