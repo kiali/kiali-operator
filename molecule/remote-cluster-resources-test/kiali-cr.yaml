@@ -10,3 +10,7 @@ spec:
     namespace: {{ kiali.install_namespace }}
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     remote_cluster_resources_only: true
+    probes:
+      readiness:
+        initial_delay_seconds: 2
+        period_seconds: 5
