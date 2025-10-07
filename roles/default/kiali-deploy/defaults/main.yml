@@ -270,7 +270,7 @@ kiali_defaults:
         namespace: ""
         org_id: ""
         tenant: ""
-        url_format: "jaeger"
+        url_format: "grafana"
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
