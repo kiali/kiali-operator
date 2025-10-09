@@ -1427,13 +1427,22 @@ spec:
                           datasource_uid:
                             description: "The unique identifier (uid) of the Tempo datasource in Grafana."
                             type: string
+                          name:
+                            description: "The name of the Tempo instance for the `url_format` of `openshift` in the Plugin UI."
+                            type: string
+                          namespace:
+                            description: "The namespace of the Tempo instance for the `url_format` of `openshift` in the Plugin UI."
+                            type: string
                           org_id:
                             description: "The Id of the organization that the dashboard is in. Default to 1 (the first and default organization)."
                             type: string
-                          url_format:
-                            description: "The URL format for the external url. Can be 'jaeger' or 'grafana'. Default to 'grafana'. Grafana will need a Grafana url in the Grafana settings."
+                          tenant:
+                            description: "The name of the Tempo tenant for the `url_format` of `openshift` in the Plugin UI."
                             type: string
-                            enum: ["jaeger", "grafana"]
+                          url_format:
+                            description: "The URL format for the external url. Can be 'jaeger', 'grafana' or 'openshift'. Default to 'grafana'. Openshift will need the name, namespace and tenant in the `tempo_config` settings."
+                            type: string
+                            enum: ["jaeger", "grafana", "openshift"]
                             default: "grafana"
                       use_grpc:
                         description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it)."

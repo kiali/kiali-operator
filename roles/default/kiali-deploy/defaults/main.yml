@@ -266,7 +266,10 @@ kiali_defaults:
         cache_capacity: 200
         cache_enabled: true
         datasource_uid: ""
+        name: ""
+        namespace: ""
         org_id: ""
+        tenant: ""
         url_format: "grafana"
       use_grpc: true
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
