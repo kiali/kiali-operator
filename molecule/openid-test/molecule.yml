@@ -24,7 +24,7 @@ provisioner:
         wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
         istio:
           control_plane_namespace: istio-system
-        nip_io_base_url: "{{ lookup('env', 'MOLECULE_MINIKUBE_IP') | regex_replace('\\.', '-') }}.nip.io"
+        nip_io_base_url: "{{ ((lookup('env', 'MOLECULE_CLUSTER_TYPE') == 'kind') | ternary(lookup('env', 'MOLECULE_KIND_IP'), lookup('env', 'MOLECULE_MINIKUBE_IP'))) | regex_replace('\\.', '-') }}.nip.io"
         hydra:
           admin_port: 30448
           public_port: 30967
