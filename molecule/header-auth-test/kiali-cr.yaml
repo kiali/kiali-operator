@@ -8,7 +8,7 @@ spec:
     strategy: header
   deployment:
     ingress:
-      enabled: true
+      enabled: false
     logger:
       log_level: trace
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
@@ -16,4 +16,6 @@ spec:
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
     namespace: {{ kiali.install_namespace }}
-    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    service_type: NodePort
+  server:
+    node_port: 32080
