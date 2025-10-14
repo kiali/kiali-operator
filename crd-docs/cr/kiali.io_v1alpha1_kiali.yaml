@@ -53,6 +53,8 @@ spec:
   - name: "envoy"
 
   deployment:
+    additional_pod_containers_yaml: []
+    additional_pod_init_containers_yaml: []
     # default: additional_service_yaml is empty
     additional_service_yaml:
       externalName: "kiali.example.com"
