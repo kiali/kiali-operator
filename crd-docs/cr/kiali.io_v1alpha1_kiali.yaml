@@ -37,9 +37,9 @@ spec:
       username_claim: "sub"
       discovery_override:
         authorization_endpoint: ""
+        jwks_uri: ""
         token_endpoint: ""
         userinfo_endpoint: ""
-        jwks_uri: ""
     openshift:
       #redirect_uris:
       #token_inactivity_timeout:
