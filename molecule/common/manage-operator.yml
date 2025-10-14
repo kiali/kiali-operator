@@ -1,6 +1,15 @@
 # Common tasks for managing the Kiali operator - patching environment variables, restarting, and waiting for readiness
 # This file contains reusable tasks for operator management that can be included in various molecule tests
 
+- name: Check if operator deployment exists
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ kiali.operator_namespace }}"
+    name: kiali-operator
+  register: operator_deployment_check
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+
 - name: Patch Kiali operator with environment variables
   kubernetes.core.k8s:
     state: present
@@ -53,7 +62,9 @@
               - name: WATCHES_FILE
                 value: "watches-k8s.yaml"
     merge_type: strategic-merge
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
 
 - name: Wait for operator pod to be restarted and ready
   k8s_info:
@@ -69,7 +80,9 @@
     (operator_pods_result.resources[0].status.conditions | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length > 0)
   retries: 24
   delay: 5
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
 
 - name: Verify operator environment variable ALLOW_SECURITY_CONTEXT_OVERRIDE
   vars:
@@ -81,7 +94,9 @@
     - allow_override_env is defined
     - allow_override_env.value == expected_value
     fail_msg: "Operator environment variable ALLOW_SECURITY_CONTEXT_OVERRIDE should be '{{ expected_value }}' but is '{{ allow_override_env.value | default('undefined') }}'"
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
 
 - name: Debug operator environment variables
   vars:
@@ -92,7 +107,9 @@
       {% for env_var in operator_container.env %}
       - {{ env_var.name }}={{ env_var.value | default(env_var.valueFrom | default('') | string) }}
       {% endfor %}
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
 
 - name: Wait for Kiali deployment to be updated after operator reconciliation
   k8s_info:
