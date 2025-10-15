@@ -196,6 +196,7 @@ kiali_defaults:
         insecure_skip_verify: false
         password: ""
         type: "none"
+        use_kiali_token: false
         username: ""
       dashboards:
         - name: "Istio Service Dashboard"
@@ -220,6 +221,7 @@ kiali_defaults:
       internal_url: "http://perses.istio-system:4000"
       is_core: false
       project: "istio"
+      url_format: "perses"
     prometheus:
       auth:
         ca_file: ""
