@@ -230,8 +230,6 @@ spec:
     image: "${KIALI_2_4}"
   - name: kiali_v1_73
     image: "${KIALI_1_73}"
-  - name: kiali_v1_65
-    image: "${KIALI_1_65}"
   - name: ossmconsole_default
     image: "${OSSMCONSOLE_2_17}"
   - name: ossmconsole_v2_17
@@ -361,8 +359,6 @@ spec:
                   value: "${KIALI_2_4}"
                 - name: RELATED_IMAGE_kiali_v1_73
                   value: "${KIALI_1_73}"
-                - name: RELATED_IMAGE_kiali_v1_65
-                  value: "${KIALI_1_65}"
                 - name: RELATED_IMAGE_ossmconsole_default
                   value: "${OSSMCONSOLE_2_17}"
                 - name: RELATED_IMAGE_ossmconsole_v2_17
