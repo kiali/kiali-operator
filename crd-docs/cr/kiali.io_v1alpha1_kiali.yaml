@@ -366,7 +366,7 @@ spec:
       enabled: false
       external_url: ""
       health_check_url: ""
-      internal_url: "http://perses.istio-system:4000"
+      internal_url: ""
       is_core: false
       project: "istio"
       url_format: ""
