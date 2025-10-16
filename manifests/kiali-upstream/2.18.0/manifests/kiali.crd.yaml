@@ -1251,9 +1251,9 @@ spec:
                         type: string
                         default: "istio"
                       url_format:
-                        description: "The url format. Default to `perses`, the upstream project. `openshift` when used with Perses Dashboards from the cluster observability operator."
+                        description: "The url format. Use `openshift` when used with Perses Dashboards from the cluster observability operator in OpenShift."
                         type: string
-                        default: "perses"
+                        enum: ["", "default", "openshift"]
                   prometheus:
                     description: "The Prometheus configuration defined here refers to the Prometheus instance that is used by Istio to store its telemetry."
                     type: object
