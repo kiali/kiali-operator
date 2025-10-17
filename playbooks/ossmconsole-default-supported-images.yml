@@ -2,3 +2,4 @@ default: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "operator_ve
 v1.73: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v1.73"}
 v2.4: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.4"}
 v2.11: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.11"}
+v2.17: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.17"}

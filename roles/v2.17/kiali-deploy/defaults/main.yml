@@ -1,0 +1,413 @@
+# Defaults for all user-facing Kiali settings.
+#
+# Note that these are under the main dictionary group "kiali_defaults".
+# The actual vars used by the role are found in the vars/ directory.
+# These defaults (the dictionaries under "kiali_defaults") are merged into the vars such that the values
+# below (e.g. deployment, server, etc.) are merged in rather than completely replaced by user-supplied values.
+#
+# If new groups are added to these defaults, you must remember to add the merge code to vars/main.yml.
+
+kiali_defaults:
+  installation_tag: ""
+  version: "default"
+
+  additional_display_details:
+  - title: "API Documentation"
+    annotation: "kiali.io/api-spec"
+    icon_annotation: "kiali.io/api-type"
+
+  auth:
+    openid:
+      additional_request_params: {}
+      allowed_domains: []
+      api_proxy: ""
+      api_proxy_ca_data: ""
+      api_token: "id_token"
+      authentication_timeout: 300
+      authorization_endpoint: ""
+      client_id: ""
+      disable_rbac: false
+      http_proxy: ""
+      https_proxy: ""
+      insecure_skip_verify_tls: false
+      issuer_uri: ""
+      scopes: ["openid", "profile", "email"]
+      username_claim: "sub"
+    openshift:
+      insecure_skip_verify_tls: false
+      #redirect_uris:
+      #token_inactivity_timeout:
+      #token_max_age:
+    strategy: ""
+
+  clustering:
+    autodetect_secrets:
+      enabled: true
+      label: "kiali.io/multiCluster=true"
+    clusters: []
+    enable_exec_provider: false
+    ignore_home_cluster: false
+    kiali_urls: []
+
+  custom_dashboards: []
+
+  deployment:
+    #additional_service_yaml:
+    affinity:
+      node: {}
+      pod: {}
+      pod_anti: {}
+    cluster_wide_access: true
+    configmap_annotations: {}
+    custom_envs: []
+    custom_secrets: []
+    discovery_selectors: {}
+    dns:
+      config: {}
+      policy: ""
+    extra_labels: {}
+    host_aliases: []
+    hpa:
+      api_version: ""
+      spec: {}
+    image_digest: ""
+    image_name: ""
+    image_pull_policy: "IfNotPresent"
+    image_pull_secrets: []
+    image_version: ""
+    ingress:
+      additional_labels: {}
+      class_name: "nginx"
+      #enabled:
+      #override_yaml:
+    instance_name: "kiali"
+    logger:
+      log_format: "text"
+      log_level: "info"
+      sampler_rate: "1"
+      time_field_format: "2006-01-02T15:04:05Z07:00"
+    namespace: ""
+    network_policy:
+      enabled: true
+    node_selector: {}
+    pod_annotations:
+      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+    pod_labels: {}
+    priority_class_name: ""
+    probes:
+      liveness:
+        initial_delay_seconds: 5
+        period_seconds: 30
+      readiness:
+        initial_delay_seconds: 5
+        period_seconds: 30
+      startup:
+        failure_threshold: 6
+        initial_delay_seconds: 30
+        period_seconds: 10
+    remote_cluster_resources_only: false
+    replicas: 1
+    #resources:
+    secret_name: "kiali"
+    security_context: {}
+    service_annotations: {}
+    #service_type: "NodePort"
+    tolerations: []
+    topology_spread_constraints: []
+    version_label: ""
+    view_only_mode: false
+
+  extensions: []
+
+  external_services:
+    custom_dashboards:
+      discovery_auto_threshold: 10
+      discovery_enabled: "auto"
+      enabled: true
+      is_core: false
+      namespace_label: "namespace"
+      prometheus:
+        auth:
+          ca_file: ""
+          insecure_skip_verify: false
+          password: ""
+          token: ""
+          type: "none"
+          use_kiali_token: false
+          username: ""
+        cache_duration: 7
+        cache_enabled: true
+        cache_expiration: 300
+        custom_headers: {}
+        health_check_url: ""
+        is_core: true
+        query_scope: {}
+        thanos_proxy:
+          enabled: false
+          retention_period: "7d"
+          scrape_interval: "30s"
+        url: ""
+    grafana:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      dashboards:
+      - name: "Istio Service Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          service: "var-service"
+          version: "var-version"
+      - name: "Istio Workload Dashboard"
+        variables:
+          datasource: "var-datasource"
+          namespace: "var-namespace"
+          workload: "var-workload"
+          version: "var-version"
+      - name: "Istio Mesh Dashboard"
+      - name: "Istio Control Plane Dashboard"
+      - name: "Istio Performance Dashboard"
+      - name: "Istio Wasm Extension Dashboard"
+      datasource_uid: ""
+      enabled: true
+      external_url: ""
+      health_check_url: ""
+      internal_url: "http://grafana.istio-system:3000"
+      is_core: false
+    istio:
+      component_status:
+        components: []
+        enabled: true
+      gateway_api_classes: []
+      gateway_api_classes_label_selector: ""
+      istio_api_enabled: true
+      istio_identity_domain: "svc.cluster.local"
+      istiod_polling_interval_seconds: 20
+      validation_change_detection_enabled: true
+      validation_reconcile_interval: "1m"
+    perses:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        type: "none"
+        username: ""
+      dashboards:
+        - name: "Istio Service Dashboard"
+          variables:
+            datasource: "var-datasource"
+            namespace: "var-namespace"
+            service: "var-service"
+            version: "var-version"
+        - name: "Istio Workload Dashboard"
+          variables:
+            datasource: "var-datasource"
+            namespace: "var-namespace"
+            workload: "var-workload"
+            version: "var-version"
+        - name: "Istio Mesh Dashboard"
+        - name: "Istio Control Plane Dashboard"
+        - name: "Istio Performance Dashboard"
+        - name: "Istio Wasm Extension Dashboard"
+      enabled: false
+      external_url: ""
+      health_check_url: ""
+      internal_url: "http://perses.istio-system:4000"
+      is_core: false
+      project: "istio"
+    prometheus:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      cache_duration: 7
+      cache_enabled: true
+      cache_expiration: 300
+      custom_headers: {}
+      health_check_url: ""
+      is_core: true
+      query_scope: {}
+      thanos_proxy:
+        enabled: false
+        retention_period: "7d"
+        scrape_interval: "30s"
+      url: ""
+    tracing:
+      auth:
+        ca_file: ""
+        insecure_skip_verify: false
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
+        username: ""
+      custom_headers: {}
+      disable_version_check: false
+      enabled: false
+      external_url: ""
+      grpc_port: 9095
+      health_check_url: ""
+      internal_url: ""
+      is_core: false
+      namespace_selector: true
+      provider: "jaeger"
+      query_scope: {}
+      query_timeout: 5
+      tempo_config:
+        cache_capacity: 200
+        cache_enabled: true
+        datasource_uid: ""
+        name: ""
+        namespace: ""
+        org_id: ""
+        tenant: ""
+        url_format: "grafana"
+      use_grpc: true
+      whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
+
+  health_config:
+    rate: []
+
+  identity: {}
+    #cert_file:
+    #private_key_file:
+
+  istio_labels:
+    app_label_name: ""
+    egress_gateway_label: "istio=egressgateway"
+    ingress_gateway_label: "istio=ingressgateway"
+    injection_label_name: "istio-injection"
+    injection_label_rev: "istio.io/rev"
+    version_label_name: ""
+
+  kiali_feature_flags:
+    clustering:
+      enable_exec_provider: false
+    custom_workload_types: []
+    disabled_features: []
+    istio_annotation_action: true
+    istio_injection_action: true
+    istio_upgrade_action: false
+    ui_defaults:
+      graph:
+        find_options:
+        - auto_select: false
+          description: "Find: slow edges (> 1s)"
+          expression: "rt > 1000"
+        - auto_select: false
+          description: "Find: unhealthy nodes"
+          expression:  "! healthy"
+        - auto_select: false
+          description: "Find: unknown nodes"
+          expression:  "name = unknown"
+        - auto_select: false
+          description: "Find: nodes with the 2 top rankings"
+          expression:  "rank <= 2"
+        hide_options:
+        - auto_select: false
+          description: "Hide: healthy nodes"
+          expression: "healthy"
+        - auto_select: false
+          description: "Hide: unknown nodes"
+          expression:  "name = unknown"
+        - auto_select: false
+          description: "Hide: nodes ranked lower than the 2 top rankings"
+          expression:  "rank > 2"
+        settings:
+          animation: "point"
+        traffic:
+          ambient: "total"
+          grpc: "requests"
+          http: "requests"
+          tcp: "sent"
+      list:
+        include_health: true
+        include_istio_resources: true
+        include_validations: true
+        show_include_toggles: false
+      i18n:
+        show_selector: false
+      mesh:
+        find_options:
+        - description: "Find: unhealthy nodes"
+          expression: "! healthy"
+        hide_options:
+        - description: "Hide: healthy nodes"
+          expression: "healthy"
+      metrics_inbound:
+        aggregations: []
+      metrics_outbound:
+        aggregations: []
+      metrics_per_refresh: "1m"
+      namespaces: []
+      refresh_interval: "1m"
+      tracing:
+        limit: 100
+    validations:
+      ignore: ["KIA1301"]
+      skip_wildcard_gateway_hosts: false
+
+  kiali_internal: {}
+
+  kubernetes_config:
+    burst: 200
+    cache_duration: 300
+    cache_token_namespace_duration: 10
+    cluster_name: ""
+    excluded_workloads:
+    - "CronJob"
+    - "DeploymentConfig"
+    - "Job"
+    - "ReplicationController"
+    qps: 175
+
+  login_token:
+    expiration_seconds: 86400
+    signing_key: ""
+
+  server:
+    address: ""
+    audit_log: true
+    cors_allow_all: false
+    gzip_enabled: true
+    #node_port:
+    observability:
+      metrics:
+        enabled: true
+        port: 9090
+      tracing:
+        collector_type: "otel"
+        collector_url: "jaeger-collector.istio-system:4318"
+        enabled: false
+        otel:
+          ca_name: ""
+          protocol: "http"
+          skip_verify: false
+          tls_enabled: false
+        sampling_rate: 0.5
+    port: 20001
+    profiler:
+      enabled: false
+    require_auth: false
+    web_fqdn: ""
+    web_history_mode: "browser"
+    web_port: ""
+    web_root: ""
+    web_schema: ""
+    write_timeout: "60s"
+
+# These variables are outside of the kiali_defaults. Their values will be
+# auto-detected by the role and are not meant to be set by the user.
+# However, for debugging purposes you can change these.
+
+is_k8s: false
+is_openshift: false
