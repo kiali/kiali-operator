@@ -1,0 +1,7 @@
+kiali_vars_remove:
+  deployment: |
+    {%- if deployment is defined and deployment is iterable -%}
+    {{ kiali_defaults_remove.deployment | combine((deployment | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ kiali_defaults_remove.deployment }}
+    {%- endif -%}
