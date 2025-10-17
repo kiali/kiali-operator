@@ -33,6 +33,11 @@ kiali_defaults:
       issuer_uri: ""
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
+      discovery_override:
+        authorization_endpoint: ""
+        jwks_uri: ""
+        token_endpoint: ""
+        userinfo_endpoint: ""
     openshift:
       insecure_skip_verify_tls: false
       #redirect_uris:
