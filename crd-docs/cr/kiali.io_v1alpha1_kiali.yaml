@@ -369,7 +369,7 @@ spec:
       internal_url: ""
       is_core: false
       project: "istio"
-      url_format: ""
+      url_format: "default"
     prometheus:
       auth:
         ca_file: ""
