@@ -13,6 +13,13 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v4
+      with:
+        # Fetch enough history to compare CRDs against base branch for backward compatibility check
+        fetch-depth: 0
+
+    - name: Fetch origin/master for CRD compatibility check
+      run: |
+        git fetch origin master:refs/remotes/origin/master || true
 
     - name: Validate OLM metadata
       run: |
