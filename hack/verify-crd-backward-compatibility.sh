@@ -163,11 +163,13 @@ extract_all_properties() {
     local yaml_content="$1"
 
     # Convert YAML to JSON once, then use jq to extract all property definitions
-    # We need to find objects that have type, enum, or other schema properties
+    # We need to find leaf schema objects where .type is a string (indicating a schema type like "string", "integer")
+    # Exclude structural containers like "properties", "items", etc which have .type as an object
     echo "$yaml_content" | yq eval -o=json '.' 2>/dev/null | jq -c '
         [paths(type == "object") as $p |
          {path: $p, value: getpath($p)} |
-         select(.value | type == "object" and (has("type") or has("enum"))) |
+         select(.value | type == "object" and
+                ((.type | type == "string") or (.enum | type == "array"))) |
          {
             path: (.path | join(".")),
             type: .value.type,
