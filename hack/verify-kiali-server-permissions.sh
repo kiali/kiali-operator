@@ -83,7 +83,7 @@ try:
                         for verb in verbs:
                             # Include wildcard resources for important API groups like Istio
                             is_important_wildcard = (res == '*' and any(ag.endswith(suffix) for suffix in [
-                                'istio.io', 'k8s.io
+                                'istio.io', 'k8s.io'
                             ]))
                             if (res != '*' or is_important_wildcard) and not res.startswith('{{') and not res.startswith('{%'):
                                 print(f'{ag}:{res}:{verb}')
