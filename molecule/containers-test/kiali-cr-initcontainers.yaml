@@ -1,0 +1,82 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  deployment:
+    # Additional init containers from init-container-security-test
+    additional_pod_init_containers_yaml:
+    # Test 1: Basic initContainer that should get security context applied
+    - name: security-test-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['/bin/sh', '-c', 'echo "Security test init container starting"; sleep 1; echo "Security test init container done"']
+      securityContext:
+        runAsUser: 1001
+      env:
+      - name: "INIT_TEST_VAR"
+        value: "test-value"
+    # Test 2: InitContainer that tries to override security context (should be overridden)
+    - name: privilege-attempt-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['/bin/sh', '-c', 'echo "Privilege test init container starting"; sleep 1; echo "Privilege test init container done"']
+      securityContext:
+        privileged: true
+        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        runAsUser: 1002
+        capabilities:
+          add: ['SYS_ADMIN']
+      env:
+      - name: "PRIVILEGE_TEST_VAR"
+        value: "should-be-overridden"
+    # Test 3: Another basic initContainer to test consistent security enforcement
+    - name: consistency-test-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['/bin/sh', '-c', 'echo "Consistency test init container starting"; sleep 1; echo "Consistency test init container done"']
+      securityContext:
+        runAsUser: 1003
+      env:
+      - name: "CONSISTENCY_TEST_VAR"
+        value: "consistency-value"
+    # Test 4: InitContainer with no custom security context to test operator defaults
+    # This tests that operator adds restrictive defaults but doesn't override user's runAsUser
+    - name: no-user-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['/bin/sh', '-c', 'echo "No user test init container starting"; sleep 1; echo "No user test init container done"']
+      securityContext:
+        runAsUser: 1000  # User provides this to ensure container can run
+        # No other security context settings - let operator add restrictive defaults
+      env:
+      - name: "NO_USER_TEST_VAR"
+        value: "no-user-value"
+    # Test 5: InitContainer with volume mounts (for volume security testing)
+    - name: volume-test-init
+      image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+      command: ['/bin/sh', '-c', 'echo "Volume test init container starting"; sleep 1; echo "Volume test init container done"']
+      securityContext:
+        runAsUser: 1005
+      env:
+      - name: "VOLUME_TEST_VAR"
+        value: "volume-test-value"
+      volumeMounts:
+      - name: kiali-secret
+        mountPath: /test-secret
+        readOnly: false  # This should be forced to true by operator
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    ingress:
+      enabled: true
+    logger:
+      log_level: debug
+    namespace: {{ kiali.install_namespace }}
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    probes:
+      readiness:
+        initial_delay_seconds: 2
+        period_seconds: 5
+  server:
+    node_port: 32445

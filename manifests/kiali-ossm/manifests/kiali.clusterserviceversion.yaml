@@ -325,6 +325,8 @@ spec:
                   value: "false"
                 - name: ALLOW_AD_HOC_OSSMCONSOLE_IMAGE
                   value: "false"
+                - name: ALLOW_AD_HOC_CONTAINERS
+                  value: "false"
                 - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
                   value: "false"
                 - name: ALLOW_ALL_ACCESSIBLE_NAMESPACES
