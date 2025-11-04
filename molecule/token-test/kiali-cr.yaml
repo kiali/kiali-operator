@@ -16,6 +16,17 @@ spec:
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
   login_token:
     expiration_seconds: 15

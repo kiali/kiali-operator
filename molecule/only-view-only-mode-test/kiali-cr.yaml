@@ -17,6 +17,17 @@ spec:
     image_version: "{{ kiali.image_version }}"
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     discovery_selectors: {}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
     # the operator is only given permission to deploy Kiali in view_only_mode
     view_only_mode: true

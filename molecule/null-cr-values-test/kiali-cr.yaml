@@ -45,6 +45,17 @@ spec:
     pod_annotations: null
     pod_labels: null
     priority_class_name: null
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
     replicas: null
     resources: null
     secret_name: null
