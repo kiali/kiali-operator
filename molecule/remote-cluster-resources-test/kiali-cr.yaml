@@ -9,4 +9,15 @@ spec:
   deployment:
     namespace: {{ kiali.install_namespace }}
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
     remote_cluster_resources_only: true

@@ -21,6 +21,17 @@ spec:
     image_pull_policy: {{ kiali.image_pull_policy }}
     image_version: "{{ kiali.image_version }}"
     namespace: {{ kiali.install_namespace }}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
     service_type: NodePort
   server:
     node_port: 32080

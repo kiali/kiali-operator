@@ -24,4 +24,15 @@ spec:
         - matchLabels:
             this-is-just-here: "to-test-that-the-operator-ignores-overrides"
 {% endif%}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
