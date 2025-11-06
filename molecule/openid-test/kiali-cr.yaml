@@ -33,5 +33,9 @@ spec:
         initial_delay_seconds: 1
         period_seconds: 1
     service_type: NodePort
+    probes:
+      readiness:
+        initial_delay_seconds: 2
+        period_seconds: 5
   server:
     node_port: 32080

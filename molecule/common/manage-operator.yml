@@ -1,0 +1,126 @@
+# Common tasks for managing the Kiali operator - patching environment variables, restarting, and waiting for readiness
+# This file contains reusable tasks for operator management that can be included in various molecule tests
+
+- name: Check if operator deployment exists
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ kiali.operator_namespace }}"
+    name: kiali-operator
+  register: operator_deployment_check
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+
+- name: Patch Kiali operator with environment variables
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: kiali-operator
+        namespace: "{{ kiali.operator_namespace }}"
+      spec:
+        template:
+          spec:
+            containers:
+            - name: operator
+              env:
+              - name: WATCH_NAMESPACE
+                value: "{{ kiali.operator_namespace }}"
+              - name: POD_NAME
+                valueFrom:
+                  fieldRef:
+                    apiVersion: v1
+                    fieldPath: metadata.name
+              - name: POD_NAMESPACE
+                valueFrom:
+                  fieldRef:
+                    apiVersion: v1
+                    fieldPath: metadata.namespace
+              - name: ALLOW_AD_HOC_KIALI_NAMESPACE
+                value: "true"
+              - name: ALLOW_AD_HOC_KIALI_IMAGE
+                value: "true"
+              - name: ALLOW_AD_HOC_CONTAINERS
+                value: "true"
+              - name: ALLOW_SECURITY_CONTEXT_OVERRIDE
+                value: "{{ manage_operator.allow_security_context_override | default('false') }}"
+              - name: ALLOW_ALL_ACCESSIBLE_NAMESPACES
+                value: "true"
+              - name: PROFILE_TASKS_TASK_OUTPUT_LIMIT
+                value: "100"
+              - name: ANSIBLE_DEBUG_LOGS
+                value: "true"
+              - name: ANSIBLE_VERBOSITY_KIALI_KIALI_IO
+                value: "1"
+              - name: ANSIBLE_CONFIG
+                value: "/opt/ansible/ansible-profiler.cfg"
+              - name: ANSIBLE_LOCAL_TEMP
+                value: "/tmp/ansible/tmp"
+              - name: ANSIBLE_REMOTE_TEMP
+                value: "/tmp/ansible/tmp"
+              - name: WATCHES_FILE
+                value: "watches-k8s.yaml"
+    merge_type: strategic-merge
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
+
+- name: Wait for operator pod to be restarted and ready
+  k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: "{{ kiali.operator_namespace }}"
+    label_selectors:
+    - app.kubernetes.io/name = kiali-operator
+  register: operator_pods_result
+  until: >
+    operator_pods_result.resources | length == 1 and
+    operator_pods_result.resources[0].status.conditions is defined and
+    (operator_pods_result.resources[0].status.conditions | selectattr('type', 'equalto', 'Ready') | selectattr('status', 'equalto', 'True') | list | length > 0)
+  retries: 24
+  delay: 5
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
+
+- name: Verify operator environment variable ALLOW_SECURITY_CONTEXT_OVERRIDE
+  vars:
+    operator_container: "{{ operator_pods_result.resources[0].spec.containers | selectattr('name', 'equalto', 'operator') | first }}"
+    allow_override_env: "{{ operator_container.env | selectattr('name', 'equalto', 'ALLOW_SECURITY_CONTEXT_OVERRIDE') | first }}"
+    expected_value: "{{ manage_operator.allow_security_context_override | default('false') }}"
+  assert:
+    that:
+    - allow_override_env is defined
+    - allow_override_env.value == expected_value
+    fail_msg: "Operator environment variable ALLOW_SECURITY_CONTEXT_OVERRIDE should be '{{ expected_value }}' but is '{{ allow_override_env.value | default('undefined') }}'"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
+
+- name: Debug operator environment variables
+  vars:
+    operator_container: "{{ operator_pods_result.resources[0].spec.containers | selectattr('name', 'equalto', 'operator') | first }}"
+  debug:
+    msg: |
+      Operator environment variables:
+      {% for env_var in operator_container.env %}
+      - {{ env_var.name }}={{ env_var.value | default(env_var.valueFrom | default('') | string) }}
+      {% endfor %}
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') != 'skip'
+  - operator_deployment_check.resources | default([]) | length > 0
+
+- name: Wait for Kiali deployment to be updated after operator reconciliation
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ kiali.install_namespace }}"
+    name: kiali
+    wait: true
+    wait_condition:
+      type: Available
+      status: "True"
+    wait_timeout: 300
+  when:
+  - manage_operator.wait_for_kiali_reconciliation | default(true)

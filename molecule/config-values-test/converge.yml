@@ -8,6 +8,17 @@
   tasks:
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Find kiali container index (before additional containers)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    set_fact:
+      kiali_container_index: "{{ my_idx }}"
+    loop: "{{ kiali_pod_spec.containers }}"
+    loop_control:
+      index_var: my_idx
+    when: item.name == 'kiali'
+
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
 
   - name: The initial Kiali ConfigMap
@@ -43,10 +54,10 @@
       - kiali_configmap.deployment.resources.requests.cpu == "10m"
       - kiali_configmap.deployment.resources.requests.memory == "64Mi"
       - kiali_configmap.deployment.resources.limits.memory == "1Gi"
-      - kiali_pod_spec.containers[0].resources | length == 2
-      - kiali_pod_spec.containers[0].resources.requests.cpu == "10m"
-      - kiali_pod_spec.containers[0].resources.requests.memory == "64Mi"
-      - kiali_pod_spec.containers[0].resources.limits.memory == "1Gi"
+      - kiali_pod_spec.containers[kiali_container_index | int].resources | length == 2
+      - kiali_pod_spec.containers[kiali_container_index | int].resources.requests.cpu == "10m"
+      - kiali_pod_spec.containers[kiali_container_index | int].resources.requests.memory == "64Mi"
+      - kiali_pod_spec.containers[kiali_container_index | int].resources.limits.memory == "1Gi"
 
   - name: If we are configured with NodePort as service type, make sure its port is correct
     vars:
@@ -100,7 +111,8 @@
 
   - name: Test the default configs for the probes
     vars:
-      kiali_pod_container: "{{ kiali_pod.resources[0].spec.containers[0] }}"
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_pod_container: "{{ kiali_pod_spec.containers[kiali_container_index | int] }}"
     assert:
       that:
       - kiali_pod_container.livenessProbe.initialDelaySeconds == 5
@@ -262,7 +274,7 @@
   - name: Change DNS config
     vars:
       dns_settings:
-        policy: "Default"
+        policy: "ClusterFirst"
         config:
           options:
           - name: "ndots"
@@ -316,6 +328,65 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'network_policy': {'enabled': false}}}}, recursive=True) }}"
 
+  - name: Configure Istio sidecar injection
+    vars:
+      istio_pod_labels:
+        sidecar.istio.io/inject: "true"
+      istio_pod_annotations:
+        proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'pod_labels': istio_pod_labels, 'pod_annotations': istio_pod_annotations}}}, recursive=True) }}"
+
+  - name: Add containers for testing
+    vars:
+      containers:
+      - name: first-test-container
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        command: ['/bin/sleep', 'infinity']
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: false  # Test that operator overrides this to true
+          privileged: true  # Test that operator overrides this to false
+          allowPrivilegeEscalation: true  # Test that operator overrides this to false
+          readOnlyRootFilesystem: false  # Test that operator overrides this to true
+          capabilities:
+            add: ['SYS_ADMIN', 'NET_ADMIN']  # Test that operator removes these
+            drop: []  # Test that operator adds 'ALL' here
+      - name: istio-proxy
+        image: auto
+        env:
+        - name: "INIT_TEST_VAR"
+          value: "test-value"
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          privileged: true  # Test that operator overrides this to false
+          allowPrivilegeEscalation: true  # Test that operator overrides this to false
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'additional_pod_containers_yaml': containers}}}, recursive=True) }}"
+
+  - name: Add initContainers for testing
+    vars:
+      init_containers:
+      - name: init-test-container
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        command: ['/bin/sh', '-c', 'echo "Init container starting"; sleep 2; echo "Init container done"']
+        securityContext:
+          runAsUser: 1001
+          runAsGroup: 1001
+          runAsNonRoot: false  # Test that operator overrides this to true
+          privileged: true  # Test that operator overrides this to false
+          allowPrivilegeEscalation: true  # Test that operator overrides this to false
+          readOnlyRootFilesystem: false  # Test that operator overrides this to true
+          capabilities:
+            add: ['SYS_ADMIN']  # Test that operator removes these
+        env:
+        - name: "INIT_TEST_VAR"
+          value: "test-value"
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'additional_pod_init_containers_yaml': init_containers}}}, recursive=True) }}"
+
   - name: The new Kiali CR to be tested
     debug:
       msg: "{{ current_kiali_cr }}"
@@ -329,6 +400,58 @@
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
   - import_tasks: ../asserts/pod_asserts.yml
+
+  # Initialize container indices to -1 if not found later
+  - name: Initialize indices
+    set_fact:
+      kiali_container_index: "-1"
+      first_test_container_index: "-1"
+      istio_proxy_container_index: "-1"
+      init_test_container_index: "-1"
+
+  - name: Find kiali container index (after additional containers)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    set_fact:
+      kiali_container_index: "{{ my_idx }}"
+    loop: "{{ kiali_pod_spec.containers }}"
+    loop_control:
+      index_var: my_idx
+    when: item.name == 'kiali'
+
+  - name: Find first-test-container index
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    set_fact:
+      first_test_container_index: "{{ my_idx }}"
+    loop: "{{ kiali_pod_spec.containers }}"
+    loop_control:
+      index_var: my_idx
+    when: item.name == 'first-test-container'
+
+  - name: Find istio-proxy container index
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    set_fact:
+      istio_proxy_container_index: "{{ my_idx }}"
+    loop: "{{ kiali_pod_spec.containers }}"
+    loop_control:
+      index_var: my_idx
+    when: item.name == 'istio-proxy'
+
+  - name: Find init-test-container index
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    set_fact:
+      init_test_container_index: "{{ my_idx }}"
+    loop: "{{ kiali_pod_spec.initContainers }}"
+    loop_control:
+      index_var: my_idx
+    when: item.name == 'init-test-container'
+
+  - name: Debug container indices
+    debug:
+      msg: "Container indices - kiali: {{ kiali_container_index }}, first-test-container: {{ first_test_container_index }}, istio-proxy: {{ istio_proxy_container_index }}, init-test-container: {{ init_test_container_index }}"
 
   - name: The new Kiali ConfigMap
     debug:
@@ -380,8 +503,8 @@
       es2_volume_secretName_query: "volumes[?name=='extra-secret-2'].secret.secretName"
       es1_volume_optional_query: "volumes[?name=='extra-secret-1'].secret.optional"
       es2_volume_optional_query: "volumes[?name=='extra-secret-2'].secret.optional"
-      es1_mountPath_query: "containers[0].volumeMounts[?name=='extra-secret-1'].mountPath"
-      es2_mountPath_query: "containers[0].volumeMounts[?name=='extra-secret-2'].mountPath"
+      es1_mountPath_query: "containers[{{ kiali_container_index | int }}].volumeMounts[?name=='extra-secret-1'].mountPath"
+      es2_mountPath_query: "containers[{{ kiali_container_index | int }}].volumeMounts[?name=='extra-secret-2'].mountPath"
     assert:
       that:
       - kiali_pod.resources[0].spec | json_query(es1_volume_secretName_query) | join == 'extra-secret-1'
@@ -397,7 +520,7 @@
     assert:
       that:
       - kiali_configmap.deployment.resources | length == 0
-      - kiali_pod_spec.containers[0].resources | length == 0
+      - kiali_pod_spec.containers[kiali_container_index | int].resources | length == 0
 
   - name: Test the signing key is set
     assert:
@@ -432,11 +555,11 @@
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
     assert:
       that:
-      - kiali_pod_spec.containers[0].securityContext.readOnlyRootFilesystem == false
-      - kiali_pod_spec.containers[0].securityContext.allowPrivilegeEscalation == false
-      - kiali_pod_spec.containers[0].securityContext.privileged == false
-      - kiali_pod_spec.containers[0].securityContext.runAsNonRoot == true
-      - kiali_pod_spec.containers[0].securityContext.capabilities.drop | length > 0
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.readOnlyRootFilesystem == false
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.allowPrivilegeEscalation == false
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.privileged == false
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.runAsNonRoot == true
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.capabilities.drop | length > 0
 
   - name: Get the new Kiali OAuthClient if on OpenShift
     vars:
@@ -464,10 +587,10 @@
     assert:
       that:
       - kiali_configmap.deployment.dns | length == 2
-      - kiali_configmap.deployment.dns.policy == "Default"
+      - kiali_configmap.deployment.dns.policy == "ClusterFirst"
       - kiali_configmap.deployment.dns.config.options[0].name == "ndots"
       - kiali_configmap.deployment.dns.config.options[0].value == "1"
-      - kiali_pod_spec.dnsPolicy == "Default"
+      - kiali_pod_spec.dnsPolicy == "ClusterFirst"
       - kiali_pod_spec.dnsConfig.options[0].name == "ndots"
       - kiali_pod_spec.dnsConfig.options[0].value == "1"
 
@@ -480,7 +603,8 @@
 
   - name: Test the custom configs for the probes
     vars:
-      kiali_pod_container: "{{ kiali_pod.resources[0].spec.containers[0] }}"
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_pod_container: "{{ kiali_pod_spec.containers[kiali_container_index | int] }}"
     assert:
       that:
       - kiali_pod_container.livenessProbe.initialDelaySeconds == 11
@@ -493,7 +617,8 @@
 
   - name: Test custom_envs
     vars:
-      kiali_pod_envs: "{{ kiali_pod.resources[0].spec.containers[0].env }}"
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_pod_envs: "{{ kiali_pod_spec.containers[kiali_container_index | int].env }}"
     assert:
       that:
       - kiali_pod_envs | selectattr('name', 'equalto', 'CUSTOM_ENV_VAR_ONE') | selectattr('value', 'equalto', 'true') | list | length > 0
@@ -551,6 +676,129 @@
       that:
       - networkpolicy_result_disabled.resources | length == 0
       fail_msg: "NetworkPolicy should be removed when disabled"
+
+  # container tests - verify they can be added and have restrictive security context
+  - name: Assert that containers were added to the deployment
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_pod_spec.containers is defined
+      - kiali_pod_spec.containers | length == 3
+      - kiali_pod_spec.containers[first_test_container_index | int].name == "first-test-container"
+      - kiali_pod_spec.containers[istio_proxy_container_index | int].name == "istio-proxy"
+      fail_msg: "Containers should be present in the deployment"
+
+  - name: Assert that containers have custom security context preserved (allowSecurityContextOverride=true)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      # First test container security context - custom values should be preserved
+      - kiali_pod_spec.containers[first_test_container_index | int].securityContext is defined
+      - kiali_pod_spec.containers[first_test_container_index | int].securityContext.runAsUser == 1001
+      - kiali_pod_spec.containers[first_test_container_index | int].securityContext.runAsGroup == 1001
+      - kiali_pod_spec.containers[first_test_container_index | int].securityContext.privileged == true
+      - kiali_pod_spec.containers[first_test_container_index | int].securityContext.allowPrivilegeEscalation == true
+      - kiali_pod_spec.containers[first_test_container_index | int].securityContext.runAsNonRoot == false
+      # Second test container security context - custom values should be preserved
+      - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext is defined
+      # On OpenShift, SCCs may override the specific runAsUser value for Istio sidecar, but it should still be a number
+      - >-
+        (not is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsUser == 1001) or
+        (is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsUser is number)
+      - >-
+        (not is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsGroup == 1001) or
+        (is_openshift and kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.runAsGroup is number)
+      - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.privileged == true
+      - kiali_pod_spec.containers[istio_proxy_container_index | int].securityContext.allowPrivilegeEscalation == true
+      fail_msg: "Custom security contexts should be preserved when allowSecurityContextOverride=true (on OpenShift, SCCs may override specific user IDs but security context should still be applied)"
+
+  - name: Assert Kiali pod started successfully with containers
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_pod_status: "{{ kiali_pod.resources[0].status }}"
+    assert:
+      that:
+      - kiali_pod.resources | length > 0
+      - kiali_pod_status.phase == "Running"
+      - kiali_pod_spec.containers is defined
+      - kiali_pod_spec.containers | length == 3
+      - kiali_pod_status.containerStatuses is defined
+      - kiali_pod_status.containerStatuses | length == 3
+      - kiali_pod_status.containerStatuses[0].ready == true
+      - kiali_pod_status.containerStatuses[1].ready == true
+      - kiali_pod_status.containerStatuses[2].ready == true
+      fail_msg: "Kiali pod should be running successfully with all containers ready"
+
+  # Basic initContainer tests - verify they can be added and security context is applied
+  - name: Assert that initContainer was added to the deployment
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_pod_spec.initContainers is defined
+      - kiali_pod_spec.initContainers | length >= 1
+      - init_test_container_index != "-1"
+      - kiali_pod_spec.initContainers[init_test_container_index | int].name == "init-test-container"
+      fail_msg: "InitContainer should be present in the deployment"
+
+  - name: Assert that initContainer has security context override (ALLOW_SECURITY_CONTEXT_OVERRIDE=true)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      # Init container security context - dangerous settings should be preserved since ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+      - kiali_pod_spec.initContainers[init_test_container_index | int].securityContext is defined
+      - kiali_pod_spec.initContainers[init_test_container_index | int].securityContext.runAsUser == 1001
+      - kiali_pod_spec.initContainers[init_test_container_index | int].securityContext.runAsGroup == 1001
+      - kiali_pod_spec.initContainers[init_test_container_index | int].securityContext.privileged == true
+      - kiali_pod_spec.initContainers[init_test_container_index | int].securityContext.allowPrivilegeEscalation == true
+      - kiali_pod_spec.initContainers[init_test_container_index | int].securityContext.runAsNonRoot == false
+      fail_msg: "InitContainer should preserve dangerous security context when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+
+  - name: Test initContainer environment variables
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      init_container_envs: "{{ kiali_pod_spec.initContainers[init_test_container_index | int].env }}"
+    assert:
+      that:
+      - init_container_envs is defined
+      - init_container_envs | length >= 1
+      - init_container_envs | selectattr('name', 'equalto', 'INIT_TEST_VAR') | selectattr('value', 'equalto', 'test-value') | list | length == 1
+      fail_msg: "InitContainer should have the correct environment variables"
+
+  - name: Test initContainer basic properties
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      init_container: "{{ kiali_pod_spec.initContainers[init_test_container_index | int] }}"
+    assert:
+      that:
+      - init_container.name == "init-test-container"
+      - init_container.image == "registry.access.redhat.com/ubi9/ubi-minimal:latest"
+      - init_container.command is defined
+      - init_container.command | length == 3
+      - init_container.command[0] == "/bin/sh"
+      - init_container.command[1] == "-c"
+      fail_msg: "InitContainer should have the correct basic properties"
+
+  - name: Assert Kiali pod started successfully with initContainer
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_pod_status: "{{ kiali_pod.resources[0].status }}"
+    assert:
+      that:
+      - kiali_pod.resources | length > 0
+      - kiali_pod_status.phase == "Running"
+      - kiali_pod_spec.initContainers is defined
+      - kiali_pod_spec.initContainers | length >= 1
+      - init_test_container_index != "-1"
+      - kiali_pod_status.initContainerStatuses is defined
+      - kiali_pod_status.initContainerStatuses | length >= 1
+      # Find our specific init container in the status and ensure it's ready
+      - kiali_pod_status.initContainerStatuses | selectattr('name', 'equalto', 'init-test-container') | list | length == 1
+      - (kiali_pod_status.initContainerStatuses | selectattr('name', 'equalto', 'init-test-container') | first).ready == true
+      fail_msg: "Kiali pod should be running successfully with initContainer completed"
 
   # Test the comprehensive Kiali CR from kiali-cr-all.yaml
   # First delete the existing CR, then create the new one and verify it works

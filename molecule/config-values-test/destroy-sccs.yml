@@ -1,0 +1,29 @@
+- name: Remove OpenShift Security Context Constraints
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # Remove the custom Security Context Constraints
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Remove privileged Security Context Constraint for config-values-test
+    k8s:
+      state: absent
+      api_version: security.openshift.io/v1
+      kind: SecurityContextConstraints
+      name: kiali-config-values-test-privileged
+    when:
+    - is_openshift == True
+    ignore_errors: yes
+
+  - name: Remove anyuid Security Context Constraint for config-values-test
+    k8s:
+      state: absent
+      api_version: security.openshift.io/v1
+      kind: SecurityContextConstraints
+      name: kiali-config-values-test-anyuid
+    when:
+    - is_openshift == True
+    ignore_errors: yes

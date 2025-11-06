@@ -1,0 +1,71 @@
+# Test init containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+# Custom security contexts should be preserved
+
+# Test that custom security contexts are preserved when ALLOW_SECURITY_CONTEXT_OVERRIDE=true
+- name: Assert that custom security context is preserved on security-test-init
+  vars:
+    deployment_init_containers: "{{ kiali_deployment.resources[0].spec.template.spec.initContainers }}"
+  assert:
+    that:
+    - deployment_init_containers[0].name == 'security-test-init'
+    - deployment_init_containers[0].securityContext is defined
+    # On OpenShift, SCCs may override the specific runAsUser value, but it should still be a number
+    - >-
+      (not is_openshift and deployment_init_containers[0].securityContext.runAsUser == 1001) or
+      (is_openshift and deployment_init_containers[0].securityContext.runAsUser is number)
+    # When ALLOW_SECURITY_CONTEXT_OVERRIDE=true, operator doesn't add missing fields - only preserves what user specified
+    fail_msg: "Security-test-init should preserve custom runAsUser when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+
+- name: Assert that custom security context is preserved on privilege-attempt-init
+  vars:
+    deployment_init_containers: "{{ kiali_deployment.resources[0].spec.template.spec.initContainers }}"
+  assert:
+    that:
+    - deployment_init_containers[1].name == 'privilege-attempt-init'
+    - deployment_init_containers[1].securityContext is defined
+    # User-provided values should be preserved (OpenShift may enforce security defaults regardless of ALLOW_SECURITY_CONTEXT_OVERRIDE)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.privileged == true) or
+      (is_openshift and deployment_init_containers[1].securityContext.privileged is boolean)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.allowPrivilegeEscalation == true) or
+      (is_openshift and deployment_init_containers[1].securityContext.allowPrivilegeEscalation is boolean)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.readOnlyRootFilesystem == false) or
+      (is_openshift and deployment_init_containers[1].securityContext.readOnlyRootFilesystem is boolean)
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.runAsNonRoot == false) or
+      (is_openshift and deployment_init_containers[1].securityContext.runAsNonRoot is boolean)
+    # On OpenShift, SCCs may override the specific runAsUser value, but it should still be a number
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.runAsUser == 1002) or
+      (is_openshift and deployment_init_containers[1].securityContext.runAsUser is number)
+    # On OpenShift, capabilities.add should be preserved, but drop may be added automatically
+    - >-
+      (not is_openshift and deployment_init_containers[1].securityContext.capabilities.add == ['SYS_ADMIN']) or
+      (is_openshift and 'SYS_ADMIN' in deployment_init_containers[1].securityContext.capabilities.add)
+    fail_msg: "Privilege-attempt-init should preserve all custom security context settings when ALLOW_SECURITY_CONTEXT_OVERRIDE=true (OpenShift may enforce additional security defaults)"
+
+- name: Assert that volume mount security is still enforced even with override enabled
+  vars:
+    deployment_init_containers: "{{ kiali_deployment.resources[0].spec.template.spec.initContainers }}"
+  assert:
+    that:
+    - deployment_init_containers[4].volumeMounts is defined
+    - deployment_init_containers[4].volumeMounts | length == 1
+    - deployment_init_containers[4].volumeMounts[0].name == "kiali-secret"
+    - deployment_init_containers[4].volumeMounts[0].mountPath == "/test-secret"
+    - deployment_init_containers[4].volumeMounts[0].readOnly == true
+    fail_msg: "Volume mount for secret should still be forced to read-only even when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"
+
+- name: Assert that environment variables are still preserved with override enabled
+  vars:
+    deployment_init_containers: "{{ kiali_deployment.resources[0].spec.template.spec.initContainers }}"
+  assert:
+    that:
+    # Check that environment variables are still preserved
+    - deployment_init_containers[0].env is defined
+    - deployment_init_containers[0].env | selectattr('name', 'equalto', 'INIT_TEST_VAR') | selectattr('value', 'equalto', 'test-value') | list | length == 1
+    - deployment_init_containers[1].env is defined
+    - deployment_init_containers[1].env | selectattr('name', 'equalto', 'PRIVILEGE_TEST_VAR') | selectattr('value', 'equalto', 'should-be-overridden') | list | length == 1
+    fail_msg: "Environment variables should be preserved even when ALLOW_SECURITY_CONTEXT_OVERRIDE=true"

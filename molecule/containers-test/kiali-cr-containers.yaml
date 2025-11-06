@@ -1,0 +1,62 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  deployment:
+    # Additional containers from container-security-test
+    additional_pod_containers_yaml:
+    # Test 1: Basic container that should get security context applied
+    - name: security-test-container
+      image: registry.k8s.io/pause:3.9
+      securityContext:
+        runAsUser: 1001
+    # Test 2: Container that tries to override security context (should be overridden)
+    - name: privilege-attempt-container
+      image: registry.k8s.io/pause:3.9
+      securityContext:
+        privileged: true
+        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: false
+        runAsNonRoot: false
+        runAsUser: 1002
+        capabilities:
+          add: ['SYS_ADMIN']
+    # Test 3: Another basic container to test consistent security enforcement
+    - name: consistency-test-container
+      image: registry.k8s.io/pause:3.9
+      securityContext:
+        runAsUser: 1003
+    # Test 4: Istio proxy container with auto image
+    - name: istio-proxy
+      image: auto
+      env:
+      - name: "SECURITY_TEST_VAR"
+        value: "test-value"
+      securityContext:
+        runAsUser: 1004
+        runAsGroup: 1004
+        privileged: true
+        allowPrivilegeEscalation: true
+        readOnlyRootFilesystem: false
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    ingress:
+      enabled: true
+    logger:
+      log_level: debug
+    namespace: {{ kiali.install_namespace }}
+    pod_annotations:
+      proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+    pod_labels:
+      sidecar.istio.io/inject: "true"
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    probes:
+      readiness:
+        initial_delay_seconds: 2
+        period_seconds: 5
+  server:
+    node_port: 32445
