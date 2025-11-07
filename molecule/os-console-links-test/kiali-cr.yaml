@@ -36,9 +36,5 @@ spec:
         initial_delay_seconds: 1
         period_seconds: 1
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
-    probes:
-      readiness:
-        initial_delay_seconds: 2
-        period_seconds: 5
   server:
     web_root: {{ kiali.server_web_root }}

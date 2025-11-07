@@ -31,7 +31,3 @@ spec:
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
     # the operator is only given permission to deploy Kiali in view_only_mode
     view_only_mode: true
-    probes:
-      readiness:
-        initial_delay_seconds: 2
-        period_seconds: 5
