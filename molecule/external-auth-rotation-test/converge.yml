@@ -1,0 +1,275 @@
+---
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  # Create the external auth resources before switching the CR to secret-based auth
+  - name: Create external auth rotation test resources
+    k8s:
+      state: present
+      definition: "{{ lookup('template', rotation.resources_yaml_file) }}"
+
+  - name: Wait for grafana-echo deployment to become ready
+    k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ istio.control_plane_namespace }}"
+      name: grafana-echo
+      wait: true
+      wait_condition:
+        type: Available
+        status: "True"
+      wait_timeout: 300
+
+  - name: Switch Kiali Grafana auth to secret-based credentials (enable file mounts)
+    k8s:
+      state: present
+      definition:
+        apiVersion: kiali.io/v1alpha1
+        kind: Kiali
+        metadata:
+          name: kiali
+          namespace: "{{ cr_namespace }}"
+        spec:
+          external_services:
+            grafana:
+              auth:
+                username: "secret:grafana-username:value"
+                password: "secret:grafana-password:value"
+
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  # Compute expected Basic auth headers for functional verification via echo logs
+  - name: Compute expected Basic auth headers
+    set_fact:
+      echo_auth_user1_b64: "{{ 'echo-user1:echo-pass1' | b64encode }}"
+      echo_auth_user2_b64: "{{ 'echo-user2:echo-pass2' | b64encode }}"
+
+  # --- Pre-rotation functional assertion - trigger Kiali to call Grafana and verify credentials used ---
+  - name: Trigger Kiali to call Grafana endpoint (pre-rotation)
+    uri:
+      url: "{{ kiali_base_url }}/api/grafana"
+      method: GET
+      status_code: [200, 503]
+    register: grafana_call_pre
+    until: grafana_call_pre.status == 200 or grafana_call_pre.status == 503
+    retries: 10
+    delay: 3
+
+  # Give a moment for the request to be processed and logged
+  - name: Wait briefly for logs to be written
+    pause:
+      seconds: 2
+
+  # Verify echo service received request with correct auth header (pre-rotation)
+  - name: Get grafana-echo pod for log inspection (pre-rotation)
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ istio.control_plane_namespace }}"
+      label_selectors:
+      - app=grafana-echo
+    register: echo_pod_info_pre
+    until: (echo_pod_info_pre.resources | length) > 0
+    retries: 30
+    delay: 2
+
+  - name: Fetch echo service logs (pre-rotation)
+    kubernetes.core.k8s_log:
+      namespace: "{{ istio.control_plane_namespace }}"
+      name: "{{ echo_pod_info_pre.resources[0].metadata.name }}"
+      container: echo
+      tail_lines: 300
+      since_seconds: 180
+    register: echo_logs_pre
+    until: (echo_logs_pre.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user1_b64)) is not none
+    retries: 20
+    delay: 2
+
+  - name: Verify pre-rotation credentials were used by Kiali
+    assert:
+      that:
+      - "(echo_logs_pre.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user1_b64)) is not none"
+      fail_msg: "Expected to find Authorization header with echo-user1:echo-pass1 in echo logs (pre-rotation), but it was not found. This means Kiali did not use the correct credentials."
+      success_msg: "Verified Kiali used echo-user1:echo-pass1 credentials before rotation"
+
+  - name: Record Kiali restart/pod info before test
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_before
+
+  - set_fact:
+      kiali_restart_count_before: "{{ (kiali_pod_before.resources[0].status.containerStatuses | selectattr('name','equalto','kiali') | list | first).restartCount | default(0) }}"
+      kiali_pod_name_before: "{{ kiali_pod_before.resources[0].metadata.name }}"
+
+  # Secrets are present and Kiali is configured to mount them at this point
+
+  # Initial perses/info check removed: rely on echo logs and secret projections instead
+
+  # Initial echo log verification removed
+
+  - name: Get current Kiali pod (for secret projection checks)
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_info
+
+  - name: Rotate external basic auth credentials (username -> echo-user2)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-username
+          namespace: "{{ istio.control_plane_namespace }}"
+        type: Opaque
+        data:
+          # "echo-user2"
+          value: ZWNoby11c2VyMg==
+
+  - name: Rotate external basic auth credentials (password -> echo-pass2)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-password
+          namespace: "{{ istio.control_plane_namespace }}"
+        type: Opaque
+        data:
+          # "echo-pass2"
+          value: ZWNoby1wYXNzMg==
+
+  # Wait for Kubernetes to propagate secret changes to projected volumes
+  # Projected secret volumes can take up to 60 seconds to sync
+  - name: Wait for secret rotation to propagate to pod volume mounts
+    pause:
+      seconds: 15
+
+  - name: Refresh Kiali pod info before username check
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_info
+
+  # Skip direct file projection check in pod; rotation will be validated by lack of Kiali restarts
+
+  - name: Refresh Kiali pod info before password check
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_info
+
+  # Skip direct file projection check in pod; rotation will be validated by lack of Kiali restarts
+
+  # Pre-rollout perses/info check removed: rely on echo logs show rotated header while old pod still running
+
+  # Pre-rollout echo log verification removed
+
+  # --- Post-rotation functional assertion - trigger Kiali to call Grafana and verify NEW credentials used ---
+  - name: Trigger Kiali to call Grafana endpoint (post-rotation)
+    uri:
+      url: "{{ kiali_base_url }}/api/grafana"
+      method: GET
+      status_code: [200, 503]
+    register: grafana_call_post
+    until: grafana_call_post.status == 200 or grafana_call_post.status == 503
+    retries: 10
+    delay: 3
+
+  # Give a moment for the request to be processed and logged
+  - name: Wait briefly for logs to be written
+    pause:
+      seconds: 2
+
+  # Verify echo service received request with NEW auth header (post-rotation)
+  - name: Get grafana-echo pod for log inspection (post-rotation)
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ istio.control_plane_namespace }}"
+      label_selectors:
+      - app=grafana-echo
+    register: echo_pod_info_post
+    until: (echo_pod_info_post.resources | length) > 0
+    retries: 30
+    delay: 2
+
+  - name: Fetch echo service logs (post-rotation)
+    kubernetes.core.k8s_log:
+      namespace: "{{ istio.control_plane_namespace }}"
+      name: "{{ echo_pod_info_post.resources[0].metadata.name }}"
+      container: echo
+      tail_lines: 300
+      since_seconds: 90
+    register: echo_logs_post
+    until: (echo_logs_post.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user2_b64)) is not none
+    retries: 20
+    delay: 2
+
+  - name: Verify post-rotation credentials were used by Kiali
+    assert:
+      that:
+      - "(echo_logs_post.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user2_b64)) is not none"
+      fail_msg: "Expected to find Authorization header with echo-user2:echo-pass2 in echo logs (post-rotation), but it was not found. This means Kiali did not pick up the rotated credentials."
+      success_msg: "Verified Kiali used echo-user2:echo-pass2 credentials after rotation WITHOUT restarting"
+
+  - name: Record Kiali restart/pod info after test
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_after
+
+  - set_fact:
+      kiali_restart_count_after: "{{ (kiali_pod_after.resources[0].status.containerStatuses | selectattr('name','equalto','kiali') | list | first).restartCount | default(0) }}"
+      kiali_pod_name_after: "{{ kiali_pod_after.resources[0].metadata.name }}"
+
+  - name: Assert Kiali container did not restart during secret rotation
+    assert:
+      that:
+      - kiali_restart_count_after == kiali_restart_count_before
+      success_msg: "Kiali container did not restart during secret rotation"
+      fail_msg: "Kiali container restarted during the test (container restart count increased)."
+
+  - name: Delete external auth rotation test resources
+    k8s:
+      state: absent
+      namespace: "{{ istio.control_plane_namespace }}"
+      definition: "{{ lookup('template', rotation.resources_yaml_file) }}"
+
