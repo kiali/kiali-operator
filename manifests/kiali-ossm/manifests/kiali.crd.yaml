@@ -903,12 +903,18 @@ spec:
                             type: object
                             properties:
                               ca_file:
-                                description: "The certificate authority file to use when accessing Prometheus using https. An empty string means no extra certificate authority file is used."
+                                description: "The certificate authority file to use when accessing Prometheus using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                                type: string
+                              cert_file:
+                                description: "The client certificate file to use when accessing Prometheus using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
                                 type: string
                               insecure_skip_verify:
                                 description: "Set true to skip verifying certificate validity when Kiali contacts Prometheus over https."
                                 type: boolean
                                 default: false
+                              key_file:
+                                description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret."
+                                type: string
                               password:
                                 description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret."
                                 type: string
@@ -983,12 +989,18 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing Grafana using https. An empty string means no extra certificate authority file is used."
+                            description: "The certificate authority file to use when accessing Grafana using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            type: string
+                          cert_file:
+                            description: "The client certificate file to use when accessing Grafana using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Grafana over https."
                             type: boolean
                             default: false
+                          key_file:
+                            description: "The client private key file to use when accessing Grafana using https with mTLS. An empty string means no client private key is used. May refer to a secret."
+                            type: string
                           password:
                             description: "Password to be used when making requests to Grafana, for basic authentication. May refer to a secret."
                             type: string
@@ -1190,12 +1202,18 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing Perses using https. An empty string means no extra certificate authority file is used."
+                            description: "The certificate authority file to use when accessing Perses using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            type: string
+                          cert_file:
+                            description: "The client certificate file to use when accessing Perses using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Perses over https."
                             type: boolean
                             default: false
+                          key_file:
+                            description: "The client private key file to use when accessing Perses using https with mTLS. An empty string means no client private key is used. May refer to a secret."
+                            type: string
                           password:
                             description: "Password to be used when making requests to Perses, for basic authentication. May refer to a secret."
                             type: string
@@ -1275,12 +1293,18 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing Prometheus using https. An empty string means no extra certificate authority file is used."
+                            description: "The certificate authority file to use when accessing Prometheus using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            type: string
+                          cert_file:
+                            description: "The client certificate file to use when accessing Prometheus using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Prometheus over https."
                             type: boolean
                             default: false
+                          key_file:
+                            description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret."
+                            type: string
                           password:
                             description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret."
                             type: string
@@ -1355,12 +1379,18 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing the Tracing server using https. An empty string means no extra certificate authority file is used."
+                            description: "The certificate authority file to use when accessing the Tracing server using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            type: string
+                          cert_file:
+                            description: "The client certificate file to use when accessing the Tracing server using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts the Tracing server over https."
                             type: boolean
                             default: false
+                          key_file:
+                            description: "The client private key file to use when accessing the Tracing server using https with mTLS. An empty string means no client private key is used. May refer to a secret."
+                            type: string
                           password:
                             description: "Password to be used when making requests to the Tracing server, for basic authentication. May refer to a secret."
                             type: string
