@@ -6,13 +6,8 @@ on:
       tag_branch:
         description: Branch to tag
         required: true
-        default: v2.11
+        default: v2.17
         type: string
-      bump_next_version:
-        description: Bump to next version after creating release tag
-        required: true
-        default: true
-        type: boolean
 
 jobs:
   release_tag:
@@ -53,7 +48,6 @@ jobs:
   bump_version:
     name: Bump to Next Version
     needs: [release_tag]
-    if: ${{ inputs.bump_next_version }}
     uses: ./.github/workflows/bump-release-version.yml
     with:
       tag_branch: ${{ inputs.tag_branch }}
