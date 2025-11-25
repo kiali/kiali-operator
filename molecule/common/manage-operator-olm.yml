@@ -67,21 +67,30 @@
 
 - name: Find Kiali Subscription by package name
   set_fact:
-    kiali_subscriptions: "{{ all_subscriptions_result.resources | selectattr('spec.name', 'in', ['kiali', 'kiali-ossm']) | list }}"
+    kiali_subscriptions: "{{ all_subscriptions_result.resources | selectattr('spec.name', 'match', '.*kiali.*') | list }}"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
 - name: Fail if no Kiali Subscription found
   fail:
-    msg: "No Kiali Subscription found (no subscription with spec.name='kiali' or 'kiali-ossm')"
+    msg: "No Kiali Subscription found (no subscription with spec.name containing 'kiali')"
   when:
   - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
   - kiali_subscriptions | length == 0
 
-- name: Extract Subscription name, namespace, and env list
+- name: Extract Subscription name and namespace
   set_fact:
     subscription_name: "{{ kiali_subscriptions[0].metadata.name }}"
     subscription_namespace: "{{ kiali_subscriptions[0].metadata.namespace }}"
-    subscription_env: "{{ kiali_subscriptions[0] | json_query('spec.config.env') | default([]) }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Capture raw Subscription env data
+  set_fact:
+    subscription_env_raw: "{{ kiali_subscriptions[0] | json_query('spec.config.env') | default([], true) }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Normalize Subscription env list
+  set_fact:
+    subscription_env: "{{ [] if subscription_env_raw in [none, ''] else ([subscription_env_raw] if subscription_env_raw is mapping else (subscription_env_raw if (subscription_env_raw is sequence and not (subscription_env_raw is string)) else [])) }}"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
 - name: Find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index in Subscription
@@ -92,6 +101,7 @@
     index_var: idx
   when:
   - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - subscription_env | length > 0
   - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
 
 - name: Patch Subscription to update ALLOW_SECURITY_CONTEXT_OVERRIDE value
@@ -106,6 +116,7 @@
       value: "{{ manage_operator.allow_security_context_override | default('false') }}"
   when:
   - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - subscription_env | length > 0
   - subscription_allow_security_context_override_index is defined
 
 - name: Wait for operator pod to be ready after patch
