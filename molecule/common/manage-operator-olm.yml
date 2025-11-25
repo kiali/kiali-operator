@@ -19,8 +19,8 @@
   fail:
     msg: "No Kiali CSV found in {{ kiali.operator_namespace }} namespace"
   when:
-    - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-    - kiali_csvs | length == 0
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - kiali_csvs | length == 0
 
 - name: Extract CSV name
   set_fact:
@@ -43,8 +43,8 @@
   loop_control:
     index_var: idx
   when:
-    - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-    - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
 
 - name: Patch CSV to update ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable
   k8s_json_patch:
@@ -58,20 +58,30 @@
       value: "{{ manage_operator.allow_security_context_override | default('false') }}"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
-- name: Get current Subscription to find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index
+- name: Get all Subscriptions in all namespaces
   k8s_info:
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
-    name: kiali-subscription
-    namespace: "{{ kiali.operator_namespace }}"
-  register: current_subscription
+  register: all_subscriptions_result
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
-- name: Capture Subscription configuration state
+- name: Find Kiali Subscription by package name
   set_fact:
-    subscription_has_config: "{{ (current_subscription.resources[0] | json_query('spec.config')) is not none }}"
-    subscription_has_config_env: "{{ (current_subscription.resources[0] | json_query('spec.config.env')) is not none }}"
-    subscription_env: "{{ current_subscription.resources[0] | json_query('spec.config.env') | default([]) }}"
+    kiali_subscriptions: "{{ all_subscriptions_result.resources | selectattr('spec.name', 'in', ['kiali', 'kiali-ossm']) | list }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Fail if no Kiali Subscription found
+  fail:
+    msg: "No Kiali Subscription found (no subscription with spec.name='kiali' or 'kiali-ossm')"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - kiali_subscriptions | length == 0
+
+- name: Extract Subscription name, namespace, and env list
+  set_fact:
+    subscription_name: "{{ kiali_subscriptions[0].metadata.name }}"
+    subscription_namespace: "{{ kiali_subscriptions[0].metadata.namespace }}"
+    subscription_env: "{{ kiali_subscriptions[0] | json_query('spec.config.env') | default([]) }}"
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
 - name: Find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index in Subscription
@@ -81,56 +91,24 @@
   loop_control:
     index_var: idx
   when:
-    - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-    - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
-
-- name: Initialize Subscription patch operations
-  set_fact:
-    subscription_patch_ops: []
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-
-- name: Queue Subscription patch to create config with ALLOW_SECURITY_CONTEXT_OVERRIDE when missing
-  set_fact:
-    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'add', 'path': '/spec/config', 'value': { 'env': [ { 'name': 'ALLOW_SECURITY_CONTEXT_OVERRIDE', 'value': manage_operator.allow_security_context_override | default('false') } ] } } ] }}"
-  when:
   - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-  - not subscription_has_config
+  - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
 
-- name: Queue Subscription patch to create env list with ALLOW_SECURITY_CONTEXT_OVERRIDE when missing
-  set_fact:
-    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'add', 'path': '/spec/config/env', 'value': [ { 'name': 'ALLOW_SECURITY_CONTEXT_OVERRIDE', 'value': manage_operator.allow_security_context_override | default('false') } ] } ] }}"
-  when:
-  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-  - subscription_has_config
-  - not subscription_has_config_env
-
-- name: Queue Subscription patch to add ALLOW_SECURITY_CONTEXT_OVERRIDE when env list exists
-  set_fact:
-    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'add', 'path': '/spec/config/env/-', 'value': { 'name': 'ALLOW_SECURITY_CONTEXT_OVERRIDE', 'value': manage_operator.allow_security_context_override | default('false') } } ] }}"
-  when:
-  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-  - subscription_has_config_env
-  - subscription_allow_security_context_override_index is not defined
-
-- name: Queue Subscription patch to update ALLOW_SECURITY_CONTEXT_OVERRIDE value
-  set_fact:
-    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'replace', 'path': '/spec/config/env/{{ subscription_allow_security_context_override_index }}/value', 'value': manage_operator.allow_security_context_override | default('false') } ] }}"
+- name: Patch Subscription to update ALLOW_SECURITY_CONTEXT_OVERRIDE value
+  k8s_json_patch:
+    api_version: operators.coreos.com/v1alpha1
+    kind: Subscription
+    name: "{{ subscription_name }}"
+    namespace: "{{ subscription_namespace }}"
+    patch:
+    - op: replace
+      path: "/spec/config/env/{{ subscription_allow_security_context_override_index }}/value"
+      value: "{{ manage_operator.allow_security_context_override | default('false') }}"
   when:
   - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
   - subscription_allow_security_context_override_index is defined
 
-- name: Patch Subscription with queued operations
-  k8s_json_patch:
-    api_version: operators.coreos.com/v1alpha1
-    kind: Subscription
-    name: kiali-subscription
-    namespace: "{{ kiali.operator_namespace }}"
-    patch: "{{ subscription_patch_ops }}"
-  when:
-  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
-  - subscription_patch_ops | length > 0
-
-- name: Wait for operator pod to be restarted after Subscription change
+- name: Wait for operator pod to be ready after patch
   k8s_info:
     api_version: v1
     kind: Pod
