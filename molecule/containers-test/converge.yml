@@ -12,7 +12,7 @@
   - include_tasks: ../common/cluster-info.yml
 
   # Operator is installed in the prepare phase, so we can use the default value of ALLOW_SECURITY_CONTEXT_OVERRIDE=true
-  # This should work no matter how the operator is installed, OLM or not.
+  # This should work no matter how the operator is installed (OLM or not).
 
   ##############################################################################
   # PHASE 1: Containers with ALLOW_SECURITY_CONTEXT_OVERRIDE=true
