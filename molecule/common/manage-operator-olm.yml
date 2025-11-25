@@ -47,7 +47,7 @@
     - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
 
 - name: Patch CSV to update ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable
-  kubernetes.core.k8s_json_patch:
+  k8s_json_patch:
     api_version: operators.coreos.com/v1alpha1
     kind: ClusterServiceVersion
     name: "{{ csv_name }}"
@@ -67,27 +67,68 @@
   register: current_subscription
   when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
 
+- name: Capture Subscription configuration state
+  set_fact:
+    subscription_has_config: "{{ (current_subscription.resources[0] | json_query('spec.config')) is not none }}"
+    subscription_has_config_env: "{{ (current_subscription.resources[0] | json_query('spec.config.env')) is not none }}"
+    subscription_env: "{{ current_subscription.resources[0] | json_query('spec.config.env') | default([]) }}"
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
 - name: Find ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable index in Subscription
   set_fact:
     subscription_allow_security_context_override_index: "{{ idx }}"
-  loop: "{{ current_subscription.resources[0].spec.config.env }}"
+  loop: "{{ subscription_env }}"
   loop_control:
     index_var: idx
   when:
     - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
     - item.name == 'ALLOW_SECURITY_CONTEXT_OVERRIDE'
 
-- name: Patch Subscription to update ALLOW_SECURITY_CONTEXT_OVERRIDE environment variable
-  kubernetes.core.k8s_json_patch:
+- name: Initialize Subscription patch operations
+  set_fact:
+    subscription_patch_ops: []
+  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+
+- name: Queue Subscription patch to create config with ALLOW_SECURITY_CONTEXT_OVERRIDE when missing
+  set_fact:
+    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'add', 'path': '/spec/config', 'value': { 'env': [ { 'name': 'ALLOW_SECURITY_CONTEXT_OVERRIDE', 'value': manage_operator.allow_security_context_override | default('false') } ] } } ] }}"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - not subscription_has_config
+
+- name: Queue Subscription patch to create env list with ALLOW_SECURITY_CONTEXT_OVERRIDE when missing
+  set_fact:
+    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'add', 'path': '/spec/config/env', 'value': [ { 'name': 'ALLOW_SECURITY_CONTEXT_OVERRIDE', 'value': manage_operator.allow_security_context_override | default('false') } ] } ] }}"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - subscription_has_config
+  - not subscription_has_config_env
+
+- name: Queue Subscription patch to add ALLOW_SECURITY_CONTEXT_OVERRIDE when env list exists
+  set_fact:
+    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'add', 'path': '/spec/config/env/-', 'value': { 'name': 'ALLOW_SECURITY_CONTEXT_OVERRIDE', 'value': manage_operator.allow_security_context_override | default('false') } } ] }}"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - subscription_has_config_env
+  - subscription_allow_security_context_override_index is not defined
+
+- name: Queue Subscription patch to update ALLOW_SECURITY_CONTEXT_OVERRIDE value
+  set_fact:
+    subscription_patch_ops: "{{ subscription_patch_ops + [ { 'op': 'replace', 'path': '/spec/config/env/{{ subscription_allow_security_context_override_index }}/value', 'value': manage_operator.allow_security_context_override | default('false') } ] }}"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - subscription_allow_security_context_override_index is defined
+
+- name: Patch Subscription with queued operations
+  k8s_json_patch:
     api_version: operators.coreos.com/v1alpha1
     kind: Subscription
     name: kiali-subscription
     namespace: "{{ kiali.operator_namespace }}"
-    patch:
-    - op: replace
-      path: "/spec/config/env/{{ subscription_allow_security_context_override_index }}/value"
-      value: "{{ manage_operator.allow_security_context_override | default('false') }}"
-  when: lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+    patch: "{{ subscription_patch_ops }}"
+  when:
+  - lookup('env', 'MOLECULE_OPERATOR_INSTALLER') == 'skip'
+  - subscription_patch_ops | length > 0
 
 - name: Wait for operator pod to be restarted after Subscription change
   k8s_info:
