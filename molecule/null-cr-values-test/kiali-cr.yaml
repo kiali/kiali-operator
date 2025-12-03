@@ -70,7 +70,6 @@ spec:
 
     grafana:
       auth:
-        ca_file: null
         insecure_skip_verify: null
         password: null
         token: null
@@ -90,7 +89,6 @@ spec:
 
     prometheus:
       auth:
-        ca_file: null
         insecure_skip_verify: null
         password: null
         token: null
@@ -101,7 +99,6 @@ spec:
 
     tracing:
       auth:
-        ca_file: null
         insecure_skip_verify: null
         password: null
         token: null

@@ -359,8 +359,8 @@ spec:
                     description: |
                       Defines additional secrets that are to be mounted in the Kiali pod.
 
-                      These are useful to contain certs that are used by Kiali to securely connect to third party systems
-                      (for example, see `external_services.tracing.auth.ca_file`).
+                      These are useful to contain client certificates that are used by Kiali to authenticate to third party systems
+                      using mTLS (for example, see `external_services.tracing.auth.cert_file` and `external_services.tracing.auth.key_file`).
 
                       These secrets must be created by an external mechanism. Kiali will not generate these secrets; it
                       is assumed these secrets are externally managed. You can define 0, 1, or more secrets.
@@ -903,7 +903,7 @@ spec:
                             type: object
                             properties:
                               ca_file:
-                                description: "The certificate authority file to use when accessing Prometheus using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                                description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                                 type: string
                               cert_file:
                                 description: "The client certificate file to use when accessing Prometheus using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
@@ -989,7 +989,7 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing Grafana using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
                             description: "The client certificate file to use when accessing Grafana using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
@@ -1202,7 +1202,7 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing Perses using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
                             description: "The client certificate file to use when accessing Perses using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
@@ -1293,7 +1293,7 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing Prometheus using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
                             description: "The client certificate file to use when accessing Prometheus using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
@@ -1379,7 +1379,7 @@ spec:
                         type: object
                         properties:
                           ca_file:
-                            description: "The certificate authority file to use when accessing the Tracing server using https. An empty string means no extra certificate authority file is used. May refer to a secret."
+                            description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
                             description: "The client certificate file to use when accessing the Tracing server using https with mTLS. An empty string means no client certificate is used. May refer to a secret."
