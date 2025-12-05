@@ -326,21 +326,6 @@
       {% set kv = kv | combine({'auth': {'strategy': 'openshift' if is_openshift else 'token'}}, recursive=True) %}
       {% endif %}
 
-      {# Use OpenShift service CA file for Grafana #}
-      {% if is_openshift == True and (kv.external_services.grafana.auth.ca_file is not defined or kv.external_services.grafana.auth.ca_file == '') %}
-      {% set kv = kv | combine({'external_services': {'grafana': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
-      {% endif %}
-
-      {# Use OpenShift service CA file for Prometheus #}
-      {% if is_openshift == True and (kv.external_services.prometheus.auth.ca_file is not defined or kv.external_services.prometheus.auth.ca_file == '') %}
-      {% set kv = kv | combine({'external_services': {'prometheus': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
-      {% endif %}
-
-      {# Use OpenShift service CA file for Tracing #}
-      {% if is_openshift == True and (kv.external_services.tracing.auth.ca_file is not defined or kv.external_services.tracing.auth.ca_file == '') %}
-      {% set kv = kv | combine({'external_services': {'tracing': {'auth': {'ca_file': '/kiali-cabundle/service-ca.crt'}}}}, recursive=True) %}
-      {% endif %}
-
       {# Set the yaml to the new kv dict #}
       {{ kv | to_nice_yaml }}
   set_fact:
@@ -652,11 +637,6 @@
       {% set d = d | combine({'prometheus-token': {'secret_name': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
-      {# Prepare the secret volume for prometheus ca_file #}
-      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.prometheus is defined and kiali_vars.external_services.prometheus.auth is defined and (kiali_vars.external_services.prometheus.auth.ca_file | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({'prometheus-ca': {'secret_name': kiali_vars.external_services.prometheus.auth.ca_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.prometheus.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
-      {% endif %}
-
       {# Prepare the secret volume for prometheus cert_file #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.prometheus is defined and kiali_vars.external_services.prometheus.auth is defined and (kiali_vars.external_services.prometheus.auth.cert_file | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'prometheus-cert': {'secret_name': kiali_vars.external_services.prometheus.auth.cert_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.cert_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.prometheus.auth.cert_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
@@ -680,11 +660,6 @@
       {# Prepare the secret volume for tracing token #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.tracing is defined and kiali_vars.external_services.tracing.enabled is defined and kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth is defined and (kiali_vars.external_services.tracing.auth.token | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'tracing-token': {'secret_name': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
-      {% endif %}
-
-      {# Prepare the secret volume for tracing ca_file #}
-      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.tracing is defined and kiali_vars.external_services.tracing.enabled is defined and kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth is defined and (kiali_vars.external_services.tracing.auth.ca_file | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({'tracing-ca': {'secret_name': kiali_vars.external_services.tracing.auth.ca_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.tracing.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Prepare the secret volume for tracing cert_file #}
@@ -712,11 +687,6 @@
       {% set d = d | combine({'grafana-token': {'secret_name': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
-      {# Prepare the secret volume for grafana ca_file #}
-      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.grafana is defined and kiali_vars.external_services.grafana.enabled is defined and kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth is defined and (kiali_vars.external_services.grafana.auth.ca_file | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({'grafana-ca': {'secret_name': kiali_vars.external_services.grafana.auth.ca_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.grafana.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
-      {% endif %}
-
       {# Prepare the secret volume for grafana cert_file #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.grafana is defined and kiali_vars.external_services.grafana.enabled is defined and kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth is defined and (kiali_vars.external_services.grafana.auth.cert_file | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'grafana-cert': {'secret_name': kiali_vars.external_services.grafana.auth.cert_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.cert_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.grafana.auth.cert_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
@@ -735,11 +705,6 @@
       {# Prepare the secret volume for perses password #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.perses is defined and kiali_vars.external_services.perses.enabled is defined and kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth is defined and (kiali_vars.external_services.perses.auth.password | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'perses-password': {'secret_name': kiali_vars.external_services.perses.auth.password | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.password | regex_replace('secret:.+:(.+)', '\\1') }}) %}
-      {% endif %}
-
-      {# Prepare the secret volume for perses ca_file #}
-      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.perses is defined and kiali_vars.external_services.perses.enabled is defined and kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth is defined and (kiali_vars.external_services.perses.auth.ca_file | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({'perses-ca': {'secret_name': kiali_vars.external_services.perses.auth.ca_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.perses.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Prepare the secret volume for perses cert_file #}
@@ -770,11 +735,6 @@
       {# Prepare the secret volume for customdashboards prometheus token #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.token | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'customdashboards-prometheus-token': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.token | regex_replace('secret:.+:(.+)', '\\1') }}) %}
-      {% endif %}
-
-      {# Prepare the secret volume for customdashboards prometheus ca_file #}
-      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.ca_file | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({'customdashboards-prometheus-ca': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.ca_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.custom_dashboards.prometheus.auth.ca_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Prepare the secret volume for customdashboards prometheus cert_file #}
