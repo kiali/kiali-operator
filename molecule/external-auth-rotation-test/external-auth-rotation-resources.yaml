@@ -19,13 +19,81 @@ items:
   data:
     # "echo-pass1"
     value: ZWNoby1wYXNzMQ==
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-server-tls
+    namespace: istio-system
+  type: kubernetes.io/tls
+  stringData:
+    tls.crt: |
+{{ lookup('file', playbook_dir + '/certs/server-old.crt') | indent(6, first=true) }}
+    tls.key: |
+{{ lookup('file', playbook_dir + '/certs/server-old.key') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-client-cert
+    namespace: istio-system
+  type: Opaque
+  stringData:
+    tls.crt: |
+{{ lookup('file', playbook_dir + '/certs/client-old.crt') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-client-key
+    namespace: istio-system
+  type: Opaque
+  stringData:
+    tls.key: |
+{{ lookup('file', playbook_dir + '/certs/client-old.key') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-client-ca
+    namespace: istio-system
+  type: Opaque
+  stringData:
+    ca.crt: |
+{{ lookup('file', playbook_dir + '/certs/ca-old.crt') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: grafana-echo-nginx
+    namespace: istio-system
+  data:
+    nginx.conf: |
+      events {}
+      http {
+        log_format rotation '$remote_addr - $remote_user [$time_local] '
+                            '"$request" $status $body_bytes_sent '
+                            '"$http_referer" "$http_user_agent" '
+                            'auth="$http_authorization" client_dn="$ssl_client_s_dn"';
+        access_log /dev/stdout rotation;
+        error_log /dev/stderr info;
+
+        server {
+          listen 8443 ssl;
+          ssl_certificate /certs/tls.crt;
+          ssl_certificate_key /certs/tls.key;
+          ssl_client_certificate /client-ca/ca.crt;
+          ssl_verify_client on;
+          ssl_verify_depth 2;
+
+          add_header Content-Type text/plain;
+          location / {
+            return 200 "ok";
+          }
+        }
+      }
 - apiVersion: apps/v1
   kind: Deployment
   metadata:
     name: grafana-echo
     namespace: istio-system
     labels:
-    app: grafana-echo
+      app: grafana-echo
   spec:
     replicas: 1
     selector:
@@ -37,42 +105,57 @@ items:
           app: grafana-echo
       spec:
         containers:
-        - name: echo
-          image: mendhak/http-https-echo:31
+        - name: nginx
+          image: nginx:1.27-alpine
           imagePullPolicy: IfNotPresent
-          env:
-          - name: HTTP_PORT
-            value: "8080"
-          # Do not set BASIC_AUTH_USER/PASS so the echo service accepts all requests
-          # and logs them. We only care about observing what auth header Kiali sends.
+          args:
+          - nginx
+          - -g
+          - daemon off;
           ports:
-          - containerPort: 8080
-            name: http
+          - containerPort: 8443
+            name: https
           readinessProbe:
-            httpGet:
-              path: /
-              port: 8080
+            tcpSocket:
+              port: 8443
             initialDelaySeconds: 2
             periodSeconds: 2
           livenessProbe:
-            httpGet:
-              path: /
-              port: 8080
+            tcpSocket:
+              port: 8443
             initialDelaySeconds: 5
             periodSeconds: 5
+          volumeMounts:
+          - name: nginx-conf
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
+          - name: server-tls
+            mountPath: /certs
+            readOnly: true
+          - name: client-ca
+            mountPath: /client-ca
+            readOnly: true
+        volumes:
+        - name: nginx-conf
+          configMap:
+            name: grafana-echo-nginx
+        - name: server-tls
+          secret:
+            secretName: grafana-server-tls
+        - name: client-ca
+          secret:
+            secretName: grafana-client-ca
 - apiVersion: v1
   kind: Service
   metadata:
     name: grafana-echo
     namespace: istio-system
     labels:
-    app: grafana-echo
+      app: grafana-echo
   spec:
     selector:
       app: grafana-echo
     ports:
-    - name: http
-      port: 8080
-      targetPort: 8080
-
-
+    - name: https
+      port: 8443
+      targetPort: 8443

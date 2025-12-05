@@ -41,8 +41,8 @@ spec:
     grafana:
       enabled: true
       # Use the in-cluster echo service as the "Grafana" endpoint for testing
-      internal_url: "http://grafana-echo.{{ istio.control_plane_namespace }}:8080"
-      external_url: "http://grafana-echo.{{ istio.control_plane_namespace }}:8080"
+      internal_url: "https://grafana-echo.{{ istio.control_plane_namespace }}:8443"
+      external_url: "https://grafana-echo.{{ istio.control_plane_namespace }}:8443"
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -55,8 +55,11 @@ spec:
       auth:
         type: basic
         # Start with inline credentials; we will switch to secret-based mounts in the test
+        # NOTE: cert_file and key_file are intentionally omitted here because the secrets
+        # don't exist yet. They will be added when we switch to secret-based credentials.
         username: "echo-user1"
         password: "echo-pass1"
+        insecure_skip_verify: true
     tracing:
       enabled: false
       auth:

@@ -42,8 +42,32 @@
           external_services:
             grafana:
               auth:
+                insecure_skip_verify: true
                 username: "secret:grafana-username:value"
                 password: "secret:grafana-password:value"
+                cert_file: "secret:grafana-client-cert:tls.crt"
+                key_file: "secret:grafana-client-key:tls.key"
+
+  # Wait for operator to process the CR changes
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+
+  # Wait for new pod with secret volume mounts
+  - name: Wait for Kiali pod to be recreated with grafana secret volumes
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/name=kiali"
+    register: kiali_pods_after_change
+    until:
+    - kiali_pods_after_change is success
+    - kiali_pods_after_change.resources | length == 1
+    - kiali_pods_after_change.resources[0].status.phase == "Running"
+    - kiali_pods_after_change.resources[0].spec.volumes | selectattr('name', 'equalto', 'grafana-cert') | list | length > 0
+    - kiali_pods_after_change.resources[0].spec.volumes | selectattr('name', 'equalto', 'grafana-key') | list | length > 0
+    retries: 60
+    delay: 5
 
   - import_tasks: ../common/wait_for_kiali_running.yml
 
@@ -52,6 +76,8 @@
     set_fact:
       echo_auth_user1_b64: "{{ 'echo-user1:echo-pass1' | b64encode }}"
       echo_auth_user2_b64: "{{ 'echo-user2:echo-pass2' | b64encode }}"
+      echo_client_dn_pre: "CN=kiali-client-old"
+      echo_client_dn_post: "CN=kiali-client-new"
 
   # --- Pre-rotation functional assertion - trigger Kiali to call Grafana and verify credentials used ---
   - name: Trigger Kiali to call Grafana endpoint (pre-rotation)
@@ -86,20 +112,21 @@
     kubernetes.core.k8s_log:
       namespace: "{{ istio.control_plane_namespace }}"
       name: "{{ echo_pod_info_pre.resources[0].metadata.name }}"
-      container: echo
+      container: nginx
       tail_lines: 300
       since_seconds: 180
     register: echo_logs_pre
-    until: (echo_logs_pre.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user1_b64)) is not none
+    until: (echo_logs_pre.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user1_b64 ~ '"')) is not none
     retries: 20
     delay: 2
 
   - name: Verify pre-rotation credentials were used by Kiali
     assert:
       that:
-      - "(echo_logs_pre.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user1_b64)) is not none"
+      - (echo_logs_pre.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user1_b64 ~ '"')) is not none
+      - (echo_logs_pre.log | default('') | regex_search('client_dn="' ~ echo_client_dn_pre ~ '"')) is not none
       fail_msg: "Expected to find Authorization header with echo-user1:echo-pass1 in echo logs (pre-rotation), but it was not found. This means Kiali did not use the correct credentials."
-      success_msg: "Verified Kiali used echo-user1:echo-pass1 credentials before rotation"
+      success_msg: "Verified Kiali used echo-user1:echo-pass1 credentials and the initial client certificate before rotation"
 
   - name: Record Kiali restart/pod info before test
     vars:
@@ -161,11 +188,90 @@
           # "echo-pass2"
           value: ZWNoby1wYXNzMg==
 
+  - name: Rotate Grafana client certificate (new CN)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-client-cert
+          namespace: "{{ istio.control_plane_namespace }}"
+        type: Opaque
+        stringData:
+          tls.crt: "{{ lookup('file', playbook_dir + '/certs/client-new.crt') }}"
+
+  - name: Rotate Grafana client private key
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-client-key
+          namespace: "{{ istio.control_plane_namespace }}"
+        type: Opaque
+        stringData:
+          tls.key: "{{ lookup('file', playbook_dir + '/certs/client-new.key') }}"
+
+  - name: Rotate Grafana client CA trusted by the echo server
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-client-ca
+          namespace: "{{ istio.control_plane_namespace }}"
+        type: Opaque
+        stringData:
+          ca.crt: "{{ lookup('file', playbook_dir + '/certs/ca-new.crt') }}"
+
+  - name: Rotate Grafana server TLS serving cert/key
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-server-tls
+          namespace: "{{ istio.control_plane_namespace }}"
+        type: kubernetes.io/tls
+        stringData:
+          tls.crt: "{{ lookup('file', playbook_dir + '/certs/server-new.crt') }}"
+          tls.key: "{{ lookup('file', playbook_dir + '/certs/server-new.key') }}"
+
+  # Restart echo server so it picks up the new CA and Server certs
+  - name: Restart grafana-echo deployment to pick up rotated secrets
+    kubernetes.core.k8s:
+      state: patched
+      kind: Deployment
+      name: grafana-echo
+      namespace: "{{ istio.control_plane_namespace }}"
+      definition:
+        spec:
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+
+  - name: Wait for grafana-echo deployment to become ready (post-restart)
+    kubernetes.core.k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ istio.control_plane_namespace }}"
+      name: grafana-echo
+      wait: true
+      wait_condition:
+        type: Available
+        status: "True"
+      wait_timeout: 300
+
   # Wait for Kubernetes to propagate secret changes to projected volumes
   # Projected secret volumes can take up to 60 seconds to sync
   - name: Wait for secret rotation to propagate to pod volume mounts
     pause:
-      seconds: 15
+      seconds: 90
 
   - name: Refresh Kiali pod info before username check
     vars:
@@ -230,20 +336,21 @@
     kubernetes.core.k8s_log:
       namespace: "{{ istio.control_plane_namespace }}"
       name: "{{ echo_pod_info_post.resources[0].metadata.name }}"
-      container: echo
+      container: nginx
       tail_lines: 300
-      since_seconds: 90
+      since_seconds: 120
     register: echo_logs_post
-    until: (echo_logs_post.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user2_b64)) is not none
-    retries: 20
+    until: (echo_logs_post.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user2_b64 ~ '"')) is not none
+    retries: 60
     delay: 2
 
   - name: Verify post-rotation credentials were used by Kiali
     assert:
       that:
-      - "(echo_logs_post.log | default('') | regex_search('(?i)authorization.*basic\\s+' ~ echo_auth_user2_b64)) is not none"
+      - (echo_logs_post.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user2_b64 ~ '"')) is not none
+      - (echo_logs_post.log | default('') | regex_search('client_dn="' ~ echo_client_dn_post ~ '"')) is not none
       fail_msg: "Expected to find Authorization header with echo-user2:echo-pass2 in echo logs (post-rotation), but it was not found. This means Kiali did not pick up the rotated credentials."
-      success_msg: "Verified Kiali used echo-user2:echo-pass2 credentials after rotation WITHOUT restarting"
+      success_msg: "Verified Kiali used echo-user2:echo-pass2 credentials and the rotated client certificate after rotation WITHOUT restarting"
 
   - name: Record Kiali restart/pod info after test
     vars:
