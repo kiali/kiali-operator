@@ -57,6 +57,17 @@ items:
   stringData:
     ca.crt: |
 {{ lookup('file', playbook_dir + '/certs/ca-old.crt') | indent(6, first=true) }}
+# ConfigMap for Kiali to validate the echo server's TLS certificate.
+# This is the standard mechanism for custom CA certificates in Kiali.
+# The ConfigMap name must match <instance-name>-cabundle pattern.
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kiali-cabundle
+    namespace: istio-system
+  data:
+    additional-ca-bundle.pem: |
+{{ lookup('file', playbook_dir + '/certs/ca-old.crt') | indent(6, first=true) }}
 - apiVersion: v1
   kind: ConfigMap
   metadata:

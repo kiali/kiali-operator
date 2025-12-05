@@ -57,9 +57,11 @@ spec:
         # Start with inline credentials; we will switch to secret-based mounts in the test
         # NOTE: cert_file and key_file are intentionally omitted here because the secrets
         # don't exist yet. They will be added when we switch to secret-based credentials.
+        # Server CA validation is enabled (insecure_skip_verify: false) - the kiali-cabundle
+        # ConfigMap provides the CA certificate to validate the echo server's TLS cert.
         username: "echo-user1"
         password: "echo-pass1"
-        insecure_skip_verify: true
+        insecure_skip_verify: false
     tracing:
       enabled: false
       auth:

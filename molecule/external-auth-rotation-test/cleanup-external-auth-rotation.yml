@@ -1,0 +1,30 @@
+---
+- name: Cleanup external-auth-rotation-test resources
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    kiali_install_namespace: "{{ kiali.install_namespace | default('istio-system') }}"
+  tasks:
+  # Import the common dump-logs task for debugging failed tests
+  - import_tasks: ../default/dump-logs.yml
+
+  # Delete the kiali-cabundle ConfigMap used for server CA validation testing
+  - name: Delete kiali-cabundle ConfigMap (cleanup regardless of test result)
+    k8s:
+      state: absent
+      api_version: v1
+      kind: ConfigMap
+      namespace: "{{ kiali_install_namespace }}"
+      name: kiali-cabundle
+    ignore_errors: true
+
+  # Delete all other external auth rotation test resources
+  - name: Delete external auth rotation test resources
+    k8s:
+      state: absent
+      namespace: "{{ kiali_install_namespace }}"
+      definition: "{{ lookup('template', 'external-auth-rotation-resources.yaml') }}"
+    ignore_errors: true
+

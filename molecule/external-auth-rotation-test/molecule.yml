@@ -15,7 +15,7 @@ provisioner:
   playbooks:
     destroy: ../default/destroy.yml
     prepare: ../default/prepare.yml
-    cleanup: ../default/cleanup.yml
+    cleanup: cleanup-external-auth-rotation.yml
   inventory:
     group_vars:
       all:
