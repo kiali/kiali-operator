@@ -1,22 +1,84 @@
 # By default, expect just one pod, but if you expect more set "kiali_expected_replicas"
-- name: Asserting that Kiali Pod(s) exists
+- name: Wait for Kiali Deployment to be available
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    expected_replicas: "{{ (kiali_expected_replicas | default(1)) | int }}"
   k8s_info:
-    api_version: v1
-    kind: Pod
+    api_version: apps/v1
+    kind: Deployment
     namespace: "{{ kiali.install_namespace }}"
     label_selectors:
     - "app.kubernetes.io/instance={{ instance_name }}"
-  register: kiali_pod
+  register: kiali_deployment_status
   until:
-  - kiali_pod is success
-  - kiali_pod.resources | length == (kiali_expected_replicas|default(1))
-  - kiali_pod.resources[0].status is defined
-  - kiali_pod.resources[0].status.phase is defined
-  - kiali_pod.resources[0].status.phase == "Running"
+  - kiali_deployment_status is success
+  - kiali_deployment_status.resources | length > 0
+  - (kiali_deployment_status.resources[0].status.readyReplicas | default(0) | int) >= (expected_replicas | int)
+  - (kiali_deployment_status.resources[0].status.availableReplicas | default(0) | int) >= (expected_replicas | int)
   retries: "{{ wait_retries }}"
   delay: 5
+
+- name: Assert Kiali pods are running with diagnostics
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    expected_replicas: "{{ (kiali_expected_replicas | default(1)) | int }}"
+    ready_filter: "resources[?status.phase=='Running' && status.containerStatuses && length(status.containerStatuses[?ready==`true`]) == length(status.containerStatuses)]"
+  block:
+  - name: Asserting that Kiali Pod(s) are running and ready
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod
+    until:
+    - kiali_pod is success
+    - kiali_pod.resources | length >= (expected_replicas | int)
+    - (kiali_pod | json_query(ready_filter)) | length >= (expected_replicas | int)
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  rescue:
+  - name: Gather pod state on failure for diagnostics
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_failure
+
+  - name: Debug pod readiness snapshot (failure diagnostics)
+    vars:
+      pod_names: "{{ kiali_pod_failure.resources | map(attribute='metadata.name') | list }}"
+      pod_states: "{{ kiali_pod_failure.resources | map(attribute='status.phase') | list }}"
+      pod_ready: "{{ kiali_pod_failure.resources | map(attribute='status.containerStatuses') | list }}"
+      pod_conditions: "{{ kiali_pod_failure.resources | map(attribute='status.conditions') | list }}"
+    debug:
+      msg:
+      - "FAILURE: Kiali pods did not become ready"
+      - "Pod names: {{ pod_names }}"
+      - "Pod phases: {{ pod_states }}"
+      - "Container readiness: {{ pod_ready }}"
+      - "Pod conditions: {{ pod_conditions }}"
+
+  - name: Fail after outputting diagnostics
+    fail:
+      msg: "Kiali pods failed readiness check - see diagnostic output above"
+
+  always:
+  - name: Debug pod readiness snapshot (for diagnostics)
+    vars:
+      pod_names: "{{ (kiali_pod.resources | default([])) | map(attribute='metadata.name') | list }}"
+      pod_states: "{{ (kiali_pod.resources | default([])) | map(attribute='status.phase') | list }}"
+      pod_ready: "{{ (kiali_pod.resources | default([])) | map(attribute='status.containerStatuses') | list }}"
+    debug:
+      msg:
+      - "Kiali pod names: {{ pod_names }}"
+      - "Kiali pod phases: {{ pod_states }}"
+      - "Kiali container readiness: {{ pod_ready }}"
+    when: kiali_pod is defined and kiali_pod.resources is defined
 
 - name: Wait for Kiali to be running and accepting requests
   uri:
