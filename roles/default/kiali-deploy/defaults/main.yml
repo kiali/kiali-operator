@@ -130,7 +130,6 @@ kiali_defaults:
       namespace_label: "namespace"
       prometheus:
         auth:
-          ca_file: ""
           insecure_skip_verify: false
           password: ""
           token: ""
@@ -151,7 +150,6 @@ kiali_defaults:
         url: ""
     grafana:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         token: ""
@@ -194,7 +192,6 @@ kiali_defaults:
       validation_reconcile_interval: "1m"
     perses:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         type: "none"
@@ -226,7 +223,6 @@ kiali_defaults:
       url_format: ""
     prometheus:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         token: ""
@@ -247,7 +243,6 @@ kiali_defaults:
       url: ""
     tracing:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         token: ""

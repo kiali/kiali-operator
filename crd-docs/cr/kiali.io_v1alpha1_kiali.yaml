@@ -273,7 +273,6 @@ spec:
       namespace_label: "namespace"
       prometheus:
         auth:
-          ca_file: ""
           insecure_skip_verify: false
           password: ""
           token: ""
@@ -299,7 +298,6 @@ spec:
         url: ""
     grafana:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         token: ""
@@ -342,7 +340,6 @@ spec:
       validation_reconcile_interval: "1m"
     perses:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         type: "none"
@@ -374,7 +371,6 @@ spec:
       url_format: ""
     prometheus:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         token: ""
@@ -400,7 +396,6 @@ spec:
       url: ""
     tracing:
       auth:
-        ca_file: ""
         insecure_skip_verify: false
         password: ""
         token: ""
