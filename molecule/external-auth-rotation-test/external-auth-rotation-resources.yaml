@@ -7,18 +7,16 @@ items:
     name: grafana-username
     namespace: istio-system
   type: Opaque
-  data:
-    # "echo-user1"
-    value: ZWNoby11c2VyMQ==
+  stringData:
+    value: echo-user1
 - apiVersion: v1
   kind: Secret
   metadata:
     name: grafana-password
     namespace: istio-system
   type: Opaque
-  data:
-    # "echo-pass1"
-    value: ZWNoby1wYXNzMQ==
+  stringData:
+    value: echo-pass1
 - apiVersion: v1
   kind: Secret
   metadata:
