@@ -1280,7 +1280,7 @@ spec:
                         type: string
                         default: "istio"
                       url_format:
-                        description: "The url format. Use `openshift` when using Perses Dashboards via the Cluster Observability operator in OpenShift. Use `default` for standard Perses upstream. "
+                        description: "The URL format. Leave empty (the default) for standard Perses upstream. Use `openshift` when using Perses Dashboards via the Cluster Observability operator in OpenShift."
                         type: string
                         default: ""
                         enum: ["", "openshift"]
