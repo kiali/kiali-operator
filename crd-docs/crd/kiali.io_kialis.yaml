@@ -1222,7 +1222,7 @@ spec:
                             type: string
                             default: "none"
                           use_kiali_token:
-                            description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Perses (in this case, `auth.token` config is ignored)."
+                            description: "When true and if `auth.type` is `bearer`, Kiali Service Account token will be used for the API calls to Perses."
                             type: boolean
                             default: false
                           username:
