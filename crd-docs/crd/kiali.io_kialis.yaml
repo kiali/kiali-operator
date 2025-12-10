@@ -906,20 +906,20 @@ spec:
                                 description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                                 type: string
                               cert_file:
-                                description: "The client certificate file to use when accessing Prometheus using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is read dynamically on each connection, enabling automatic rotation without pod restart."
+                                description: "The client certificate file to use when accessing Prometheus using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                               insecure_skip_verify:
                                 description: "Set true to skip verifying certificate validity when Kiali contacts Prometheus over https."
                                 type: boolean
                                 default: false
                               key_file:
-                                description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is read dynamically on each connection, enabling automatic rotation without pod restart."
+                                description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                               password:
-                                description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is read dynamically on each request, enabling automatic rotation without pod restart."
+                                description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                               token:
-                                description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is read dynamically on each request, enabling automatic rotation without pod restart."
+                                description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                               type:
                                 description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
@@ -930,7 +930,7 @@ spec:
                                 type: boolean
                                 default: false
                               username:
-                                description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is read dynamically on each request, enabling automatic rotation without pod restart."
+                                description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                           cache_duration:
                             description: "Prometheus caching duration expressed in seconds."
@@ -992,20 +992,20 @@ spec:
                             description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
-                            description: "The client certificate file to use when accessing Grafana using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client certificate file to use when accessing Grafana using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Grafana over https."
                             type: boolean
                             default: false
                           key_file:
-                            description: "The client private key file to use when accessing Grafana using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client private key file to use when accessing Grafana using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           password:
-                            description: "Password to be used when making requests to Grafana, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Password to be used when making requests to Grafana, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           token:
-                            description: "Token / API key to access Grafana, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Token / API key to access Grafana, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
                             description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Grafana server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
@@ -1016,7 +1016,7 @@ spec:
                             type: boolean
                             default: false
                           username:
-                            description: "Username to be used when making requests to Grafana with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Username to be used when making requests to Grafana with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                       dashboards:
                         description: "A list of Grafana dashboards that Kiali can link to."
@@ -1205,17 +1205,17 @@ spec:
                             description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
-                            description: "The client certificate file to use when accessing Perses using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client certificate file to use when accessing Perses using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts Perses over https."
                             type: boolean
                             default: false
                           key_file:
-                            description: "The client private key file to use when accessing Perses using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client private key file to use when accessing Perses using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           password:
-                            description: "Password to be used when making requests to Perses, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Password to be used when making requests to Perses, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
                             description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Perses server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
@@ -1226,7 +1226,7 @@ spec:
                             type: boolean
                             default: false
                           username:
-                            description: "Username to be used when making requests to Perses with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Username to be used when making requests to Perses with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                       dashboards:
                         description: "A list of Perses dashboards that Kiali can link to."
@@ -1303,13 +1303,13 @@ spec:
                             type: boolean
                             default: false
                           key_file:
-                            description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           password:
-                            description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           token:
-                            description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
                             description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
@@ -1320,7 +1320,7 @@ spec:
                             type: boolean
                             default: false
                           username:
-                            description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Username to be used when making requests to Prometheus with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                       cache_duration:
                         description: "Prometheus caching duration expressed in seconds."
@@ -1382,20 +1382,20 @@ spec:
                             description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                             type: string
                           cert_file:
-                            description: "The client certificate file to use when accessing the Tracing server using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client certificate file to use when accessing the Tracing server using https with mTLS. An empty string means no client certificate is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the certificate is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           insecure_skip_verify:
                             description: "Set true to skip verifying certificate validity when Kiali contacts the Tracing server over https."
                             type: boolean
                             default: false
                           key_file:
-                            description: "The client private key file to use when accessing the Tracing server using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is read dynamically on each connection, enabling automatic rotation without pod restart."
+                            description: "The client private key file to use when accessing the Tracing server using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           password:
-                            description: "Password to be used when making requests to the Tracing server, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Password to be used when making requests to the Tracing server, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           token:
-                            description: "Token / API key to access the Tracing server, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Token / API key to access the Tracing server, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
                             description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Tracing server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
@@ -1406,7 +1406,7 @@ spec:
                             type: boolean
                             default: false
                           username:
-                            description: "Username to be used when making requests to the Tracing server with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is read dynamically on each request, enabling automatic rotation without pod restart."
+                            description: "Username to be used when making requests to the Tracing server with `basic` authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the username is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                       custom_headers:
                         description: "A set of name/value settings that will be passed as headers when requests are sent to the Tracing backend."
