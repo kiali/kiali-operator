@@ -22,7 +22,10 @@
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
     expected_replicas: "{{ (kiali_expected_replicas | default(1)) | int }}"
+    # JMESPath filter: selects pods that are Running AND have ALL containers ready
     ready_filter: "resources[?status.phase=='Running' && status.containerStatuses && length(status.containerStatuses[?ready==`true`]) == length(status.containerStatuses)]"
+
+  # block: The main task to try (like "try" in try/catch/finally)
   block:
   - name: Asserting that Kiali Pod(s) are running and ready
     k8s_info:
@@ -39,6 +42,7 @@
     retries: "{{ wait_retries }}"
     delay: 5
 
+  # rescue: Only runs if block fails (like "catch" in try/catch/finally)
   rescue:
   - name: Gather pod state on failure for diagnostics
     k8s_info:
@@ -48,7 +52,6 @@
       label_selectors:
       - "app.kubernetes.io/instance={{ instance_name }}"
     register: kiali_pod_failure
-
   - name: Debug pod readiness snapshot (failure diagnostics)
     vars:
       pod_names: "{{ kiali_pod_failure.resources | map(attribute='metadata.name') | list }}"
@@ -62,11 +65,11 @@
       - "Pod phases: {{ pod_states }}"
       - "Container readiness: {{ pod_ready }}"
       - "Pod conditions: {{ pod_conditions }}"
-
   - name: Fail after outputting diagnostics
     fail:
       msg: "Kiali pods failed readiness check - see diagnostic output above"
 
+  # always: Runs regardless of success or failure (like "finally" in try/catch/finally)
   always:
   - name: Debug pod readiness snapshot (for diagnostics)
     vars:
