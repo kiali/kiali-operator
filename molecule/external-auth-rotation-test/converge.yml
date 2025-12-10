@@ -341,7 +341,7 @@
   - name: Assert Kiali container did not restart during secret rotation
     assert:
       that:
-      - kiali_restart_count_after == kiali_restart_count_before
+      - kiali_restart_count_after | int == kiali_restart_count_before | int
       success_msg: "Kiali container did not restart during secret rotation"
       fail_msg: "Kiali container restarted during the test (container restart count increased)."
 

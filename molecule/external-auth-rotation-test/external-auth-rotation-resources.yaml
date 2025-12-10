@@ -5,7 +5,7 @@ items:
   kind: Secret
   metadata:
     name: grafana-username
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   type: Opaque
   stringData:
     value: echo-user1
@@ -13,7 +13,7 @@ items:
   kind: Secret
   metadata:
     name: grafana-password
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   type: Opaque
   stringData:
     value: echo-pass1
@@ -21,7 +21,7 @@ items:
   kind: Secret
   metadata:
     name: grafana-server-tls
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   type: kubernetes.io/tls
   stringData:
     tls.crt: |
@@ -32,7 +32,7 @@ items:
   kind: Secret
   metadata:
     name: grafana-client-cert
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   type: Opaque
   stringData:
     tls.crt: |
@@ -41,7 +41,7 @@ items:
   kind: Secret
   metadata:
     name: grafana-client-key
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   type: Opaque
   stringData:
     tls.key: |
@@ -50,7 +50,7 @@ items:
   kind: Secret
   metadata:
     name: grafana-client-ca
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   type: Opaque
   stringData:
     ca.crt: |
@@ -62,7 +62,7 @@ items:
   kind: ConfigMap
   metadata:
     name: kiali-cabundle
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   data:
     additional-ca-bundle.pem: |
 {{ lookup('file', playbook_dir + '/certs/ca-old.crt') | indent(6, first=true) }}
@@ -70,7 +70,7 @@ items:
   kind: ConfigMap
   metadata:
     name: grafana-echo-nginx
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
   data:
     nginx.conf: |
       events {}
@@ -100,7 +100,7 @@ items:
   kind: Deployment
   metadata:
     name: grafana-echo
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
     labels:
       app: grafana-echo
   spec:
@@ -158,7 +158,7 @@ items:
   kind: Service
   metadata:
     name: grafana-echo
-    namespace: istio-system
+    namespace: "{{ kiali.install_namespace }}"
     labels:
       app: grafana-echo
   spec:
