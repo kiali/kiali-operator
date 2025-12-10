@@ -90,9 +90,17 @@ items:
           ssl_verify_client on;
           ssl_verify_depth 2;
 
-          add_header Content-Type text/plain;
+          # Grafana /api/search endpoint - returns dashboard list as JSON
+          # Kiali calls this to find dashboards by name
+          location /api/search {
+            add_header Content-Type application/json;
+            return 200 '[{"id":1,"uid":"test-dash","title":"Istio Service Dashboard","url":"/d/test-dash/istio-service-dashboard","type":"dash-db","tags":[],"isStarred":false}]';
+          }
+
+          # Default location for other requests
           location / {
-            return 200 "ok";
+            add_header Content-Type application/json;
+            return 200 '{"status":"ok"}';
           }
         }
       }

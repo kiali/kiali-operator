@@ -92,11 +92,9 @@
     uri:
       url: "{{ kiali_base_url }}/api/grafana"
       method: GET
-      # 200 = Grafana info returned, 503 = Grafana unreachable but Kiali attempted connection
-      # Either status confirms Kiali made the outbound request (which triggers the echo server logs we verify)
-      status_code: [200, 503]
+      status_code: [200]
     register: grafana_call_pre
-    until: grafana_call_pre.status == 200 or grafana_call_pre.status == 503
+    until: grafana_call_pre.status == 200
     retries: 10
     delay: 3
 
@@ -285,11 +283,9 @@
     uri:
       url: "{{ kiali_base_url }}/api/grafana"
       method: GET
-      # 200 = Grafana info returned, 503 = Grafana unreachable but Kiali attempted connection
-      # Either status confirms Kiali made the outbound request with rotated credentials
-      status_code: [200, 503]
+      status_code: [200]
     register: grafana_call_post
-    until: grafana_call_post.status == 200 or grafana_call_post.status == 503
+    until: grafana_call_post.status == 200
     retries: 10
     delay: 3
 
@@ -369,8 +365,9 @@
     uri:
       url: "{{ kiali_base_url }}/api/grafana"
       method: GET
-      # Kiali should still respond (it handles the error gracefully)
-      status_code: [200, 503]
+      # With wrong CA, Kiali cannot validate the server certificate so TLS fails
+      # Kiali returns 503 Service Unavailable when it cannot reach Grafana
+      status_code: [503]
     register: grafana_call_wrong_ca
 
   - name: Get Kiali pod logs to verify TLS error
