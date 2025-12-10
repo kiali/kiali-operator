@@ -41,14 +41,14 @@ spec:
     grafana:
       enabled: true
       # Use the in-cluster echo service as the "Grafana" endpoint for testing
-      internal_url: "https://grafana-echo.{{ istio.control_plane_namespace }}:8443"
-      external_url: "https://grafana-echo.{{ istio.control_plane_namespace }}:8443"
+      internal_url: "https://grafana-echo.{{ kiali.install_namespace }}:8443"
+      external_url: "https://grafana-echo.{{ kiali.install_namespace }}:8443"
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
           app: ""
           datasource: ""
-          namespace: "{{ istio.control_plane_namespace }}"
+          namespace: "{{ kiali.install_namespace }}"
           service: ""
           version: ""
           workload: ""
