@@ -970,11 +970,11 @@ spec:
                                 type: boolean
                                 default: false
                               retention_period:
-                                description: "Thanos Retention period value expresed as a string."
+                                description: "Thanos Retention period value expressed as a string."
                                 type: string
                                 default: "7d"
                               scrape_interval:
-                                description: "Thanos Scrape interval value expresed as a string."
+                                description: "Thanos Scrape interval value expressed as a string."
                                 type: string
                                 default: "30s"
                           url:
@@ -1360,11 +1360,11 @@ spec:
                             type: boolean
                             default: false
                           retention_period:
-                            description: "Thanos Retention period value expresed as a string."
+                            description: "Thanos Retention period value expressed as a string."
                             type: string
                             default: "7d"
                           scrape_interval:
-                            description: "Thanos Scrape interval value expresed as a string."
+                            description: "Thanos Scrape interval value expressed as a string."
                             type: string
                             default: "30s"
                       url:
@@ -2020,7 +2020,7 @@ spec:
                             enum: ["otel"]
                             default: "otel"
                           collector_url:
-                            description: "Usd to determine where the Kiali server tracing data will be stored."
+                            description: "Used to determine where the Kiali server tracing data will be stored."
                             type: string
                             default: "jaeger-collector.istio-system:4318"
                           enabled:
