@@ -2032,7 +2032,7 @@ spec:
                             type: object
                             properties:
                               ca_name:
-                                description: "The name of the CA cert; this is used when `tls_enabled` is `true` and `skip_verify` is `false`."
+                                description: "DEPRECATED since v2.20: This setting is deprecated and will be ignored. To configure custom CA certificates, use the kiali-cabundle ConfigMap instead. See the TLS Configuration documentation for details."
                                 type: string
                               protocol:
                                 description: "Protocol. Value must be one of: `http`, `https` or `grpc`."
@@ -2044,7 +2044,7 @@ spec:
                                 type: boolean
                                 default: false
                               tls_enabled:
-                                description: "Enable TLS for the collector. This must be specified when `protocol` is `https` or `grpc`. When you set this to `true`, you must also set a `ca_name` or set `skip_verify` to true."
+                                description: "Enable TLS for the collector. This must be specified when `protocol` is `https` or `grpc`."
                                 type: boolean
                                 default: false
                           sampling_rate:
