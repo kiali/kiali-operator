@@ -1,5 +1,10 @@
 # By default, expect just one pod, but if you expect more set "kiali_expected_replicas"
-- name: Wait for Kiali Deployment to be available
+# This task waits for the deployment rollout to fully complete, meaning:
+# - All pods are updated to the new spec (updatedReplicas == replicas)
+# - All pods are ready (readyReplicas == replicas)
+# - All pods are available (availableReplicas == replicas)
+# - No extra pods from old ReplicaSets exist (replicas == expected)
+- name: Wait for Kiali Deployment rollout to complete
   vars:
     instance_name: "{{ kiali.instance_name | default('kiali') }}"
     expected_replicas: "{{ (kiali_expected_replicas | default(1)) | int }}"
@@ -13,8 +18,10 @@
   until:
   - kiali_deployment_status is success
   - kiali_deployment_status.resources | length > 0
-  - (kiali_deployment_status.resources[0].status.readyReplicas | default(0) | int) >= (expected_replicas | int)
-  - (kiali_deployment_status.resources[0].status.availableReplicas | default(0) | int) >= (expected_replicas | int)
+  - (kiali_deployment_status.resources[0].status.replicas | default(0) | int) == (expected_replicas | int)
+  - (kiali_deployment_status.resources[0].status.updatedReplicas | default(0) | int) == (expected_replicas | int)
+  - (kiali_deployment_status.resources[0].status.readyReplicas | default(0) | int) == (expected_replicas | int)
+  - (kiali_deployment_status.resources[0].status.availableReplicas | default(0) | int) == (expected_replicas | int)
   retries: "{{ wait_retries }}"
   delay: 5
 
@@ -37,8 +44,9 @@
     register: kiali_pod
     until:
     - kiali_pod is success
-    - kiali_pod.resources | length >= (expected_replicas | int)
-    - (kiali_pod | json_query(ready_filter)) | length >= (expected_replicas | int)
+    # After rollout completes, we should have exactly the expected number of pods
+    - kiali_pod.resources | length == (expected_replicas | int)
+    - (kiali_pod | json_query(ready_filter)) | length == (expected_replicas | int)
     retries: "{{ wait_retries }}"
     delay: 5
 
