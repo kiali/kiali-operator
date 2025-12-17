@@ -1,0 +1,21 @@
+---
+- name: Remove OpenShift Security Context Constraints
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # Remove the custom Security Context Constraints
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Remove anyuid Security Context Constraint for grafana-echo
+    k8s:
+      state: absent
+      api_version: security.openshift.io/v1
+      kind: SecurityContextConstraints
+      name: grafana-echo-anyuid
+    when:
+    - is_openshift == True
+    ignore_errors: yes
+

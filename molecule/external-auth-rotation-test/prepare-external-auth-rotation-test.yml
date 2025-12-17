@@ -1,0 +1,13 @@
+---
+- name: Prepare
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+- name: Create OpenShift Security Context Constraints for external-auth-rotation-test
+  import_playbook: ./prepare-sccs.yml
+
+- name: Include the base prepare play to create the kiali install
+  import_playbook: ../default/prepare.yml
+

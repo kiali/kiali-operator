@@ -13,8 +13,8 @@ provisioner:
     defaults:
       callbacks_enabled: junit
   playbooks:
-    destroy: ../default/destroy.yml
-    prepare: ../default/prepare.yml
+    destroy: ./destroy-external-auth-rotation-test.yml
+    prepare: ./prepare-external-auth-rotation-test.yml
     cleanup: cleanup-external-auth-rotation.yml
   inventory:
     group_vars:

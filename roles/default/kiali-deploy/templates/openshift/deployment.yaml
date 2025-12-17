@@ -186,7 +186,10 @@ spec:
         projected:
           sources:
           - configMap:
+              name: {{ kiali_vars.deployment.instance_name }}-cabundle-openshift
+          - configMap:
               name: {{ kiali_vars.deployment.instance_name }}-cabundle
+              optional: true
           - configMap:
               name: {{ kiali_vars.deployment.instance_name }}-oauth-cabundle
               optional: true

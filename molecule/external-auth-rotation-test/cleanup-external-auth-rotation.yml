@@ -28,3 +28,7 @@
       definition: "{{ lookup('template', 'external-auth-rotation-resources.yaml') }}"
     ignore_errors: true
 
+# Remove OpenShift Security Context Constraints created during prepare
+- name: Remove OpenShift Security Context Constraints for external-auth-rotation-test
+  import_playbook: ./destroy-sccs.yml
+

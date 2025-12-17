@@ -14,4 +14,4 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   namespace: "{{ kiali_vars_remove.deployment.namespace }}"
-  name: {{ kiali_vars_remove.deployment.instance_name }}-cabundle
+  name: {{ kiali_vars_remove.deployment.instance_name }}-cabundle-openshift

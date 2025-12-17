@@ -1,6 +1,12 @@
 apiVersion: v1
 kind: List
 items:
+# ServiceAccount for grafana-echo - required for SCC binding on OpenShift
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: grafana-echo
+    namespace: "{{ kiali.install_namespace }}"
 - apiVersion: v1
   kind: Secret
   metadata:
@@ -121,6 +127,7 @@ items:
         labels:
           app: grafana-echo
       spec:
+        serviceAccountName: grafana-echo
         containers:
         - name: nginx
           image: nginx:1.27-alpine

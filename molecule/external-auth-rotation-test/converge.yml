@@ -93,6 +93,7 @@
       url: "{{ kiali_base_url }}/api/grafana"
       method: GET
       status_code: [200]
+      validate_certs: false
     register: grafana_call_pre
     until: grafana_call_pre.status == 200
     retries: 10
@@ -284,6 +285,7 @@
       url: "{{ kiali_base_url }}/api/grafana"
       method: GET
       status_code: [200]
+      validate_certs: false
     register: grafana_call_post
     until: grafana_call_post.status == 200
     retries: 10
@@ -368,6 +370,7 @@
       # With wrong CA, Kiali cannot validate the server certificate so TLS fails
       # Kiali returns 503 Service Unavailable when it cannot reach Grafana
       status_code: [503]
+      validate_certs: false
     register: grafana_call_wrong_ca
 
   - name: Get Kiali pod logs to verify TLS error
