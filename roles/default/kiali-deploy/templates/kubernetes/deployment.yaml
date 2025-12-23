@@ -183,7 +183,7 @@ spec:
           secretName: {{ kiali_deployment_secret_volumes[sec].secret_name }}
           items:
           - key: {{ kiali_deployment_secret_volumes[sec].secret_key }}
-            path: value.txt
+            path: {{ kiali_deployment_secret_volumes[sec].path | default('value.txt') }}
           optional: false
 {% endfor %}
 {% for secret in kiali_vars.deployment.custom_secrets %}

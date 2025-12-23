@@ -1,0 +1,15 @@
+---
+- name: Destroy external-auth-rotation-test
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+# Remove OpenShift Security Context Constraints created during prepare
+- name: Remove OpenShift Security Context Constraints for external-auth-rotation-test
+  import_playbook: ./destroy-sccs.yml
+
+# Run the default destroy to clean up Kiali operator and CRs
+- name: Include the base destroy play
+  import_playbook: ../default/destroy.yml
+

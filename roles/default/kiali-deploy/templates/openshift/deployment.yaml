@@ -12,6 +12,11 @@ spec:
     matchLabels:
       app.kubernetes.io/name: kiali
       app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
   template:
     metadata:
       name: {{ kiali_vars.deployment.instance_name }}
@@ -29,11 +34,6 @@ spec:
 {% if kiali_vars.deployment.pod_annotations|length > 0 %}
         {{ kiali_vars.deployment.pod_annotations | to_nice_yaml(indent=0) | trim | indent(8) }}
 {% endif %}
-    strategy:
-      rollingUpdate:
-        maxSurge: 1
-        maxAvailable: 1
-      type: RollingUpdate
     spec:
       serviceAccount: {{ kiali_vars.deployment.instance_name }}-service-account
 {% if kiali_vars.deployment.priority_class_name != "" %}
@@ -186,7 +186,10 @@ spec:
         projected:
           sources:
           - configMap:
+              name: {{ kiali_vars.deployment.instance_name }}-cabundle-openshift
+          - configMap:
               name: {{ kiali_vars.deployment.instance_name }}-cabundle
+              optional: true
           - configMap:
               name: {{ kiali_vars.deployment.instance_name }}-oauth-cabundle
               optional: true
@@ -196,7 +199,7 @@ spec:
           secretName: {{ kiali_deployment_secret_volumes[sec].secret_name }}
           items:
           - key: {{ kiali_deployment_secret_volumes[sec].secret_key }}
-            path: value.txt
+            path: {{ kiali_deployment_secret_volumes[sec].path | default('value.txt') }}
           optional: false
 {% endfor %}
 {% for secret in kiali_vars.deployment.custom_secrets %}

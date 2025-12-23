@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: List
+items:
+# ServiceAccount for grafana-echo - required for SCC binding on OpenShift
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: grafana-echo
+    namespace: "{{ kiali.install_namespace }}"
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-username
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    value: echo-user1
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-password
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    value: echo-pass1
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-server-tls
+    namespace: "{{ kiali.install_namespace }}"
+  type: kubernetes.io/tls
+  stringData:
+    tls.crt: |
+{{ lookup('file', playbook_dir + '/certs/server-old.crt') | indent(6, first=true) }}
+    tls.key: |
+{{ lookup('file', playbook_dir + '/certs/server-old.key') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-client-cert
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    tls.crt: |
+{{ lookup('file', playbook_dir + '/certs/client-old.crt') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-client-key
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    tls.key: |
+{{ lookup('file', playbook_dir + '/certs/client-old.key') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: grafana-client-ca
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    ca.crt: |
+{{ lookup('file', playbook_dir + '/certs/ca-old.crt') | indent(6, first=true) }}
+# ConfigMap for Kiali to validate the echo server's TLS certificate.
+# This is the standard mechanism for custom CA certificates in Kiali.
+# The ConfigMap name must match <instance-name>-cabundle pattern.
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: kiali-cabundle
+    namespace: "{{ kiali.install_namespace }}"
+  data:
+    additional-ca-bundle.pem: |
+{{ lookup('file', playbook_dir + '/certs/ca-old.crt') | indent(6, first=true) }}
+- apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: grafana-echo-nginx
+    namespace: "{{ kiali.install_namespace }}"
+  data:
+    nginx.conf: |
+      events {}
+      http {
+        log_format rotation '$remote_addr - $remote_user [$time_local] '
+                            '"$request" $status $body_bytes_sent '
+                            '"$http_referer" "$http_user_agent" '
+                            'auth="$http_authorization" client_dn="$ssl_client_s_dn"';
+        access_log /dev/stdout rotation;
+        error_log /dev/stderr info;
+
+        server {
+          listen 8443 ssl;
+          ssl_certificate /certs/tls.crt;
+          ssl_certificate_key /certs/tls.key;
+          ssl_client_certificate /client-ca/ca.crt;
+          ssl_verify_client on;
+          ssl_verify_depth 2;
+
+          # Grafana /api/search endpoint - returns dashboard list as JSON
+          # Kiali calls this to find dashboards by name
+          location /api/search {
+            add_header Content-Type application/json;
+            return 200 '[{"id":1,"uid":"test-dash","title":"Istio Service Dashboard","url":"/d/test-dash/istio-service-dashboard","type":"dash-db","tags":[],"isStarred":false}]';
+          }
+
+          # Default location for other requests
+          location / {
+            add_header Content-Type application/json;
+            return 200 '{"status":"ok"}';
+          }
+        }
+      }
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: grafana-echo
+    namespace: "{{ kiali.install_namespace }}"
+    labels:
+      app: grafana-echo
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: grafana-echo
+    template:
+      metadata:
+        labels:
+          app: grafana-echo
+      spec:
+        serviceAccountName: grafana-echo
+        containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          args:
+          - nginx
+          - -g
+          - daemon off;
+          ports:
+          - containerPort: 8443
+            name: https
+          readinessProbe:
+            tcpSocket:
+              port: 8443
+            initialDelaySeconds: 2
+            periodSeconds: 2
+          livenessProbe:
+            tcpSocket:
+              port: 8443
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+          - name: nginx-conf
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
+          - name: server-tls
+            mountPath: /certs
+            readOnly: true
+          - name: client-ca
+            mountPath: /client-ca
+            readOnly: true
+        volumes:
+        - name: nginx-conf
+          configMap:
+            name: grafana-echo-nginx
+        - name: server-tls
+          secret:
+            secretName: grafana-server-tls
+        - name: client-ca
+          secret:
+            secretName: grafana-client-ca
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: grafana-echo
+    namespace: "{{ kiali.install_namespace }}"
+    labels:
+      app: grafana-echo
+  spec:
+    selector:
+      app: grafana-echo
+    ports:
+    - name: https
+      port: 8443
+      targetPort: 8443

@@ -111,11 +111,11 @@
     vars:
       instance_name: "{{ kiali.instance_name | default('kiali') }}"
     k8s_info:
-      api_version: v1
+      api_version: apps/v1
       kind: Deployment
       namespace: "{{ kiali.install_namespace }}"
       label_selectors:
-      - "app.kubernetes.io/name={{ instance_name }}"
+      - "app.kubernetes.io/instance={{ instance_name }}"
     register: kiali_deployment
     until:
     - kiali_deployment is success

@@ -1,0 +1,54 @@
+---
+- name: Create OpenShift Security Context Constraints
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # Create OpenShift Security Context Constraints only if running on OpenShift
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Create anyuid Security Context Constraint for grafana-echo
+    k8s:
+      state: present
+      definition:
+        apiVersion: security.openshift.io/v1
+        kind: SecurityContextConstraints
+        metadata:
+          name: grafana-echo-anyuid
+          annotations:
+            kubernetes.io/description: "Security Context Constraint for grafana-echo nginx that allows running as root"
+        allowHostDirVolumePlugin: false
+        allowHostIPC: false
+        allowHostNetwork: false
+        allowHostPID: false
+        allowHostPorts: false
+        allowPrivilegedContainer: false
+        allowedCapabilities:
+        - '*'
+        allowedUnsafeSysctls: []
+        defaultAddCapabilities: null
+        fsGroup:
+          type: RunAsAny
+        priority: 25
+        readOnlyRootFilesystem: false
+        requiredDropCapabilities: null
+        runAsUser:
+          type: RunAsAny
+        seLinuxContext:
+          type: RunAsAny
+        supplementalGroups:
+          type: RunAsAny
+        users:
+        - "system:serviceaccount:{{ kiali.install_namespace }}:grafana-echo"
+        volumes:
+        - configMap
+        - downwardAPI
+        - emptyDir
+        - persistentVolumeClaim
+        - projected
+        - secret
+    when:
+    - is_openshift == True
+

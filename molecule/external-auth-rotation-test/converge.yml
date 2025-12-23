@@ -1,0 +1,397 @@
+---
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  # Create the external auth resources before switching the CR to secret-based auth
+  - name: Create external auth rotation test resources
+    k8s:
+      state: present
+      definition: "{{ lookup('template', rotation.resources_yaml_file) }}"
+
+  - name: Wait for grafana-echo deployment to become ready
+    k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ kiali.install_namespace }}"
+      name: grafana-echo
+      wait: true
+      wait_condition:
+        type: Available
+        status: "True"
+      wait_timeout: 300
+
+  # Switch Kiali Grafana auth to secret-based credentials (enable file mounts)
+  # Use combine() to preserve all existing settings while adding the new auth config
+  # Note: kiali_cr is already populated by common/tasks.yml imported earlier
+  - name: Prepare updated Kiali CR with secret-based Grafana auth
+    vars:
+      grafana_auth_update:
+        type: basic
+        insecure_skip_verify: false
+        username: "secret:grafana-username:value"
+        password: "secret:grafana-password:value"
+        cert_file: "secret:grafana-client-cert:tls.crt"
+        key_file: "secret:grafana-client-key:tls.key"
+    set_fact:
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}}}}, recursive=True) }}"
+
+  - import_tasks: ../common/set_kiali_cr.yml
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+
+  # Verify that the Kiali pod has the expected secret volumes and volume mounts
+  - name: Assert Kiali pod has all grafana secret volumes and mounts
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_container: "{{ kiali_pod_spec.containers | selectattr('name', 'equalto', 'kiali') | first }}"
+    assert:
+      that:
+      - kiali_pod_spec.volumes | selectattr('name', 'equalto', 'grafana-cert') | list | length > 0
+      - kiali_pod_spec.volumes | selectattr('name', 'equalto', 'grafana-key') | list | length > 0
+      - kiali_pod_spec.volumes | selectattr('name', 'equalto', 'grafana-username') | list | length > 0
+      - kiali_pod_spec.volumes | selectattr('name', 'equalto', 'grafana-password') | list | length > 0
+      - kiali_container.volumeMounts | selectattr('name', 'equalto', 'grafana-cert') | list | length > 0
+      - kiali_container.volumeMounts | selectattr('name', 'equalto', 'grafana-key') | list | length > 0
+      - kiali_container.volumeMounts | selectattr('name', 'equalto', 'grafana-username') | list | length > 0
+      - kiali_container.volumeMounts | selectattr('name', 'equalto', 'grafana-password') | list | length > 0
+      fail_msg: "Expected all grafana secret volumes and mounts to be present in Kiali pod"
+      success_msg: "Verified all grafana secret volumes and mounts are present"
+
+  # Compute expected Basic auth headers for functional verification via echo logs
+  - name: Compute expected Basic auth headers
+    set_fact:
+      echo_auth_user1_b64: "{{ 'echo-user1:echo-pass1' | b64encode }}"
+      echo_auth_user2_b64: "{{ 'echo-user2:echo-pass2' | b64encode }}"
+      echo_client_dn_pre: "CN=kiali-client-old"
+      echo_client_dn_post: "CN=kiali-client-new"
+
+  # --- Pre-rotation functional assertion - trigger Kiali to call Grafana and verify credentials used ---
+  - name: Get grafana-echo pod for log inspection (pre-rotation)
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - app=grafana-echo
+    register: echo_pod_info_pre
+    until: (echo_pod_info_pre.resources | length) > 0
+    retries: 30
+    delay: 2
+
+  - name: Trigger Kiali to call Grafana endpoint (pre-rotation)
+    uri:
+      url: "{{ kiali_base_url }}/api/grafana"
+      method: GET
+      status_code: [200]
+      validate_certs: false
+    register: grafana_call_pre
+    until: grafana_call_pre.status == 200
+    retries: 10
+    delay: 3
+
+  # Fetch logs with retry until we see the expected credentials
+  # Using since_seconds: 60 is sufficient since we just made the request
+  - name: Fetch and verify echo service logs (pre-rotation)
+    k8s_log:
+      namespace: "{{ kiali.install_namespace }}"
+      name: "{{ echo_pod_info_pre.resources[0].metadata.name }}"
+      container: nginx
+      tail_lines: 100
+      since_seconds: 60
+    register: echo_logs_pre
+    until:
+    - (echo_logs_pre.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user1_b64 ~ '"')) is not none
+    - (echo_logs_pre.log | default('') | regex_search('client_dn="' ~ echo_client_dn_pre ~ '"')) is not none
+    retries: 30
+    delay: 2
+
+  - name: Verify pre-rotation credentials were used by Kiali
+    assert:
+      that:
+      - (echo_logs_pre.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user1_b64 ~ '"')) is not none
+      - (echo_logs_pre.log | default('') | regex_search('client_dn="' ~ echo_client_dn_pre ~ '"')) is not none
+      fail_msg: "Expected to find Authorization header with echo-user1:echo-pass1 and client DN [{{ echo_client_dn_pre }}] in echo logs (pre-rotation), but it was not found. This means Kiali did not use the correct credentials."
+      success_msg: "Verified Kiali used echo-user1:echo-pass1 credentials and the initial client certificate before rotation"
+
+  - name: Record Kiali restart/pod info before test
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_before
+
+  - set_fact:
+      kiali_restart_count_before: "{{ (kiali_pod_before.resources[0].status.containerStatuses | selectattr('name','equalto','kiali') | list | first).restartCount | default(0) }}"
+      kiali_pod_name_before: "{{ kiali_pod_before.resources[0].metadata.name }}"
+
+  # --- Rotate all credentials ---
+  - name: Rotate external basic auth credentials (username -> echo-user2)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-username
+          namespace: "{{ kiali.install_namespace }}"
+        type: Opaque
+        stringData:
+          value: echo-user2
+
+  - name: Rotate external basic auth credentials (password -> echo-pass2)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-password
+          namespace: "{{ kiali.install_namespace }}"
+        type: Opaque
+        stringData:
+          value: echo-pass2
+
+  - name: Rotate Grafana client certificate (new CN)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-client-cert
+          namespace: "{{ kiali.install_namespace }}"
+        type: Opaque
+        stringData:
+          tls.crt: "{{ lookup('file', playbook_dir + '/certs/client-new.crt') }}"
+
+  - name: Rotate Grafana client private key
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-client-key
+          namespace: "{{ kiali.install_namespace }}"
+        type: Opaque
+        stringData:
+          tls.key: "{{ lookup('file', playbook_dir + '/certs/client-new.key') }}"
+
+  - name: Rotate Grafana client CA trusted by the echo server
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-client-ca
+          namespace: "{{ kiali.install_namespace }}"
+        type: Opaque
+        stringData:
+          ca.crt: "{{ lookup('file', playbook_dir + '/certs/ca-new.crt') }}"
+
+  - name: Rotate Grafana server TLS serving cert/key
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: grafana-server-tls
+          namespace: "{{ kiali.install_namespace }}"
+        type: kubernetes.io/tls
+        stringData:
+          tls.crt: "{{ lookup('file', playbook_dir + '/certs/server-new.crt') }}"
+          tls.key: "{{ lookup('file', playbook_dir + '/certs/server-new.key') }}"
+
+  # Rotate the server CA that Kiali uses to validate the echo server's TLS certificate.
+  # This tests that Kiali can pick up CA changes from the kiali-cabundle ConfigMap
+  # without requiring a pod restart.
+  - name: Rotate Server CA in kiali-cabundle ConfigMap
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: kiali-cabundle
+          namespace: "{{ kiali.install_namespace }}"
+        data:
+          additional-ca-bundle.pem: "{{ lookup('file', playbook_dir + '/certs/ca-new.crt') }}"
+
+  # Restart echo server so it picks up the new CA and Server certs
+  - name: Restart grafana-echo deployment to pick up rotated secrets
+    k8s:
+      state: patched
+      kind: Deployment
+      name: grafana-echo
+      namespace: "{{ kiali.install_namespace }}"
+      definition:
+        spec:
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+
+  - name: Wait for grafana-echo deployment to become ready (post-restart)
+    k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ kiali.install_namespace }}"
+      name: grafana-echo
+      wait: true
+      wait_condition:
+        type: Available
+        status: "True"
+      wait_timeout: 300
+
+  # Wait for Kubernetes to propagate secret changes to projected volumes
+  # Projected secret volumes can take up to 60 seconds to sync by default.
+  # Using 90 seconds to ensure propagation completes before verification.
+  - name: Wait for secret rotation to propagate to pod volume mounts
+    pause:
+      seconds: 90
+
+  # --- Post-rotation functional assertion - trigger Kiali to call Grafana and verify NEW credentials used ---
+  # The echo server was restarted after rotation, so logs are fresh - no need to worry about old entries
+  - name: Get grafana-echo pod for log inspection (post-rotation)
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - app=grafana-echo
+    register: echo_pod_info_post
+    until: (echo_pod_info_post.resources | length) > 0
+    retries: 30
+    delay: 2
+
+  - name: Trigger Kiali to call Grafana endpoint (post-rotation)
+    uri:
+      url: "{{ kiali_base_url }}/api/grafana"
+      method: GET
+      status_code: [200]
+      validate_certs: false
+    register: grafana_call_post
+    until: grafana_call_post.status == 200
+    retries: 10
+    delay: 3
+
+  # Fetch logs with retry until we see the NEW credentials
+  # The echo server was restarted, so we only have post-rotation logs
+  - name: Fetch and verify echo service logs (post-rotation)
+    k8s_log:
+      namespace: "{{ kiali.install_namespace }}"
+      name: "{{ echo_pod_info_post.resources[0].metadata.name }}"
+      container: nginx
+      tail_lines: 100
+      since_seconds: 60
+    register: echo_logs_post
+    until:
+    - (echo_logs_post.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user2_b64 ~ '"')) is not none
+    - (echo_logs_post.log | default('') | regex_search('client_dn="' ~ echo_client_dn_post ~ '"')) is not none
+    retries: 60
+    delay: 2
+
+  - name: Verify post-rotation credentials were used by Kiali
+    assert:
+      that:
+      - (echo_logs_post.log | default('') | regex_search('auth="Basic\s+' ~ echo_auth_user2_b64 ~ '"')) is not none
+      - (echo_logs_post.log | default('') | regex_search('client_dn="' ~ echo_client_dn_post ~ '"')) is not none
+      fail_msg: "Expected to find Authorization header with echo-user2:echo-pass2 and client DN {{ echo_client_dn_post }} in echo logs (post-rotation), but it was not found. This means Kiali did not pick up the rotated credentials."
+      success_msg: "Verified Kiali used echo-user2:echo-pass2 credentials and the rotated client certificate after rotation WITHOUT restarting"
+
+  - name: Record Kiali restart/pod info after test
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance={{ instance_name }}"
+    register: kiali_pod_after
+
+  - set_fact:
+      kiali_restart_count_after: "{{ (kiali_pod_after.resources[0].status.containerStatuses | selectattr('name','equalto','kiali') | list | first).restartCount | default(0) }}"
+      kiali_pod_name_after: "{{ kiali_pod_after.resources[0].metadata.name }}"
+
+  - name: Assert Kiali container did not restart during secret rotation
+    assert:
+      that:
+      - kiali_restart_count_after | int == kiali_restart_count_before | int
+      success_msg: "Kiali container did not restart during secret rotation"
+      fail_msg: "Kiali container restarted during the test (container restart count increased)."
+
+  - name: Assert Kiali pod was not recreated during secret rotation
+    assert:
+      that:
+      - kiali_pod_name_after == kiali_pod_name_before
+      success_msg: "Kiali pod was not recreated (same pod: [{{ kiali_pod_name_before }}])"
+      fail_msg: "Kiali pod was recreated during test (changed from [{{ kiali_pod_name_before }}] to [{{ kiali_pod_name_after }}])"
+
+  # --- Negative test: Verify wrong CA causes TLS validation failure ---
+  # This is the last test, so we don't need to restore the ConfigMap afterward
+  - name: Set WRONG CA in kiali-cabundle ConfigMap (negative test)
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: kiali-cabundle
+          namespace: "{{ kiali.install_namespace }}"
+        data:
+          # Use the OLD CA which won't match the server's NEW certificate
+          additional-ca-bundle.pem: "{{ lookup('file', playbook_dir + '/certs/ca-old.crt') }}"
+
+  - name: Wait for wrong CA to propagate to Kiali
+    pause:
+      seconds: 90
+
+  - name: Trigger Kiali to call Grafana endpoint (with wrong CA)
+    uri:
+      url: "{{ kiali_base_url }}/api/grafana"
+      method: GET
+      # With wrong CA, Kiali cannot validate the server certificate so TLS fails
+      # Kiali returns 503 Service Unavailable when it cannot reach Grafana
+      status_code: [503]
+      validate_certs: false
+    register: grafana_call_wrong_ca
+
+  - name: Get Kiali pod logs to verify TLS error
+    k8s_log:
+      namespace: "{{ kiali.install_namespace }}"
+      name: "{{ kiali_pod_name_after }}"
+      container: kiali
+      tail_lines: 200
+      since_seconds: 120
+    register: kiali_logs_wrong_ca
+
+  - name: Verify Kiali logs show certificate validation error (negative test)
+    assert:
+      that:
+      - kiali_logs_wrong_ca.log | regex_search('certificate signed by unknown authority|x509|tls.*failed|certificate.*error', ignorecase=true) is not none
+      success_msg: "Negative test PASSED: Kiali correctly failed TLS validation with wrong CA"
+      fail_msg: "Negative test FAILED: Expected TLS certificate error in Kiali logs but none found. Kiali may not be validating server certificates correctly."
+
+  - name: Delete external auth rotation test resources
+    k8s:
+      state: absent
+      namespace: "{{ kiali.install_namespace }}"
+      definition: "{{ lookup('template', rotation.resources_yaml_file) }}"
+

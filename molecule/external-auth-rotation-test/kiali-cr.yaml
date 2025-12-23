@@ -1,0 +1,85 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  auth:
+    strategy: {{ kiali.auth_strategy }}
+  deployment:
+    ingress:
+      enabled: true
+    logger:
+      log_level: debug
+    namespace: {{ kiali.install_namespace }}
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+  external_services:
+    # Ensure these nested structures exist early to avoid operator template undefined-variable errors
+    prometheus:
+      auth:
+        username: ""
+        password: ""
+        token: ""
+        cert_file: ""
+        key_file: ""
+        type: "none"
+    grafana:
+      enabled: true
+      # Use the in-cluster echo service as the "Grafana" endpoint for testing
+      internal_url: "https://grafana-echo.{{ kiali.install_namespace }}:8443"
+      external_url: "https://grafana-echo.{{ kiali.install_namespace }}:8443"
+      dashboards:
+      - name: "Istio Service Dashboard"
+        variables:
+          app: ""
+          datasource: ""
+          namespace: "{{ kiali.install_namespace }}"
+          service: ""
+          version: ""
+          workload: ""
+      auth:
+        type: basic
+        # Start with inline credentials; we will switch to secret-based mounts in the test
+        # NOTE: cert_file and key_file are intentionally omitted here because the secrets
+        # don't exist yet. They will be added when we switch to secret-based credentials.
+        # Server CA validation is enabled (insecure_skip_verify: false) - the kiali-cabundle
+        # ConfigMap provides the CA certificate to validate the echo server's TLS cert.
+        username: "echo-user1"
+        password: "echo-pass1"
+        insecure_skip_verify: false
+    tracing:
+      enabled: false
+      auth:
+        username: ""
+        password: ""
+        token: ""
+        cert_file: ""
+        key_file: ""
+        type: "none"
+    custom_dashboards:
+      prometheus:
+        auth:
+          username: ""
+          password: ""
+          token: ""
+          cert_file: ""
+          key_file: ""
+          type: "none"
+    perses:
+      enabled: false
+

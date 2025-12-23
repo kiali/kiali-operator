@@ -1,0 +1,49 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: $DORP
+platforms:
+- name: default
+  groups:
+  - k8s
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: junit
+  playbooks:
+    destroy: ./destroy-external-auth-rotation-test.yml
+    prepare: ./prepare-external-auth-rotation-test.yml
+    cleanup: cleanup-external-auth-rotation.yml
+  inventory:
+    group_vars:
+      all:
+        cr_file_path: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/molecule/external-auth-rotation-test/kiali-cr.yaml"
+        cr_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else 'istio-system' }}"
+        wait_retries: "{{ lookup('env', 'MOLECULE_WAIT_RETRIES') | default('360', True) }}"
+        istio:
+          control_plane_namespace: istio-system
+        rotation:
+          resources_yaml_file: external-auth-rotation-resources.yaml
+        kiali:
+          spec_version: "{{ lookup('env', 'MOLECULE_KIALI_CR_SPEC_VERSION') | default('default', True) }}"
+          install_namespace: istio-system
+          cluster_wide_access: true
+          auth_strategy: anonymous
+          operator_namespace: "{{ 'kiali-operator' if (lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) == 'helm') else ('openshift-operators' if (query('kubernetes.core.k8s', kind='Namespace', resource_name='openshift-operators') | length > 0) else 'operators') }}"
+          operator_image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali-operator' if lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME') == 'dev' else (lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_NAME')|default('quay.io/kiali/kiali-operator', True)) }}"
+          operator_version: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_VERSION')|default('latest', True) }}"
+          operator_watch_namespace: ""
+          operator_cluster_role_creator: "true"
+          image_name: "{{ 'image-registry.openshift-image-registry.svc:5000/kiali/kiali' if lookup('env', 'MOLECULE_KIALI_IMAGE_NAME') == 'dev' else ('quay.io/kiali/kiali' if ansible_env.MOLECULE_KIALI_IMAGE_NAME is not defined else lookup('env', 'MOLECULE_KIALI_IMAGE_NAME')) }}"
+          image_version: "{{ 'latest' if ansible_env.MOLECULE_KIALI_IMAGE_VERSION is not defined else lookup('env', 'MOLECULE_KIALI_IMAGE_VERSION') }}"
+          image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_IMAGE_PULL_POLICY')|default('Always', True) }}"
+          operator_image_pull_policy: "{{ lookup('env', 'MOLECULE_KIALI_OPERATOR_IMAGE_PULL_POLICY')|default('Always', True) }}"
+scenario:
+  name: external-auth-rotation-test
+  test_sequence:
+  - prepare
+  - converge
+  - destroy
+
