@@ -12,7 +12,7 @@
   # Make a call to a Kiali API that triggers Prometheus queries
   - name: Call Kiali graph API with X-Request-Id header to trigger Prometheus calls
     uri:
-      url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces=istio-system&duration=60s&graphType=workload"
+      url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces=istio-system&duration=60s&graphType=workload&refreshInterval=0"
       method: GET
       validate_certs: no
       headers:
