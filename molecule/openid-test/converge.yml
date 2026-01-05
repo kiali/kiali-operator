@@ -2,6 +2,8 @@
 - name: Tests
   hosts: localhost
   connection: local
+  collections:
+  - kubernetes.core
   vars:
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
@@ -20,7 +22,7 @@
   - import_tasks: ../common/wait_for_kiali_running.yml
 
   - name: "Create OIDC client secret for Kiali"
-    kubernetes.core.k8s:
+    k8s:
       api_version: v1
       kind: Secret
       name: kiali-oidc
@@ -40,6 +42,16 @@
     assert:
       that:
       - kiali_configmap.auth.strategy == "openid"
+
+  - name: "Assert discovery_override is NOT configured initially (testing auto-discovery first)"
+    assert:
+      that:
+      - kiali_configmap.auth.openid.discovery_override.authorization_endpoint == ""
+      - kiali_configmap.auth.openid.discovery_override.token_endpoint == ""
+      - kiali_configmap.auth.openid.discovery_override.userinfo_endpoint == ""
+      - kiali_configmap.auth.openid.discovery_override.jwks_uri == ""
+      fail_msg: "discovery_override should not be configured in the initial test - we test auto-discovery first"
+      success_msg: "Confirmed: discovery_override not configured, will test auto-discovery"
 
   - name: "Assert that we can access Kiali console login screen that does not need authentication"
     uri:
@@ -72,15 +84,48 @@
         - "Expected Hydra admin endpoint: https://{{ nip_io_base_url }}:{{ hydra.admin_port }}"
 
   # =============================================================================
-  # OAUTH2 AUTHENTICATION TEST
+  # OAUTH2 AUTHENTICATION TEST (WITHOUT DISCOVERY OVERRIDE)
   # =============================================================================
 
-  - name: "=== OAUTH2 AUTHENTICATION TEST ==="
+  - name: "=== OAUTH2 AUTHENTICATION TEST (AUTO-DISCOVERY) ==="
     debug:
-      msg: "Testing OAuth2 authentication flow with multi-audience capable confidential client (kiali-app)"
+      msg: "Testing OAuth2 authentication flow using auto-discovery (/.well-known/openid-configuration)"
 
-  - name: "OAuth2: Run OIDC handshaking test"
+  - name: "OAuth2 Auto-Discovery: Run OIDC handshaking test"
     include_tasks: oidc-handshaking.yml
+
+  # =============================================================================
+  # AUTO-DISCOVERY VALIDATION
+  # =============================================================================
+
+  - name: "=== AUTO-DISCOVERY VALIDATION ==="
+    debug:
+      msg: "Validating that Kiali used auto-discovery (/.well-known/openid-configuration) without discovery_override"
+
+  - name: "Auto-Discovery: Get Kiali pod name"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - app.kubernetes.io/name=kiali
+    register: kiali_pods_autodiscovery
+
+  - name: "Auto-Discovery: Get Kiali pod logs to verify well-known endpoint was accessed"
+    k8s_log:
+      name: "{{ kiali_pods_autodiscovery.resources[0].metadata.name }}"
+      namespace: "{{ kiali.install_namespace }}"
+      container: kiali
+    register: kiali_logs_autodiscovery
+    when: kiali_pods_autodiscovery.resources | length > 0
+
+  - name: "Auto-Discovery: Assert Kiali DID use auto-discovery from provider"
+    assert:
+      that:
+      - "'Using OpenID auto-discovery from provider' in kiali_logs_autodiscovery.log"
+      fail_msg: "FAILED: Kiali did not use auto-discovery from provider. This suggests auto-discovery is not working as expected."
+      success_msg: "SUCCESS: Kiali used OpenID auto-discovery from provider as expected when discovery_override was not configured."
+    when: kiali_logs_autodiscovery.log is defined
 
   # =============================================================================
   # MULTI-AUDIENCE CONFIGURATION VALIDATION
@@ -106,3 +151,107 @@
         - "'kiali-app' in kiali_client_config.json.audience"
       fail_msg: "FAILED: kiali-app confidential client does not have expected multi-audience configuration. This is required for proper OpenID Connect integration."
       success_msg: "SUCCESS: Multi-audience OAuth2 integration validated - kiali-app confidential client supports multiple audiences as expected."
+
+  # =============================================================================
+  # UPDATE KIALI CR WITH DISCOVERY OVERRIDE
+  # =============================================================================
+
+  - name: "=== UPDATE KIALI CR WITH DISCOVERY OVERRIDE ==="
+    debug:
+      msg: "Now updating Kiali CR to add discovery_override configuration and test that authentication still works"
+
+  - name: "Update: Extract current Kiali CR"
+    vars:
+      current_kiali_cr_resource: "{{ query('k8s', api_version='kiali.io/v1alpha1', kind='Kiali', resource_name=kiali_cr.metadata.name, namespace=cr_namespace) }}"
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr_resource[0] }}"
+
+  - name: "Update: Build new Kiali CR with discovery_override configuration"
+    set_fact:
+      new_kiali_cr_with_discovery: "{{ current_kiali_cr | combine({'spec': {'auth': {'openid': {'discovery_override': {'authorization_endpoint': openid.discovery_override.authorization_endpoint, 'jwks_uri': openid.discovery_override.jwks_uri, 'token_endpoint': openid.discovery_override.token_endpoint, 'userinfo_endpoint': openid.discovery_override.userinfo_endpoint}}}}}, recursive=True) }}"
+
+  - name: "Update: Apply updated Kiali CR with discovery_override"
+    import_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ new_kiali_cr_with_discovery }}"
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+
+  - name: "Update: Re-override kiali_base_url for OpenID test (tasks.yml resets it)"
+    set_fact:
+      kiali_base_url: "http://{{ nip_io_base_url }}:32080/kiali"
+
+  - name: "Update: Verify discovery_override endpoints are now configured in ConfigMap"
+    assert:
+      that:
+      - kiali_configmap.auth.openid.discovery_override is defined
+      - kiali_configmap.auth.openid.discovery_override.authorization_endpoint is defined
+      - kiali_configmap.auth.openid.discovery_override.authorization_endpoint != ""
+      - kiali_configmap.auth.openid.discovery_override.jwks_uri is defined
+      - kiali_configmap.auth.openid.discovery_override.jwks_uri != ""
+      - kiali_configmap.auth.openid.discovery_override.token_endpoint is defined
+      - kiali_configmap.auth.openid.discovery_override.token_endpoint != ""
+      - kiali_configmap.auth.openid.discovery_override.userinfo_endpoint is defined
+      - kiali_configmap.auth.openid.discovery_override.userinfo_endpoint != ""
+      fail_msg: "discovery_override endpoints not properly configured in ConfigMap after CR update"
+      success_msg: "discovery_override endpoints are now configured correctly"
+
+  - name: "Update: Verify discovery_override endpoints match expected Hydra URLs"
+    assert:
+      that:
+      - kiali_configmap.auth.openid.discovery_override.authorization_endpoint is search(nip_io_base_url)
+      - kiali_configmap.auth.openid.discovery_override.authorization_endpoint is search("/oauth2/auth")
+      - kiali_configmap.auth.openid.discovery_override.jwks_uri is search(nip_io_base_url)
+      - kiali_configmap.auth.openid.discovery_override.jwks_uri is search("jwks.json")
+      - kiali_configmap.auth.openid.discovery_override.token_endpoint is search(nip_io_base_url)
+      - kiali_configmap.auth.openid.discovery_override.token_endpoint is search("/oauth2/token")
+      - kiali_configmap.auth.openid.discovery_override.userinfo_endpoint is search(nip_io_base_url)
+      - kiali_configmap.auth.openid.discovery_override.userinfo_endpoint is search("/userinfo")
+      fail_msg: "discovery_override endpoints don't point to expected Hydra instance"
+      success_msg: "discovery_override endpoints point to correct Hydra URLs"
+
+  # =============================================================================
+  # OAUTH2 AUTHENTICATION TEST (WITH DISCOVERY OVERRIDE)
+  # =============================================================================
+
+  - name: "=== OAUTH2 AUTHENTICATION TEST (WITH DISCOVERY OVERRIDE) ==="
+    debug:
+      msg: "Testing OAuth2 authentication flow using explicit discovery_override endpoints"
+
+  - name: "OAuth2 Discovery Override: Run OIDC handshaking test"
+    include_tasks: oidc-handshaking.yml
+
+  # =============================================================================
+  # DISCOVERY OVERRIDE VALIDATION
+  # =============================================================================
+
+  - name: "=== DISCOVERY OVERRIDE VALIDATION ==="
+    debug:
+      msg: "Validating that Kiali used explicit discovery_override endpoints instead of well-known auto-discovery"
+
+  - name: "Discovery: Get Kiali pod name"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - app.kubernetes.io/name=kiali
+    register: kiali_pods
+
+  - name: "Discovery: Get Kiali pod logs to check for well-known discovery endpoint access"
+    k8s_log:
+      name: "{{ kiali_pods.resources[0].metadata.name }}"
+      namespace: "{{ kiali.install_namespace }}"
+      container: kiali
+    register: kiali_logs_with_override
+    when: kiali_pods.resources | length > 0
+
+  - name: "Discovery: Assert Kiali used explicit OpenID endpoints instead of auto-discovery"
+    assert:
+      that:
+      - "'Using explicit OpenID endpoints for restricted environment' in kiali_logs_with_override.log"
+      - "'Using OpenID auto-discovery from provider' not in kiali_logs_with_override.log"
+      fail_msg: "FAILED: Kiali did not use explicit OpenID endpoints despite discovery_override being configured. This indicates the discovery_override feature is not working properly."
+      success_msg: "SUCCESS: Kiali used explicit OpenID endpoints from discovery_override configuration, bypassing auto-discovery."
+    when: kiali_logs_with_override.log is defined
