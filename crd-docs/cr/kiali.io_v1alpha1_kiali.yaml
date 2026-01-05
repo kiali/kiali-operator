@@ -35,6 +35,11 @@ spec:
       issuer_uri: ""
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
+      discovery_override:
+        authorization_endpoint: ""
+        jwks_uri: ""
+        token_endpoint: ""
+        userinfo_endpoint: ""
     openshift:
       #redirect_uris:
       #token_inactivity_timeout:
