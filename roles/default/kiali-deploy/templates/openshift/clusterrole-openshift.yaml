@@ -1,0 +1,22 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}-openshift
+  labels: {{ kiali_resource_metadata_labels }}
+rules:
+{% if kiali_vars.auth.strategy == 'openshift' %}
+# Permission to read the OAuthClient for this Kiali instance
+- apiGroups: ["oauth.openshift.io"]
+  resources:
+  - oauthclients
+  resourceNames:
+  - {{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}
+  verbs:
+  - get
+{% endif %}
+# Permission to read OpenShift TLSSecurityProfile for tls_config.source=auto
+- apiGroups: ["config.openshift.io"]
+  resources:
+  - apiservers
+  verbs:
+  - get
