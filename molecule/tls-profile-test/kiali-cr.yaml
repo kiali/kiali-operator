@@ -1,0 +1,34 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  auth:
+    strategy: {{ kiali.auth_strategy }}
+  deployment:
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    ingress:
+      enabled: true
+    logger:
+      log_level: debug
+    namespace: {{ kiali.install_namespace }}
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
+    service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    # This is the key configuration being tested - TLS profile source set to auto
+    # which instructs Kiali to fetch TLS settings from the OpenShift API Server
+    tls_config:
+      source: auto

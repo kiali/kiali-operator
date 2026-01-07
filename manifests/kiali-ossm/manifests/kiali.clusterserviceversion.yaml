@@ -669,6 +669,11 @@ spec:
           - list
           - watch
           - patch
+        - apiGroups: ["config.openshift.io"]
+          resources:
+          - apiservers
+          verbs:
+          - get
         - apiGroups: ["project.openshift.io"]
           resources:
           - projects
