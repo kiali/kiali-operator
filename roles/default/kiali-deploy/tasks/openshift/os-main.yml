@@ -35,8 +35,8 @@
     - "{{ 'templates/openshift/cabundle.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "templates/openshift/{{ 'role-viewer' if ((kiali_vars.deployment.view_only_mode|bool == True) or (kiali_vars.auth.strategy != 'anonymous')) else 'role' }}.yaml"
     - "templates/openshift/rolebinding.yaml"
-    - "templates/openshift/clusterrole-openshift.yaml"
-    - "templates/openshift/clusterrolebinding-openshift.yaml"
+    - "{{ 'templates/openshift/clusterrole-openshift.yaml' if (kiali_vars.auth.strategy == 'openshift' or kiali_vars.deployment.tls_config.source == 'auto') else '' }}"
+    - "{{ 'templates/openshift/clusterrolebinding-openshift.yaml' if (kiali_vars.auth.strategy == 'openshift' or kiali_vars.deployment.tls_config.source == 'auto') else '' }}"
     - "{{ 'templates/openshift/deployment.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "{{ 'templates/openshift/service.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "{{ 'templates/openshift/hpa.yaml' if ((kiali_vars.deployment.hpa.spec | length > 0) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
@@ -101,6 +101,28 @@
   when:
   - is_openshift == True
   - kiali_vars.auth.strategy != "openshift"
+
+- name: Delete OpenShift ClusterRole if no longer needed
+  k8s:
+    state: absent
+    api_version: "rbac.authorization.k8s.io/v1"
+    kind: "ClusterRole"
+    name: "{{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}-openshift"
+  when:
+  - is_openshift == True
+  - kiali_vars.auth.strategy != "openshift"
+  - kiali_vars.deployment.tls_config.source != "auto"
+
+- name: Delete OpenShift ClusterRoleBinding if no longer needed
+  k8s:
+    state: absent
+    api_version: "rbac.authorization.k8s.io/v1"
+    kind: "ClusterRoleBinding"
+    name: "{{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}-openshift"
+  when:
+  - is_openshift == True
+  - kiali_vars.auth.strategy != "openshift"
+  - kiali_vars.deployment.tls_config.source != "auto"
 
 # For now, when creating remote cluster resources only, we are going to assume there is no way for us to determine what the redirect URIs are
 # going to be other than having the user explicitly configure them. So fail immediately if the user did not tell us what redirect URI[s] to use.
