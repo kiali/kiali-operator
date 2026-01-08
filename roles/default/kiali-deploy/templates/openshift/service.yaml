@@ -24,10 +24,10 @@ spec:
     nodePort: {{ kiali_vars.server.node_port }}
 {% endif %}
 {% if kiali_vars.server.observability.metrics.enabled|bool == True %}
-  - name: http-metrics
+  - name: {{ 'http' if kiali_vars.identity.cert_file == "" else 'tcp' }}-metrics
     protocol: TCP
 {% if k8s_version is defined and k8s_version is version('1.20', '>=') %}
-    appProtocol: http
+    appProtocol: {{ 'http' if kiali_vars.identity.cert_file == "" else 'https' }}
 {% endif %}
     port: {{ kiali_vars.server.observability.metrics.port }}
 {% endif %}
