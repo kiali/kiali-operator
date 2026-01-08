@@ -276,6 +276,11 @@
       {% set kv = kv | combine({'deployment': {'resources': resource_limits_default }}, recursive=True) %}
       {% endif %}
 
+      {# Default TLS policy source: auto on OpenShift, config elsewhere #}
+      {% if kv.deployment.tls_config.source is not defined or kv.deployment.tls_config.source == "" %}
+      {% set kv = kv | combine({'deployment': {'tls_config': {'source': 'auto' if is_openshift else 'config'}}}, recursive=True) %}
+      {% endif %}
+
       {# Set default deployment.ingress.enabled based on cluster type (disable on k8s; enable on OpenShift) #}
       {% if kv.deployment.ingress.enabled is not defined or kv.deployment.ingress.enabled == "" %}
       {% set kv = kv | combine({'deployment': {'ingress': {'enabled': true if is_openshift else false }}}, recursive=True) %}

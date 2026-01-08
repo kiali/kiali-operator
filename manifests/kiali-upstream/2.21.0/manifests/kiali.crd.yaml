@@ -821,6 +821,27 @@ spec:
                   service_type:
                     description: "The Kiali service type. Kubernetes determines what values are valid. Common values are 'NodePort', 'ClusterIP', and 'LoadBalancer'."
                     type: string
+                  tls_config:
+                    description: "TLS policy configuration. When source is 'auto' on OpenShift, the APIServer TLSSecurityProfile is used. Otherwise, the explicit config values are enforced."
+                    type: object
+                    properties:
+                      cipher_suites:
+                        description: "Explicit TLS cipher suites (OpenSSL names). Ignored for TLS 1.3."
+                        type: array
+                        items:
+                          type: string
+                      max_version:
+                        description: "Maximum TLS version (e.g., TLSv1.3, TLSv1.2)."
+                        type: string
+                      min_version:
+                        description: "Minimum TLS version (e.g., TLSv1.3, TLSv1.2)."
+                        type: string
+                      source:
+                        description: "TLS policy source: 'auto' to use OpenShift TLSSecurityProfile; 'config' to use explicit settings."
+                        type: string
+                        enum:
+                        - auto
+                        - config
                   tolerations:
                     description: "A list of tolerations which declare which node taints Kiali can tolerate. See the Kubernetes documentation on Taints and Tolerations for more details."
                     type: array

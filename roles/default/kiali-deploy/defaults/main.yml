@@ -119,6 +119,11 @@ kiali_defaults:
     security_context: {}
     service_annotations: {}
     #service_type: "NodePort"
+    tls_config:
+      cipher_suites: []
+      max_version: ""
+      min_version: ""
+      source: ""
     tolerations: []
     topology_spread_constraints: []
     version_label: ""

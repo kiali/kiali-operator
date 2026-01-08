@@ -25,9 +25,11 @@ spec:
 {% if kiali_vars.server.observability.metrics.enabled|bool == True %}
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ kiali_vars.server.observability.metrics.port }}"
+        prometheus.io/scheme: "{{ 'http' if kiali_vars.identity.cert_file == '' else 'https' }}"
 {% else %}
         prometheus.io/scrape: "false"
         prometheus.io/port: null
+        prometheus.io/scheme: null
 {% endif %}
         kiali.io/dashboards: go,kiali
         operator.kiali.io/last-updated: "{{ deployment_last_updated }}"
