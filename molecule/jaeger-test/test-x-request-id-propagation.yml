@@ -29,7 +29,7 @@
 
   - name: Call Kiali service metrics API to test Prometheus client instrumentation
     uri:
-      url: "{{ kiali_base_url }}/api/crippled"
+      url: "{{ kiali_base_url }}/api/config/disabled"
       method: GET
       validate_certs: no
       headers:
