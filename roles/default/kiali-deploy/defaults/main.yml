@@ -44,7 +44,18 @@ kiali_defaults:
       #token_inactivity_timeout:
       #token_max_age:
     strategy: ""
-
+  
+  chat_ai:
+    enabled: false
+    default_model: ""
+    models: []
+    store_config:
+      enabled: true
+      inactivity_timeout: "60m"
+      max_cache_memory_mb: 1024
+      reduce_with_ai: false
+      reduce_threshold: 15
+      
   clustering:
     autodetect_secrets:
       enabled: true

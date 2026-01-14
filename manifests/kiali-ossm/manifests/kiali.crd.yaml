@@ -223,6 +223,59 @@ spec:
                         description: "Sets the absolute maximum lifetime in seconds for OAuth access tokens, regardless of activity. After this time period, tokens will expire and users must re-authenticate. If set to 0, tokens will not have an absolute expiration time and will only expire due to inactivity (if token_inactivity_timeout is configured)."
                         type: integer
 
+              chat_ai:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                    description: "Enable or disable the ChatAI feature."
+                  default_model:
+                    type: string
+                    description: "The default model to use for the ChatAI feature. This is the model that will be used if no model is specified in the request."
+                  models:
+                    description: "A list of models that can be used for the ChatAI feature. This is the list of models that will be available to the user to choose from."
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: "The name of the model."
+                        model:
+                          type: string
+                          description: "The model to use for the ChatAI feature."
+                          type: string
+                        endpoint:
+                          type: string
+                          description: "The endpoint to use for the ChatAI feature."
+                        token:
+                          type: string
+                          description: "The token to use for the ChatAI feature."
+                  store_config:
+                    type: object
+                    description: "Configuration for the ChatAI store."
+                    properties:
+                      enabled:
+                        type: boolean
+                        default: true
+                        description: "Enable or disable the ChatAI store."
+                      inactivity_timeout:
+                        type: string
+                        default: "60m"
+                        description: "The inactivity timeout for the ChatAI store."
+                      max_cache_memory_mb:
+                        type: integer
+                        default: 1024
+                        description: "The maximum cache memory for the ChatAI store."
+                      reduce_with_ai:
+                        type: boolean
+                        description: "Enable or disable the ChatAI store reduction with AI."
+                        default: false
+                      reduce_threshold:
+                        type: integer
+                        description: "The threshold for the ChatAI store reduction with AI. This is the number of messages in a conversation before the conversation is reduced."
+                        default: 15
               clustering:
                 description: "Multi-cluster related features."
                 type: object
