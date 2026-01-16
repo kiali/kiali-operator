@@ -80,6 +80,7 @@
 - name: "Step 2: Assert that Kiali auth endpoint returned valid redirect data"
   assert:
     that:
+    - step2_response.status == 302
     - step2_response.location is defined
     - step2_response.set_cookie_list is defined
     - step2_response.set_cookie_list | length >= 2
