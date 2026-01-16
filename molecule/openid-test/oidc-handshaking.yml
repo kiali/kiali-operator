@@ -59,12 +59,9 @@
     auth_endpoint: "{{ step1_response.json.authorizationEndpoint }}"
 
 - name: "Step 2: Send request to Kiali OpenID redirect endpoint and expect redirect to Hydra with nonce cookie"
-  uri:
+  get_all_cookies:
     url: "{{ auth_endpoint }}"
-    return_content: yes
     validate_certs: false
-    follow_redirects: none
-    status_code: 302
   register: step2_response
 
 - name: "Step 2: DEBUG: Log Kiali OpenID redirect request and response"
@@ -74,7 +71,7 @@
       Request URL: {{ auth_endpoint }}
       Request cookies sent: None
       Response status code: {{ step2_response.status }}
-      Response cookies received: {{ step2_response.set_cookie if step2_response.set_cookie is defined else 'None' }}
+      All Set-Cookie headers: {{ step2_response.set_cookie_list }}
       Response location header: {{ step2_response.location }}
       OAuth2 redirect URL: {{ step2_response.location }}
   debug:
@@ -83,14 +80,37 @@
 - name: "Step 2: Assert that Kiali auth endpoint returned valid redirect data"
   assert:
     that:
+    - step2_response.status == 302
     - step2_response.location is defined
-    - step2_response.set_cookie is defined
-    - step2_response.set_cookie is search("kiali-token-nonce-.+")
+    - step2_response.set_cookie_list is defined
+    - step2_response.set_cookie_list | length >= 2
+    - step2_response.set_cookie_list | join(' ') is search("kiali-token-nonce-.+")
+    - step2_response.set_cookie_list | join(' ') is search("kiali-token-pkce-verifier-.+")
+    - step2_response.location is search("code_challenge=")
+    - step2_response.location is search("code_challenge_method=S256")
+
+- name: "Step 2: Validate PKCE cookie attributes"
+  assert:
+    that:
+    - step2_response.set_cookie_list | join(' ') is search("HttpOnly")
+    - step2_response.set_cookie_list | join(' ') is search("SameSite=Lax")
+    fail_msg: "PKCE cookies must have HttpOnly and SameSite=Lax attributes for security"
+
+- name: "Step 2: Extract and validate code_challenge format"
+  set_fact:
+    code_challenge: "{{ step2_response.location | regex_replace('.*code_challenge=([^&]+).*', '\\1') | urldecode }}"
+
+- name: "Step 2: Assert code_challenge has valid format"
+  assert:
+    that:
+    - code_challenge | length == 43
+    - code_challenge is regex("^[A-Za-z0-9_-]+$")
+    fail_msg: "code_challenge must be 43-char base64url-encoded SHA-256 hash"
 
 - name: "Step 2: Extract OAuth2 parameters and cookies for next step"
   set_fact:
     auth2_endpoint: "{{ step2_response.location | regex_replace('hydra.*\\.ory\\.svc\\.cluster\\.local:4444', nip_io_base_url + ':' + hydra.public_port|string) }}"
-    kiali_cookies: "{{ step2_response.set_cookie | regex_replace('.*(kiali-token-nonce-.+=[^;]+[^,]*).*', '\\1') if step2_response.set_cookie is defined else '' }}"
+    kiali_cookies: "{{ step2_response.set_cookie_list | map('regex_replace', '^([^;]+).*', '\\1') | join('; ') }}"
     hydra_cookies: ""
 
 - name: "Step 3: Send request to Hydra authorization endpoint and expect redirect to login UI with CSRF cookie"
@@ -319,6 +339,15 @@
       Response content (first 200 chars): {{ (step9_response.content[:200] + '...') if step9_response.content is defined and step9_response.content|length > 200 else (step9_response.content if step9_response.content is defined else 'None') }}
   debug:
     msg: "{{ msg.split('\n') }}"
+
+- name: "Step 9: Validate authentication callback succeeded"
+  assert:
+    that:
+    - step9_response.location is defined
+    - step9_response.location is search("/kiali/?$") or step9_response.location is search("/kiali/$")
+    - step9_response.set_cookie is defined
+    - step9_response.set_cookie is search("kiali-token-ci=")
+    fail_msg: "Authentication callback should create session cookie and redirect to Kiali UI"
 
 - name: "Step 9: Extract session cookies from successful authentication"
   vars:
