@@ -306,7 +306,7 @@ spec:
                       reduce_with_ai:
                         description: "Enable or disable the ChatAI store reduction with AI."
                         type: boolean
-                        default: false     
+                        default: false                      
               clustering:
                 description: "Multi-cluster related features."
                 type: object
