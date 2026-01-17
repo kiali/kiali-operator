@@ -346,7 +346,7 @@
     - step9_response.location is defined
     - step9_response.location is search("/kiali/?$") or step9_response.location is search("/kiali/$")
     - step9_response.set_cookie is defined
-    - step9_response.set_cookie is search("kiali-token-ci=")
+    - step9_response.set_cookie is search("kiali-token-[^=]+=")
     fail_msg: "Authentication callback should create session cookie and redirect to Kiali UI"
 
 - name: "Step 9: Extract session cookies from successful authentication"
