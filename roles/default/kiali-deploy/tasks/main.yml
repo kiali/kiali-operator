@@ -753,17 +753,22 @@
       {% endif %}
 
       {# Prepare the secret volumes for chat_ai provider and model keys #}
-      {% if kiali_vars is defined and kiali_vars.chat_ai is defined and kiali_vars.chat_ai.enabled is defined and kiali_vars.chat_ai.enabled|bool == True and kiali_vars.chat_ai.providers is defined %}
+      {# Note: provider.enabled and model.enabled default to false if not specified #}
+      {% if kiali_vars is defined and kiali_vars.chat_ai is defined and kiali_vars.chat_ai.enabled is defined and kiali_vars.chat_ai.enabled|bool and kiali_vars.chat_ai.providers is defined and kiali_vars.chat_ai.providers|length > 0 %}
       {% for provider in kiali_vars.chat_ai.providers %}
       {% set provider_name = (provider.name | default('', true) | lower | regex_replace('[^a-z0-9-]+', '-') | regex_replace('(^-+|-+$)', '')) | default('unknown', true) %}
-      {% if (provider.enabled | default(true)) | bool == True and (provider.key | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({('chat-ai-provider-' ~ provider_name): {'secret_name': provider.key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': provider.key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% if provider.enabled is defined and provider.enabled|bool %}
+      {% if (provider.key | default('', true)) | regex_search('secret:.+:.+') %}
+      {% set _ = d.update({('chat-ai-provider-' ~ provider_name): {'secret_name': provider.key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': provider.key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
-      {% if provider.models is defined %}
+      {% endif %}
+      {% if provider.models is defined and provider.models|length > 0 %}
       {% for model in provider.models %}
       {% set model_name = (model.name | default('', true) | lower | regex_replace('[^a-z0-9-]+', '-') | regex_replace('(^-+|-+$)', '')) | default('unknown', true) %}
-      {% if (provider.enabled | default(true)) | bool == True and (model.enabled | default(true)) | bool == True and (model.key | default('')) | regex_search('secret:.+:.+') %}
-      {% set d = d | combine({('chat-ai-model-' ~ provider_name ~ '-' ~ model_name): {'secret_name': model.key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': model.key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% if (provider.enabled is defined and provider.enabled|bool) and (model.enabled is defined and model.enabled|bool) %}
+      {% if (model.key | default('', true)) | regex_search('secret:.+:.+') %}
+      {% set _ = d.update({('chat-ai-model-' ~ provider_name ~ '-' ~ model_name): {'secret_name': model.key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': model.key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
       {% endif %}
       {% endfor %}
       {% endif %}

@@ -29,10 +29,10 @@
         status: "True"
       wait_timeout: 300
 
-  # Switch Kiali Grafana auth to secret-based credentials (enable file mounts)
+  # Switch Kiali Grafana auth and ChatAI keys to secret-based credentials (enable file mounts)
   # Use combine() to preserve all existing settings while adding the new auth config
   # Note: kiali_cr is already populated by common/tasks.yml imported earlier
-  - name: Prepare updated Kiali CR with secret-based Grafana auth
+  - name: Prepare updated Kiali CR with secret-based Grafana auth and ChatAI keys
     vars:
       grafana_auth_update:
         type: basic
@@ -41,8 +41,40 @@
         password: "secret:grafana-password:value"
         cert_file: "secret:grafana-client-cert:tls.crt"
         key_file: "secret:grafana-client-key:tls.key"
+      # ChatAI providers with secret-based keys
+      # Test that secrets are ONLY mounted when enabled=true
+      chat_ai_update:
+        enabled: true
+        default_provider: enabled-provider
+        providers:
+        - name: enabled-provider
+          type: openai
+          config: default
+          enabled: true
+          default_model: enabled-model
+          key: "secret:chatai-enabled-provider-key:api-key"
+          models:
+          - name: enabled-model
+            model: gpt-4
+            enabled: true
+            key: "secret:chatai-enabled-model-key:api-key"
+          - name: disabled-model
+            model: gpt-3.5
+            enabled: false
+            key: "secret:chatai-disabled-model-key:api-key"
+        - name: disabled-provider
+          type: openai
+          config: azure
+          enabled: false
+          default_model: model-under-disabled-provider
+          key: "secret:chatai-disabled-provider-key:api-key"
+          models:
+          - name: model-under-disabled-provider
+            model: gpt-4-azure
+            enabled: true
+            key: "secret:chatai-model-disabled-provider-key:api-key"
     set_fact:
-      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}}}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}}, 'chat_ai': chat_ai_update}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
@@ -78,8 +110,8 @@
       that:
       - provider_volume.name is defined
       - provider_volume.secret.secretName == 'chatai-enabled-provider-key'
-      - provider_volume.secret.items[0].key == 'api-key'
-      - provider_volume.secret.items[0].path == 'value.txt'
+      - provider_volume.secret['items'][0].key == 'api-key'
+      - provider_volume.secret['items'][0].path == 'value.txt'
       - provider_mount.name is defined
       - provider_mount.mountPath == '/kiali-override-secrets/chat-ai-provider-enabled-provider'
       - provider_mount.readOnly == true
@@ -96,8 +128,8 @@
       that:
       - model_volume.name is defined
       - model_volume.secret.secretName == 'chatai-enabled-model-key'
-      - model_volume.secret.items[0].key == 'api-key'
-      - model_volume.secret.items[0].path == 'value.txt'
+      - model_volume.secret['items'][0].key == 'api-key'
+      - model_volume.secret['items'][0].path == 'value.txt'
       - model_mount.name is defined
       - model_mount.mountPath == '/kiali-override-secrets/chat-ai-model-enabled-provider-enabled-model'
       - model_mount.readOnly == true

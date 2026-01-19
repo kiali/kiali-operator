@@ -84,6 +84,8 @@ spec:
       enabled: false
   # ChatAI configuration to test provider and model key secret mounting
   # Test that secrets are ONLY mounted when the corresponding enabled flag is true
+  # Start with inline keys; we will switch to secret-based keys in the test
+  # (similar to how Grafana auth starts with inline credentials)
   chat_ai:
     enabled: true
     default_provider: enabled-provider
@@ -94,27 +96,30 @@ spec:
       config: default
       enabled: true
       default_model: enabled-model
-      # Provider-level key stored in secret - SHOULD be mounted (provider enabled)
-      key: "secret:chatai-enabled-provider-key:api-key"
+      # Start with inline key - will switch to secret-based in the test
+      key: "inline-enabled-provider-key"
       models:
       - name: enabled-model
         model: gpt-4
         enabled: true
-        # Model-level key stored in secret - SHOULD be mounted (model enabled)
-        key: "secret:chatai-enabled-model-key:api-key"
+        # Start with inline key - will switch to secret-based in the test
+        key: "inline-enabled-model-key"
       - name: disabled-model
         model: gpt-3.5
         enabled: false
-        # No key specified - model is disabled so no secret needed or mounted
+        # This model is disabled, so its key won't be mounted regardless
+        key: "inline-disabled-model-key"
     # Provider 2: disabled provider (should NOT mount provider or model secrets)
     - name: disabled-provider
       type: openai
       config: azure
       enabled: false
       default_model: model-under-disabled-provider
-      # No key specified - provider is disabled so no secret needed or mounted
+      # Provider is disabled, so its key won't be mounted regardless
+      key: "inline-disabled-provider-key"
       models:
       - name: model-under-disabled-provider
         model: gpt-4-azure
         enabled: true
-        # No key specified - parent provider is disabled so no secret needed or mounted
+        # Parent provider is disabled, so this key won't be mounted regardless
+        key: "inline-model-under-disabled-provider-key"
