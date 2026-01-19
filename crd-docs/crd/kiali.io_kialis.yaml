@@ -251,7 +251,7 @@ spec:
                           description: "Enable or disable the provider."
                           type: boolean
                         key:
-                          description: "The key of the provider."
+                          description: "The key of the provider. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                           type: string
                         models:
                           description: "A list of models that can be used for the ChatAI feature. This is the list of models that will be available to the user to choose from."
@@ -269,7 +269,7 @@ spec:
                                 description: "The endpoint of the model."
                                 type: string
                               key:
-                                description: "The key of the model."
+                                description: "The key of the model. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                               name:
                                 description: "The name of the model."

@@ -747,6 +747,24 @@
       {% set d = d | combine({'customdashboards-prometheus-key': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
+      {# Prepare the secret volumes for chat_ai provider and model keys #}
+      {% if kiali_vars is defined and kiali_vars.chat_ai is defined and kiali_vars.chat_ai.providers is defined %}
+      {% for provider in kiali_vars.chat_ai.providers %}
+      {% set provider_name = (provider.name | default('', true) | lower | regex_replace('[^a-z0-9-]+', '-') | regex_replace('(^-+|-+$)', '')) | default('unknown', true) %}
+      {% if (provider.key | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({('chat-ai-provider-' ~ provider_name): {'secret_name': provider.key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': provider.key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+      {% if provider.models is defined %}
+      {% for model in provider.models %}
+      {% set model_name = (model.name | default('', true) | lower | regex_replace('[^a-z0-9-]+', '-') | regex_replace('(^-+|-+$)', '')) | default('unknown', true) %}
+      {% if (model.key | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({('chat-ai-model-' ~ provider_name ~ '-' ~ model_name): {'secret_name': model.key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': model.key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
+      {% endif %}
+
       {# Set the yaml to the new dict #}
       {{ d | to_nice_yaml }}
   set_fact:
