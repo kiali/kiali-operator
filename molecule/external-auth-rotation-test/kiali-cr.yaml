@@ -83,21 +83,38 @@ spec:
     perses:
       enabled: false
   # ChatAI configuration to test provider and model key secret mounting
-  # Note: ChatAI is disabled but secrets should still be mounted when keys use secret:name:key pattern
+  # Test that secrets are ONLY mounted when the corresponding enabled flag is true
   chat_ai:
-    enabled: false
-    default_provider: test-provider
+    enabled: true
+    default_provider: enabled-provider
     providers:
-    - name: test-provider
+    # Provider 1: enabled with enabled model and disabled model
+    - name: enabled-provider
       type: openai
       config: default
-      enabled: false
-      default_model: test-model
-      # Provider-level key stored in secret - should create chat-ai-provider-test-provider volume
-      key: "secret:chatai-provider-key:api-key"
+      enabled: true
+      default_model: enabled-model
+      # Provider-level key stored in secret - SHOULD be mounted (provider enabled)
+      key: "secret:chatai-enabled-provider-key:api-key"
       models:
-      - name: test-model
+      - name: enabled-model
         model: gpt-4
+        enabled: true
+        # Model-level key stored in secret - SHOULD be mounted (model enabled)
+        key: "secret:chatai-enabled-model-key:api-key"
+      - name: disabled-model
+        model: gpt-3.5
         enabled: false
-        # Model-level key stored in secret - should create chat-ai-model-test-provider-test-model volume
-        key: "secret:chatai-model-key:api-key"
+        # No key specified - model is disabled so no secret needed or mounted
+    # Provider 2: disabled provider (should NOT mount provider or model secrets)
+    - name: disabled-provider
+      type: openai
+      config: azure
+      enabled: false
+      default_model: model-under-disabled-provider
+      # No key specified - provider is disabled so no secret needed or mounted
+      models:
+      - name: model-under-disabled-provider
+        model: gpt-4-azure
+        enabled: true
+        # No key specified - parent provider is disabled so no secret needed or mounted

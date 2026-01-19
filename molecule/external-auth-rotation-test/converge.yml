@@ -67,42 +67,73 @@
       fail_msg: "Expected all grafana secret volumes and mounts to be present in Kiali pod"
       success_msg: "Verified all grafana secret volumes and mounts are present"
 
-  # Verify that ChatAI provider and model key secrets are mounted
-  - name: Assert Kiali pod has ChatAI provider key secret volume and mount
+  # Verify that ChatAI secrets are ONLY mounted when enabled=true
+  - name: Assert Kiali pod has enabled ChatAI provider key secret volume and mount
     vars:
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
       kiali_container: "{{ kiali_pod_spec.containers | selectattr('name', 'equalto', 'kiali') | first }}"
-      provider_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-provider-test-provider') | list | first | default({}) }}"
-      provider_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'chat-ai-provider-test-provider') | list | first | default({}) }}"
+      provider_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-provider-enabled-provider') | list | first | default({}) }}"
+      provider_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'chat-ai-provider-enabled-provider') | list | first | default({}) }}"
     assert:
       that:
       - provider_volume.name is defined
-      - provider_volume.secret.secretName == 'chatai-provider-key'
+      - provider_volume.secret.secretName == 'chatai-enabled-provider-key'
       - provider_volume.secret.items[0].key == 'api-key'
       - provider_volume.secret.items[0].path == 'value.txt'
       - provider_mount.name is defined
-      - provider_mount.mountPath == '/kiali-override-secrets/chat-ai-provider-test-provider'
+      - provider_mount.mountPath == '/kiali-override-secrets/chat-ai-provider-enabled-provider'
       - provider_mount.readOnly == true
-      fail_msg: "Expected ChatAI provider key secret volume and mount to be present in Kiali pod"
-      success_msg: "Verified ChatAI provider key secret volume and mount are correctly configured"
+      fail_msg: "Expected enabled ChatAI provider key secret volume and mount to be present in Kiali pod"
+      success_msg: "Verified enabled ChatAI provider key secret volume and mount are correctly configured"
 
-  - name: Assert Kiali pod has ChatAI model key secret volume and mount
+  - name: Assert Kiali pod has enabled ChatAI model key secret volume and mount
     vars:
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
       kiali_container: "{{ kiali_pod_spec.containers | selectattr('name', 'equalto', 'kiali') | first }}"
-      model_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-model-test-provider-test-model') | list | first | default({}) }}"
-      model_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'chat-ai-model-test-provider-test-model') | list | first | default({}) }}"
+      model_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-model-enabled-provider-enabled-model') | list | first | default({}) }}"
+      model_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'chat-ai-model-enabled-provider-enabled-model') | list | first | default({}) }}"
     assert:
       that:
       - model_volume.name is defined
-      - model_volume.secret.secretName == 'chatai-model-key'
+      - model_volume.secret.secretName == 'chatai-enabled-model-key'
       - model_volume.secret.items[0].key == 'api-key'
       - model_volume.secret.items[0].path == 'value.txt'
       - model_mount.name is defined
-      - model_mount.mountPath == '/kiali-override-secrets/chat-ai-model-test-provider-test-model'
+      - model_mount.mountPath == '/kiali-override-secrets/chat-ai-model-enabled-provider-enabled-model'
       - model_mount.readOnly == true
-      fail_msg: "Expected ChatAI model key secret volume and mount to be present in Kiali pod"
-      success_msg: "Verified ChatAI model key secret volume and mount are correctly configured"
+      fail_msg: "Expected enabled ChatAI model key secret volume and mount to be present in Kiali pod"
+      success_msg: "Verified enabled ChatAI model key secret volume and mount are correctly configured"
+
+  # Negative assertions: Verify disabled provider/model secrets are NOT mounted
+  - name: Assert Kiali pod does NOT have disabled model secret (disabled-model)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      disabled_model_volumes: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-model-enabled-provider-disabled-model') | list }}"
+    assert:
+      that:
+      - disabled_model_volumes | length == 0
+      fail_msg: "Expected disabled-model secret to NOT be mounted (model.enabled=false)"
+      success_msg: "Verified disabled-model secret is correctly NOT mounted"
+
+  - name: Assert Kiali pod does NOT have disabled provider secret (disabled-provider)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      disabled_provider_volumes: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-provider-disabled-provider') | list }}"
+    assert:
+      that:
+      - disabled_provider_volumes | length == 0
+      fail_msg: "Expected disabled-provider secret to NOT be mounted (provider.enabled=false)"
+      success_msg: "Verified disabled-provider secret is correctly NOT mounted"
+
+  - name: Assert Kiali pod does NOT have model secret under disabled provider
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      disabled_provider_model_volumes: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-model-disabled-provider-model-under-disabled-provider') | list }}"
+    assert:
+      that:
+      - disabled_provider_model_volumes | length == 0
+      fail_msg: "Expected model-under-disabled-provider secret to NOT be mounted (parent provider.enabled=false)"
+      success_msg: "Verified model secret under disabled provider is correctly NOT mounted"
 
   # Compute expected Basic auth headers for functional verification via echo logs
   - name: Compute expected Basic auth headers
