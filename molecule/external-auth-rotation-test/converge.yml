@@ -11,6 +11,30 @@
   - import_tasks: ../asserts/pod_asserts.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
 
+  # Verify initial state: inline keys should be used, no chat-ai secrets mounted
+  - name: Assert initial Kiali pod has NO chat-ai secret volumes (inline keys used)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      chat_ai_volumes: "{{ kiali_pod_spec.volumes | selectattr('name', 'match', '^chat-ai-') | list }}"
+    assert:
+      that:
+      - chat_ai_volumes | length == 0
+      fail_msg: "Expected NO chat-ai secret volumes in initial pod (using inline keys), but found: {{ chat_ai_volumes | map(attribute='name') | list }}"
+      success_msg: "Verified initial pod has no chat-ai secret volumes (inline keys are used)"
+
+  - name: Assert Kiali ConfigMap has inline chat_ai keys (not secret references)
+    vars:
+      provider_key: "{{ kiali_configmap.chat_ai.providers | selectattr('name', 'equalto', 'enabled-provider') | map(attribute='key') | first }}"
+      model_key: "{{ (kiali_configmap.chat_ai.providers | selectattr('name', 'equalto', 'enabled-provider') | first).models | selectattr('name', 'equalto', 'enabled-model') | map(attribute='key') | first }}"
+    assert:
+      that:
+      - provider_key == 'inline-enabled-provider-key'
+      - model_key == 'inline-enabled-model-key'
+      - "'secret:' not in provider_key"
+      - "'secret:' not in model_key"
+      fail_msg: "Expected inline keys in ConfigMap, but found provider_key={{ provider_key }}, model_key={{ model_key }}"
+      success_msg: "Verified ConfigMap has inline chat_ai keys (provider={{ provider_key }}, model={{ model_key }})"
+
   # Create the external auth resources before switching the CR to secret-based auth
   - name: Create external auth rotation test resources
     k8s:
