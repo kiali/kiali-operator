@@ -82,4 +82,22 @@ spec:
           type: "none"
     perses:
       enabled: false
-
+  # ChatAI configuration to test provider and model key secret mounting
+  # Note: ChatAI is disabled but secrets should still be mounted when keys use secret:name:key pattern
+  chat_ai:
+    enabled: false
+    default_provider: test-provider
+    providers:
+    - name: test-provider
+      type: openai
+      config: default
+      enabled: false
+      default_model: test-model
+      # Provider-level key stored in secret - should create chat-ai-provider-test-provider volume
+      key: "secret:chatai-provider-key:api-key"
+      models:
+      - name: test-model
+        model: gpt-4
+        enabled: false
+        # Model-level key stored in secret - should create chat-ai-model-test-provider-test-model volume
+        key: "secret:chatai-model-key:api-key"

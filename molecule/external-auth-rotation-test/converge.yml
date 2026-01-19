@@ -67,6 +67,43 @@
       fail_msg: "Expected all grafana secret volumes and mounts to be present in Kiali pod"
       success_msg: "Verified all grafana secret volumes and mounts are present"
 
+  # Verify that ChatAI provider and model key secrets are mounted
+  - name: Assert Kiali pod has ChatAI provider key secret volume and mount
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_container: "{{ kiali_pod_spec.containers | selectattr('name', 'equalto', 'kiali') | first }}"
+      provider_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-provider-test-provider') | list | first | default({}) }}"
+      provider_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'chat-ai-provider-test-provider') | list | first | default({}) }}"
+    assert:
+      that:
+      - provider_volume.name is defined
+      - provider_volume.secret.secretName == 'chatai-provider-key'
+      - provider_volume.secret.items[0].key == 'api-key'
+      - provider_volume.secret.items[0].path == 'value.txt'
+      - provider_mount.name is defined
+      - provider_mount.mountPath == '/kiali-override-secrets/chat-ai-provider-test-provider'
+      - provider_mount.readOnly == true
+      fail_msg: "Expected ChatAI provider key secret volume and mount to be present in Kiali pod"
+      success_msg: "Verified ChatAI provider key secret volume and mount are correctly configured"
+
+  - name: Assert Kiali pod has ChatAI model key secret volume and mount
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_container: "{{ kiali_pod_spec.containers | selectattr('name', 'equalto', 'kiali') | first }}"
+      model_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'chat-ai-model-test-provider-test-model') | list | first | default({}) }}"
+      model_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'chat-ai-model-test-provider-test-model') | list | first | default({}) }}"
+    assert:
+      that:
+      - model_volume.name is defined
+      - model_volume.secret.secretName == 'chatai-model-key'
+      - model_volume.secret.items[0].key == 'api-key'
+      - model_volume.secret.items[0].path == 'value.txt'
+      - model_mount.name is defined
+      - model_mount.mountPath == '/kiali-override-secrets/chat-ai-model-test-provider-test-model'
+      - model_mount.readOnly == true
+      fail_msg: "Expected ChatAI model key secret volume and mount to be present in Kiali pod"
+      success_msg: "Verified ChatAI model key secret volume and mount are correctly configured"
+
   # Compute expected Basic auth headers for functional verification via echo logs
   - name: Compute expected Basic auth headers
     set_fact:

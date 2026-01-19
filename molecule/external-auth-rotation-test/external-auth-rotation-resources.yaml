@@ -183,3 +183,21 @@ items:
     - name: https
       port: 8443
       targetPort: 8443
+# ChatAI provider key secret - tests that chat_ai provider keys can be mounted from secrets
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: chatai-provider-key
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    api-key: test-provider-api-key-12345
+# ChatAI model key secret - tests that chat_ai model keys can be mounted from secrets
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: chatai-model-key
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    api-key: test-model-api-key-67890
