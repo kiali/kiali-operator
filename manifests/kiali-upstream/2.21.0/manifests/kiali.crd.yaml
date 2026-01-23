@@ -239,9 +239,8 @@ spec:
                       type: object
                       properties:
                         config:
-                          description: "The type of the config of the provider. Default value is `default`."
+                          description: "The type of the config needed by the AI models provider. Available values are `default`, `gemini`, and `azure`. Default value is `default`."
                           type: string
-                          enum: ["default", "gemini", "azure"]
                         default_model:
                           description: "The default model of the provider."
                           type: string  
@@ -282,9 +281,8 @@ spec:
                           description: "The name of the provider."
                           type: string                        
                         type:
-                          description: "The type of the provider. Default value is `openai`."
-                          type: string           
-                          enum: ["openai"]
+                          description: "The type of the AI models provider. Available values are `openai`. Default value is `openai`."
+                          type: string      
                   store_config:
                     description: "Configuration for the ChatAI store."
                     type: object
