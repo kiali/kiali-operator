@@ -1,0 +1,67 @@
+- name: Configure Prometheus for HTTPS metrics scraping
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Configure Prometheus to scrape HTTPS endpoints (OpenShift only)
+    when:
+    - is_openshift == True
+    block:
+    - name: Get current Prometheus ConfigMap
+      k8s_info:
+        api_version: v1
+        kind: ConfigMap
+        name: prometheus
+        namespace: "{{ istio.control_plane_namespace }}"
+      register: prometheus_configmap_original
+
+    - name: Save original Prometheus ConfigMap data to file for restoration during destroy
+      copy:
+        content: "{{ prometheus_configmap_original.resources[0] | to_nice_json }}"
+        dest: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/prometheus-configmap-original.json"
+
+    - name: Parse prometheus.yml from ConfigMap
+      set_fact:
+        prometheus_yml_parsed: "{{ prometheus_configmap_original.resources[0].data['prometheus.yml'] | from_yaml }}"
+
+    - name: Add tls_config to kubernetes-pods scrape jobs
+      set_fact:
+        prometheus_updated_scrape_configs: >-
+          {%- set result = [] -%}
+          {%- for job in prometheus_yml_parsed.scrape_configs -%}
+            {%- if job.job_name in ['kubernetes-pods', 'kubernetes-pods-slow'] -%}
+              {%- set updated_job = job.copy() -%}
+              {%- set _ = updated_job.update({'tls_config': {'insecure_skip_verify': true}}) -%}
+              {%- set _ = result.append(updated_job) -%}
+            {%- else -%}
+              {%- set _ = result.append(job) -%}
+            {%- endif -%}
+          {%- endfor -%}
+          {{ result }}
+
+    - name: Build updated prometheus configuration
+      set_fact:
+        prometheus_yml_updated: "{{ prometheus_yml_parsed | combine({'scrape_configs': prometheus_updated_scrape_configs}) }}"
+
+    - name: Build updated ConfigMap data preserving original values
+      set_fact:
+        prometheus_configmap_data_updated: "{{ prometheus_configmap_original.resources[0].data | combine({'prometheus.yml': (prometheus_yml_updated | to_nice_yaml(indent=2))}) }}"
+
+    - name: Update Prometheus ConfigMap with TLS config for HTTPS scraping
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: prometheus
+            namespace: "{{ istio.control_plane_namespace }}"
+            labels: "{{ prometheus_configmap_original.resources[0].metadata.labels | default({}) }}"
+          data: "{{ prometheus_configmap_data_updated }}"
+
+    - name: Wait for Prometheus config reloader to pick up changes
+      pause:
+        seconds: 15

@@ -1,0 +1,13 @@
+- name: Prepare
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+- name: Include the base prepare play to create the kiali install
+  import_playbook: ../default/prepare.yml
+
+- name: Configure Prometheus for HTTPS metrics scraping
+  import_playbook: configure-prometheus-https-scraping.yml

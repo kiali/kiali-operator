@@ -1,0 +1,13 @@
+- name: Destroy
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+- name: Restore Prometheus configuration
+  import_playbook: restore-prometheus-config.yml
+
+- name: Include the base destroy play to destroy the kiali install
+  import_playbook: ../default/destroy.yml

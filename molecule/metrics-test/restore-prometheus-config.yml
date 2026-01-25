@@ -1,0 +1,37 @@
+- name: Restore Prometheus configuration
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Check if saved Prometheus ConfigMap exists
+    stat:
+      path: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/prometheus-configmap-original.json"
+    register: saved_configmap_file
+
+  - name: Restore original Prometheus ConfigMap (OpenShift only)
+    when:
+    - is_openshift == True
+    - saved_configmap_file.stat.exists
+    block:
+    - name: Load saved Prometheus ConfigMap data
+      set_fact:
+        prometheus_configmap_saved: "{{ lookup('file', lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') + '/prometheus-configmap-original.json') | from_json }}"
+
+    - name: Restore the original Prometheus ConfigMap
+      k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: prometheus
+            namespace: "{{ istio.control_plane_namespace }}"
+            labels: "{{ prometheus_configmap_saved.metadata.labels | default({}) }}"
+          data: "{{ prometheus_configmap_saved.data }}"
+
+    - name: Wait for Prometheus config reloader to pick up restored config
+      pause:
+        seconds: 15
