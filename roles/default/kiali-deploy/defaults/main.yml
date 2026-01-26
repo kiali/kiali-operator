@@ -51,7 +51,6 @@ kiali_defaults:
     providers: []
     store_config:
       enabled: true
-      inactivity_timeout: "60m"
       max_cache_memory_mb: 1024      
       reduce_threshold: 15
       reduce_with_ai: false

@@ -291,10 +291,6 @@ spec:
                         description: "Enable or disable the ChatAI store."
                         type: boolean
                         default: true
-                      inactivity_timeout:
-                        description: "The inactivity timeout for the ChatAI store."
-                        type: string
-                        default: "60m"
                       max_cache_memory_mb:
                         description: "The maximum cache memory for the ChatAI store."
                         type: integer
