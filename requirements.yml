@@ -1,5 +1,5 @@
-# This is the Ansible Galaxy requirements that need to be installed locally to be able to run
-# the operator Ansible playbook locally.
+# This is the Ansible collection requirements that need to be installed locally to be able to run
+# the operator Ansible playbook locally. Collections are sourced from GitHub to avoid Galaxy outages.
 #
 # To install these into your local Ansible environment:
 #   ansible-galaxy collection install -r requirements.yml --force-with-deps
@@ -40,12 +40,16 @@
 
 
 collections:
-- name: community.general
+- name: https://github.com/ansible-collections/community.general.git
+  type: git
   version: 9.0.0
-- name: kubernetes.core
+- name: https://github.com/ansible-collections/kubernetes.core.git
+  type: git
   version: 4.0.0
-- name: operator_sdk.util
-  version: 0.5.0
-- name: ansible.posix
+- name: https://github.com/operator-framework/operator-sdk-ansible-util.git
+  type: git
+  version: v0.5.0
+- name: https://github.com/ansible-collections/ansible.posix.git
+  type: git
   version: 1.6.2
 

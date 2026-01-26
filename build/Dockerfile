@@ -6,6 +6,8 @@ USER root
 # see https://github.com/operator-framework/operator-sdk/issues/5745
 RUN yum remove -y subscription-manager python3-subscription-manager-rhsm
 RUN yum update -y && yum clean all
+# Git is required to install collections from GitHub sources.
+RUN yum install -y git && yum clean all
 # pull in jmespath py library for json processing
 RUN python3 -m pip install jmespath
 
