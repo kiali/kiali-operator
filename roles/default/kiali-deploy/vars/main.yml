@@ -30,6 +30,13 @@ kiali_vars:
     {{ kiali_defaults.auth }}
     {%- endif -%}
 
+  chat_ai: |
+    {%- if chat_ai is defined and chat_ai is iterable -%}
+    {{ kiali_defaults.chat_ai | combine((chat_ai | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ kiali_defaults.chat_ai }}
+    {%- endif -%}
+
   clustering: |
     {%- if clustering is defined and clustering is iterable -%}
     {{ kiali_defaults.clustering | combine((clustering | stripnone), recursive=True) }}

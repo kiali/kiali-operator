@@ -82,4 +82,44 @@ spec:
           type: "none"
     perses:
       enabled: false
-
+  # ChatAI configuration to test provider and model key secret mounting
+  # Test that secrets are ONLY mounted when the corresponding enabled flag is true
+  # Start with inline keys; we will switch to secret-based keys in the test
+  # (similar to how Grafana auth starts with inline credentials)
+  chat_ai:
+    enabled: true
+    default_provider: enabled-provider
+    providers:
+    # Provider 1: enabled with enabled model and disabled model
+    - name: enabled-provider
+      type: openai
+      config: default
+      enabled: true
+      default_model: enabled-model
+      # Start with inline key - will switch to secret-based in the test
+      key: "inline-enabled-provider-key"
+      models:
+      - name: enabled-model
+        model: gpt-4
+        enabled: true
+        # Start with inline key - will switch to secret-based in the test
+        key: "inline-enabled-model-key"
+      - name: disabled-model
+        model: gpt-3.5
+        enabled: false
+        # This model is disabled, so its key won't be mounted regardless
+        key: "inline-disabled-model-key"
+    # Provider 2: disabled provider (should NOT mount provider or model secrets)
+    - name: disabled-provider
+      type: openai
+      config: azure
+      enabled: false
+      default_model: model-under-disabled-provider
+      # Provider is disabled, so its key won't be mounted regardless
+      key: "inline-disabled-provider-key"
+      models:
+      - name: model-under-disabled-provider
+        model: gpt-4-azure
+        enabled: true
+        # Parent provider is disabled, so this key won't be mounted regardless
+        key: "inline-model-under-disabled-provider-key"
