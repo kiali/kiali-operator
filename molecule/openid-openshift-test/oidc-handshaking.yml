@@ -149,9 +149,9 @@
 
 - name: "Step 3: Extract cookies from Hydra public Route for later use"
   vars:
-    # Extract only the first name=value pair from set_cookie (before the first semicolon)
-    # set_cookie format: "name=value; path=/; HttpOnly; Secure; SameSite=None"
-    cookie_value: "{{ step3_response.set_cookie.split(';')[0] | trim if step3_response.set_cookie is defined else '' }}"
+    cookie_pairs: "{{ step3_response.set_cookie | regex_findall('([A-Za-z0-9_-]+=[^;]+)') if step3_response.set_cookie is defined else [] }}"
+    filtered_pairs: "{{ cookie_pairs | reject('match', '^(Path|Expires|Max-Age|Domain|SameSite|Secure|HttpOnly)=') | list }}"
+    cookie_value: "{{ filtered_pairs | join('; ') }}"
   set_fact:
     # Save these cookies specifically for hydra-public Route requests
     hydra_public_cookies: "{{ cookie_value }}"
@@ -190,8 +190,9 @@
 
 - name: "Step 4: Extract login parameters and cookies for next step"
   vars:
-    # Extract only the first name=value pair from set_cookie (before the first semicolon)
-    new_cookie: "{{ step4_response.set_cookie.split(';')[0] | trim if step4_response.set_cookie is defined and step4_response.set_cookie != '' else '' }}"
+    cookie_pairs: "{{ step4_response.set_cookie | regex_findall('([A-Za-z0-9_-]+=[^;]+)') if step4_response.set_cookie is defined else [] }}"
+    filtered_pairs: "{{ cookie_pairs | reject('match', '^(Path|Expires|Max-Age|Domain|SameSite|Secure|HttpOnly)=') | list }}"
+    new_cookie: "{{ filtered_pairs | join('; ') }}"
   set_fact:
     openid_login_endpoint: "{{ step4_response.url }}"
     login_challenge: "{{ step4_response.url | regex_replace('.*login_challenge=([^&]+).*', '\\1') | urldecode }}"
@@ -232,8 +233,9 @@
 
 - name: "Step 5: Update Hydra UI cookies from login response"
   vars:
-    # Extract only the first name=value pair from set_cookie
-    new_cookie: "{{ step5_response.set_cookie.split(';')[0] | trim if step5_response.set_cookie is defined and step5_response.set_cookie != '' else '' }}"
+    cookie_pairs: "{{ step5_response.set_cookie | regex_findall('([A-Za-z0-9_-]+=[^;]+)') if step5_response.set_cookie is defined else [] }}"
+    filtered_pairs: "{{ cookie_pairs | reject('match', '^(Path|Expires|Max-Age|Domain|SameSite|Secure|HttpOnly)=') | list }}"
+    new_cookie: "{{ filtered_pairs | join('; ') }}"
   set_fact:
     hydra_ui_cookies: "{{ (hydra_ui_cookies + '; ' + new_cookie) if (new_cookie != '' and hydra_ui_cookies != '') else (new_cookie if new_cookie != '' else hydra_ui_cookies) }}"
     hydra_cookies: "{{ (hydra_cookies + '; ' + new_cookie) if (new_cookie != '' and hydra_cookies != '') else (new_cookie if new_cookie != '' else hydra_cookies) }}"
@@ -265,8 +267,9 @@
 
 - name: "Step 6: Update Hydra public cookies from login verifier response"
   vars:
-    # Extract only the first name=value pair from set_cookie
-    new_cookie: "{{ step6_response.set_cookie.split(';')[0] | trim if step6_response.set_cookie is defined and step6_response.set_cookie != '' else '' }}"
+    cookie_pairs: "{{ step6_response.set_cookie | regex_findall('([A-Za-z0-9_-]+=[^;]+)') if step6_response.set_cookie is defined else [] }}"
+    filtered_pairs: "{{ cookie_pairs | reject('match', '^(Path|Expires|Max-Age|Domain|SameSite|Secure|HttpOnly)=') | list }}"
+    new_cookie: "{{ filtered_pairs | join('; ') }}"
   set_fact:
     hydra_public_cookies: "{{ (hydra_public_cookies + '; ' + new_cookie) if (new_cookie != '' and hydra_public_cookies != '') else (new_cookie if new_cookie != '' else hydra_public_cookies) }}"
     hydra_cookies: "{{ (hydra_cookies + '; ' + new_cookie) if (new_cookie != '' and hydra_cookies != '') else (new_cookie if new_cookie != '' else hydra_cookies) }}"
@@ -298,8 +301,9 @@
 
 - name: "Step 7: Update Hydra UI cookies from consent response"
   vars:
-    # Extract only the first name=value pair from set_cookie
-    new_cookie: "{{ step7_response.set_cookie.split(';')[0] | trim if step7_response.set_cookie is defined and step7_response.set_cookie != '' else '' }}"
+    cookie_pairs: "{{ step7_response.set_cookie | regex_findall('([A-Za-z0-9_-]+=[^;]+)') if step7_response.set_cookie is defined else [] }}"
+    filtered_pairs: "{{ cookie_pairs | reject('match', '^(Path|Expires|Max-Age|Domain|SameSite|Secure|HttpOnly)=') | list }}"
+    new_cookie: "{{ filtered_pairs | join('; ') }}"
   set_fact:
     hydra_ui_cookies: "{{ (hydra_ui_cookies + '; ' + new_cookie) if (new_cookie != '' and hydra_ui_cookies != '') else (new_cookie if new_cookie != '' else hydra_ui_cookies) }}"
     hydra_cookies: "{{ (hydra_cookies + '; ' + new_cookie) if (new_cookie != '' and hydra_cookies != '') else (new_cookie if new_cookie != '' else hydra_cookies) }}"
