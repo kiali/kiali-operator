@@ -1,0 +1,28 @@
+# Destroy playbook for openid-openshift-test
+# Cleans up test-specific resources only
+# NOTE: Hydra is NOT uninstalled because it's a shared resource pre-installed by crc-openshift.sh
+---
+- name: Destroy OpenID OpenShift test resources
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - name: "Delete kiali-oidc secret"
+    k8s:
+      api_version: v1
+      kind: Secret
+      name: kiali-oidc
+      namespace: istio-system
+      state: absent
+    ignore_errors: true
+
+  # NOTE: We do NOT uninstall Hydra here.
+  # Hydra is pre-installed by crc-openshift.sh --hydra-enabled true and is a shared resource.
+  # If you need to completely remove Hydra, use:
+  #   kubectl delete namespace ory
+
+# Include the base destroy play to destroy Kiali
+- name: Include the base destroy play to destroy Kiali
+  import_playbook: ../default/destroy.yml

@@ -1,0 +1,126 @@
+# Prepare playbook for openid-openshift-test
+# Verifies Ory Hydra is pre-installed by crc-openshift.sh --hydra-enabled true
+# This test expects Hydra to be installed before running (similar to openid-test on minikube)
+---
+- name: Prepare OpenShift for OpenID test
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - name: "Verify ory namespace exists (Hydra should be pre-installed)"
+    k8s_info:
+      api_version: v1
+      kind: Namespace
+      name: "{{ hydra.namespace }}"
+    register: ory_namespace
+    failed_when: ory_namespace.resources | length == 0
+
+  - name: "Verify Hydra pods are running"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ hydra.namespace }}"
+      label_selectors:
+      - app.kubernetes.io/name=hydra
+    register: hydra_pods
+    until: hydra_pods.resources | length > 0 and hydra_pods.resources[0].status.phase == 'Running' and (hydra_pods.resources[0].status.containerStatuses | default([]) | selectattr('ready', 'equalto', true) | list | length > 0)
+    retries: 30
+    delay: 5
+
+  - name: "Verify Hydra UI pods are running"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ hydra.namespace }}"
+      label_selectors:
+      - app=hydra-ui
+    register: hydra_ui_pods
+    until: hydra_ui_pods.resources | length > 0 and hydra_ui_pods.resources[0].status.phase == 'Running' and (hydra_ui_pods.resources[0].status.containerStatuses | default([]) | selectattr('ready', 'equalto', true) | list | length > 0)
+    retries: 30
+    delay: 5
+
+  - name: "Verify PostgreSQL pods are running"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ hydra.namespace }}"
+      label_selectors:
+      - app=postgresql
+    register: postgresql_pods
+    until: postgresql_pods.resources | length > 0 and postgresql_pods.resources[0].status.phase == 'Running' and (postgresql_pods.resources[0].status.containerStatuses | default([]) | selectattr('ready', 'equalto', true) | list | length > 0)
+    retries: 30
+    delay: 5
+
+  - name: "Get Hydra public Route"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-public
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_public_route
+    failed_when: hydra_public_route.resources | length == 0
+
+  - name: "Get Hydra admin Route"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-admin
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_admin_route
+    failed_when: hydra_admin_route.resources | length == 0
+
+  - name: "Get Hydra UI Route"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-ui
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_ui_route
+    failed_when: hydra_ui_route.resources | length == 0
+
+  - name: "Set Hydra Route URL facts"
+    set_fact:
+      hydra_public_route_url: "https://{{ hydra_public_route.resources[0].spec.host }}"
+      hydra_admin_route_url: "https://{{ hydra_admin_route.resources[0].spec.host }}"
+      hydra_ui_route_url: "https://{{ hydra_ui_route.resources[0].spec.host }}"
+
+  # Set openid.issuer_uri so the converge playbook can use it
+  - name: "Set openid issuer_uri from Hydra Route"
+    set_fact:
+      openid: "{{ openid | combine({'issuer_uri': 'https://' + hydra_public_route.resources[0].spec.host}) }}"
+
+  - name: "Verify Hydra OIDC discovery endpoint is accessible via Route"
+    uri:
+      url: "{{ hydra_public_route_url }}/.well-known/openid-configuration"
+      validate_certs: false
+    register: hydra_oidc_discovery
+    until: hydra_oidc_discovery.status == 200
+    retries: 30
+    delay: 5
+
+  - name: "DEBUG: Display Hydra configuration"
+    debug:
+      msg:
+      - "Hydra is pre-installed and ready for OpenID testing"
+      - "Hydra Public Route: {{ hydra_public_route_url }}"
+      - "Hydra Admin Route: {{ hydra_admin_route_url }}"
+      - "Hydra UI Route: {{ hydra_ui_route_url }}"
+      - "OIDC Discovery: {{ hydra_public_route_url }}/.well-known/openid-configuration"
+
+  - name: "FAIL if Hydra is not pre-installed"
+    fail:
+      msg: |
+        Hydra is not pre-installed on this OpenShift cluster.
+
+        This test requires Hydra to be pre-installed. Start your OpenShift cluster with:
+          ./hack/crc-openshift.sh --hydra-enabled true start
+
+        Or if the cluster is already running, you can install Hydra manually with:
+          ./hack/ory-hydra/scripts/install-hydra.sh --cluster-type openshift
+    when: hydra_oidc_discovery.status != 200
+
+# Import the base prepare play to deploy the operator
+- name: Include the base prepare play to deploy the operator
+  import_playbook: ../default/prepare.yml
