@@ -9,7 +9,7 @@ spec:
     openid:
       client_id: {{ openid.client_id }}
       disable_rbac: true
-      insecure_skip_verify_tls: true
+      insecure_skip_verify_tls: false
       issuer_uri: {{ openid.issuer_uri }}
       username_claim: {{ openid.username_claim }}
   deployment:

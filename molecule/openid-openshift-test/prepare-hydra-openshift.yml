@@ -100,6 +100,34 @@
     retries: 30
     delay: 5
 
+  - name: "Ensure Kiali namespace exists for CA bundle"
+    k8s:
+      api_version: v1
+      kind: Namespace
+      name: "{{ kiali.install_namespace }}"
+      definition:
+        metadata:
+          name: "{{ kiali.install_namespace }}"
+
+  - name: "Get Hydra TLS secret for CA bundle"
+    k8s_info:
+      api_version: v1
+      kind: Secret
+      name: hydra-tls
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_tls_secret
+    failed_when: hydra_tls_secret.resources | length == 0 or hydra_tls_secret.resources[0].data['ca.pem'] is not defined
+
+  - name: "Create Kiali CA bundle ConfigMap for Hydra"
+    k8s:
+      api_version: v1
+      kind: ConfigMap
+      name: kiali-cabundle
+      namespace: "{{ kiali.install_namespace }}"
+      definition:
+        data:
+          openid-server-ca.crt: "{{ hydra_tls_secret.resources[0].data['ca.pem'] | b64decode }}"
+
   - name: "DEBUG: Display Hydra configuration"
     debug:
       msg:
