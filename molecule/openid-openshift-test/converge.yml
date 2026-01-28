@@ -191,11 +191,11 @@
       - kiali_configmap.auth.strategy == "openid"
       fail_msg: "Expected auth.strategy to be 'openid' but got '{{ kiali_configmap.auth.strategy }}'"
 
-  - name: "Make sure disable_rbac is true"
+  - name: "Make sure disable_rbac is false (per-user RBAC enabled)"
     assert:
       that:
-      - kiali_configmap.auth.openid.disable_rbac == true
-      fail_msg: "Expected auth.openid.disable_rbac to be true"
+      - kiali_configmap.auth.openid.disable_rbac == false
+      fail_msg: "Expected auth.openid.disable_rbac to be false for per-user RBAC"
 
   - name: "Assert that we can access Kiali console login screen that does not need authentication"
     uri:
@@ -307,4 +307,4 @@
       - "All OpenID Connect authentication tests passed!"
       - "Kiali successfully authenticated using Hydra as OIDC provider on OpenShift"
       - "Auto-discovery working correctly"
-      - "disable_rbac: true configuration validated"
+      - "disable_rbac: false (per-user RBAC) configuration validated"

@@ -1,6 +1,9 @@
 # Destroy playbook for openid-openshift-test
 # Cleans up test-specific resources only
 # NOTE: Hydra is NOT uninstalled because it's a shared resource pre-installed by crc-openshift.sh
+#
+# IMPORTANT: The ServiceAccount cleanup must happen LAST because we use its token for
+# all k8s operations. If we delete it first, subsequent tasks will fail authentication.
 ---
 - name: Destroy OpenID OpenShift test resources
   hosts: localhost
@@ -8,6 +11,11 @@
   collections:
   - kubernetes.core
   tasks:
+
+  # =============================================================================
+  # CLEANUP KIALI RESOURCES
+  # =============================================================================
+  # These must run BEFORE ServiceAccount cleanup since they need k8s authentication
 
   - name: "Delete kiali-oidc secret"
     k8s:
@@ -18,11 +26,118 @@
       state: absent
     ignore_errors: true
 
+  # =============================================================================
+  # CLEANUP OIDC USER RBAC RESOURCES
+  # =============================================================================
+
+  - name: "Delete OIDC ClusterRoleBinding"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      name: oidc-user-namespace-viewer
+      state: absent
+    ignore_errors: true
+
+  - name: "Delete OIDC ClusterRole"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      name: oidc-namespace-viewer
+      state: absent
+    ignore_errors: true
+
+  # =============================================================================
+  # REVERT AUTHENTICATION TO BUILT-IN OAUTH
+  # =============================================================================
+  # This restores OpenShift to its original state using the built-in OAuth server.
+  # The API server will roll out again (~20 minutes) but we don't wait for it.
+  # Using state: patched with merge_type: merge for proper CRD patching.
+
+  - name: "Revert Authentication to built-in OAuth"
+    k8s:
+      api_version: config.openshift.io/v1
+      kind: Authentication
+      name: cluster
+      state: patched
+      merge_type: merge
+      definition:
+        spec:
+          type: ""
+          oidcProviders: null
+    ignore_errors: true
+
+  - name: "Delete Hydra CA ConfigMap from openshift-config"
+    k8s:
+      api_version: v1
+      kind: ConfigMap
+      name: hydra-oidc-ca
+      namespace: openshift-config
+      state: absent
+    ignore_errors: true
+
+  - name: "DEBUG: OIDC cleanup initiated"
+    debug:
+      msg:
+      - "OIDC configuration reverted to built-in OAuth"
+      - "RBAC resources deleted"
+      - "Note: API server rollout will complete in the background (~20 minutes)"
+
   # NOTE: We do NOT uninstall Hydra here.
   # Hydra is pre-installed by crc-openshift.sh --hydra-enabled true and is a shared resource.
   # If you need to completely remove Hydra, use:
   #   kubectl delete namespace ory
 
-# Include the base destroy play to destroy Kiali
+# Include the base destroy play to destroy Kiali and operator
+# This runs BEFORE ServiceAccount cleanup because it needs k8s authentication
 - name: Include the base destroy play to destroy Kiali
   import_playbook: ../default/destroy.yml
+
+# =============================================================================
+# FINAL CLEANUP: SERVICE ACCOUNT AUTHENTICATION RESOURCES
+# =============================================================================
+# This MUST run LAST because once we delete the ServiceAccount, the token in our
+# kubeconfig becomes invalid and all subsequent k8s operations would fail.
+- name: Final cleanup of ServiceAccount authentication resources
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - name: "Delete molecule-admin-token Secret"
+    k8s:
+      api_version: v1
+      kind: Secret
+      name: molecule-admin-token
+      namespace: molecule-admin
+      state: absent
+    ignore_errors: true
+
+  - name: "Delete molecule-admin-cluster-admin ClusterRoleBinding"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      name: molecule-admin-cluster-admin
+      state: absent
+    ignore_errors: true
+
+  - name: "Delete molecule-admin ServiceAccount"
+    k8s:
+      api_version: v1
+      kind: ServiceAccount
+      name: molecule-admin
+      namespace: molecule-admin
+      state: absent
+    ignore_errors: true
+
+  - name: "Delete molecule-admin namespace"
+    k8s:
+      api_version: v1
+      kind: Namespace
+      name: molecule-admin
+      state: absent
+    ignore_errors: true
+
+  - name: "DEBUG: ServiceAccount cleanup complete"
+    debug:
+      msg: "molecule-admin ServiceAccount and related resources cleaned up (final step)"

@@ -8,7 +8,7 @@ spec:
     strategy: openid
     openid:
       client_id: {{ openid.client_id }}
-      disable_rbac: true
+      disable_rbac: false
       insecure_skip_verify_tls: false
       issuer_uri: {{ openid.issuer_uri }}
       username_claim: {{ openid.username_claim }}
