@@ -77,12 +77,71 @@
       state: absent
     ignore_errors: true
 
-  - name: "DEBUG: OIDC cleanup initiated"
+  # =============================================================================
+  # WAIT FOR API SERVER ROLLOUT TO COMPLETE
+  # =============================================================================
+  # Reverting Authentication triggers an API server rollout (~20-30 minutes).
+  # We must wait for it to complete so subsequent molecule tests can authenticate.
+
+  - name: "Wait for kube-apiserver to start progressing after OAuth revert"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_co
+    until: apiserver_co.resources is defined and apiserver_co.resources | length > 0 and (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "True"
+    retries: 60
+    delay: 10
+    ignore_errors: true
+
+  - name: "Wait for kube-apiserver rollout to complete"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_co
+    until: >-
+      apiserver_co.resources is defined and
+      apiserver_co.resources | length > 0 and
+      (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | list | first).status == "True" and
+      (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "False"
+    retries: 180
+    delay: 10
+    ignore_errors: true
+
+  - name: "Pause for API server stabilization"
+    pause:
+      seconds: 30
+      prompt: "Waiting 30s for API server to stabilize after rollout..."
+
+  - name: "Verify kube-apiserver rollout completed successfully"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_final
+    until: apiserver_final.resources is defined and apiserver_final.resources | length > 0
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: "Assert API server is available and not progressing"
+    assert:
+      that:
+      - apiserver_final.resources is defined
+      - apiserver_final.resources | length > 0
+      - (apiserver_final.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | list | first).status == "True"
+      - (apiserver_final.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "False"
+      fail_msg: "API server rollout did not complete successfully after 30+ minutes. Check cluster health."
+      success_msg: "API server rollout completed - cluster ready for subsequent tests"
+
+  - name: "DEBUG: OIDC cleanup complete"
     debug:
       msg:
       - "OIDC configuration reverted to built-in OAuth"
+      - "API server rollout completed"
       - "RBAC resources deleted"
-      - "Note: API server rollout will complete in the background (~20 minutes)"
+      - "Cluster is ready for subsequent tests"
 
   # NOTE: We do NOT uninstall Hydra here.
   # Hydra is pre-installed by crc-openshift.sh --hydra-enabled true and is a shared resource.
