@@ -97,8 +97,10 @@
 # =============================================================================
 # FINAL CLEANUP: SERVICE ACCOUNT AUTHENTICATION RESOURCES
 # =============================================================================
-# This MUST run LAST because once we delete the ServiceAccount, the token in our
-# kubeconfig becomes invalid and all subsequent k8s operations would fail.
+# IMPORTANT: Order matters here!
+# 1. Delete the namespace FIRST (while SA still has cluster-admin via CRB)
+# 2. Delete the ClusterRoleBinding LAST (after namespace is gone)
+# If we delete the CRB first, the SA loses permissions and can't delete its namespace.
 - name: Final cleanup of ServiceAccount authentication resources
   hosts: localhost
   connection: local
@@ -106,13 +108,23 @@
   - kubernetes.core
   tasks:
 
-  - name: "Delete molecule-admin-token Secret"
+  - name: "Delete molecule-admin namespace (includes SA, token, and all resources)"
     k8s:
       api_version: v1
-      kind: Secret
-      name: molecule-admin-token
-      namespace: molecule-admin
+      kind: Namespace
+      name: molecule-admin
       state: absent
+    ignore_errors: true
+
+  - name: "Wait for molecule-admin namespace to be fully deleted"
+    k8s_info:
+      api_version: v1
+      kind: Namespace
+      name: molecule-admin
+    register: ns_check
+    until: ns_check.resources | length == 0
+    retries: 30
+    delay: 5
     ignore_errors: true
 
   - name: "Delete molecule-admin-cluster-admin ClusterRoleBinding"
@@ -120,23 +132,6 @@
       api_version: rbac.authorization.k8s.io/v1
       kind: ClusterRoleBinding
       name: molecule-admin-cluster-admin
-      state: absent
-    ignore_errors: true
-
-  - name: "Delete molecule-admin ServiceAccount"
-    k8s:
-      api_version: v1
-      kind: ServiceAccount
-      name: molecule-admin
-      namespace: molecule-admin
-      state: absent
-    ignore_errors: true
-
-  - name: "Delete molecule-admin namespace"
-    k8s:
-      api_version: v1
-      kind: Namespace
-      name: molecule-admin
       state: absent
     ignore_errors: true
 
