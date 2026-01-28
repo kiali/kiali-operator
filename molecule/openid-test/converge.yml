@@ -8,6 +8,8 @@
     custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
   tasks:
 
+  # (note: this molecule test is not for OpenShift - it will only pass on non-OpenShift clusters)
+
   # =============================================================================
   # MAKE SURE KIALI IS INITIALIZED AND READY TO TEST
   # =============================================================================

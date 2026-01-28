@@ -1,0 +1,199 @@
+# Destroy playbook for openid-openshift-test
+# Cleans up test-specific resources only
+# NOTE: Hydra is NOT uninstalled because it's a shared resource pre-installed by crc-openshift.sh
+#
+# IMPORTANT: The ServiceAccount cleanup must happen LAST because we use its token for
+# all k8s operations. If we delete it first, subsequent tasks will fail authentication.
+---
+- name: Destroy OpenID OpenShift test resources
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # =============================================================================
+  # CLEANUP KIALI RESOURCES
+  # =============================================================================
+  # These must run BEFORE ServiceAccount cleanup since they need k8s authentication
+
+  - name: "Delete kiali-oidc secret"
+    k8s:
+      api_version: v1
+      kind: Secret
+      name: kiali-oidc
+      namespace: istio-system
+      state: absent
+    ignore_errors: true
+
+  # =============================================================================
+  # CLEANUP OIDC USER RBAC RESOURCES
+  # =============================================================================
+
+  - name: "Delete OIDC RoleBinding from istio-system"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      name: oidc-user-namespace-viewer
+      namespace: istio-system
+      state: absent
+    ignore_errors: true
+
+  - name: "Delete OIDC Role from istio-system"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: Role
+      name: oidc-namespace-viewer
+      namespace: istio-system
+      state: absent
+    ignore_errors: true
+
+  # =============================================================================
+  # REVERT AUTHENTICATION TO BUILT-IN OAUTH
+  # =============================================================================
+  # This restores OpenShift to its original state using the built-in OAuth server.
+  # The API server will roll out again (~20 minutes) but we don't wait for it.
+  # Using state: patched with merge_type: merge for proper CRD patching.
+
+  - name: "Revert Authentication to built-in OAuth"
+    k8s:
+      api_version: config.openshift.io/v1
+      kind: Authentication
+      name: cluster
+      state: patched
+      merge_type: merge
+      definition:
+        spec:
+          type: ""
+          oidcProviders: null
+    ignore_errors: true
+
+  - name: "Delete Hydra CA ConfigMap from openshift-config"
+    k8s:
+      api_version: v1
+      kind: ConfigMap
+      name: hydra-oidc-ca
+      namespace: openshift-config
+      state: absent
+    ignore_errors: true
+
+  # =============================================================================
+  # WAIT FOR API SERVER ROLLOUT TO COMPLETE
+  # =============================================================================
+  # Reverting Authentication triggers an API server rollout (~20-30 minutes).
+  # We must wait for it to complete so subsequent molecule tests can authenticate.
+
+  - name: "Wait for kube-apiserver to start progressing after OAuth revert"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_co
+    until: apiserver_co.resources is defined and apiserver_co.resources | length > 0 and (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "True"
+    retries: 60
+    delay: 10
+    ignore_errors: true
+
+  - name: "Wait for kube-apiserver rollout to complete"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_co
+    until: >-
+      apiserver_co.resources is defined and
+      apiserver_co.resources | length > 0 and
+      (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | list | first).status == "True" and
+      (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "False"
+    retries: 180
+    delay: 10
+    ignore_errors: true
+
+  - name: "Pause for API server stabilization"
+    pause:
+      seconds: 30
+      prompt: "Waiting 30s for API server to stabilize after rollout..."
+
+  - name: "Verify kube-apiserver rollout completed successfully"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_final
+    until: apiserver_final.resources is defined and apiserver_final.resources | length > 0
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: "Assert API server is available and not progressing"
+    assert:
+      that:
+      - apiserver_final.resources is defined
+      - apiserver_final.resources | length > 0
+      - (apiserver_final.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | list | first).status == "True"
+      - (apiserver_final.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "False"
+      fail_msg: "API server rollout did not complete successfully after 30+ minutes. Check cluster health."
+      success_msg: "API server rollout completed - cluster ready for subsequent tests"
+
+  - name: "DEBUG: OIDC cleanup complete"
+    debug:
+      msg:
+      - "OIDC configuration reverted to built-in OAuth"
+      - "API server rollout completed"
+      - "RBAC resources deleted"
+      - "Cluster is ready for subsequent tests"
+
+  # NOTE: We do NOT uninstall Hydra here.
+  # Hydra is pre-installed by crc-openshift.sh --hydra-enabled true and is a shared resource.
+  # If you need to completely remove Hydra, use:
+  #   kubectl delete namespace ory
+
+# Include the base destroy play to destroy Kiali and operator
+# This runs BEFORE ServiceAccount cleanup because it needs k8s authentication
+- name: Include the base destroy play to destroy Kiali
+  import_playbook: ../default/destroy.yml
+
+# =============================================================================
+# FINAL CLEANUP: SERVICE ACCOUNT AUTHENTICATION RESOURCES
+# =============================================================================
+# IMPORTANT: Order matters here!
+# 1. Delete the namespace FIRST (while SA still has cluster-admin via CRB)
+# 2. Delete the ClusterRoleBinding LAST (after namespace is gone)
+# If we delete the CRB first, the SA loses permissions and can't delete its namespace.
+- name: Final cleanup of ServiceAccount authentication resources
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - name: "Delete molecule-admin namespace (includes SA, token, and all resources)"
+    k8s:
+      api_version: v1
+      kind: Namespace
+      name: molecule-admin
+      state: absent
+    ignore_errors: true
+
+  - name: "Wait for molecule-admin namespace to be fully deleted"
+    k8s_info:
+      api_version: v1
+      kind: Namespace
+      name: molecule-admin
+    register: ns_check
+    until: ns_check.resources | length == 0
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: "Delete molecule-admin-cluster-admin ClusterRoleBinding"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      name: molecule-admin-cluster-admin
+      state: absent
+    ignore_errors: true
+
+  - name: "DEBUG: ServiceAccount cleanup complete"
+    debug:
+      msg: "molecule-admin ServiceAccount and related resources cleaned up (final step)"

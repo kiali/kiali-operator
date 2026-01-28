@@ -1,0 +1,429 @@
+# Prepare playbook for openid-openshift-test
+# Verifies Ory Hydra is pre-installed by crc-openshift.sh --hydra-enabled true
+# This test expects Hydra to be installed before running (similar to openid-test on minikube)
+---
+- name: Prepare OpenShift for OpenID test
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # =============================================================================
+  # CREATE SERVICE ACCOUNT FOR PERSISTENT AUTHENTICATION
+  # =============================================================================
+  # When OIDC is configured on OpenShift, the built-in OAuth server is disabled,
+  # invalidating kubeadmin's OAuth token. We create a ServiceAccount with
+  # cluster-admin privileges at the start (before OIDC config) and update the
+  # kubeconfig to use its token for all subsequent operations, including the
+  # imported prepare.yml playbook that deploys the operator.
+
+  - name: "Get kubeconfig path"
+    set_fact:
+      kubeconfig_path: "{{ lookup('env', 'K8S_AUTH_KUBECONFIG') | default(lookup('env', 'HOME') + '/.kube/config', true) }}"
+
+  - name: "Read existing kubeconfig for backup"
+    slurp:
+      src: "{{ kubeconfig_path }}"
+    register: original_kubeconfig_content
+
+  - name: "Save backup of original kubeconfig"
+    copy:
+      content: "{{ original_kubeconfig_content.content | b64decode }}"
+      dest: "{{ kubeconfig_path }}.molecule-backup"
+      mode: '0600'
+
+  - name: "Create molecule-admin namespace"
+    k8s:
+      api_version: v1
+      kind: Namespace
+      name: molecule-admin
+      state: present
+
+  - name: "Create molecule-admin ServiceAccount"
+    k8s:
+      api_version: v1
+      kind: ServiceAccount
+      name: molecule-admin
+      namespace: molecule-admin
+      state: present
+
+  - name: "Create cluster-admin binding for molecule-admin"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      name: molecule-admin-cluster-admin
+      state: present
+      definition:
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: ClusterRole
+          name: cluster-admin
+        subjects:
+        - kind: ServiceAccount
+          name: molecule-admin
+          namespace: molecule-admin
+
+  - name: "Create token Secret for molecule-admin ServiceAccount"
+    k8s:
+      api_version: v1
+      kind: Secret
+      name: molecule-admin-token
+      namespace: molecule-admin
+      state: present
+      definition:
+        metadata:
+          annotations:
+            kubernetes.io/service-account.name: molecule-admin
+        type: kubernetes.io/service-account-token
+
+  - name: "Wait for token to be populated in Secret"
+    k8s_info:
+      api_version: v1
+      kind: Secret
+      name: molecule-admin-token
+      namespace: molecule-admin
+    register: token_secret
+    until: token_secret.resources | length > 0 and token_secret.resources[0].data.token is defined
+    retries: 30
+    delay: 2
+
+  - name: "Extract ServiceAccount token"
+    set_fact:
+      molecule_admin_token: "{{ token_secret.resources[0].data.token | b64decode }}"
+
+  - name: "Parse existing kubeconfig"
+    set_fact:
+      kubeconfig_data: "{{ original_kubeconfig_content.content | b64decode | from_yaml }}"
+
+  # Note: This assumes the kubeconfig has a single user (typical for CRC).
+  # For kubeconfigs with multiple users, we'd need to identify the user
+  # referenced by the current-context and only modify that one.
+  - name: "Update kubeconfig user with ServiceAccount token"
+    set_fact:
+      updated_kubeconfig: >-
+        {{
+          kubeconfig_data | combine({
+            'users': kubeconfig_data.users | map('combine', {'user': {'token': molecule_admin_token}}) | list
+          })
+        }}
+
+  - name: "Write updated kubeconfig with ServiceAccount token"
+    copy:
+      content: "{{ updated_kubeconfig | to_nice_yaml }}"
+      dest: "{{ kubeconfig_path }}"
+      mode: '0600'
+
+  - name: "DEBUG: ServiceAccount authentication configured"
+    debug:
+      msg:
+      - "ServiceAccount molecule-admin created with cluster-admin privileges"
+      - "Kubeconfig updated to use ServiceAccount token"
+      - "Original kubeconfig backed up to {{ kubeconfig_path }}.molecule-backup"
+      - "This token persists through OAuth -> OIDC configuration changes"
+
+  # =============================================================================
+  # VERIFY HYDRA IS PRE-INSTALLED
+  # =============================================================================
+
+  - name: "Verify ory namespace exists (Hydra should be pre-installed)"
+    k8s_info:
+      api_version: v1
+      kind: Namespace
+      name: "{{ hydra.namespace }}"
+    register: ory_namespace
+    failed_when: ory_namespace.resources | length == 0
+
+  - name: "Verify Hydra pods are running"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ hydra.namespace }}"
+      label_selectors:
+      - app.kubernetes.io/name=hydra
+    register: hydra_pods
+    until: hydra_pods.resources | length > 0 and hydra_pods.resources[0].status.phase == 'Running' and (hydra_pods.resources[0].status.containerStatuses | default([]) | selectattr('ready', 'equalto', true) | list | length > 0)
+    retries: 30
+    delay: 5
+
+  - name: "Verify Hydra UI pods are running"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ hydra.namespace }}"
+      label_selectors:
+      - app=hydra-ui
+    register: hydra_ui_pods
+    until: hydra_ui_pods.resources | length > 0 and hydra_ui_pods.resources[0].status.phase == 'Running' and (hydra_ui_pods.resources[0].status.containerStatuses | default([]) | selectattr('ready', 'equalto', true) | list | length > 0)
+    retries: 30
+    delay: 5
+
+  - name: "Verify PostgreSQL pods are running"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ hydra.namespace }}"
+      label_selectors:
+      - app=postgresql
+    register: postgresql_pods
+    until: postgresql_pods.resources | length > 0 and postgresql_pods.resources[0].status.phase == 'Running' and (postgresql_pods.resources[0].status.containerStatuses | default([]) | selectattr('ready', 'equalto', true) | list | length > 0)
+    retries: 30
+    delay: 5
+
+  - name: "Get Hydra public Route"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-public
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_public_route
+    failed_when: hydra_public_route.resources | length == 0
+
+  - name: "Get Hydra admin Route"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-admin
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_admin_route
+    failed_when: hydra_admin_route.resources | length == 0
+
+  - name: "Get Hydra UI Route"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-ui
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_ui_route
+    failed_when: hydra_ui_route.resources | length == 0
+
+  - name: "Set Hydra Route URL facts"
+    set_fact:
+      hydra_public_route_url: "https://{{ hydra_public_route.resources[0].spec.host }}"
+      hydra_admin_route_url: "https://{{ hydra_admin_route.resources[0].spec.host }}"
+      hydra_ui_route_url: "https://{{ hydra_ui_route.resources[0].spec.host }}"
+
+  # Set openid.issuer_uri so the converge playbook can use it
+  - name: "Set openid issuer_uri from Hydra Route"
+    set_fact:
+      openid: "{{ openid | combine({'issuer_uri': 'https://' + hydra_public_route.resources[0].spec.host}) }}"
+
+  - name: "Verify Hydra OIDC discovery endpoint is accessible via Route"
+    uri:
+      url: "{{ hydra_public_route_url }}/.well-known/openid-configuration"
+      validate_certs: false
+    register: hydra_oidc_discovery
+    until: hydra_oidc_discovery.status == 200
+    retries: 30
+    delay: 5
+
+  - name: "Ensure Kiali namespace exists for CA bundle"
+    k8s:
+      api_version: v1
+      kind: Namespace
+      name: "{{ kiali.install_namespace }}"
+      definition:
+        metadata:
+          name: "{{ kiali.install_namespace }}"
+
+  - name: "Get Hydra TLS secret for CA bundle"
+    k8s_info:
+      api_version: v1
+      kind: Secret
+      name: hydra-tls
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_tls_secret
+    failed_when: hydra_tls_secret.resources | length == 0 or hydra_tls_secret.resources[0].data['ca.pem'] is not defined
+
+  - name: "Create Kiali CA bundle ConfigMap for Hydra"
+    k8s:
+      api_version: v1
+      kind: ConfigMap
+      name: kiali-cabundle
+      namespace: "{{ kiali.install_namespace }}"
+      definition:
+        data:
+          openid-server-ca.crt: "{{ hydra_tls_secret.resources[0].data['ca.pem'] | b64decode }}"
+
+  # =============================================================================
+  # CONFIGURE OPENSHIFT TO ACCEPT HYDRA OIDC TOKENS (FOR PER-USER RBAC)
+  # =============================================================================
+  # This configures OpenShift's Authentication resource to accept Hydra-issued
+  # OIDC tokens for Kubernetes API authentication. This allows Kiali to use the
+  # user's OIDC token (instead of its service account token) for K8s API calls.
+  # Reference: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/external-auth
+
+  - name: "Create Hydra CA ConfigMap in openshift-config namespace"
+    k8s:
+      api_version: v1
+      kind: ConfigMap
+      name: hydra-oidc-ca
+      namespace: openshift-config
+      definition:
+        data:
+          ca-bundle.crt: "{{ hydra_tls_secret.resources[0].data['ca.pem'] | b64decode }}"
+
+  # Using state: patched with merge_type: merge for proper CRD patching.
+  # This merges our changes with the existing Authentication spec rather than replacing it.
+  - name: "Configure OpenShift Authentication for direct OIDC with Hydra"
+    k8s:
+      api_version: config.openshift.io/v1
+      kind: Authentication
+      name: cluster
+      state: patched
+      merge_type: merge
+      definition:
+        spec:
+          type: OIDC
+          webhookTokenAuthenticator: null
+          oidcProviders:
+          - name: 'hydra'
+            issuer:
+              issuerURL: "{{ hydra_public_route_url }}"
+              audiences:
+              - kiali-app
+              issuerCertificateAuthority:
+                name: hydra-oidc-ca
+            claimMappings:
+              username:
+                claim: email
+                prefixPolicy: Prefix
+                prefix:
+                  prefixString: 'oidc:'
+
+  - name: "DEBUG: OIDC configuration applied, waiting for API server rollout"
+    debug:
+      msg:
+      - "OpenShift Authentication configured for OIDC"
+      - "Issuer URL: {{ hydra_public_route_url }}"
+      - "This triggers an API server rollout which may take 20-30 minutes"
+
+  # Wait for API server rollout with resilience to transient SSL/connection errors.
+  # During the rollout, the API server may be briefly unavailable, causing SSL errors.
+  # We use ignore_errors to allow retries to continue through these transient failures.
+  - name: "Wait for kube-apiserver to start progressing"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_co
+    until: apiserver_co.resources is defined and apiserver_co.resources | length > 0 and (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "True"
+    retries: 60
+    delay: 10
+    ignore_errors: true
+
+  - name: "Wait for kube-apiserver rollout to complete"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_co
+    until: >-
+      apiserver_co.resources is defined and
+      apiserver_co.resources | length > 0 and
+      (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | list | first).status == "True" and
+      (apiserver_co.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "False"
+    retries: 180
+    delay: 10
+    ignore_errors: true
+
+  # Brief pause to let API server stabilize after rollout
+  - name: "Pause for API server stabilization"
+    pause:
+      seconds: 30
+      prompt: "Waiting 30s for API server to stabilize after rollout..."
+
+  # Verify the rollout actually completed - fail if it didn't
+  - name: "Verify kube-apiserver rollout completed successfully"
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: ClusterOperator
+      name: kube-apiserver
+    register: apiserver_final
+    until: apiserver_final.resources is defined and apiserver_final.resources | length > 0
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: "Assert API server is available and not progressing"
+    assert:
+      that:
+      - apiserver_final.resources is defined
+      - apiserver_final.resources | length > 0
+      - (apiserver_final.resources[0].status.conditions | selectattr('type', 'equalto', 'Available') | list | first).status == "True"
+      - (apiserver_final.resources[0].status.conditions | selectattr('type', 'equalto', 'Progressing') | list | first).status == "False"
+      fail_msg: "API server rollout did not complete successfully after 30+ minutes. Check cluster health."
+      success_msg: "API server rollout completed successfully"
+
+  - name: "DEBUG: API server rollout complete"
+    debug:
+      msg: "API server rollout complete. OpenShift now accepts Hydra OIDC tokens."
+
+  # =============================================================================
+  # CREATE RBAC FOR OIDC USER
+  # =============================================================================
+  # The OIDC user will have a prefixed username: oidc:admin@example.com
+  # Create namespace-scoped Role and RoleBinding in istio-system ONLY.
+  # This restricts the user to istio-system namespace, proving per-user RBAC
+  # works (user should NOT see other namespaces like 'default').
+
+  - name: "Create Role for OIDC namespace viewer in istio-system"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: Role
+      name: oidc-namespace-viewer
+      namespace: istio-system
+      definition:
+        rules:
+        - apiGroups: [""]
+          resources: ["namespaces"]
+          verbs: ["get"]
+
+  - name: "Create RoleBinding for OIDC test user in istio-system"
+    k8s:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      name: oidc-user-namespace-viewer
+      namespace: istio-system
+      definition:
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: Role
+          name: oidc-namespace-viewer
+        subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: User
+          name: "oidc:{{ openid.username }}"
+
+  - name: "DEBUG: RBAC configured for OIDC user"
+    debug:
+      msg:
+      - "RBAC configured for OIDC user: oidc:{{ openid.username }}"
+      - "Role: oidc-namespace-viewer (namespace: istio-system)"
+      - "RoleBinding: oidc-user-namespace-viewer (namespace: istio-system)"
+      - "User can ONLY access istio-system namespace (not default or others)"
+
+  - name: "DEBUG: Display Hydra configuration"
+    debug:
+      msg:
+      - "Hydra is pre-installed and ready for OpenID testing"
+      - "Hydra Public Route: {{ hydra_public_route_url }}"
+      - "Hydra Admin Route: {{ hydra_admin_route_url }}"
+      - "Hydra UI Route: {{ hydra_ui_route_url }}"
+      - "OIDC Discovery: {{ hydra_public_route_url }}/.well-known/openid-configuration"
+
+  - name: "FAIL if Hydra is not pre-installed"
+    fail:
+      msg: |
+        Hydra is not pre-installed on this OpenShift cluster.
+
+        This test requires Hydra to be pre-installed. Start your OpenShift cluster with:
+          ./hack/crc-openshift.sh --hydra-enabled true start
+
+        Or if the cluster is already running, you can install Hydra manually with:
+          ./hack/ory-hydra/scripts/install-hydra.sh --cluster-type openshift
+    when: hydra_oidc_discovery.status != 200
+
+# Import the base prepare play to deploy the operator
+- name: Include the base prepare play to deploy the operator
+  import_playbook: ../default/prepare.yml

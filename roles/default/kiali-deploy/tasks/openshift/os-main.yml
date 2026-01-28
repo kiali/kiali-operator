@@ -101,6 +101,8 @@
   when:
   - is_openshift == True
   - kiali_vars.auth.strategy != "openshift"
+  # Ignore errors because OAuthClient API may not exist when OpenShift uses external OIDC authentication
+  ignore_errors: true
 
 - name: Delete OpenShift ClusterRole if no longer needed
   k8s:
