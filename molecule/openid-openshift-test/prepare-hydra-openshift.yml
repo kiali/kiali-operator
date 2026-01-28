@@ -363,28 +363,32 @@
   # CREATE RBAC FOR OIDC USER
   # =============================================================================
   # The OIDC user will have a prefixed username: oidc:admin@example.com
-  # Create ClusterRole and ClusterRoleBinding to grant namespace access
+  # Create namespace-scoped Role and RoleBinding in istio-system ONLY.
+  # This restricts the user to istio-system namespace, proving per-user RBAC
+  # works (user should NOT see other namespaces like 'default').
 
-  - name: "Create ClusterRole for OIDC namespace viewer"
+  - name: "Create Role for OIDC namespace viewer in istio-system"
     k8s:
       api_version: rbac.authorization.k8s.io/v1
-      kind: ClusterRole
+      kind: Role
       name: oidc-namespace-viewer
+      namespace: istio-system
       definition:
         rules:
         - apiGroups: [""]
           resources: ["namespaces"]
-          verbs: ["get", "list", "watch"]
+          verbs: ["get"]
 
-  - name: "Create ClusterRoleBinding for OIDC test user"
+  - name: "Create RoleBinding for OIDC test user in istio-system"
     k8s:
       api_version: rbac.authorization.k8s.io/v1
-      kind: ClusterRoleBinding
+      kind: RoleBinding
       name: oidc-user-namespace-viewer
+      namespace: istio-system
       definition:
         roleRef:
           apiGroup: rbac.authorization.k8s.io
-          kind: ClusterRole
+          kind: Role
           name: oidc-namespace-viewer
         subjects:
         - apiGroup: rbac.authorization.k8s.io
@@ -395,8 +399,9 @@
     debug:
       msg:
       - "RBAC configured for OIDC user: oidc:{{ openid.username }}"
-      - "ClusterRole: oidc-namespace-viewer"
-      - "ClusterRoleBinding: oidc-user-namespace-viewer"
+      - "Role: oidc-namespace-viewer (namespace: istio-system)"
+      - "RoleBinding: oidc-user-namespace-viewer (namespace: istio-system)"
+      - "User can ONLY access istio-system namespace (not default or others)"
 
   - name: "DEBUG: Display Hydra configuration"
     debug:

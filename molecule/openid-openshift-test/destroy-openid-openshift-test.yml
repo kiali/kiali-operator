@@ -30,19 +30,21 @@
   # CLEANUP OIDC USER RBAC RESOURCES
   # =============================================================================
 
-  - name: "Delete OIDC ClusterRoleBinding"
+  - name: "Delete OIDC RoleBinding from istio-system"
     k8s:
       api_version: rbac.authorization.k8s.io/v1
-      kind: ClusterRoleBinding
+      kind: RoleBinding
       name: oidc-user-namespace-viewer
+      namespace: istio-system
       state: absent
     ignore_errors: true
 
-  - name: "Delete OIDC ClusterRole"
+  - name: "Delete OIDC Role from istio-system"
     k8s:
       api_version: rbac.authorization.k8s.io/v1
-      kind: ClusterRole
+      kind: Role
       name: oidc-namespace-viewer
+      namespace: istio-system
       state: absent
     ignore_errors: true
 

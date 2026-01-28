@@ -420,3 +420,32 @@
   assert:
     that:
     - step10_response.json | length > 0
+
+# =============================================================================
+# STEP 11: NEGATIVE TEST - VERIFY PER-USER RBAC IS WORKING
+# =============================================================================
+# The OIDC user only has Role/RoleBinding in istio-system namespace.
+# If Kiali uses the user's OIDC token (correct), user sees ONLY istio-system.
+# If Kiali uses its ServiceAccount token (wrong), user sees ALL namespaces.
+
+- name: "Step 11: NEGATIVE TEST - Verify 'default' namespace is NOT in the response (proves per-user RBAC)"
+  assert:
+    that:
+    - step10_response.json | selectattr('name', 'equalto', 'default') | list | length == 0
+    fail_msg: "RBAC VALIDATION FAILED: User should NOT see 'default' namespace - this proves per-user RBAC is NOT working"
+    success_msg: "RBAC VALIDATION PASSED: User cannot see 'default' namespace - per-user RBAC is working correctly"
+
+- name: "Step 11: Verify 'istio-system' namespace IS in the response (proves access works)"
+  assert:
+    that:
+    - step10_response.json | selectattr('name', 'equalto', 'istio-system') | list | length == 1
+    fail_msg: "User should see 'istio-system' namespace but it was not in the response"
+    success_msg: "User can see 'istio-system' namespace as expected"
+
+- name: "Step 11: DEBUG - RBAC validation complete"
+  debug:
+    msg:
+    - "Per-user RBAC validated successfully!"
+    - "User CAN access: istio-system"
+    - "User CANNOT access: default (and other namespaces)"
+    - "This proves Kiali is using the user's OIDC token, not its ServiceAccount"

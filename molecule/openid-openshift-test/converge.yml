@@ -197,6 +197,12 @@
       - kiali_configmap.auth.openid.disable_rbac == false
       fail_msg: "Expected auth.openid.disable_rbac to be false for per-user RBAC"
 
+  - name: "Make sure cluster_wide_access is true"
+    assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == true
+      fail_msg: "Expected deployment.cluster_wide_access to be true"
+
   - name: "Assert that we can access Kiali console login screen that does not need authentication"
     uri:
       url: "{{ kiali_base_url }}/console"
