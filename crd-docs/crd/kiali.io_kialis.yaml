@@ -1627,6 +1627,22 @@ spec:
                 description: "This section defines what it means for nodes to be healthy. For more details, see https://kiali.io/docs/configuration/health/"
                 type: object
                 properties:
+                  compute:
+                    description: "Configuration for health pre-computation and caching."
+                    type: object
+                    properties:
+                      duration:
+                        description: "The time period over which health is calculated. Used as the rate interval for Prometheus queries. A value of '0s' means auto-calculate from elapsed time since last run."
+                        type: string
+                        default: "0s"
+                      refresh_interval:
+                        description: "The interval between health cache refreshes."
+                        type: string
+                        default: "2m"
+                      timeout:
+                        description: "The maximum time allowed for a single health refresh cycle. If exceeded, the refresh is cancelled and the next cycle starts on schedule."
+                        type: string
+                        default: "5m"
                   rate:
                     type: array
                     items:
