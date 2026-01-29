@@ -1,0 +1,316 @@
+---
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+
+  # =============================================================================
+  # DISCOVER ROUTE URLS AND CONFIGURE OPENID
+  # =============================================================================
+
+  - name: "Get Hydra public Route URL"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-public
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_public_route
+
+  - name: "Get Hydra admin Route URL"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-admin
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_admin_route
+
+  - name: "Get Hydra UI Route URL"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: hydra-ui
+      namespace: "{{ hydra.namespace }}"
+    register: hydra_ui_route
+
+  - name: "Set Hydra Route URL facts"
+    set_fact:
+      hydra_public_route_url: "https://{{ hydra_public_route.resources[0].spec.host }}"
+      hydra_admin_route_url: "https://{{ hydra_admin_route.resources[0].spec.host }}"
+      hydra_ui_route_url: "https://{{ hydra_ui_route.resources[0].spec.host }}"
+
+  - name: "Set openid.issuer_uri fact for Kiali CR template"
+    set_fact:
+      openid: "{{ openid | combine({'issuer_uri': hydra_public_route_url}) }}"
+
+  - name: "DEBUG: Show OpenID configuration"
+    debug:
+      msg:
+      - "Hydra Public Route URL: {{ hydra_public_route_url }}"
+      - "Hydra UI Route URL: {{ hydra_ui_route_url }}"
+      - "OpenID issuer_uri: {{ openid.issuer_uri }}"
+      - "OpenID client_id: {{ openid.client_id }}"
+
+  # =============================================================================
+  # REGISTER OAUTH2 CLIENT WITH KIALI ROUTE REDIRECT URI
+  # =============================================================================
+
+  - name: "Get Kiali Route URL (will be created by operator)"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: kiali
+      namespace: "{{ kiali.install_namespace }}"
+    register: kiali_route
+    ignore_errors: true
+
+  - name: "Set Kiali Route URL fact (if Route exists)"
+    set_fact:
+      kiali_route_url: "https://{{ kiali_route.resources[0].spec.host }}"
+    when: kiali_route.resources | length > 0
+
+  - name: "Set default Kiali Route URL pattern (if Route doesn't exist yet)"
+    set_fact:
+      kiali_route_url: "https://kiali-{{ kiali.install_namespace }}.apps.{{ (hydra_public_route.resources[0].spec.host | regex_replace('^[^.]+\\.', '')) }}"
+    when: kiali_route.resources | length == 0
+
+  - name: "DEBUG: Kiali Route URL for OAuth2 redirect"
+    debug:
+      msg: "Kiali Route URL: {{ kiali_route_url }}"
+
+  - name: "Wait for Hydra Admin API to be ready before registering client (via Route)"
+    uri:
+      url: "{{ hydra_admin_route_url }}/health/ready"
+      validate_certs: false
+    register: hydra_health
+    until: hydra_health.status == 200
+    retries: 30
+    delay: 5
+    ignore_errors: true
+
+  - name: "Delete existing OAuth2 client if it exists (to ensure correct redirect URIs)"
+    uri:
+      url: "{{ hydra_admin_route_url }}/admin/clients/{{ openid.client_id }}"
+      method: DELETE
+      status_code: [200, 204, 404]
+      validate_certs: false
+    ignore_errors: true
+
+  - name: "Register kiali-app OAuth2 client with Hydra (via Route)"
+    uri:
+      url: "{{ hydra_admin_route_url }}/admin/clients"
+      method: POST
+      body_format: json
+      body:
+        audience:
+        - additional-audience
+        - kiali-app
+        client_id: kiali-app
+        client_name: Kiali Application
+        client_secret: doNotTell
+        grant_types:
+        - authorization_code
+        - client_credentials
+        - refresh_token
+        redirect_uris:
+        - "{{ kiali_route_url }}/kiali"
+        - "{{ kiali_route_url }}"
+        response_types:
+        - code
+        - id_token
+        scope: openid profile email groups
+        subject_type: public
+        token_endpoint_auth_method: client_secret_basic
+      status_code: [200, 201]
+      validate_certs: false
+    register: client_registration
+
+  - name: "DEBUG: OAuth2 client registration result"
+    debug:
+      msg: "Client registration status: {{ client_registration.status }}"
+
+  # =============================================================================
+  # MAKE SURE KIALI IS INITIALIZED AND READY TO TEST
+  # =============================================================================
+
+  - import_tasks: ../common/tasks.yml
+
+  - name: "Get actual Kiali Route URL after operator creates it"
+    k8s_info:
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: kiali
+      namespace: "{{ kiali.install_namespace }}"
+    register: kiali_route_actual
+    until: kiali_route_actual.resources | length > 0
+    retries: 30
+    delay: 5
+
+  - name: "Set kiali_base_url for OpenID test"
+    set_fact:
+      kiali_base_url: "https://{{ kiali_route_actual.resources[0].spec.host }}"
+      kiali_route_host: "{{ kiali_route_actual.resources[0].spec.host }}"
+
+  - name: "DEBUG: Kiali base URL"
+    debug:
+      msg: "Kiali base URL: {{ kiali_base_url }}"
+
+  - import_tasks: ../asserts/pod_asserts.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  - name: "Create OIDC client secret for Kiali"
+    k8s:
+      api_version: v1
+      kind: Secret
+      name: kiali-oidc
+      namespace: "{{ kiali.install_namespace }}"
+      definition:
+        type: Opaque
+        data:
+          oidc-secret: "{{ 'doNotTell' | b64encode }}"
+
+  - import_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'deployment': {'secret_name': 'kiali-oidc'}}}, recursive=True) }}"
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  # Reload kiali_configmap after CR changes
+  - import_tasks: ../common/tasks.yml
+
+  - name: "Re-set kiali_base_url after tasks.yml reset"
+    set_fact:
+      kiali_base_url: "https://{{ kiali_route_host }}"
+
+  - name: "Make sure the test set the strategy to openid"
+    assert:
+      that:
+      - kiali_configmap.auth.strategy == "openid"
+      fail_msg: "Expected auth.strategy to be 'openid' but got '{{ kiali_configmap.auth.strategy }}'"
+
+  - name: "Make sure disable_rbac is false (per-user RBAC enabled)"
+    assert:
+      that:
+      - kiali_configmap.auth.openid.disable_rbac == false
+      fail_msg: "Expected auth.openid.disable_rbac to be false for per-user RBAC"
+
+  - name: "Make sure cluster_wide_access is true"
+    assert:
+      that:
+      - kiali_configmap.deployment.cluster_wide_access == true
+      fail_msg: "Expected deployment.cluster_wide_access to be true"
+
+  - name: "Assert that we can access Kiali console login screen that does not need authentication"
+    uri:
+      url: "{{ kiali_base_url }}/console"
+      validate_certs: false
+
+  - name: "Verify Kiali redirects unauthenticated API requests to OIDC provider"
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      validate_certs: false
+      follow_redirects: none
+    register: unauth_response
+    failed_when: unauth_response.status not in [302, 303, 401]
+
+  - name: "DEBUG: Unauthenticated API response"
+    debug:
+      msg: "Status: {{ unauth_response.status }}, redirect to OIDC provider confirmed"
+
+  - name: "Attempt HTTP Basic Auth against OpenID endpoint (should be rejected because Basic Auth is not supported for OpenID)"
+    uri:
+      url: "{{ kiali_base_url }}/api/authenticate"
+      user: "{{ openid.username }}"
+      password: "{{ openid.password }}"
+      status_code: 500
+      return_content: yes
+      validate_certs: false
+
+  - name: "DEBUG: Show test environment details"
+    debug:
+      msg:
+      - "Kiali base URL: {{ kiali_base_url }}"
+      - "OpenID username: {{ openid.username }}"
+      - "Client ID: {{ openid.client_id }}"
+      - "Hydra public Route: {{ hydra_public_route_url }}"
+      - "Hydra UI Route: {{ hydra_ui_route_url }}"
+
+  # =============================================================================
+  # OAUTH2 AUTHENTICATION TEST (AUTO-DISCOVERY)
+  # =============================================================================
+
+  - name: "=== OAUTH2 AUTHENTICATION TEST (AUTO-DISCOVERY) ==="
+    debug:
+      msg: "Testing OAuth2 authentication flow using auto-discovery (/.well-known/openid-configuration)"
+
+  - name: "OAuth2 Auto-Discovery: Run OIDC handshaking test"
+    include_tasks: oidc-handshaking.yml
+
+  # =============================================================================
+  # AUTO-DISCOVERY VALIDATION
+  # =============================================================================
+
+  - name: "=== AUTO-DISCOVERY VALIDATION ==="
+    debug:
+      msg: "Validating that Kiali used auto-discovery (/.well-known/openid-configuration) without discovery_override"
+
+  - name: "Auto-Discovery: Get Kiali pod name"
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - app.kubernetes.io/name=kiali
+    register: kiali_pods_autodiscovery
+
+  - name: "Auto-Discovery: Get Kiali pod logs to verify well-known endpoint was accessed"
+    k8s_log:
+      name: "{{ kiali_pods_autodiscovery.resources[0].metadata.name }}"
+      namespace: "{{ kiali.install_namespace }}"
+      container: kiali
+    register: kiali_logs_autodiscovery
+    when: kiali_pods_autodiscovery.resources | length > 0
+
+  - name: "Auto-Discovery: Assert Kiali DID use auto-discovery from provider"
+    assert:
+      that:
+      - "'Using OpenID auto-discovery from provider' in kiali_logs_autodiscovery.log"
+      fail_msg: "FAILED: Kiali did not use auto-discovery from provider. This suggests auto-discovery is not working as expected."
+      success_msg: "SUCCESS: Kiali used OpenID auto-discovery from provider as expected when discovery_override was not configured."
+    when: kiali_logs_autodiscovery.log is defined
+
+  # =============================================================================
+  # MULTI-AUDIENCE CONFIGURATION VALIDATION
+  # =============================================================================
+
+  - name: "=== MULTI-AUDIENCE CONFIGURATION VALIDATION ==="
+    debug:
+      msg: "Validating that kiali-app client supports multiple audiences"
+
+  - name: "Config: Verify kiali-app client has multi-audience configuration (via Route)"
+    uri:
+      url: "{{ hydra_admin_route_url }}/admin/clients/{{ openid.client_id }}"
+      method: GET
+      return_content: yes
+      validate_certs: false
+    register: kiali_client_config
+
+  - name: "Config: Assert kiali-app client supports multiple audiences, kiali-app being one of them"
+    assert:
+      that:
+      - kiali_client_config.json.audience is defined
+      - kiali_client_config.json.audience | length > 1
+      - "'kiali-app' in kiali_client_config.json.audience"
+      fail_msg: "FAILED: kiali-app confidential client does not have expected multi-audience configuration. This is required for proper OpenID Connect integration."
+      success_msg: "SUCCESS: Multi-audience OAuth2 integration validated - kiali-app confidential client supports multiple audiences as expected."
+
+  - name: "=== OPENID-OPENSHIFT-TEST COMPLETED SUCCESSFULLY ==="
+    debug:
+      msg:
+      - "All OpenID Connect authentication tests passed!"
+      - "Kiali successfully authenticated using Hydra as OIDC provider on OpenShift"
+      - "Auto-discovery working correctly"
+      - "disable_rbac: false (per-user RBAC) configuration validated"

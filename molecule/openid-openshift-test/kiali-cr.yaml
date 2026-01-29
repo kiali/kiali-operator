@@ -1,0 +1,33 @@
+apiVersion: kiali.io/v1alpha1
+kind: Kiali
+metadata:
+  name: kiali
+spec:
+  version: {{ kiali.spec_version }}
+  auth:
+    strategy: openid
+    openid:
+      client_id: {{ openid.client_id }}
+      disable_rbac: false
+      insecure_skip_verify_tls: false
+      issuer_uri: {{ openid.issuer_uri }}
+      username_claim: {{ openid.username_claim }}
+  deployment:
+    cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
+    image_name: "{{ kiali.image_name }}"
+    image_pull_policy: {{ kiali.image_pull_policy }}
+    image_version: "{{ kiali.image_version }}"
+    logger:
+      log_level: trace
+    namespace: {{ kiali.install_namespace }}
+    probes:
+      liveness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      readiness:
+        initial_delay_seconds: 1
+        period_seconds: 1
+      startup:
+        failure_threshold: 60
+        initial_delay_seconds: 1
+        period_seconds: 1
