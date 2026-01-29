@@ -447,6 +447,11 @@ spec:
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
   health_config:
+    # default: compute uses auto-calculated duration with 2m refresh interval
+    compute:
+      duration: "0s"
+      refresh_interval: "2m"
+      timeout: "5m"
     # default: rate is an empty list
     rate:
     - namespace: ".*"
