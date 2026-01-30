@@ -57,6 +57,11 @@ spec:
     image_version: "{{ kiali.image_version }}"
     ingress:
       enabled: true
+    istio_gateway:
+      enabled: false
+      gateway: "istio-system/istio-ingressgateway"
+      hosts: []
+      timeout: "0s"
     logger:
       log_level: info
     namespace: {{ kiali.install_namespace }}

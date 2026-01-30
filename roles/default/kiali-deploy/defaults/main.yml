@@ -97,6 +97,11 @@ kiali_defaults:
       class_name: "nginx"
       #enabled:
       #override_yaml:
+    istio_gateway:
+      enabled: false
+      gateway: "istio-system/istio-ingressgateway"
+      hosts: []
+      timeout: "0s"
     instance_name: "kiali"
     logger:
       log_format: "text"

@@ -1,0 +1,26 @@
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: {{ kiali_vars.deployment.instance_name }}
+  namespace: "{{ kiali_vars.deployment.namespace }}"
+  labels: {{ kiali_resource_metadata_labels }}
+spec:
+  hosts:
+{% for host in kiali_vars.deployment.istio_gateway.hosts %}
+  - "{{ host }}"
+{% endfor %}
+  gateways:
+  - "{{ kiali_vars.deployment.istio_gateway.gateway }}"
+  http:
+  - match:
+    - uri:
+        prefix: {{ kiali_vars.server.web_root }}
+{% if kiali_vars.deployment.istio_gateway.timeout != "0s" %}
+    timeout: {{ kiali_vars.deployment.istio_gateway.timeout }}
+{% endif %}
+    route:
+    - destination:
+        host: {{ kiali_vars.deployment.instance_name }}.{{ kiali_vars.deployment.namespace }}.svc.cluster.local
+        port:
+          number: {{ kiali_vars.server.port }}
+
