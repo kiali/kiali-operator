@@ -1616,6 +1616,10 @@ spec:
                         description: "Set to true in order to enable GRPC connections between Kiali and Jaeger which will speed up the queries. In some setups you might not be able to use GRPC (e.g. if Jaeger is behind some reverse proxy that doesn't support it)."
                         type: boolean
                         default: true
+                      use_waypoint_name:
+                        description: "Set to true in order to look for traces using the waypoint service name and not the actual service. Ex. To find traces for Istio versions earlier than 1.28."
+                        type: boolean
+                        default: false
                       whitelist_istio_system:
                         description: "Kiali will get the traces of these services found in the Istio control plane namespace."
                         type: array

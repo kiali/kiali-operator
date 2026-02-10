@@ -444,6 +444,7 @@ spec:
         tenant: ""
         url_format: "grafana"
       use_grpc: true
+      use_waypoint_name: false
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
   health_config:
