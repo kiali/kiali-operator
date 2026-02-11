@@ -449,9 +449,9 @@ spec:
 
   health_config:
     compute:
-      duration: "0s"
-      refresh_interval: "2m"
-      timeout: "5m"
+      duration: "5m"
+      refresh_interval: "3m"
+      timeout: "10m"
     # default: rate is an empty list
     rate:
     - namespace: ".*"

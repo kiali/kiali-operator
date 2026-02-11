@@ -1636,17 +1636,17 @@ spec:
                     type: object
                     properties:
                       duration:
-                        description: "The time period over which health is calculated. Used as the rate interval for Prometheus queries. A value of '0s' means auto-calculate from elapsed time since last run."
+                        description: "The time period over which health is calculated. Used as the rate interval for Prometheus queries. Minimum is '1m'."
                         type: string
-                        default: "0s"
+                        default: "5m"
                       refresh_interval:
                         description: "The interval between health cache refreshes."
                         type: string
-                        default: "2m"
+                        default: "3m"
                       timeout:
                         description: "The maximum time allowed for a single health refresh cycle. If exceeded, the refresh is cancelled and the next cycle starts on schedule."
                         type: string
-                        default: "5m"
+                        default: "10m"
                   rate:
                     type: array
                     items:
