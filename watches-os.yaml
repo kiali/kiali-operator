@@ -5,7 +5,6 @@
   group: kiali.io
   kind: Kiali
   playbook: playbooks/kiali-deploy.yml
-  reconcilePeriod: "0s"
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: True
@@ -17,7 +16,6 @@
   group: ""
   kind: Secret
   playbook: playbooks/kiali-multi-cluster-secret-detected.yml
-  reconcilePeriod: "0s"
   manageStatus: False
   watchDependentResources: False
   watchClusterScopedResources: False
@@ -30,7 +28,6 @@
   group: kiali.io
   kind: OSSMConsole
   playbook: playbooks/ossmconsole-deploy.yml
-  reconcilePeriod: "0s"
   watchDependentResources: False
   watchClusterScopedResources: False
   snakeCaseParameters: False
