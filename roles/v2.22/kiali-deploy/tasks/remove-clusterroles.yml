@@ -1,0 +1,9 @@
+- name: Delete unused Kiali cluster roles
+  ignore_errors: yes
+  k8s:
+    state: absent
+    continue_on_error: false
+    template:
+    - clusterroles-to-remove.yml
+  retries: 6
+  delay: 10
