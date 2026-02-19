@@ -1,0 +1,7 @@
+ossmconsole_vars_remove:
+  deployment: |
+    {%- if deployment is defined and deployment is iterable -%}
+    {{ ossmconsole_defaults.deployment | combine((deployment | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ ossmconsole_defaults.deployment }}
+    {%- endif -%}
