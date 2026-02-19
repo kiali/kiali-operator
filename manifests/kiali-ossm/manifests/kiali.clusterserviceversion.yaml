@@ -221,7 +221,9 @@ spec:
   - name: operator
     image: "${KIALI_OPERATOR}"
   - name: kiali_default
-    image: "${KIALI_2_17}"
+    image: "${KIALI_2_22}"
+  - name: kiali_v2_22
+    image: "${KIALI_2_22}"
   - name: kiali_v2_17
     image: "${KIALI_2_17}"
   - name: kiali_v2_11
@@ -231,7 +233,9 @@ spec:
   - name: kiali_v1_73
     image: "${KIALI_1_73}"
   - name: ossmconsole_default
-    image: "${OSSMCONSOLE_2_17}"
+    image: "${OSSMCONSOLE_2_22}"
+  - name: ossmconsole_v2_22
+    image: "${OSSMCONSOLE_2_22}"
   - name: ossmconsole_v2_17
     image: "${OSSMCONSOLE_2_17}"
   - name: ossmconsole_v2_11
@@ -353,7 +357,9 @@ spec:
                 - name: WATCHES_FILE
                   value: "watches-os.yaml"
                 - name: RELATED_IMAGE_kiali_default
-                  value: "${KIALI_2_17}"
+                  value: "${KIALI_2_22}"
+                - name: RELATED_IMAGE_kiali_v2_22
+                  value: "${KIALI_2_22}"
                 - name: RELATED_IMAGE_kiali_v2_17
                   value: "${KIALI_2_17}"
                 - name: RELATED_IMAGE_kiali_v2_11
@@ -363,7 +369,9 @@ spec:
                 - name: RELATED_IMAGE_kiali_v1_73
                   value: "${KIALI_1_73}"
                 - name: RELATED_IMAGE_ossmconsole_default
-                  value: "${OSSMCONSOLE_2_17}"
+                  value: "${OSSMCONSOLE_2_22}"
+                - name: RELATED_IMAGE_ossmconsole_v2_22
+                  value: "${OSSMCONSOLE_2_22}"
                 - name: RELATED_IMAGE_ossmconsole_v2_17
                   value: "${OSSMCONSOLE_2_17}"
                 - name: RELATED_IMAGE_ossmconsole_v2_11
