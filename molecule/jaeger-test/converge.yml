@@ -72,7 +72,7 @@
   # Create external access to Jaeger for testing - cluster-specific approach.
   # NodePorts are auto-allocated to avoid collisions with other services (e.g. Kiali LoadBalancer).
   - name: Create NodePort service for external Jaeger access (Minikube/Kind)
-    kubernetes.core.k8s:
+    k8s:
       definition:
         apiVersion: v1
         kind: Service
@@ -93,7 +93,7 @@
     when: is_minikube or is_kind
 
   - name: Get allocated NodePorts for Jaeger external service
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: v1
       kind: Service
       name: jaeger-query-external
@@ -102,7 +102,7 @@
     when: is_minikube or is_kind
 
   - name: Create Route for external Jaeger access (OpenShift)
-    kubernetes.core.k8s:
+    k8s:
       definition:
         apiVersion: route.openshift.io/v1
         kind: Route
@@ -131,7 +131,7 @@
     when: is_kind
 
   - name: Get OpenShift Route for Jaeger
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: route.openshift.io/v1
       kind: Route
       name: jaeger-query-external
@@ -167,7 +167,7 @@
 
   # Configure Istio to send traces to Jaeger instead of Zipkin (after Jaeger services exist)
   - name: Get current Istio mesh configuration
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: v1
       kind: ConfigMap
       namespace: istio-system
@@ -183,7 +183,7 @@
       updated_mesh_config: "{{ current_mesh_config | combine({'defaultProviders': {'tracing': ['jaeger']}}, recursive=True) }}"
 
   - name: Patch Istio ConfigMap with Jaeger tracing configuration
-    kubernetes.core.k8s:
+    k8s:
       api_version: v1
       kind: ConfigMap
       namespace: istio-system
@@ -194,7 +194,7 @@
       merge_type: merge
 
   - name: Restart istiod to pick up new tracing configuration
-    kubernetes.core.k8s:
+    k8s:
       api_version: apps/v1
       kind: Deployment
       namespace: istio-system
@@ -207,7 +207,7 @@
                 kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
 
   - name: Wait for istiod to restart
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: apps/v1
       kind: Deployment
       namespace: istio-system
