@@ -69,9 +69,10 @@
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../common/tasks.yml
 
-  # Create external access to Jaeger for testing - cluster-specific approach
+  # Create external access to Jaeger for testing - cluster-specific approach.
+  # NodePorts are auto-allocated to avoid collisions with other services (e.g. Kiali LoadBalancer).
   - name: Create NodePort service for external Jaeger access (Minikube/Kind)
-    kubernetes.core.k8s:
+    k8s:
       definition:
         apiVersion: v1
         kind: Service
@@ -86,15 +87,22 @@
           - name: jaeger-query
             port: 16686
             targetPort: 16686
-            nodePort: 30686
           - name: jaeger-query-grpc
             port: 16685
             targetPort: 16685
-            nodePort: 30685
+    when: is_minikube or is_kind
+
+  - name: Get allocated NodePorts for Jaeger external service
+    k8s_info:
+      api_version: v1
+      kind: Service
+      name: jaeger-query-external
+      namespace: istio-system
+    register: jaeger_external_svc
     when: is_minikube or is_kind
 
   - name: Create Route for external Jaeger access (OpenShift)
-    kubernetes.core.k8s:
+    k8s:
       definition:
         apiVersion: route.openshift.io/v1
         kind: Route
@@ -114,16 +122,16 @@
   # Determine external Jaeger URL based on cluster type
   - name: Set Jaeger external URL for Minikube
     set_fact:
-      jaeger_external_url: "http://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}:30686"
+      jaeger_external_url: "http://{{ lookup('env', 'MOLECULE_MINIKUBE_IP') }}:{{ (jaeger_external_svc.resources[0].spec.ports | selectattr('name', 'equalto', 'jaeger-query') | first).nodePort }}"
     when: is_minikube
 
   - name: Set Jaeger external URL for Kind
     set_fact:
-      jaeger_external_url: "http://{{ lookup('env', 'MOLECULE_KIND_IP') }}:30686"
+      jaeger_external_url: "http://{{ lookup('env', 'MOLECULE_KIND_IP') }}:{{ (jaeger_external_svc.resources[0].spec.ports | selectattr('name', 'equalto', 'jaeger-query') | first).nodePort }}"
     when: is_kind
 
   - name: Get OpenShift Route for Jaeger
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: route.openshift.io/v1
       kind: Route
       name: jaeger-query-external
@@ -159,7 +167,7 @@
 
   # Configure Istio to send traces to Jaeger instead of Zipkin (after Jaeger services exist)
   - name: Get current Istio mesh configuration
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: v1
       kind: ConfigMap
       namespace: istio-system
@@ -175,7 +183,7 @@
       updated_mesh_config: "{{ current_mesh_config | combine({'defaultProviders': {'tracing': ['jaeger']}}, recursive=True) }}"
 
   - name: Patch Istio ConfigMap with Jaeger tracing configuration
-    kubernetes.core.k8s:
+    k8s:
       api_version: v1
       kind: ConfigMap
       namespace: istio-system
@@ -186,7 +194,7 @@
       merge_type: merge
 
   - name: Restart istiod to pick up new tracing configuration
-    kubernetes.core.k8s:
+    k8s:
       api_version: apps/v1
       kind: Deployment
       namespace: istio-system
@@ -199,7 +207,7 @@
                 kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
 
   - name: Wait for istiod to restart
-    kubernetes.core.k8s_info:
+    k8s_info:
       api_version: apps/v1
       kind: Deployment
       namespace: istio-system
