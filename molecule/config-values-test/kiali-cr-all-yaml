@@ -86,7 +86,6 @@ spec:
       cipher_suites: []
       max_version: ""
       min_version: ""
-      source: ""
 
   extensions:
   - enabled: false
