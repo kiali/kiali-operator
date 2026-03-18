@@ -209,6 +209,7 @@ NOTE: If you have never run the Molecule tests before, the Molecule container im
 - [ ] Set the default value in the link:https://github.com/kiali/helm-charts/tree/master/kiali-server/values.yaml[Server Helm Chart values.yaml]
 - [ ] Ensure each group of settings are alphabetically sorted in all the files where the new setting was added.
 - [ ] If appropriate, add some tests to the link:./molecule/config-values-test/converge.yml[Molecule config-values-test]
+- [ ] If a CRD property was added, removed, or modified, update the link:./molecule/config-values-test/kiali-cr-all-yaml[comprehensive molecule CR]
 
 ### Are You Altering a Kiali Monitoring Dashboard Template?
 
