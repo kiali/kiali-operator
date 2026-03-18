@@ -62,6 +62,11 @@ spec:
     namespace: {{ kiali.install_namespace }}
     remote_cluster_resources_only: false
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    strategy:
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+      type: RollingUpdate
 
   extensions:
   - enabled: false
