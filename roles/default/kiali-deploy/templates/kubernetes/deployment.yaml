@@ -13,10 +13,14 @@ spec:
       app.kubernetes.io/name: kiali
       app.kubernetes.io/instance: {{ kiali_vars.deployment.instance_name }}
   strategy:
+{% if kiali_vars.deployment.strategy | length > 0 %}
+    {{ kiali_vars.deployment.strategy | to_nice_yaml(indent=0) | trim | indent(4) }}
+{% else %}
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
     type: RollingUpdate
+{% endif %}
   template:
     metadata:
       name: {{ kiali_vars.deployment.instance_name }}

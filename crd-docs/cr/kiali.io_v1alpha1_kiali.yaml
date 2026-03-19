@@ -265,6 +265,7 @@ spec:
       svcAnnotation: "svcAnnotationValue"
     # default: service_type is undefined
     service_type: "NodePort"
+    strategy: {}
     # default: tolerations is an empty list
     tolerations:
     - key: "example-key"

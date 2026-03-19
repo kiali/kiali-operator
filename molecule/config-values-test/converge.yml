@@ -123,6 +123,15 @@
       - kiali_pod_container.startupProbe.initialDelaySeconds == 30
       - kiali_pod_container.startupProbe.periodSeconds == 10
 
+  - name: Test the default deployment strategy is RollingUpdate
+    vars:
+      kiali_deployment_spec: "{{ kiali_deployment.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_deployment_spec.strategy.type == "RollingUpdate"
+      - kiali_deployment_spec.strategy.rollingUpdate.maxSurge == 1
+      - kiali_deployment_spec.strategy.rollingUpdate.maxUnavailable == 1
+
   - name: Test the default kiali_internal is empty
     assert:
       that:
@@ -366,6 +375,16 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'additional_pod_containers_yaml': containers}}}, recursive=True) }}"
 
+  - name: Set custom deployment strategy for zero-downtime rolling updates
+    vars:
+      custom_strategy:
+        rollingUpdate:
+          maxSurge: 2
+          maxUnavailable: 0
+        type: RollingUpdate
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'strategy': custom_strategy}}}, recursive=True) }}"
+
   - name: Add initContainers for testing
     vars:
       init_containers:
@@ -593,6 +612,15 @@
       - kiali_pod_spec.dnsPolicy == "ClusterFirst"
       - kiali_pod_spec.dnsConfig.options[0].name == "ndots"
       - kiali_pod_spec.dnsConfig.options[0].value == "1"
+
+  - name: Test the custom deployment strategy was applied
+    vars:
+      kiali_deployment_spec: "{{ kiali_deployment.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_deployment_spec.strategy.type == "RollingUpdate"
+      - kiali_deployment_spec.strategy.rollingUpdate.maxSurge == 2
+      - kiali_deployment_spec.strategy.rollingUpdate.maxUnavailable == 0
 
   - name: Test the extensions settings
     assert:

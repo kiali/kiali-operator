@@ -901,6 +901,10 @@ spec:
                   service_type:
                     description: "The Kiali service type. Kubernetes determines what values are valid. Common values are 'NodePort', 'ClusterIP', and 'LoadBalancer'."
                     type: string
+                  strategy:
+                    description: "Configures the update strategy for the Kiali deployment. If not specified, a RollingUpdate strategy is used with maxSurge=1 and maxUnavailable=1. See the Kubernetes documentation on Deployment Strategy for details."
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
                   tls_config:
                     description: "TLS policy configuration. When source is 'auto' on OpenShift, the APIServer TLSSecurityProfile is used. Otherwise, the explicit config values are enforced."
                     type: object

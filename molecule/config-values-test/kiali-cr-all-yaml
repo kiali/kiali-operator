@@ -1,6 +1,7 @@
 # This is a Kiali CR that contains almost all the possible settings
 # as defined in the Kiali CRD schema. Some are not defined here; they are tested in
 # other places and molecule tests (e.g. deployment.affinity).
+# Deprecated fields are not included below.
 #
 # All values are set to their default values except where otherwise noted.
 #
@@ -20,7 +21,23 @@ spec:
     icon_annotation: "kiali.io/api-type"
 
   auth:
+    openid:
+      discovery_override:
+        authorization_endpoint: ""
+        jwks_uri: ""
+        token_endpoint: ""
+        userinfo_endpoint: ""
     strategy: "anonymous"
+
+  chat_ai:
+    default_provider: ""
+    enabled: false
+    providers: []
+    store_config:
+      enabled: true
+      max_cache_memory_mb: 1024
+      reduce_threshold: 15
+      reduce_with_ai: false
 
   installation_tag: "config-values-test-installation"
 
@@ -60,8 +77,15 @@ spec:
     logger:
       log_level: info
     namespace: {{ kiali.install_namespace }}
+    network_policy:
+      enabled: true
     remote_cluster_resources_only: false
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
+    strategy: {}
+    tls_config:
+      cipher_suites: []
+      max_version: ""
+      min_version: ""
 
   extensions:
   - enabled: false
@@ -133,6 +157,7 @@ spec:
       external_url: "https://perses.example.com"
       internal_url: "http://perses.istio-system:4000"
       project: "istio-monitoring"
+      url_format: ""
     prometheus:
       custom_headers:
         X-Prometheus-Header: "prometheus-value"
@@ -156,12 +181,20 @@ spec:
         cache_capacity: 200
         cache_enabled: true
         datasource_uid: "tempo-uid"
+        name: ""
+        namespace: ""
         org_id: "1"
+        tenant: ""
         url_format: "grafana"
-      use_grpc: false
+      use_grpc: true
+      use_waypoint_name: false
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
   health_config:
+    compute:
+      duration: "5m"
+      refresh_interval: "3m"
+      timeout: "10m"
     rate:
     - namespace: ".*"
       kind: ".*"
