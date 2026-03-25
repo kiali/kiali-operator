@@ -2143,7 +2143,7 @@ spec:
                         type: object
                         properties:
                           enabled:
-                            description: "When true, Kiali exposes general internal performance metrics (API timings, cache counters, etc.) on the metrics port. The metrics HTTP listener is also started when health_status.enabled is true, even when this is false, so health status gauges can be scraped without enabling performance metrics."
+                            description: "The metrics HTTP listener is started when either this or health_status.enabled is true."
                             type: boolean
                             default: true
                           health_status:
@@ -2151,7 +2151,7 @@ spec:
                             type: object
                             properties:
                               enabled:
-                                description: "When true, Kiali exports kiali_health_status during health cache refresh. The metrics port must be reachable (the listener starts when this or metrics.enabled is true)."
+                                description: "When true, Kiali exports kiali_health_status metrics during health cache refresh."
                                 type: boolean
                                 default: false
                               max_consecutive_na:
