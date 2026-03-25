@@ -2143,9 +2143,22 @@ spec:
                         type: object
                         properties:
                           enabled:
-                            description: "When true, the metrics endpoint will be available for Prometheus to scrape."
+                            description: "The metrics HTTP listener is started when either this or health_status.enabled is true."
                             type: boolean
                             default: true
+                          health_status:
+                            description: "Settings for the kiali_health_status Prometheus gauge (per-entity health from the health cache refresh). Independent of metrics.enabled."
+                            type: object
+                            properties:
+                              enabled:
+                                description: "When true, Kiali exports kiali_health_status metrics during health cache refresh."
+                                type: boolean
+                                default: false
+                              max_consecutive_na:
+                                description: "Number of consecutive health refresh cycles an entity may report NA or be missing before its kiali_health_status series is removed. Values less than or equal to 0 use the server default (3)."
+                                type: integer
+                                default: 3
+                                minimum: 0
                           port:
                             description: "The port that the server will bind to in order to receive metric requests. This is the port Prometheus will need to scrape when collecting metrics from Kiali."
                             type: integer
