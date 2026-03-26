@@ -579,6 +579,9 @@ spec:
     observability:
       metrics:
         enabled: true
+        health_status:
+          enabled: false
+          max_consecutive_na: 3
         port: 9090
       tracing:
         collector_type: "otel"
