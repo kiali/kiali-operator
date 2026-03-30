@@ -17,7 +17,7 @@ metadata:
     support: Kiali
     description: "Kiali project provides answers to the questions: What microservices are part of my Istio service mesh and how are they connected?"
     repository: https://github.com/kiali/kiali
-    createdAt: 2026-03-09T07:58:38Z
+    createdAt: 2026-03-30T08:29:57Z
     alm-examples: |-
       [
         {
