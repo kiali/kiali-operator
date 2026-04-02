@@ -1641,7 +1641,7 @@ spec:
                     properties:
                       duration:
                         default: "5m"
-                        description: "The time period over which health is calculated. Used as the rate interval for Prometheus queries. Value must be one of: `1m`, `2m`, `5m`, `10m`, `30m`, `1h`, `3h`, `6h`, `12h`, `1d`, `7d`, or `30d`"
+                        description: "The time period over which health is calculated. Used as the rate interval for Prometheus queries."
                         enum: ["1m", "2m", "5m", "10m", "30m", "1h", "3h", "6h", "12h", "1d", "7d", "30d"]
                         type: string
                       refresh_interval:
