@@ -481,7 +481,6 @@ spec:
 
   kiali_feature_flags:
     authz:
-      # default: require_namespace_get is false
       require_namespace_get: false
     clustering:
       enable_exec_provider: false
