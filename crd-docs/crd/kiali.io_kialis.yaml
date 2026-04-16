@@ -1741,6 +1741,7 @@ spec:
                           is trusted without per-namespace GET checks. Enable this in multi-tenant environments
                           where LIST permission is granted broadly but GET is restricted per namespace.
                         type: boolean
+                        default: false
                   certificates_information_indicators:
                     description: "DEPRECATED AFTER v1.73: Settings for certificate information indicators."
                     type: object
