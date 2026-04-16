@@ -1730,6 +1730,17 @@ spec:
                 description: "Kiali features that can be enabled or disabled."
                 type: object
                 properties:
+                  authz:
+                    description: "Authorization-related feature flags."
+                    type: object
+                    properties:
+                      require_namespace_get:
+                        description: |
+                          When true, a user must have GET permission on a namespace for it to be visible,
+                          even if the user has LIST permission. When false (the default), a successful LIST
+                          is trusted without per-namespace GET checks. Enable this in multi-tenant environments
+                          where LIST permission is granted broadly but GET is restricted per namespace.
+                        type: boolean
                   certificates_information_indicators:
                     description: "DEPRECATED AFTER v1.73: Settings for certificate information indicators."
                     type: object

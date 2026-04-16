@@ -315,6 +315,8 @@ kiali_defaults:
     version_label_name: ""
 
   kiali_feature_flags:
+    authz:
+      require_namespace_get: false
     clustering:
       enable_exec_provider: false
     custom_workload_types: []
