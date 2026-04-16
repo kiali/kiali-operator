@@ -480,6 +480,8 @@ spec:
     version_label_name: ""
 
   kiali_feature_flags:
+    authz:
+      require_namespace_get: false
     clustering:
       enable_exec_provider: false
     # default: custom_workload_types is an empty list

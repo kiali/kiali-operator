@@ -170,6 +170,9 @@ jobs:
       with:
         node-version: '24'
 
+    - name: Enable corepack for Yarn 4
+      run: corepack enable
+
     - name: Free Disk Space
       run: |
         echo "=== Disk space before cleanup ==="
