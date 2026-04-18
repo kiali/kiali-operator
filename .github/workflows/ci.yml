@@ -22,8 +22,10 @@ jobs:
         git fetch origin master:refs/remotes/origin/master || true
 
     - name: Validate OLM metadata
+      env:
+        YQ_VERSION: v4.40.5
       run: |
-        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
         sudo chmod +x /usr/local/bin/yq
         make validate
 

@@ -37,8 +37,10 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Install yq
+      env:
+        YQ_VERSION: v4.40.5
       run: |
-        sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+        sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
         sudo chmod +x /usr/local/bin/yq
 
     - name: Verify CRD defaults match Ansible defaults

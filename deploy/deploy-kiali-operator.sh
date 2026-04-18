@@ -206,7 +206,7 @@ while [[ $# -gt 0 ]]; do
       shift;shift
       ;;
     -hs|--helm-set)
-      HELM_SET_ARGS="${HELM_SET_ARGS:-} --set $2"
+      HELM_SET_ARGS="${HELM_SET_ARGS:-} --set \"$2\""
       shift;shift
       ;;
     -kcn|--kiali-cr-namespace)
@@ -553,7 +553,7 @@ get_helm() {
     fi
     echo "Using helm found here: ${HELM}"
   else
-    if (! (which ${HELM} 2>/dev/null 1>&2 && ${HELM} version --short 2>/dev/null | grep -q "v3.[^01]")); then
+    if (! (which "${HELM}" 2>/dev/null 1>&2 && "${HELM}" version --short 2>/dev/null | grep -q "v3.[^01]")); then
       echo "You specified an invalid helm binary. This must be helm version 3.2+: ${HELM}"
     fi
   fi
@@ -726,15 +726,15 @@ ${HELM} upgrade \
   --create-namespace \
   --atomic \
   --cleanup-on-fail \
-  --namespace ${OPERATOR_NAMESPACE} \
+  --namespace "${OPERATOR_NAMESPACE}" \
   ${HELM_SET_ARGS} \
-  --set cr.create=false \
-  --set image.repo=${OPERATOR_IMAGE_NAME} \
-  --set image.pullPolicy=${OPERATOR_IMAGE_PULL_POLICY} \
-  --set image.tag=${OPERATOR_IMAGE_VERSION} \
-  --set watchNamespace=${OPERATOR_WATCH_NAMESPACE} \
-  --set clusterRoleCreator=${OPERATOR_CLUSTER_ROLE_CREATOR} \
-  --set onlyViewOnlyMode=${OPERATOR_VIEW_ONLY_MODE} \
+  --set "cr.create=false" \
+  --set "image.repo=${OPERATOR_IMAGE_NAME}" \
+  --set "image.pullPolicy=${OPERATOR_IMAGE_PULL_POLICY}" \
+  --set "image.tag=${OPERATOR_IMAGE_VERSION}" \
+  --set "watchNamespace=${OPERATOR_WATCH_NAMESPACE}" \
+  --set "clusterRoleCreator=${OPERATOR_CLUSTER_ROLE_CREATOR}" \
+  --set "onlyViewOnlyMode=${OPERATOR_VIEW_ONLY_MODE}" \
   --debug \
   ${DRY_RUN_ARG} \
   kiali-operator \
@@ -748,9 +748,9 @@ fi
 # Wait for the operator to start up so we can confirm it is OK.
 if [ "${DRY_RUN:-}" != "true" ]; then
   echo "Waiting for the operator to start..."
-  ${CLIENT_EXE} wait --timeout=120s --for=condition=Ready -n ${OPERATOR_NAMESPACE} $(${CLIENT_EXE} get pods -l 'app.kubernetes.io/name=kiali-operator' -n ${OPERATOR_NAMESPACE} -o name) && _OPERATOR_STARTED="true"
+  "${CLIENT_EXE}" wait --timeout=120s --for=condition=Ready -n "${OPERATOR_NAMESPACE}" $("${CLIENT_EXE}" get pods -l 'app.kubernetes.io/name=kiali-operator' -n "${OPERATOR_NAMESPACE}" -o name) && _OPERATOR_STARTED="true"
 
-  if [ -z ${_OPERATOR_STARTED:-} ]; then
+  if [ -z "${_OPERATOR_STARTED:-}" ]; then
     echo "ERROR: The Kiali operator is not running yet. Please make sure it was deployed successfully."
     exit 1
   else
@@ -863,7 +863,7 @@ build_spec_list_value() {
 }
 
 if [ "${KIALI_CR:-}" != "" ]; then
-  ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${KIALI_CR_NAMESPACE} -f "${KIALI_CR}"
+  "${CLIENT_EXE}" apply ${DRY_RUN_ARG} -n "${KIALI_CR_NAMESPACE}" -f "${KIALI_CR}"
   if [ "$?" != "0" ]; then
     echo "ERROR: Failed to deploy Kiali from custom Kiali CR [${KIALI_CR}]. Aborting."
     exit 1
@@ -891,7 +891,7 @@ spec:
 EOF
 )
 
-  echo "${_KIALI_CR_YAML}" | ${CLIENT_EXE} apply ${DRY_RUN_ARG} -n ${KIALI_CR_NAMESPACE} -f -
+  echo "${_KIALI_CR_YAML}" | "${CLIENT_EXE}" apply ${DRY_RUN_ARG} -n "${KIALI_CR_NAMESPACE}" -f -
   if [ "$?" != "0" ]; then
     echo "ERROR: Failed to deploy Kiali. Aborting."
     exit 1

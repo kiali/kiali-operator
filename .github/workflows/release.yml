@@ -83,8 +83,10 @@ jobs:
 
     - name: Determine release type
       id: release_type
+      env:
+        INPUT_RELEASE_TYPE: ${{ github.event.inputs.release_type }}
       run: |
-        if [ -z ${{ github.event.inputs.release_type }} ];
+        if [ -z "$INPUT_RELEASE_TYPE" ];
         then
           DO_RELEASE=$(python minor.py)
           if [[ $DO_RELEASE == "True" ]]
@@ -94,7 +96,7 @@ jobs:
             echo "release_type=skip" >> $GITHUB_OUTPUT
           fi
         else
-          echo "release_type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+          echo "release_type=$INPUT_RELEASE_TYPE" >> $GITHUB_OUTPUT
         fi
 
     - name: Determine release version
@@ -154,13 +156,14 @@ jobs:
       env:
         RELEASE_VERSION: ${{ steps.release_version.outputs.release_version }}
         BRANCH_VERSION: ${{ steps.branch_version.outputs.branch_version }}
+        INPUT_QUAY_REPO: ${{ github.event.inputs.quay_repository }}
       id: quay_tag
       run: |
-        if [ -z ${{ github.event.inputs.quay_repository }} ];
+        if [ -z "$INPUT_QUAY_REPO" ];
         then
           QUAY_REPO="quay.io/kiali/kiali-operator"
         else
-          QUAY_REPO="${{ github.event.inputs.quay_repository }}"
+          QUAY_REPO="$INPUT_QUAY_REPO"
         fi
 
         QUAY_TAG="$QUAY_REPO:$RELEASE_VERSION $QUAY_REPO:$BRANCH_VERSION"
@@ -214,8 +217,11 @@ jobs:
         echo "✓ Kiali-operator CRD validations passed"
 
     - name: Build and push image
+      env:
+        QUAY_USER: ${{ secrets.QUAY_USER }}
+        QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
       run: |
-        docker login -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
+        echo "$QUAY_PASSWORD" | docker login -u "$QUAY_USER" --password-stdin quay.io
 
         make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay
 
@@ -236,11 +242,12 @@ jobs:
           CSV_COMMUNITY_FILE="./manifests/kiali-community/${VERSION_TO_RELEASE}/manifests/kiali.v${VERSION_TO_RELEASE}.clusterserviceversion.yaml"
           ### DO NOT PERFORM COMMUNITY CATALOG WORK
           ### for csv in ${CSV_UPSTREAM_FILE} ${CSV_COMMUNITY_FILE}
+          CHANGES_FILE="$(mktemp)"
           for csv in ${CSV_UPSTREAM_FILE}
           do
-            rm -f /tmp/kiali-csv-changes.txt
-            sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw /tmp/kiali-csv-changes.txt" ${csv}
-            if [ ! -s /tmp/kiali-csv-changes.txt ]; then
+            : > "$CHANGES_FILE"
+            sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw $CHANGES_FILE" ${csv}
+            if [ ! -s "$CHANGES_FILE" ]; then
               echo "It looks like 'createdAt' metadata was not changed in the new CSV file. Check the new CSV file for correctness."
               echo CSV FILE: ${csv}
               # we could abort the build here, but this would not be a blocker so we could just let the build keep going
@@ -256,7 +263,7 @@ jobs:
 
         git commit -m "Release $RELEASE_VERSION"
 
-        git push origin $(git rev-parse HEAD):refs/tags/$RELEASE_VERSION
+        git push origin "$(git rev-parse HEAD):refs/tags/$RELEASE_VERSION"
 
     - name: Create release
       env:
@@ -265,7 +272,7 @@ jobs:
         gh release create $RELEASE_VERSION -t "Kiali Operator $RELEASE_VERSION"
 
     - name: Create or update version branch
-      run: git push origin $(git rev-parse HEAD):refs/heads/$BRANCH_VERSION
+      run: git push origin "$(git rev-parse HEAD):refs/heads/$BRANCH_VERSION"
 
     - name: Configure Operator SDK
       if: ${{ needs.initialize.outputs.release_type == 'minor' || needs.initialize.outputs.release_type == 'major' }}
@@ -289,6 +296,6 @@ jobs:
 
         git commit -m "Prepare for next version"
 
-        git push origin $(git rev-parse HEAD):refs/heads/$BUILD_TAG
+        git push origin "$(git rev-parse HEAD):refs/heads/$BUILD_TAG"
 
-        gh pr create -t "Prepare for next version" -b "Please, merge to update version numbers and prepare for release $NEXT_VERSION." -H $BUILD_TAG -B $RELEASE_BRANCH
+        gh pr create -t "Prepare for next version" -b "Please, merge to update version numbers and prepare for release $NEXT_VERSION." -H "$BUILD_TAG" -B "$RELEASE_BRANCH"
