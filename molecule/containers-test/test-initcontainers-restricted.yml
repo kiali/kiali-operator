@@ -18,6 +18,7 @@
     - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.privileged == false
     - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.readOnlyRootFilesystem == true
     - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.seccompProfile.type == "RuntimeDefault"
     - kiali_deployment.resources[0].spec.template.spec.initContainers[0].securityContext.capabilities.drop == ['ALL']
     # Test that runAsUser is preserved when user provides it (even on OpenShift, SCCs may change value but should be numeric)
     - >-
@@ -33,6 +34,7 @@
     - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.privileged == false
     - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.readOnlyRootFilesystem == true
     - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.seccompProfile.type == "RuntimeDefault"
     - kiali_deployment.resources[0].spec.template.spec.initContainers[1].securityContext.capabilities.drop == ['ALL']
     # Test that runAsUser is preserved even when other dangerous settings are overridden (SCCs may change value on OpenShift)
     - >-
@@ -48,6 +50,7 @@
     - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.privileged == false
     - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.readOnlyRootFilesystem == true
     - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.seccompProfile.type == "RuntimeDefault"
     - kiali_deployment.resources[0].spec.template.spec.initContainers[2].securityContext.capabilities.drop == ['ALL']
     # Test that runAsUser is preserved when user provides it (SCCs may change value on OpenShift)
     - >-
@@ -63,6 +66,7 @@
     - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.privileged == false
     - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.readOnlyRootFilesystem == true
     - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.seccompProfile.type == "RuntimeDefault"
     - kiali_deployment.resources[0].spec.template.spec.initContainers[3].securityContext.capabilities.drop == ['ALL']
     # Test that runAsUser is preserved when user provides it (SCCs may change value on OpenShift)
     - >-
@@ -78,6 +82,7 @@
     - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.privileged == false
     - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.readOnlyRootFilesystem == true
     - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.runAsNonRoot == true
+    - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.seccompProfile.type == "RuntimeDefault"
     - kiali_deployment.resources[0].spec.template.spec.initContainers[4].securityContext.capabilities.drop == ['ALL']
     # Test that runAsUser is preserved when user provides it (SCCs may change value on OpenShift)
     - >-

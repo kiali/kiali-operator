@@ -876,6 +876,8 @@
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop: ['ALL']
     # Apply security guardrails to each container using pure Ansible
@@ -980,6 +982,8 @@
       privileged: false
       readOnlyRootFilesystem: true
       runAsNonRoot: true
+      seccompProfile:
+        type: RuntimeDefault
       capabilities:
         drop: ['ALL']
     # Apply security guardrails to each initContainer using pure Ansible

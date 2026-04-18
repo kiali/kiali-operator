@@ -75,6 +75,7 @@
     - deployment_containers[security_test_container_index | int].securityContext.privileged == false
     - deployment_containers[security_test_container_index | int].securityContext.readOnlyRootFilesystem == true
     - deployment_containers[security_test_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[security_test_container_index | int].securityContext.seccompProfile.type == "RuntimeDefault"
     - deployment_containers[security_test_container_index | int].securityContext.capabilities.drop == ['ALL']
     fail_msg: "Security-test-container should have restrictive security context enforced by operator"
 
@@ -89,6 +90,7 @@
     - deployment_containers[privilege_attempt_container_index | int].securityContext.privileged == false
     - deployment_containers[privilege_attempt_container_index | int].securityContext.readOnlyRootFilesystem == true
     - deployment_containers[privilege_attempt_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[privilege_attempt_container_index | int].securityContext.seccompProfile.type == "RuntimeDefault"
     - deployment_containers[privilege_attempt_container_index | int].securityContext.capabilities.drop == ['ALL']
     fail_msg: "Privilege-attempt-container should have security context overridden by operator (user attempt to set privileged=true should be blocked)"
 
@@ -103,6 +105,7 @@
     - deployment_containers[consistency_test_container_index | int].securityContext.privileged == false
     - deployment_containers[consistency_test_container_index | int].securityContext.readOnlyRootFilesystem == true
     - deployment_containers[consistency_test_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[consistency_test_container_index | int].securityContext.seccompProfile.type == "RuntimeDefault"
     - deployment_containers[consistency_test_container_index | int].securityContext.capabilities.drop == ['ALL']
     fail_msg: "Consistency-test-container should have restrictive security context enforced by operator"
 
@@ -117,6 +120,7 @@
     - deployment_containers[istio_proxy_container_index | int].securityContext.privileged == false
     - deployment_containers[istio_proxy_container_index | int].securityContext.readOnlyRootFilesystem == true
     - deployment_containers[istio_proxy_container_index | int].securityContext.runAsNonRoot == true
+    - deployment_containers[istio_proxy_container_index | int].securityContext.seccompProfile.type == "RuntimeDefault"
     - deployment_containers[istio_proxy_container_index | int].securityContext.capabilities.drop == ['ALL']
     fail_msg: "Istio-proxy container should have restrictive security context enforced by operator"
 
