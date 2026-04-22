@@ -207,7 +207,7 @@ kiali_defaults:
       gateway_api_classes: []
       gateway_api_classes_label_selector: ""
       istio_api_enabled: true
-      istio_identity_domain: "svc.cluster.local"
+      istio_identity_domain: ""
       istiod_polling_interval_seconds: 20
       validation_change_detection_enabled: true
       validation_reconcile_interval: "1m"
