@@ -154,37 +154,39 @@ fi
 
 # Rename the copy of the old manifest CSV to the new version
 
-OLD_VERSION_CSV_YAML="$(ls -1 ${NEW_VERSION_NEW_MANIFEST_DIR}/manifests/*v${OLD_VERSION}.clusterserviceversion.yaml)"
-NEW_VERSION_CSV_YAML="$(echo ${OLD_VERSION_CSV_YAML} | sed s/${OLD_VERSION}/${NEW_VERSION}/)"
-if [ -z ${OLD_VERSION_CSV_YAML} ]; then
+OLD_VERSION_CSV_YAML="$(ls -1 "${NEW_VERSION_NEW_MANIFEST_DIR}/manifests/"*v${OLD_VERSION}.clusterserviceversion.yaml)"
+NEW_VERSION_CSV_YAML="$(echo "${OLD_VERSION_CSV_YAML}" | sed "s/${OLD_VERSION}/${NEW_VERSION}/")"
+if [ -z "${OLD_VERSION_CSV_YAML}" ]; then
   echo "Cannot find the old version CSV yaml file: ${OLD_VERSION_CSV_YAML}"
   exit 1
 fi
-mv ${OLD_VERSION_CSV_YAML} ${NEW_VERSION_CSV_YAML}
+mv "${OLD_VERSION_CSV_YAML}" "${NEW_VERSION_CSV_YAML}"
 
 # Replace all occurences of the old version with the new version in the CSV YAML file
 
-sed -i "s/${OLD_VERSION}/${NEW_VERSION}/g" ${NEW_VERSION_CSV_YAML}
+sed -i "s/${OLD_VERSION}/${NEW_VERSION}/g" "${NEW_VERSION_CSV_YAML}"
 
 # If an explicit operator image was specified by the user, use that image specifier in the CSV YAML file
 
 if [ ! -z "${OPERATOR_IMAGE}" ]; then
-  sed -i "s|image: .*kiali.*operator.*|image: ${OPERATOR_IMAGE}|g" ${NEW_VERSION_CSV_YAML}
-  sed -i "s|containerImage: .*kiali.*operator.*|containerImage: ${OPERATOR_IMAGE}|g" ${NEW_VERSION_CSV_YAML}
+  sed -i "s|image: .*kiali.*operator.*|image: ${OPERATOR_IMAGE}|g" "${NEW_VERSION_CSV_YAML}"
+  sed -i "s|containerImage: .*kiali.*operator.*|containerImage: ${OPERATOR_IMAGE}|g" "${NEW_VERSION_CSV_YAML}"
 fi
 
 # If an explicit kiali image was specified by the user, use that image specifier in the CSV YAML file
 
 if [ ! -z "${KIALI_IMAGE}" ]; then
-  # skip lines that refer to the operator image - we don't want to change those
-  sed -E -i "/.*kiali.*-operator.*/ n; s~(value:|image:)(.*/.*kiali.*:.*)~\1 ${KIALI_IMAGE}~g" ${NEW_VERSION_CSV_YAML}
+  sed -E -i "/.*kiali.*-operator.*/ n; s~(value:|image:)(.*/.*kiali.*:.*)~\1 ${KIALI_IMAGE}~g" "${NEW_VERSION_CSV_YAML}"
 fi
 
 # Update the "replaces" metadata so the CSV indicates it is replacing the old version
 
-OLD_REPLACE_VERSION="$(grep -P '^\s+replaces:\s+kiali-operator\.v(.*)\s*$' ${NEW_VERSION_CSV_YAML}|sed 's/^.*\.v\(.*\)$/\1/')"
-sed -i "s/${OLD_REPLACE_VERSION}/${REPLACE_VERSION}/gw /tmp/kiali-manifest-changes.txt" ${NEW_VERSION_CSV_YAML}
-if [ ! -s /tmp/kiali-manifest-changes.txt ]; then
+CHANGES_FILE="$(mktemp)"
+trap "rm -f '$CHANGES_FILE'" EXIT
+
+OLD_REPLACE_VERSION="$(grep -P '^\s+replaces:\s+kiali-operator\.v(.*)\s*$' "${NEW_VERSION_CSV_YAML}"|sed 's/^.*\.v\(.*\)$/\1/')"
+sed -i "s/${OLD_REPLACE_VERSION}/${REPLACE_VERSION}/gw $CHANGES_FILE" "${NEW_VERSION_CSV_YAML}"
+if [ ! -s "$CHANGES_FILE" ]; then
   echo "It looks like 'replaces' metadata was not changed in the new CSV file. Check the new CSV file for correctness."
   echo CSV FILE: ${NEW_VERSION_CSV_YAML}
   exit 1
@@ -193,8 +195,8 @@ fi
 # Update the "createdAt" metadata to right now
 
 DATETIME_NOW="$(date --utc +'%FT%TZ')"
-sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw /tmp/kiali-manifest-changes.txt" ${NEW_VERSION_CSV_YAML}
-if [ ! -s /tmp/kiali-manifest-changes.txt ]; then
+sed -i "s/createdAt: .\+Z/createdAt: ${DATETIME_NOW}/gw $CHANGES_FILE" "${NEW_VERSION_CSV_YAML}"
+if [ ! -s "$CHANGES_FILE" ]; then
   echo "It looks like 'createdAt' metadata was not changed in the new CSV file. Check the new CSV file for correctness."
   echo CSV FILE: ${NEW_VERSION_CSV_YAML}
   exit 1
@@ -204,7 +206,7 @@ fi
 
 if [ "${VERIFY_BUNDLE}" == "true" ]; then
   echo "Verifying the correctness of the bundle metadata via: ${OPM} render ${NEW_VERSION_NEW_MANIFEST_DIR}"
-  if ! ${OPM} render ${NEW_VERSION_NEW_MANIFEST_DIR} --output yaml > /dev/null ; then
+  if ! "${OPM}" render "${NEW_VERSION_NEW_MANIFEST_DIR}" --output yaml > /dev/null ; then
     echo "Failed to verify the bundle metadata. Check the errors and correct them before publishing the bundle."
     exit 1
   else

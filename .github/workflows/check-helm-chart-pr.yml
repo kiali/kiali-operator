@@ -15,11 +15,11 @@ jobs:
     - name: Check if helm-charts branch and PR exist
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        FORK_OWNER: ${{ github.event.pull_request.head.repo.owner.login }}
+        BRANCH: ${{ github.event.pull_request.head.ref }}
+        BASE_REPO_OWNER: ${{ github.repository_owner }}
       run: |
-        HELM_REPO="${{ github.event.pull_request.head.repo.owner.login }}/helm-charts"
-        BRANCH="${{ github.event.pull_request.head.ref }}"
-        FORK_OWNER="${{ github.event.pull_request.head.repo.owner.login }}"
-        BASE_REPO_OWNER="${{ github.repository_owner }}"
+        HELM_REPO="${FORK_OWNER}/helm-charts"
 
         # Check if branch exists
         if ! curl -s -f -H "Authorization: token $GITHUB_TOKEN" \
@@ -60,6 +60,9 @@ jobs:
         ref: ${{ github.event.pull_request.head.ref }}
 
     - name: Validate CRD sync
+      env:
+        PR_OWNER: ${{ github.event.pull_request.head.repo.owner.login }}
+        PR_REPO_NAME: ${{ github.event.pull_request.head.repo.name }}
+        PR_REF: ${{ github.event.pull_request.head.ref }}
       run: |
-        # Run the validation - this will exit with non-zero if CRDs are not in sync
-        make validate-crd-sync KIALI_OPERATOR_ORG_REPO_REF="${{ github.event.pull_request.head.repo.owner.login }}/${{ github.event.pull_request.head.repo.name }}/${{ github.event.pull_request.head.ref }}"
+        make validate-crd-sync KIALI_OPERATOR_ORG_REPO_REF="${PR_OWNER}/${PR_REPO_NAME}/${PR_REF}"

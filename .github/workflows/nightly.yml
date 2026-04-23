@@ -32,12 +32,14 @@ jobs:
 
     - name: Determine Quay tag
       id: quay_tag
+      env:
+        INPUT_QUAY_REPO: ${{ github.event.inputs.quay_repository }}
       run: |
-        if [ -z ${{ github.event.inputs.quay_repository }} ];
+        if [ -z "$INPUT_QUAY_REPO" ];
         then
           QUAY_REPO="quay.io/kiali/kiali-operator"
         else
-          QUAY_REPO="${{ github.event.inputs.quay_repository }}"
+          QUAY_REPO="$INPUT_QUAY_REPO"
         fi
 
         QUAY_TAG="$QUAY_REPO:latest"
@@ -65,7 +67,10 @@ jobs:
         ref: ${{ github.event.inputs.release_branch }}
 
     - name: Build and push image
+      env:
+        QUAY_USER: ${{ secrets.QUAY_USER }}
+        QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
       run: |
-        docker login -u ${{ secrets.QUAY_USER }} -p ${{ secrets.QUAY_PASSWORD }} quay.io
+        echo "$QUAY_PASSWORD" | docker login -u "$QUAY_USER" --password-stdin quay.io
 
         make -e DOCKER_CLI_EXPERIMENTAL=enabled container-multi-arch-push-kiali-operator-quay

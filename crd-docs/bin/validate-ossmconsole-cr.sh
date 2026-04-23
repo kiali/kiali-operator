@@ -121,31 +121,31 @@ if [ -n "${OSSMCONSOLE_CR_FILE:-}" -a ! -f "${OSSMCONSOLE_CR_FILE:-}" ]; then
 fi
 
 if [ -n "${OSSMCONSOLE_CR_NAME:-}" ]; then
-  if ! ${CLIENT_EXE} get -n "${NAMESPACE}" ossmconsole "${OSSMCONSOLE_CR_NAME}" &> /dev/null; then
+  if ! "${CLIENT_EXE}" get -n "${NAMESPACE}" ossmconsole "${OSSMCONSOLE_CR_NAME}" &> /dev/null; then
     echo "ERROR! OSSMConsole CR [${OSSMCONSOLE_CR_NAME}] does not exist in namespace [${NAMESPACE}]"
     exit 1
   fi
 fi
 
 # Make sure we have admin rights to some cluster
-if ! ${CLIENT_EXE} get namespaces &> /dev/null ; then
+if ! "${CLIENT_EXE}" get namespaces &> /dev/null ; then
   echo "ERROR! You must be connected to/logged into a cluster"
   exit 1
 fi
-if [ "$(${CLIENT_EXE} auth can-i create crd --all-namespaces)" != "yes" ]; then
+if [ "$("${CLIENT_EXE}" auth can-i create crd --all-namespaces)" != "yes" ]; then
   echo "ERROR! You must have cluster-admin permissions"
   exit 1
 fi
 
 # install the test CRD with the schema
-if ! echo "$(crd)" | ${CLIENT_EXE} apply --validate=true --wait=true -f - &> /dev/null ; then
+if ! echo "$(crd)" | "${CLIENT_EXE}" apply --validate=true --wait=true -f - &> /dev/null ; then
   echo "ERROR! Failed to install the test CRD"
   exit 1
 fi
 
 # wait for the test CRD to be established and then give k8s a few more seconds.
 # if we don't do this, the validation test may report a false negative.
-if ! ${CLIENT_EXE} wait --for condition=established --timeout=60s crd/testossmconsoles.kiali.io &> /dev/null ; then
+if ! "${CLIENT_EXE}" wait --for condition=established --timeout=60s crd/testossmconsoles.kiali.io &> /dev/null ; then
   echo "WARNING! Test CRD is not established yet. The validation test may not produce accurate results."
 else
   for s in 3 2 1; do echo -n "." ; sleep 1 ; done
@@ -156,7 +156,7 @@ fi
 echo "Validating the CR:"
 echo "----------"
 if [ -n "${OSSMCONSOLE_CR_FILE:-}" ]; then
-  if ! cat "${OSSMCONSOLE_CR_FILE}" | sed 's/kind: OSSMConsole/kind: TestOSSMConsole/g' | sed 's/- kiali.io\/finalizer//g' | kubectl apply -n ${NAMESPACE} -f - ; then
+  if ! cat "${OSSMCONSOLE_CR_FILE}" | sed 's/kind: OSSMConsole/kind: TestOSSMConsole/g' | sed 's/- kiali.io\/finalizer//g' | "${CLIENT_EXE}" apply -n "${NAMESPACE}" -f - ; then
     echo "----------"
     echo "ERROR! Validation failed for OSSMConsole CR [${OSSMCONSOLE_CR_FILE}]"
     exit 1
@@ -165,7 +165,7 @@ if [ -n "${OSSMCONSOLE_CR_FILE:-}" ]; then
     echo "OSSMConsole CR [${OSSMCONSOLE_CR_FILE}] is valid."
   fi
 else
-  if ! ${CLIENT_EXE} get -n "${NAMESPACE}" ossmconsole "${OSSMCONSOLE_CR_NAME}" -o yaml | sed 's/kind: OSSMConsole/kind: TestOSSMConsole/g' | sed 's/- kiali.io\/finalizer//g' | kubectl apply -n "${NAMESPACE}" -f - ; then
+  if ! "${CLIENT_EXE}" get -n "${NAMESPACE}" ossmconsole "${OSSMCONSOLE_CR_NAME}" -o yaml | sed 's/kind: OSSMConsole/kind: TestOSSMConsole/g' | sed 's/- kiali.io\/finalizer//g' | "${CLIENT_EXE}" apply -n "${NAMESPACE}" -f - ; then
     echo "----------"
     echo "ERROR! Validation failed for OSSMConsole CR [${OSSMCONSOLE_CR_NAME}] in namespace [${NAMESPACE}]"
     exit 1
@@ -176,7 +176,7 @@ else
 fi
 
 # delete the test CRD (which deletes the test CR along with it)
-if ! echo "$(crd)" | ${CLIENT_EXE} delete --wait=true -f - &> /dev/null ; then
+if ! echo "$(crd)" | "${CLIENT_EXE}" delete --wait=true -f - &> /dev/null ; then
   echo "ERROR! Failed to delete the test CRD. You should remove it manually."
   exit 1
 fi

@@ -305,6 +305,8 @@ spec:
                   privileged: false
                   runAsNonRoot: true
                   readOnlyRootFilesystem: true
+                  seccompProfile:
+                    type: RuntimeDefault
                   capabilities:
                     drop:
                     - ALL

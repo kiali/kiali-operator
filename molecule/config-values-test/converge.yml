@@ -123,6 +123,15 @@
       - kiali_pod_container.startupProbe.initialDelaySeconds == 30
       - kiali_pod_container.startupProbe.periodSeconds == 10
 
+  - name: Test the default security context has seccompProfile set
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+    assert:
+      that:
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext is defined
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.seccompProfile is defined
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.seccompProfile.type == "RuntimeDefault"
+
   - name: Test the default deployment strategy is RollingUpdate
     vars:
       kiali_deployment_spec: "{{ kiali_deployment.resources[0].spec }}"
@@ -263,13 +272,15 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'kiali_feature_flags': {'disabled_features': ['logs-tab'] }}}, recursive=True) }}"
 
-  - name: Change security context - turn off readOnlyRootFilesystem
+  - name: Change security context - turn off readOnlyRootFilesystem and set custom seccompProfile
     vars:
       security_context:
         allowPrivilegeEscalation: false
         privileged: false
         readOnlyRootFilesystem: false
         runAsNonRoot: true
+        seccompProfile:
+          type: Unconfined
         capabilities:
           drop:
           - ALL
@@ -578,6 +589,7 @@
       - kiali_pod_spec.containers[kiali_container_index | int].securityContext.allowPrivilegeEscalation == false
       - kiali_pod_spec.containers[kiali_container_index | int].securityContext.privileged == false
       - kiali_pod_spec.containers[kiali_container_index | int].securityContext.runAsNonRoot == true
+      - kiali_pod_spec.containers[kiali_container_index | int].securityContext.seccompProfile.type == "Unconfined"
       - kiali_pod_spec.containers[kiali_container_index | int].securityContext.capabilities.drop | length > 0
 
   - name: Get the new Kiali OAuthClient if on OpenShift
