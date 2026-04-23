@@ -57,6 +57,13 @@
   when:
   - kiali_vars_remove.deployment.hpa.api_version == ""
 
+- name: Set default PDB api_version
+  ignore_errors: yes
+  set_fact:
+    kiali_vars_remove: "{{ kiali_vars_remove | combine({'deployment': {'pod_disruption_budget': {'api_version': 'policy/v1'}}}, recursive=True) }}"
+  when:
+  - kiali_vars_remove.deployment.pod_disruption_budget.api_version == ""
+
 # There is an edge case where a user installed Kiali with one instance name, then changed the instance name in the CR.
 # This is not allowed. When this happens, the operator will abort with an error message telling the user to uninstall Kiali.
 # The user will do this by deleting the Kiali CR, at which time this ansible role is executed.

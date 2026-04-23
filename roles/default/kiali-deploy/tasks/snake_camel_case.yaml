@@ -83,6 +83,12 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'hpa': {'spec': current_cr.spec.deployment.hpa.spec }}}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.pod_disruption_budget.spec #}
+      {% if kiali_vars.deployment.pod_disruption_budget is defined and kiali_vars.deployment.pod_disruption_budget.spec is defined and kiali_vars.deployment.pod_disruption_budget.spec | length > 0 %}
+      {%   set _=kiali_vars['deployment']['pod_disruption_budget'].pop('spec') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'pod_disruption_budget': {'spec': current_cr.spec.deployment.pod_disruption_budget.spec }}}, recursive=True) %}
+      {% endif %}
+      {# #}
       {# deployment.node_selector #}
       {% if kiali_vars.deployment.node_selector is defined and kiali_vars.deployment.node_selector | length > 0 %}
       {%   set _=kiali_vars['deployment'].pop('node_selector') %}
