@@ -271,6 +271,11 @@
       {% set kv = kv | combine({'deployment': {'hpa': {'api_version': autoscaling_api_version }}}, recursive=True) %}
       {% endif %}
 
+      {# Set default PDB api_version #}
+      {% if kv.deployment.pod_disruption_budget.api_version == "" %}
+      {% set kv = kv | combine({'deployment': {'pod_disruption_budget': {'api_version': 'policy/v1'}}}, recursive=True) %}
+      {% endif %}
+
       {# Provide some default resource limits #}
       {% if kv.deployment.resources is not defined %}
       {% set kv = kv | combine({'deployment': {'resources': resource_limits_default }}, recursive=True) %}

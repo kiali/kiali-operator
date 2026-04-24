@@ -73,6 +73,9 @@
         spec:
           minReplicas: 2
           maxReplicas: 2
+      new_pdb:
+        spec:
+          minAvailable: 1
       new_ingress_labels:
         aaa: bbb
         camelCaseName: camelCaseValue
@@ -176,6 +179,21 @@
       - hpa_resource_raw.resources | length == 1
       fail_msg: "HPA was not created successfully: {{ hpa_resource_raw }}"
 
+  - name: Get the PDB resource that should now exist
+    k8s_info:
+      api_version: policy/v1
+      kind: PodDisruptionBudget
+      namespace: "{{ kiali.install_namespace }}"
+      name: kiali
+    register: pdb_resource_raw
+  - name: Assert the PDB resource has been created
+    assert:
+      that:
+      - pdb_resource_raw.resources is defined
+      - pdb_resource_raw.resources | length == 1
+      - pdb_resource_raw.resources[0].spec.minAvailable == 1
+      fail_msg: "PDB was not created successfully: {{ pdb_resource_raw }}"
+
   - name: Wait until the Kiali deployment is up to date with the HPA replicas
     k8s_info:
       api_version: apps/v1
@@ -209,6 +227,7 @@
       new_service_annotations: null
       new_pod_labels: null
       new_hpa: null
+      new_pdb: null
       new_ingress_labels: null
       new_topology_spread_constraints: null
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
@@ -249,6 +268,20 @@
       - hpa_resource_raw.resources is defined
       - hpa_resource_raw.resources | length == 0
       fail_msg: "HPA was not deleted successfully: {{ hpa_resource_raw }} [kiali CR={{ kiali_cr }}]"
+
+  - name: Try to obtain the PDB which should have been removed
+    k8s_info:
+      api_version: policy/v1
+      kind: PodDisruptionBudget
+      namespace: "{{ kiali.install_namespace }}"
+      name: kiali
+    register: pdb_resource_raw
+  - name: Assert the PDB resource has been removed
+    assert:
+      that:
+      - pdb_resource_raw.resources is defined
+      - pdb_resource_raw.resources | length == 0
+      fail_msg: "PDB was not deleted successfully: {{ pdb_resource_raw }} [kiali CR={{ kiali_cr }}]"
 
   - name: Assert that replicas takes effect (there is no HPA defined anymore)
     assert:

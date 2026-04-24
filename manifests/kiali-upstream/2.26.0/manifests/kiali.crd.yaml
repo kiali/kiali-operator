@@ -809,6 +809,27 @@ spec:
                     type: object
                     additionalProperties:
                       type: string
+                  pod_disruption_budget:
+                    description: |
+                      Determines what (if any) PodDisruptionBudget should be created for the Kiali pod.
+                      A typical way to configure PDB for Kiali is,
+                      ```
+                      spec:
+                        deployment:
+                          pod_disruption_budget:
+                            api_version: "policy/v1"
+                            spec:
+                              minAvailable: 1
+                      ```
+                    type: object
+                    properties:
+                      api_version:
+                        description: "A specific PDB API version that can be specified in case there is some PDB feature you want to use that is only supported in that specific version. If value is an empty string, the default version of 'policy/v1' will be used."
+                        type: string
+                      spec:
+                        description: "The `spec` specified here will be placed in the created PDB resource's 'spec' section. If `spec` is left empty, no PDB resource will be created. Note that you must not specify the 'selector' section in `spec`; the Kiali Operator will populate that for you."
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                   pod_labels:
                     description: |
                       Custom labels to be created on the Kiali pod.
