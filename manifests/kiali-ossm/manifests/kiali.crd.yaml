@@ -1279,9 +1279,9 @@ spec:
                         description: "DEPRECATED AFTER v2.11: This setting is deprecated and will be ignored. The name of the istiod deployment is now autodetected."
                         type: string
                       istio_identity_domain:
-                        description: "The Kubernetes cluster DNS domain suffix used to construct fully qualified service hostnames (e.g. reviews.bookinfo.svc.cluster.local) and service account identity strings for validation."
+                        description: "The Kubernetes cluster DNS domain suffix used to construct fully qualified service hostnames (e.g. reviews.bookinfo.svc.cluster.local) and service account identity strings for validation. When empty, it is auto-detected from the Istio mesh trustDomain (as 'svc.' + trustDomain). Set explicitly only if you need to override the auto-detected value."
                         type: string
-                        default: "svc.cluster.local"
+                        default: ""
                       istiod_polling_interval_seconds:
                         description: "How often in seconds Kiali will poll istiod(s) for proxy status. Polling is not performed if istio_api_enabled is false."
                         type: integer
