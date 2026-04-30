@@ -257,6 +257,7 @@ kiali_defaults:
       cache_enabled: true
       cache_expiration: 300
       custom_headers: {}
+      enabled: true
       health_check_url: ""
       is_core: true
       query_scope: {}

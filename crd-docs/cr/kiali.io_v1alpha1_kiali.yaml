@@ -404,6 +404,7 @@ spec:
       # default: custom_headers is empty
       custom_headers:
         customHeader1: "customHeader1Value"
+      enabled: true
       health_check_url: ""
       is_core: true
       # default: query_scope is empty

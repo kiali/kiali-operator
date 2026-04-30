@@ -82,3 +82,135 @@
   - assert:
       that:
       - prometheus_query_results.json.data.result | length > 0
+
+  # ==========================================================================
+  # Test: external_services.prometheus.enabled
+  # First verify baseline (enabled), then disable and verify behavior changes.
+  # ==========================================================================
+
+  # --- Baseline assertions (Prometheus enabled) ---
+
+  - name: Get /api/config (baseline)
+    uri:
+      url: "{{ kiali_base_url }}/api/config"
+      validate_certs: no
+      return_content: yes
+    register: config_response_baseline
+
+  - assert:
+      that:
+      - config_response_baseline.json.prometheus.enabled | bool == True
+
+  - name: Assert graph endpoint returns 200 (baseline)
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces={{ kiali.install_namespace }}&duration=60s"
+      validate_certs: no
+      status_code: 200
+
+  - name: Get istio status (baseline)
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes
+    register: istio_status_baseline
+
+  - name: Check Prometheus is reported as healthy (baseline)
+    set_fact:
+      prom_healthy_baseline: "{{ item.status }}"
+    loop: "{{ istio_status_baseline.json }}"
+    when: item.name == 'prometheus'
+
+  - assert:
+      that:
+      - prom_healthy_baseline is defined
+      - prom_healthy_baseline == 'Healthy'
+
+  - name: Get mesh graph (baseline)
+    uri:
+      url: "{{ kiali_base_url }}/api/mesh/graph"
+      validate_certs: no
+      return_content: yes
+    register: mesh_graph_baseline
+
+  - name: Check Prometheus node exists in mesh graph (baseline)
+    set_fact:
+      prom_node_found_baseline: true
+    loop: "{{ mesh_graph_baseline.json.elements.nodes | default([]) }}"
+    when: item.data.infraName is defined and item.data.infraName == 'Prometheus'
+
+  - assert:
+      that:
+      - prom_node_found_baseline is defined
+      - prom_node_found_baseline == true
+
+  # --- Disable Prometheus and re-verify ---
+
+  - name: Disable external_services.prometheus
+    vars:
+      current_kiali_cr: "{{ kiali_cr_list.resources[0] }}"
+    set_fact:
+      new_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'external_services': {'prometheus': {'enabled': false}}}}, recursive=True) }}"
+
+  - import_tasks: ../common/set_kiali_cr.yml
+
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Assert /api/config shows prometheus.enabled is false
+    uri:
+      url: "{{ kiali_base_url }}/api/config"
+      validate_certs: no
+      return_content: yes
+    register: config_response_disabled
+
+  - assert:
+      that:
+      - config_response_disabled.json.prometheus.enabled | bool == False
+
+  - name: Assert non-metrics endpoint still works when Prometheus is disabled (graceful degradation)
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces"
+      validate_certs: no
+      status_code: 200
+
+  - name: Assert graph endpoint returns 503 when Prometheus is disabled
+    uri:
+      url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces={{ kiali.install_namespace }}&duration=60s"
+      validate_certs: no
+      status_code: 503
+
+  - name: Get istio status with Prometheus disabled
+    uri:
+      url: "{{ kiali_base_url }}/api/istio/status"
+      validate_certs: no
+      return_content: yes
+    register: istio_status_disabled
+
+  - name: Check Prometheus is not reported as unhealthy
+    set_fact:
+      prom_unhealthy_disabled: true
+    loop: "{{ istio_status_disabled.json }}"
+    when: item.name == 'prometheus' and item.status != 'Healthy' and item.status != 'NotFound'
+
+  - assert:
+      that:
+      - prom_unhealthy_disabled is not defined
+
+  - name: Get mesh graph with Prometheus disabled
+    uri:
+      url: "{{ kiali_base_url }}/api/mesh/graph"
+      validate_certs: no
+      return_content: yes
+    register: mesh_graph_disabled
+
+  - name: Check Prometheus node is absent from mesh graph
+    set_fact:
+      prom_node_found_disabled: true
+    loop: "{{ mesh_graph_disabled.json.elements.nodes | default([]) }}"
+    when: item.data.infraName is defined and item.data.infraName == 'Prometheus'
+
+  - assert:
+      that:
+      - prom_node_found_disabled is not defined
