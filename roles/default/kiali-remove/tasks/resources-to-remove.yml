@@ -5,6 +5,12 @@ metadata:
   namespace: "{{ kiali_vars_remove.deployment.namespace }}"
   name: {{ kiali_vars_remove.deployment.instance_name }}
 ---
+apiVersion: {{ kiali_vars_remove.deployment.pod_disruption_budget.api_version }}
+kind: PodDisruptionBudget
+metadata:
+  namespace: "{{ kiali_vars_remove.deployment.namespace }}"
+  name: {{ kiali_vars_remove.deployment.instance_name }}
+---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:

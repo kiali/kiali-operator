@@ -234,6 +234,11 @@ spec:
     # default: pod_annotations is empty
     pod_annotations:
       proxy.istio.io/config: '{ "holdApplicationUntilProxyStarts": true }'
+    pod_disruption_budget:
+      api_version: ""
+      # default: spec is empty
+      spec:
+        minAvailable: 1
     # default: pod_labels is empty
     pod_labels:
       sidecar.istio.io/inject: "true"

@@ -25,6 +25,17 @@
   - is_openshift == True
   - kiali_vars.deployment.hpa.spec | length == 0
 
+- name: Remove PDB if disabled on OpenShift
+  k8s:
+    state: absent
+    api_version: "{{ kiali_vars.deployment.pod_disruption_budget.api_version }}"
+    kind: "PodDisruptionBudget"
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.pod_disruption_budget.spec | length == 0
+
 - name: Create Kiali objects on OpenShift
   include_tasks: process-resource.yml
   vars:
@@ -40,6 +51,7 @@
     - "{{ 'templates/openshift/deployment.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "{{ 'templates/openshift/service.yaml' if kiali_vars.deployment.remote_cluster_resources_only|bool == False else '' }}"
     - "{{ 'templates/openshift/hpa.yaml' if ((kiali_vars.deployment.hpa.spec | length > 0) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
+    - "{{ 'templates/openshift/pdb.yaml' if ((kiali_vars.deployment.pod_disruption_budget.spec | length > 0) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
     - "{{ 'templates/openshift/route.yaml' if ((kiali_vars.deployment.ingress.enabled|bool == True) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
     - "{{ 'templates/openshift/networkpolicy.yaml' if ((kiali_vars.deployment.network_policy.enabled|bool == True) and (kiali_vars.deployment.remote_cluster_resources_only|bool == False)) else '' }}"
   when:

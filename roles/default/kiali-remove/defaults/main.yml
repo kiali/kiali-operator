@@ -4,6 +4,8 @@ kiali_defaults_remove:
     hpa:
       api_version: ""
     instance_name: "kiali"
+    pod_disruption_budget:
+      api_version: ""
 
 # Will be auto-detected, but for debugging purposes you can force one of these to true
 is_k8s: false
