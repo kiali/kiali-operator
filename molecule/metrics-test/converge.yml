@@ -175,11 +175,11 @@
       validate_certs: no
       status_code: 200
 
-  - name: Assert graph endpoint returns 503 when Prometheus is disabled
+  - name: Assert graph endpoint returns 200 with empty graph when Prometheus is disabled
     uri:
       url: "{{ kiali_base_url }}/api/namespaces/graph?namespaces={{ kiali.install_namespace }}&duration=60s"
       validate_certs: no
-      status_code: 503
+      status_code: 200
 
   - name: Get istio status with Prometheus disabled
     uri:
