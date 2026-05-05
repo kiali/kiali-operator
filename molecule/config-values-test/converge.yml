@@ -45,6 +45,11 @@
     when:
     - is_openshift == True
 
+  - name: Test that prometheus.enabled defaults to true in the ConfigMap
+    assert:
+      that:
+      - kiali_configmap.external_services.prometheus.enabled | bool == True
+
   - name: Test the default deployment.resources is what we expect
     vars:
       kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"

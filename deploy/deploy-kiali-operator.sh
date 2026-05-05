@@ -206,7 +206,7 @@ while [[ $# -gt 0 ]]; do
       shift;shift
       ;;
     -hs|--helm-set)
-      HELM_SET_ARGS="${HELM_SET_ARGS:-} --set \"$2\""
+      HELM_SET_ARGS="${HELM_SET_ARGS:-} --set $2"
       shift;shift
       ;;
     -kcn|--kiali-cr-namespace)
@@ -264,7 +264,8 @@ while [[ $# -gt 0 ]]; do
       shift;shift
       ;;
     -own|--operator-watch-namespace)
-      OPERATOR_WATCH_NAMESPACE="$2"
+      # Strip surrounding quotes if the value is '""' (Makefile convention for empty string)
+      OPERATOR_WATCH_NAMESPACE="${2//\"/}"
       shift;shift
       ;;
     -v|--version)
@@ -460,7 +461,7 @@ export OPERATOR_IMAGE_VERSION="${OPERATOR_IMAGE_VERSION:-lastrelease}"
 export OPERATOR_INSTALL_KIALI=${OPERATOR_INSTALL_KIALI:-true}
 export OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kiali-operator}"
 export OPERATOR_VIEW_ONLY_MODE="${OPERATOR_VIEW_ONLY_MODE:-false}"
-export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-\"\"}"
+export OPERATOR_WATCH_NAMESPACE="${OPERATOR_WATCH_NAMESPACE:-}"
 
 # Determine what tool to use to download files. This supports environments that have either wget or curl.
 # After return, $downloader will be a command to stream a URL's content to stdout.

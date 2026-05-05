@@ -1482,6 +1482,10 @@ spec:
                         type: object
                         additionalProperties:
                           type: string
+                      enabled:
+                        description: "When true, Kiali will connect to the Prometheus instance for Istio telemetry metrics. When false, Kiali will run without metrics support - the graph, health based on request rates, and metrics displays will be unavailable."
+                        type: boolean
+                        default: true
                       health_check_url:
                         description: "Used in the Components health feature. This is the url which Kiali will ping to determine whether the component is reachable or not. It defaults to `url` when not provided."
                         type: string
