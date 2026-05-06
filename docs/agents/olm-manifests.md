@@ -34,7 +34,7 @@ scribe:
 
 ## Overview
 
-The Kiali operator is distributed through the Operator Lifecycle Manager (OLM) in two separate flavors. Each has a distinct install target audience, channel configuration, and CSV content, but they share the same underlying CRD files and operator image.
+The Kiali operator is distributed through the Operator Lifecycle Manager (OLM) in two separate flavors. Each has a distinct install target audience, channel configuration, and CSV content, but they share the same underlying CRD files and source logic. They do not share the same operator image reference: upstream CSVs reference `quay.io/kiali/kiali-operator:<version>` while the OSSM CSV uses a templated `${KIALI_OPERATOR}` substituted with the productized image at release time.
 
 Both bundles follow the OLM [bundle format](https://olm.operatorframework.io/docs/tasks/creating-operator-bundle/) (`registry+v1` mediatype) with a `manifests/` and `metadata/` subdirectory inside each bundle.
 
@@ -54,27 +54,28 @@ A third variant (`kiali-community`) is documented in `manifests/README.adoc` as 
 Versioned bundles are stored as individual directories:
 
 ```
-manifests/kiali-upstream/
-  1.47.0/
-    manifests/
-      kiali.crd.yaml                   # Kiali CRD (synced from crd-docs/)
-      kiali.v1.47.0.clusterserviceversion.yaml
-    metadata/
-      annotations.yaml                 # OLM channel/mediatype annotations
-  ...
-  2.22.0/
-    manifests/
-      kiali.crd.yaml
-      kiali.v2.22.0.clusterserviceversion.yaml
-    metadata/
-      annotations.yaml
-  ci.yaml                              # CI-specific overrides
-  create-new-version.sh                # Script to create a new version dir
+manifests/
+  create-new-version.sh                # Script to create a new upstream version dir
   convert-to-bundle.sh                 # One-time migration: package → bundle format
   prepare-community-prs.sh             # Helper to open PRs to community-operators repos
+  kiali-upstream/
+    1.47.0/
+      manifests/
+        kiali.crd.yaml                 # Kiali CRD (synced from crd-docs/)
+        kiali.v1.47.0.clusterserviceversion.yaml
+      metadata/
+        annotations.yaml               # OLM channel/mediatype annotations
+    ...
+    2.26.0/
+      manifests/
+        kiali.crd.yaml
+        kiali.v2.26.0.clusterserviceversion.yaml
+      metadata/
+        annotations.yaml
+    ci.yaml                            # CI-specific overrides
 ```
 
-The latest version directory is the one with the highest semver; `make validate` automatically finds it via `ls -1 | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -n 1`.
+The latest version directory is the one with the highest semver; `make validate` automatically finds it via `ls -1 | grep -E "^[0-9]+\.[0-9]+\.[0-9]+$" | sort -V | tail -n 1`. Note that `make sync-crds` only updates the CRD in the **latest** version directory — historical version directories are not rewritten.
 
 ### kiali-ossm (Red Hat)
 
@@ -113,14 +114,18 @@ Each bundle includes a ClusterServiceVersion that describes the operator to OLM.
 Use `manifests/create-new-version.sh` to create a new upstream bundle version:
 
 ```bash
+# Run from the repo root; --old-manifest and --new-manifest are directory names
+# relative to manifests/ (not paths), and version numbers are separate arguments.
 ./manifests/create-new-version.sh \
-  --old-version 2.22.0 \
+  --old-manifest kiali-upstream \
+  --new-manifest kiali-upstream \
+  --old-version 2.25.0 \
   --new-version 2.26.0 \
-  --old-manifest manifests/kiali-upstream/2.22.0 \
-  --new-manifest manifests/kiali-upstream/2.26.0 \
   --operator-image quay.io/kiali/kiali-operator:v2.26.0 \
-  --replace-version 2.22.0
+  --replace-version 2.25.0
 ```
+
+The `-ki` / `--kiali-image` flag can optionally update the Kiali server image reference in the new CSV (separate from the operator image); omit it to keep the existing image specifier with only the version tag updated.
 
 The script:
 1. Copies the previous version directory to the new version directory
@@ -132,14 +137,19 @@ After running, execute `make sync-crds` to update the CRD in the new version dir
 
 ## Bundle Validation
 
-`make validate` runs the full bundle validation pipeline:
+`make validate` runs this pipeline (all steps are part of the single target):
 
-1. **kiali-ossm validation**: substitutes env vars into the CSV template, then runs `opm render` to verify the bundle can be parsed by OLM
-2. **kiali-upstream validation**: finds the latest version directory, renders it with `opm render`, verifies the output is valid YAML
-3. **CRD sync check**: `make validate-crd-sync` — confirms all CRD copies are identical to the golden copies in `crd-docs/crd/`
-4. **Backward compatibility**: `make verify-crd-compatibility` — diffs CRD schema against `origin/master` to catch breaking changes
-5. **Server permissions**: `make verify-kiali-server-permissions` — verifies operator RBAC grants match Kiali Server's actual needs
-6. **Defaults verification**: `make verify-defaults` — checks CRD default values match Ansible role defaults
+**Phony prerequisite targets** (independently callable):
+- `make validate-crd-sync` — confirms all CRD copies are identical to the golden copies in `crd-docs/crd/`
+- `make verify-crd-compatibility` — diffs CRD schema against `origin/master` to catch breaking changes
+- `make verify-kiali-server-permissions` — verifies operator RBAC grants match Kiali Server's actual needs
+- `make verify-defaults` — checks CRD default values match Ansible role defaults
+
+**Inline bundle checks** (only run as part of `make validate`, not separately):
+- **kiali-ossm bundle**: substitutes env vars into the CSV template via `envsubst`, then runs `opm render` to verify the bundle can be parsed by OLM
+- **kiali-upstream bundle**: finds the latest version directory, renders it with `opm render`, verifies the output is valid YAML
+
+**Note:** `make validate-cr` (CR schema validation against example CRs) is a **separate target** not called by `make validate`. Run it explicitly when modifying CRD schema or example CRs.
 
 The `opm` binary is auto-downloaded to `_output/opm-install/opm` if not found in PATH (version from GitHub API, fallback to `v1.56.0`).
 

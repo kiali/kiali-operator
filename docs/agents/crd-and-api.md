@@ -41,7 +41,7 @@ The operator exposes two Custom Resource Definitions:
 | `kialis.kiali.io` | `Kiali` | `kiali.io/v1alpha1` | Namespaced |
 | `ossmconsoles.kiali.io` | `OSSMConsole` | `kiali.io/v1alpha1` | Namespaced |
 
-The CRDs define the schema that operators of the Kiali platform use to configure Kiali Server deployments and the OpenShift Service Mesh Console plugin. All settings stored in these CRs are ultimately rendered into a Kiali ConfigMap by the Ansible role; the ConfigMap must not be edited directly.
+The CRDs define the schema that operators of the Kiali platform use to configure Kiali Server deployments and the OpenShift Service Mesh Console plugin. For the **Kiali CR**, all settings are ultimately rendered into a Kiali ConfigMap by the Ansible role; that ConfigMap must not be edited directly. The **OSSMConsole CR** does not produce a Kiali ConfigMap — it creates two ConfigMaps (`plugin-conf` for plugin config and one for nginx), a Deployment, a Service, and a `ConsolePlugin` resource.
 
 ## CRD Files (Golden Copies)
 
@@ -67,6 +67,8 @@ crd-docs/
     validate-ossmconsole-cr.sh
 ```
 
+Note: `bin/` is described later in the CRD Validation section.
+
 The CRD YAMLs in `crd-docs/crd/` must be treated as the single source of truth. All other copies (in `manifests/`, `helm-charts/`) are derived from these via `make sync-crds`.
 
 ## Kiali CR Schema
@@ -75,16 +77,26 @@ The `kiali.io_kialis.yaml` CRD uses OpenAPI v3 schema validation (`openAPIV3Sche
 
 | Spec Group | Purpose |
 |------------|---------|
+| `additional_display_details` | Extra annotations Kiali will look for on workloads/services to display as links |
+| `api` | (Deprecated after v1.73) Kiali API access settings |
 | `auth` | Authentication strategy (`openshift`, `token`, `openid`, `anonymous`, `header`) and OpenID Connect params |
 | `chat_ai` | AI assistant integration (providers, models, caching) |
 | `clustering` | Multi-cluster secret autodetect, remote cluster configuration |
+| `custom_dashboards` | Custom monitoring dashboard definitions |
 | `deployment` | Image, namespace, RBAC mode (`cluster_wide_access`), resources, affinity, ingress, TLS |
+| `extensions` | Extension configurations |
 | `external_services` | Prometheus, Grafana, Tracing (Jaeger/Tempo), Perses connection settings |
+| `health_config` | Health check thresholds and configuration |
 | `identity` | TLS certificate paths for the Kiali server's own identity |
-| `kiali_feature_flags` | Feature gates controlling UI/backend behavior |
-| `server` | Web root, port, history mode, metrics port |
-| `login_token` | JWT signing key reference |
+| `installation_tag` | Tag to distinguish multiple Kiali installations |
 | `istio_labels` | Label names used to recognize Istio workloads |
+| `istio_namespace` | (Deprecated after v2.11, ignored) Was the Istio control plane namespace; now auto-detected |
+| `kiali_feature_flags` | Feature gates controlling UI/backend behavior |
+| `kiali_internal` | Internal Kiali configuration |
+| `kubernetes_config` | Kubernetes client configuration |
+| `login_token` | JWT signing key reference |
+| `server` | Web root, port, history mode, metrics port |
+| `version` | Which versioned Ansible role to use for this CR |
 
 All defaults are defined in `roles/default/kiali-deploy/defaults/main.yml`. The CRD's `default:` fields in the schema must stay in sync with these Ansible defaults — enforced by `make verify-defaults`.
 
@@ -95,9 +107,10 @@ Key immutable fields (enforced at runtime in the Ansible role, not by CRD schema
 
 ## OSSMConsole CR Schema
 
-The `kiali.io_ossmconsoles.yaml` CRD configures the OpenShift Service Mesh Console plugin. Its spec is simpler than the Kiali CR, covering:
-- `deployment` — image, namespace, resources, KIALI_SERVER_URL
-- `kiali_client` — the URL the plugin uses to contact Kiali
+The `kiali.io_ossmconsoles.yaml` CRD configures the OpenShift Service Mesh Console plugin. Its spec has three top-level groups:
+- `version` — which versioned role to use
+- `deployment` — image (`imageName`, `imageVersion`, `imageDigest`, `imagePullPolicy`, `imagePullSecrets`) and `namespace`
+- `kiali` — how the plugin locates the Kiali server: `serviceName`, `serviceNamespace`, `servicePort`
 
 The OSSMConsole CR is OpenShift-only; the watches files for Kubernetes do not register a watcher for it.
 
@@ -118,15 +131,15 @@ Output goes to `_output/crd-docs/`. The generated HTML documents every field wit
 
 ## CRD Validation
 
-Three validation scripts run as part of `make validate`:
+Four checks run as prerequisites of `make validate`:
 
-**`hack/verify-crd-defaults.sh`** — verifies that every field with a `default:` in the CRD schema has a matching default in `roles/default/kiali-deploy/defaults/main.yml`. This prevents schema/role drift where the CRD advertises a default that Ansible doesn't honour.
+**`hack/verify-crd-defaults.sh`** (`make verify-defaults`) — dynamically discovers all `default:` fields in both CRDs and verifies they match the corresponding Ansible defaults: Kiali CRD vs `roles/default/kiali-deploy/defaults/main.yml`, and OSSMConsole CRD vs `roles/default/ossmconsole-deploy/defaults/main.yml`. The check uses a curated skip list for known intentional non-1:1 defaults, so not every `default:` must be an exact match.
 
-**`hack/verify-crd-backward-compatibility.sh`** — diffs the current CRD against `origin/master` to detect breaking changes (removed required fields, narrowed enums, type changes). Run automatically in CI via `make verify-crd-compatibility`.
+**`hack/verify-crd-backward-compatibility.sh`** (`make verify-crd-compatibility`) — diffs the current CRD against `origin/master` to detect breaking changes (removed required fields, narrowed enums, type changes).
 
-**`hack/verify-kiali-server-permissions.sh`** — checks that the RBAC permissions in the operator's ClusterRole match the permissions the Kiali Server actually needs. Prevents the operator from granting too many or too few permissions.
+**`hack/verify-kiali-server-permissions.sh`** (`make verify-kiali-server-permissions`) — checks that the RBAC permissions in the operator's ClusterRole match the permissions the Kiali Server actually needs.
 
-**`crd-docs/bin/validate-kiali-cr.sh`** / **`validate-ossmconsole-cr.sh`** — validate an example CR file against the CRD's schema using `kubectl` dry-run or a schema validation tool. Run via `make validate-cr`.
+**`crd-docs/bin/validate-kiali-cr.sh`** / **`validate-ossmconsole-cr.sh`** — validate an example CR file against the CRD's schema. These are invoked by `make validate-cr`, which is a **separate target not called by `make validate`**. Run it explicitly when modifying CRD schema or example CRs.
 
 ## CRD Synchronization
 
@@ -155,7 +168,7 @@ This copies the CRDs to:
 | File | Purpose |
 |------|---------|
 | `kiali_cr_minimal.yaml` | Minimal CR — only required fields |
-| `kiali_cr.yaml` | Full annotated CR with all options documented |
+| `kiali_cr.yaml` | Comment-only file pointing to the full example CR in `crd-docs/cr/` and the online reference docs |
 | `kiali_cr_dev.yaml` | Dev/testing CR with commonly needed overrides |
 
 `deploy/ossmconsole/ossmconsole_cr_dev.yaml` is the equivalent for the OSSMConsole.
