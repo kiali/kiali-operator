@@ -291,6 +291,10 @@ spec:
                         description: "Enable or disable the ChatAI store."
                         type: boolean
                         default: true
+                      inactivity_timeout:
+                        description: "Idle time allowed before the conversation is deleted due to inactivity."
+                        type: string
+                        default: "30m"
                       max_cache_memory_mb:
                         description: "The maximum cache memory for the ChatAI store."
                         type: integer
