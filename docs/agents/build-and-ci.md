@@ -27,6 +27,7 @@ scribe:
     - hack/verify-kiali-server-permissions.sh
     - deploy/deploy-kiali-operator.sh
     - requirements.yml
+    - dev-playbook-config/
   stale_flags: []
 ---
 
