@@ -1,9 +1,9 @@
 ---
 scribe:
   scan: "HEAD"
-  freshness: 70
+  freshness: 100
   human_input: 1
-  completeness: 70
+  completeness: 80
   inferred_sections:
     - id: "s1"
       heading: "Overview"
