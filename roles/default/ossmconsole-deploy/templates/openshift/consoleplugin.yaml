@@ -5,6 +5,8 @@ metadata:
   labels: {{ ossmconsole_resource_metadata_labels }}
 spec:
   displayName: "OpenShift Service Mesh Console"
+  i18n:
+    loadType: Preload
   backend:
     service:
       name: ossmconsole
