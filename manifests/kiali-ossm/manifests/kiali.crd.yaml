@@ -1736,21 +1736,17 @@ spec:
                     description: "If using a single scheme for app/version labeling, set this to the app label name being used. This is typically `app` or `app.kubernetes.io/name`. The default is unset, and Kiali will handle mixed schemes."
                     type: string
                   egress_gateway_label:
-                    description: "The selector label for Egress Gateway workload. This is typically `istio=egressgateway`."
+                    description: "DEPRECATED AFTER v2.27: This setting is deprecated and will be ignored."
                     type: string
-                    default: "istio=egressgateway"
                   ingress_gateway_label:
-                    description: "The selector label for Ingress Gateway workload. This is typically `istio=ingressgateway`."
+                    description: "DEPRECATED AFTER v2.27: This setting is deprecated and will be ignored."
                     type: string
-                    default: "istio=ingressgateway"
                   injection_label_name:
-                    description: "The name of the label used to instruct Istio to automatically inject sidecar proxies when applications are deployed."
+                    description: "DEPRECATED AFTER v2.27: This setting is deprecated and will be ignored. The injection label name is now hardcoded to the standard value."
                     type: string
-                    default: "istio-injection"
                   injection_label_rev:
-                    description: "The label used to identify the Istio revision."
+                    description: "DEPRECATED AFTER v2.27: This setting is deprecated and will be ignored. The injection label revision is now hardcoded to the standard value."
                     type: string
-                    default: "istio.io/rev"
                   version_label_name:
                     description: "If using a single scheme for app/version labeling, set this to the version label name being used. This is typically `version` or `app.kubernetes.io/version`. The default is unset, and Kiali will handle mixed schemes."
                     type: string
