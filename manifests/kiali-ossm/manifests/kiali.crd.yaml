@@ -250,6 +250,9 @@ spec:
                         enabled:
                           description: "Enable or disable the provider."
                           type: boolean
+                        endpoint:
+                          description: "The endpoint of the provider. This is only used if a model has no endpoint specified."
+                          type: string
                         key:
                           description: "The key of the provider. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                           type: string
