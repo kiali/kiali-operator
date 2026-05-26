@@ -2,7 +2,7 @@
 scribe:
   scan: "HEAD"
   freshness: 100
-  human_input: 1
+  human_input: 12
   completeness: 80
   inferred_sections:
     - id: "s1"
@@ -19,6 +19,8 @@ scribe:
       heading: "CR Lifecycle: Remove Flow"
     - id: "s7"
       heading: "Ansible Collections"
+    - id: "sa-token-and-secret-volume-mounts"
+      heading: "Secret Volume Mounts and Credential Rotation"
   watch_paths:
     - watches-k8s.yaml
     - watches-os.yaml
@@ -28,6 +30,7 @@ scribe:
     - roles/
     - requirements.yml
   stale_flags: []
+  review_notes: []
 ---
 
 # Operator Architecture
@@ -157,3 +160,74 @@ It removes:
 These must match the versions bundled in the base image (`quay.io/operator-framework/ansible-operator` or `registry.redhat.io/openshift4/ose-ansible-rhel9-operator`). Run `ansible-galaxy collection install -r requirements.yml --force-with-deps` to install locally for development.
 
 The operator image also ships an opt-in Ansible task profiler config at `${HOME}/ansible-profiler.cfg` (baked in by the Dockerfile's final step). Set `ANSIBLE_CONFIG=/opt/ansible/ansible-profiler.cfg` in the operator Deployment to enable per-task timing output after each reconciliation.
+
+## CA Bundle ConfigMap (OpenShift)
+
+On OpenShift, the operator creates a `<instance-name>-cabundle-openshift` ConfigMap in the Kiali namespace during every reconciliation (`templates/openshift/cabundle.yaml`). The ConfigMap carries a single annotation:
+
+```yaml
+annotations:
+  service.beta.openshift.io/inject-cabundle: "true"
+```
+
+This annotation instructs OpenShift's **service-ca-operator** to inject the cluster-internal service CA certificate into the ConfigMap's `service-ca.crt` key automatically. The operator does not write any certificate data itself — it only creates the ConfigMap shell; OpenShift fills it in.
+
+The Kiali pod `deployment.yaml` (OpenShift variant) then mounts `/kiali-cabundle` as a **projected volume** that merges three ConfigMaps:
+
+```yaml
+volumes:
+- name: kiali-cabundle
+  projected:
+    sources:
+    - configMap:
+        name: <instance>-cabundle-openshift        # operator-created; OpenShift injects service CA
+    - configMap:
+        name: <instance>-cabundle                  # optional; user-managed custom CAs
+        optional: true
+    - configMap:
+        name: <instance>-oauth-cabundle            # optional; OAuth CA bundle
+        optional: true
+```
+
+On **vanilla Kubernetes**, there is no operator-created cabundle ConfigMap. The deployment template mounts a single `configMap` volume pointing to `<instance>-cabundle` (the user-managed ConfigMap) and marks it `optional: true`.
+
+**Connection to Kiali's CredentialManager:** The Kiali server's `CredentialManager` (in `config/credentials.go`) watches `/kiali-cabundle/` for file changes. When OpenShift's service-ca-operator rotates the cluster CA, it updates the ConfigMap, which Kubernetes propagates to the projected volume mount. The CredentialManager detects the `..data` symlink change and rebuilds its cert pool — no pod restart required. The specific files picked up are:
+
+| File path in pod | Source |
+|---|---|
+| `/kiali-cabundle/service-ca.crt` | Injected by OpenShift service-ca-operator |
+| `/kiali-cabundle/additional-ca-bundle.pem` | From `<instance>-cabundle` ConfigMap (user-managed) |
+| `/kiali-cabundle/openid-server-ca.crt` | From `<instance>-cabundle` ConfigMap (OpenID CA) |
+| `/kiali-cabundle/oauth-server-ca.crt` | From `<instance>-oauth-cabundle` ConfigMap |
+
+The two ConfigMaps have distinct ownership: the operator **owns and manages** `<instance>-cabundle-openshift` (it creates, updates, and removes it during reconciliation), while the user **owns** `<instance>-cabundle` (the operator never writes to it). This separation is intentional — the operator must not overwrite user-managed CA content on every reconciliation.
+
+The `cabundle-openshift` ConfigMap is skipped when `deployment.remote_cluster_resources_only: true` (no Kiali server is deployed to that cluster, so there is nothing to mount).
+
+## Secret Volume Mounts and Credential Rotation
+
+The operator implements a **`secret:name:key` URI scheme** that allows any credential field in the Kiali CR to reference a Kubernetes Secret rather than storing the value inline. The deploy role (`tasks/main.yml`) scans all enabled external service auth blocks for fields matching the pattern `secret:<secretName>:<secretKey>` and builds a dict `kiali_deployment_secret_volumes` that maps each logical volume name (e.g. `grafana-username`) to its Secret name and key.
+
+**Coverage:** The following CR fields support the `secret:` prefix (the secret expansion only runs for enabled services — `secret:` fields under `prometheus.auth` are ignored when `prometheus.enabled: false`; this is intentional to avoid mounting secrets that Kiali won't use, keeping RBAC requirements minimal):
+- `external_services.prometheus.auth.{username, password, token, cert_file, key_file}`
+- `external_services.tracing.auth.{username, password, token, cert_file, key_file}`
+- `external_services.grafana.auth.{username, password, token, cert_file, key_file}`
+- `external_services.custom_dashboards.prometheus.auth.{username, password, token, cert_file, key_file}`
+- `external_services.perses.auth.{username, password, cert_file, key_file}`
+- `login_token.signing_key`
+- `chat_ai.providers[*].key` and `chat_ai.providers[*].models[*].key` (only when `enabled: true`)
+
+For each matched field, the deployment template creates a Secret volume and mounts it at `/kiali-override-secrets/<volume-name>/` with `readOnly: true`. The Kiali server reads the file from disk via `conf.GetCredential("/kiali-override-secrets/...")`, which is watched by `CredentialManager` for rotation.
+
+**Fixed volumes always mounted** (regardless of CR config):
+
+| Volume | Mount path | Source |
+|---|---|---|
+| `kiali-configuration` | `/kiali-configuration` | ConfigMap `<instance>` |
+| `kiali-secret` | `/kiali-secret` | Secret named by `deployment.secret_name` (default: `kiali`); optional; carries OIDC client secret at key `oidc-secret` |
+| `kiali-cabundle` | `/kiali-cabundle` | Projected volume (see above) |
+| `kiali-multi-cluster-secret` | `/kiali-remote-cluster-secrets/kiali-multi-cluster-secret` | Secret `kiali-multi-cluster-secret`; optional |
+
+**Security guardrail:** Any user-provided `additional_pod_containers_yaml` or `additional_pod_init_containers_yaml` that attempts to mount a secret-backed volume as read-write causes an immediate task failure. The deploy role (`tasks/main.yml`) identifies all secret-backed volume names and force-sets `readOnly: true` on any matching mounts in additional containers.
+
+**Propagation timing:** Kubernetes propagates Secret/ConfigMap changes to mounted volumes with up to ~60 seconds delay (kubelet sync period). The `external-auth-rotation-test` molecule scenario accounts for this by pausing 90 seconds after rotating Secrets before asserting that Kiali uses the new credentials.

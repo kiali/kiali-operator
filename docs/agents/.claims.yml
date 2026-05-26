@@ -1,8 +1,8 @@
 _meta:
-  operator-architecture_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
+  operator-architecture_extracted_at: "cd9714f4b3d7b83b5470d0ee3ae07e768ae6d905"
   crd-and-api_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
   olm-manifests_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
-  molecule-testing_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
+  molecule-testing_extracted_at: "cd9714f4b3d7b83b5470d0ee3ae07e768ae6d905"
   build-and-ci_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
 
 claims:
@@ -84,6 +84,58 @@ claims:
     type: pattern
     claim: "The kiali-remove role uses kiali_vars_remove (not kiali_vars) — a lighter dict defined in its own vars/main.yml and defaults/main.yml — to avoid coupling to deploy-role defaults."
     source: roles/default/kiali-remove/vars/main.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-11
+    topic: operator-architecture
+    type: pattern
+    claim: "On OpenShift, the operator creates <instance>-cabundle-openshift ConfigMap annotated with service.beta.openshift.io/inject-cabundle=true; OpenShift service-ca-operator injects the cluster service CA into it automatically"
+    source: "roles/default/kiali-deploy/templates/openshift/cabundle.yaml"
+    provenance:
+      origin: inferred
+
+  - id: oa-12
+    topic: operator-architecture
+    type: boundary
+    claim: "The operator owns <instance>-cabundle-openshift (creates/removes it); the user owns <instance>-cabundle (operator never writes to it) — separation is intentional to prevent clobbering user-managed CAs on every reconciliation"
+    source: "roles/default/kiali-deploy/templates/openshift/cabundle.yaml"
+    provenance:
+      origin: user
+      context: "The user owns the kiali cabundle and the operator should not touch it, but the operator owns and manages the openshift one."
+      recorded: "2026-05-26"
+
+  - id: oa-13
+    topic: operator-architecture
+    type: data_flow
+    claim: "On OpenShift, /kiali-cabundle is a projected volume merging three ConfigMaps: <instance>-cabundle-openshift (required), <instance>-cabundle (optional, user-managed), <instance>-oauth-cabundle (optional); on Kubernetes only <instance>-cabundle is mounted (optional, single configMap volume)"
+    source: "roles/default/kiali-deploy/templates/openshift/deployment.yaml"
+    provenance:
+      origin: inferred
+
+  - id: oa-14
+    topic: operator-architecture
+    type: pattern
+    claim: "The secret:name:key URI scheme in Kiali CR auth fields causes the operator to create a secret volume mounted at /kiali-override-secrets/<volume-name>/ with readOnly: true; only runs for enabled external services"
+    source: "roles/default/kiali-deploy/tasks/main.yml"
+    provenance:
+      origin: inferred
+
+  - id: oa-15
+    topic: operator-architecture
+    type: constraint
+    claim: "secret:name:key expansion is intentionally gated on service.enabled: false suppresses mounting — avoids mounting secrets for disabled services and keeps RBAC requirements minimal"
+    source: "roles/default/kiali-deploy/tasks/main.yml"
+    provenance:
+      origin: user
+      context: "Intentional — no point mounting secrets for disabled services, avoids unnecessary RBAC requirements."
+      recorded: "2026-05-26"
+
+  - id: oa-16
+    topic: operator-architecture
+    type: data_flow
+    claim: "Kubernetes propagates Secret/ConfigMap changes to pod volume mounts with up to ~60s delay (kubelet sync period); the external-auth-rotation-test scenario pauses 90s after rotation before asserting Kiali uses new credentials"
+    source: "molecule/external-auth-rotation-test/converge.yml"
     provenance:
       origin: inferred
 
@@ -255,6 +307,56 @@ claims:
     type: boundary
     claim: "manage-operator-olm.yml patches env vars into an existing OLM-installed CSV rather than deploying the operator itself, used when MOLECULE_OPERATOR_INSTALLER=skip."
     source: molecule/common/manage-operator-olm.yml
+    provenance:
+      origin: inferred
+
+  - id: mt-8
+    topic: molecule-testing
+    type: pattern
+    claim: "external-auth-rotation-test uses a real nginx echo server (grafana-echo) as the Grafana mock: it logs auth headers and validates mTLS client certs, enabling end-to-end verification that Kiali used rotated credentials"
+    source: "molecule/external-auth-rotation-test/external-auth-rotation-resources.yaml"
+    provenance:
+      origin: inferred
+
+  - id: mt-9
+    topic: molecule-testing
+    type: constraint
+    claim: "The external-auth-rotation-test design is intentionally full-stack (operator → k8s → kubelet → fsnotify → Kiali → HTTP call) because kubelet volume propagation cannot be faked in a unit test"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: user
+      context: "Confidence over speed — we want proof that the full stack works. An echo server gives a real end-to-end signal."
+      recorded: "2026-05-26"
+
+  - id: mt-10
+    topic: molecule-testing
+    type: data_flow
+    claim: "external-auth-rotation-test rotates: basic auth username+password, mTLS client cert/key (CN change), server CA in kiali-cabundle ConfigMap — all while Kiali runs; asserts no pod restart occurred"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: inferred
+
+  - id: mt-11
+    topic: molecule-testing
+    type: pattern
+    claim: "The test's negative CA phase sets kiali-cabundle to the old CA (which can't validate the new server cert), waits 90s for propagation, then asserts Kiali returns 503 and logs a TLS error — proving cert pool was rebuilt"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: inferred
+
+  - id: mt-12
+    topic: molecule-testing
+    type: constraint
+    claim: "Pre-generated self-signed test certs live in molecule/external-auth-rotation-test/certs/ (ca-old/new, client-old/new, server-old/new); CNs are 'kiali-client-old' and 'kiali-client-new'"
+    source: "molecule/external-auth-rotation-test/certs/"
+    provenance:
+      origin: inferred
+
+  - id: mt-13
+    topic: molecule-testing
+    type: pattern
+    claim: "ChatAI secret mounting gating is verified: disabled-model (model.enabled=false) and disabled-provider (provider.enabled=false) must have NO volumes in the pod spec even when secret: refs are present"
+    source: "molecule/external-auth-rotation-test/converge.yml"
     provenance:
       origin: inferred
 

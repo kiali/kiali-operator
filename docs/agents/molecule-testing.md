@@ -2,7 +2,7 @@
 scribe:
   scan: "HEAD"
   freshness: 100
-  human_input: 1
+  human_input: 9
   completeness: 90
   inferred_sections:
     - id: "s1"
@@ -19,6 +19,8 @@ scribe:
       heading: "Environment Variables"
     - id: "s7"
       heading: "Running Tests"
+    - id: "external-auth-rotation-test-scenario"
+      heading: "external-auth-rotation-test Scenario"
   watch_paths:
     - molecule/
   stale_flags: []
@@ -239,3 +241,59 @@ make CLUSTER_TYPE=openshift build-ui build test cluster-push
 | `-d` / `--debug` | Enable Ansible debug output |
 
 Under the hood the script runs tests inside a Podman container built from `molecule/docker/Dockerfile` in this repo — that image extends `quay.io/ansible/creator-ee` with jmespath, the `kubernetes` Python library, the Ansible collections from `requirements.yml`, and Helm. The operator repo is mounted into the container; KUBECONFIG is injected as a volume. (Docker is no longer supported; the `--docker-or-podman` flag is accepted for compatibility but podman is always used.)
+
+## external-auth-rotation-test Scenario
+
+`molecule/external-auth-rotation-test/` tests end-to-end credential rotation while Kiali is running — verifying that the CredentialManager picks up rotated secrets **without a pod restart**. The test design is intentionally full-stack (operator → Kubernetes → kubelet volume sync → fsnotify → Kiali → real HTTP call) because there is no way to fake kubelet volume propagation in a unit test, and the goal is confidence across every layer.
+
+### What is tested
+
+The scenario exercises rotation of all credential categories simultaneously:
+
+| Credential type | How tested |
+|---|---|
+| Basic auth username + password | Rotated via Secret update; verified in echo server access logs |
+| mTLS client cert + private key | Rotated via Secret update; CN change verified in echo server logs (`ssl_client_s_dn`) |
+| Server CA (custom CA bundle) | Rotated via `kiali-cabundle` ConfigMap update; CredentialManager cert pool rebuild verified via negative test |
+| ChatAI API keys (enabled providers/models) | `secret:` references mounted only when `enabled: true`; disabled providers/models assert NO volumes |
+
+**Test infrastructure: grafana-echo.** A real nginx server (`molecule/external-auth-rotation-test/external-auth-rotation-resources.yaml`) acts as the Grafana endpoint. It:
+- Serves TLS on port 8443 with mTLS client verification (`ssl_verify_client on`)
+- Logs `auth="$http_authorization"` and `client_dn="$ssl_client_s_dn"` in every request
+- Exposes `/api/search` returning a fake dashboard list so Kiali considers it a valid Grafana
+
+**Test certificates.** Pre-generated self-signed certs live in `molecule/external-auth-rotation-test/certs/`:
+- `ca-old.crt` / `ca-new.crt` — two CA generations
+- `client-old.crt|key` / `client-new.crt|key` — client certs signed by each CA (CNs: `kiali-client-old`, `kiali-client-new`)
+- `server-old.crt|key` / `server-new.crt|key` — server certs for the echo nginx
+
+### Test flow (converge.yml)
+
+1. **Initial state assertion** — Kiali starts with inline credentials (no `secret:` references); asserts no chat-ai secret volumes are mounted and ConfigMap has inline key strings.
+2. **Create echo infrastructure** — creates Secrets (grafana-username, grafana-password, grafana-client-cert, grafana-client-key, grafana-client-ca, grafana-server-tls), the `kiali-cabundle` ConfigMap with the old CA, and the grafana-echo Deployment + Service.
+3. **Switch CR to secret-based auth** — patches the Kiali CR to use `secret:grafana-username:value`, `secret:grafana-password:value`, `secret:grafana-client-cert:tls.crt`, `secret:grafana-client-key:tls.key` for Grafana auth, and `secret:chatai-*` refs for enabled ChatAI providers/models.
+4. **Wait for operator reconciliation** — `wait_for_kiali_cr_changes.yml` waits for CR status to reach `Successful`.
+5. **Pre-rotation verification** — triggers `GET /api/grafana` on the Kiali API; asserts echo server logs show `echo-user1:echo-pass1` credentials and `CN=kiali-client-old` in client DN.
+6. **Rotate all credentials** — updates Secrets (username → `echo-user2`, password → `echo-pass2`, new client cert/key with `CN=kiali-client-new`, new server TLS cert/key); updates `kiali-cabundle` ConfigMap with `ca-new.crt`.
+7. **Wait 90 seconds** — allows kubelet to propagate Secret/ConfigMap changes to the pod's projected volumes (Kubernetes guarantees eventual consistency, typically 60s; 90s is the test buffer).
+8. **Post-rotation verification** — triggers `GET /api/grafana` again; asserts echo server logs show `echo-user2:echo-pass2` and `CN=kiali-client-new`. Asserts Kiali pod was **not restarted** (restart count unchanged, pod name unchanged).
+9. **Negative CA test** — sets `additional-ca-bundle.pem` in `kiali-cabundle` to the **old** CA (which can't validate the new server cert). Waits 90s for propagation. Asserts Kiali returns `503` and logs contain TLS certificate error. This proves CredentialManager actually rebuilt the cert pool with the wrong CA.
+
+### Key assertions
+
+```yaml
+# Pod restart check (no restart allowed)
+- kiali_restart_count_after | int == kiali_restart_count_before | int
+- kiali_pod_name_after == kiali_pod_name_before
+
+# Post-rotation credential usage
+- echo_logs_post | regex_search('auth="Basic <echo-user2:echo-pass2 b64>"')
+- echo_logs_post | regex_search('client_dn="CN=kiali-client-new"')
+
+# Negative: wrong CA causes TLS failure
+# (Kiali returns 503; logs contain 'certificate signed by unknown authority')
+```
+
+### ChatAI secret gating
+
+The scenario also verifies the operator's **`enabled` gate** for ChatAI secrets: secrets for `disabled-model` (model.enabled=false) and `disabled-provider` (provider.enabled=false) must **not** be mounted as volumes, even when `secret:` refs are present. This is asserted by checking that no volumes named `chat-ai-model-enabled-provider-disabled-model` or `chat-ai-provider-disabled-provider` exist in the pod spec.
