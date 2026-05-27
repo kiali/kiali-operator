@@ -161,6 +161,13 @@ kiali_defaults:
           token: ""
           type: "none"
           use_kiali_token: false
+          oauth2:
+            audience: ""
+            auth_style: ""
+            client_id: ""
+            client_secret: ""
+            scopes: []
+            token_url: ""
           username: ""
         cache_duration: 7
         cache_enabled: true
@@ -181,6 +188,13 @@ kiali_defaults:
         token: ""
         type: "none"
         use_kiali_token: false
+        oauth2:
+          audience: ""
+          auth_style: ""
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         username: ""
       dashboards:
       - name: "Istio Service Dashboard"
@@ -222,6 +236,13 @@ kiali_defaults:
         password: ""
         type: "none"
         use_kiali_token: false
+        oauth2:
+          audience: ""
+          auth_style: ""
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         username: ""
       dashboards:
         - name: "Istio Service Dashboard"
@@ -254,6 +275,13 @@ kiali_defaults:
         token: ""
         type: "none"
         use_kiali_token: false
+        oauth2:
+          audience: ""
+          auth_style: ""
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         username: ""
       cache_duration: 7
       cache_enabled: true
@@ -275,6 +303,13 @@ kiali_defaults:
         token: ""
         type: "none"
         use_kiali_token: false
+        oauth2:
+          audience: ""
+          auth_style: ""
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         username: ""
       custom_headers: {}
       disable_version_check: false
