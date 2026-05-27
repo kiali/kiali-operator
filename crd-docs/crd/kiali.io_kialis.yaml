@@ -1092,6 +1092,7 @@ spec:
                                 default: false
                               key_file:
                                 description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
+                                type: string
                               oauth2:
                                 description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
                                 type: object
@@ -1116,7 +1117,6 @@ spec:
                                   token_url:
                                     description: "The URL of the OAuth2 token endpoint."
                                     type: string
-                                type: string
                               password:
                                 description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
@@ -1202,6 +1202,7 @@ spec:
                             default: false
                           key_file:
                             description: "The client private key file to use when accessing Grafana using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
+                            type: string
                           oauth2:
                             description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
                             type: object
@@ -1226,7 +1227,6 @@ spec:
                               token_url:
                                 description: "The URL of the OAuth2 token endpoint."
                                 type: string
-                            type: string
                           password:
                             description: "Password to be used when making requests to Grafana, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
@@ -1439,6 +1439,7 @@ spec:
                             default: false
                           key_file:
                             description: "The client private key file to use when accessing Perses using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
+                            type: string
                           oauth2:
                             description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
                             type: object
@@ -1463,7 +1464,6 @@ spec:
                               token_url:
                                 description: "The URL of the OAuth2 token endpoint."
                                 type: string
-                            type: string
                           password:
                             description: "Password to be used when making requests to Perses, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
@@ -1554,6 +1554,7 @@ spec:
                             default: false
                           key_file:
                             description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
+                            type: string
                           oauth2:
                             description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
                             type: object
@@ -1578,7 +1579,6 @@ spec:
                               token_url:
                                 description: "The URL of the OAuth2 token endpoint."
                                 type: string
-                            type: string
                           password:
                             description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
@@ -1668,6 +1668,7 @@ spec:
                             default: false
                           key_file:
                             description: "The client private key file to use when accessing the Tracing server using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
+                            type: string
                           oauth2:
                             description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
                             type: object
@@ -1692,7 +1693,6 @@ spec:
                               token_url:
                                 description: "The URL of the OAuth2 token endpoint."
                                 type: string
-                            type: string
                           password:
                             description: "Password to be used when making requests to the Tracing server, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
