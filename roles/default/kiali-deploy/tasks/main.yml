@@ -728,6 +728,46 @@
       {% set d = d | combine({'perses-key': {'secret_name': kiali_vars.external_services.perses.auth.key_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.key_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.perses.auth.key_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
+      {# Prepare the secret volume for prometheus oauth2 client_id #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.prometheus is defined and kiali_vars.external_services.prometheus.enabled is defined and kiali_vars.external_services.prometheus.enabled|bool == True and kiali_vars.external_services.prometheus.auth is defined and kiali_vars.external_services.prometheus.auth.oauth2 is defined and (kiali_vars.external_services.prometheus.auth.oauth2.client_id | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-oauth2-client-id': {'secret_name': kiali_vars.external_services.prometheus.auth.oauth2.client_id | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.oauth2.client_id | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for prometheus oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.prometheus is defined and kiali_vars.external_services.prometheus.enabled is defined and kiali_vars.external_services.prometheus.enabled|bool == True and kiali_vars.external_services.prometheus.auth is defined and kiali_vars.external_services.prometheus.auth.oauth2 is defined and (kiali_vars.external_services.prometheus.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-oauth2-client-secret': {'secret_name': kiali_vars.external_services.prometheus.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for tracing oauth2 client_id #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.tracing is defined and kiali_vars.external_services.tracing.enabled is defined and kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth is defined and kiali_vars.external_services.tracing.auth.oauth2 is defined and (kiali_vars.external_services.tracing.auth.oauth2.client_id | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-oauth2-client-id': {'secret_name': kiali_vars.external_services.tracing.auth.oauth2.client_id | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.oauth2.client_id | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for tracing oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.tracing is defined and kiali_vars.external_services.tracing.enabled is defined and kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth is defined and kiali_vars.external_services.tracing.auth.oauth2 is defined and (kiali_vars.external_services.tracing.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-oauth2-client-secret': {'secret_name': kiali_vars.external_services.tracing.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana oauth2 client_id #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.grafana is defined and kiali_vars.external_services.grafana.enabled is defined and kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth is defined and kiali_vars.external_services.grafana.auth.oauth2 is defined and (kiali_vars.external_services.grafana.auth.oauth2.client_id | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-oauth2-client-id': {'secret_name': kiali_vars.external_services.grafana.auth.oauth2.client_id | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.oauth2.client_id | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.grafana is defined and kiali_vars.external_services.grafana.enabled is defined and kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth is defined and kiali_vars.external_services.grafana.auth.oauth2 is defined and (kiali_vars.external_services.grafana.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-oauth2-client-secret': {'secret_name': kiali_vars.external_services.grafana.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for perses oauth2 client_id #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.perses is defined and kiali_vars.external_services.perses.enabled is defined and kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth is defined and kiali_vars.external_services.perses.auth.oauth2 is defined and (kiali_vars.external_services.perses.auth.oauth2.client_id | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'perses-oauth2-client-id': {'secret_name': kiali_vars.external_services.perses.auth.oauth2.client_id | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.oauth2.client_id | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for perses oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.perses is defined and kiali_vars.external_services.perses.enabled is defined and kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth is defined and kiali_vars.external_services.perses.auth.oauth2 is defined and (kiali_vars.external_services.perses.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'perses-oauth2-client-secret': {'secret_name': kiali_vars.external_services.perses.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
       {# Prepare the secret volume for login token signing key #}
       {% if kiali_vars is defined and kiali_vars.login_token is defined and (kiali_vars.login_token.signing_key | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
@@ -756,6 +796,16 @@
       {# Prepare the secret volume for customdashboards prometheus key_file #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'customdashboards-prometheus-key': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus oauth2 client_id #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2 is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_id | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-oauth2-client-id': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_id | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_id | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2 is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-oauth2-client-secret': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Prepare the secret volumes for chat_ai provider and model keys #}
