@@ -297,10 +297,6 @@ spec:
       prometheus:
         auth:
           insecure_skip_verify: false
-          password: ""
-          token: ""
-          type: "none" # Valid values: none, basic, bearer, oauth2
-          use_kiali_token: false
           oauth2:
             audience: ""
             auth_style: ""
@@ -308,6 +304,10 @@ spec:
             client_secret: ""
             scopes: []
             token_url: ""
+          password: ""
+          token: ""
+          type: "none" # Valid values: none, basic, bearer, oauth2
+          use_kiali_token: false
           username: ""
         cache_duration: 7
         cache_enabled: true
@@ -329,10 +329,6 @@ spec:
     grafana:
       auth:
         insecure_skip_verify: false
-        password: ""
-        token: ""
-        type: "none" # Valid values: none, basic, bearer, oauth2
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -340,6 +336,10 @@ spec:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        token: ""
+        type: "none" # Valid values: none, basic, bearer, oauth2
+        use_kiali_token: false
         username: ""
       dashboards:
       - name: "Istio Service Dashboard"
@@ -378,9 +378,6 @@ spec:
     perses:
       auth:
         insecure_skip_verify: false
-        password: ""
-        type: "none" # Valid values: none, basic, bearer, oauth2
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -388,6 +385,9 @@ spec:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        type: "none" # Valid values: none, basic, bearer, oauth2
+        use_kiali_token: false
         username: ""
       dashboards:
       - name: "Istio Service Dashboard"
@@ -416,10 +416,6 @@ spec:
     prometheus:
       auth:
         insecure_skip_verify: false
-        password: ""
-        token: ""
-        type: "none" # Valid values: none, basic, bearer, oauth2
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -427,6 +423,10 @@ spec:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        token: ""
+        type: "none" # Valid values: none, basic, bearer, oauth2
+        use_kiali_token: false
         username: ""
       cache_duration: 7
       cache_enabled: true
@@ -449,10 +449,6 @@ spec:
     tracing:
       auth:
         insecure_skip_verify: false
-        password: ""
-        token: ""
-        type: "none" # Valid values: none, basic, bearer, oauth2
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -460,6 +456,10 @@ spec:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        token: ""
+        type: "none" # Valid values: none, basic, bearer, oauth2
+        use_kiali_token: false
         username: ""
       # default: custom_headers is empty
       custom_headers:

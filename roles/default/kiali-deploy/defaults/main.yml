@@ -157,10 +157,6 @@ kiali_defaults:
       prometheus:
         auth:
           insecure_skip_verify: false
-          password: ""
-          token: ""
-          type: "none"
-          use_kiali_token: false
           oauth2:
             audience: ""
             auth_style: ""
@@ -168,6 +164,10 @@ kiali_defaults:
             client_secret: ""
             scopes: []
             token_url: ""
+          password: ""
+          token: ""
+          type: "none"
+          use_kiali_token: false
           username: ""
         cache_duration: 7
         cache_enabled: true
@@ -184,10 +184,6 @@ kiali_defaults:
     grafana:
       auth:
         insecure_skip_verify: false
-        password: ""
-        token: ""
-        type: "none"
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -195,6 +191,10 @@ kiali_defaults:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
         username: ""
       dashboards:
       - name: "Istio Service Dashboard"
@@ -233,9 +233,6 @@ kiali_defaults:
     perses:
       auth:
         insecure_skip_verify: false
-        password: ""
-        type: "none"
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -243,6 +240,9 @@ kiali_defaults:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        type: "none"
+        use_kiali_token: false
         username: ""
       dashboards:
         - name: "Istio Service Dashboard"
@@ -271,10 +271,6 @@ kiali_defaults:
     prometheus:
       auth:
         insecure_skip_verify: false
-        password: ""
-        token: ""
-        type: "none"
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -282,6 +278,10 @@ kiali_defaults:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
         username: ""
       cache_duration: 7
       cache_enabled: true
@@ -299,10 +299,6 @@ kiali_defaults:
     tracing:
       auth:
         insecure_skip_verify: false
-        password: ""
-        token: ""
-        type: "none"
-        use_kiali_token: false
         oauth2:
           audience: ""
           auth_style: ""
@@ -310,6 +306,10 @@ kiali_defaults:
           client_secret: ""
           scopes: []
           token_url: ""
+        password: ""
+        token: ""
+        type: "none"
+        use_kiali_token: false
         username: ""
       custom_headers: {}
       disable_version_check: false
