@@ -6,8 +6,13 @@ on:
     paths:
       - 'crd-docs/crd/**'
 
+permissions: read-all
+
 jobs:
   validate-crd-sync:
+    permissions:
+      contents: read
+      pull-requests: read
     name: Validate CRD Synchronization with Helm Charts
     runs-on: ubuntu-latest
 

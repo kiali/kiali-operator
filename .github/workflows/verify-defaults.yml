@@ -28,8 +28,12 @@ on:
       # Makefile changes that might affect verification
       - 'Makefile'
 
+permissions: read-all
+
 jobs:
   verify-defaults:
+    permissions:
+      contents: read
     name: Verify CRD Defaults Match Ansible Defaults
     runs-on: ubuntu-latest
     steps:

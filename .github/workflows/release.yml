@@ -25,8 +25,12 @@ on:
         default: quay.io/kiali/kiali-operator
         required: true
 
+permissions: read-all
+
 jobs:
   initialize:
+    permissions:
+      contents: read
     name: Initialize
     runs-on: ubuntu-latest
     outputs:
@@ -186,6 +190,9 @@ jobs:
         echo "Quay tag": ${{ steps.quay_tag.outputs.quay_tag }}
 
   release:
+    permissions:
+      contents: write
+      pull-requests: write
     name: Release
     if: ${{ needs.initialize.outputs.release_type != 'skip' && ((github.event_name == 'schedule' && github.repository == 'kiali/kiali-operator') || github.event_name != 'schedule') }}
     runs-on: ubuntu-latest

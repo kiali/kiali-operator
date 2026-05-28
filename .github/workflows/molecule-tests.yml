@@ -8,8 +8,12 @@ on:
       - 'roles/default/**'
       - '.github/workflows/molecule-tests.yml'
 
+permissions: read-all
+
 jobs:
   molecule-tests:
+    permissions:
+      contents: read
     name: Molecule Tests
     runs-on: ubuntu-latest
     steps:

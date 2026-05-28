@@ -9,8 +9,12 @@ on:
         default: v2.22
         type: string
 
+permissions: read-all
+
 jobs:
   release_tag:
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
     - name: Checkout branch

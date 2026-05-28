@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [master]
 
+permissions: read-all
+
 jobs:
   build:
+    permissions:
+      contents: read
     name: Build and Test
     runs-on: ubuntu-latest
     steps:
