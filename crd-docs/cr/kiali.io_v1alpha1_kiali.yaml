@@ -45,9 +45,10 @@ spec:
       #token_inactivity_timeout:
       #token_max_age:
 
-  chat_ai:    
-    default_provider: ""
+  chat_ai:
     enabled: false
+    default_provider: ""
+    tools: {}
     providers: []
     store_config:
       enabled: true

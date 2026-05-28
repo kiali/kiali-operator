@@ -49,6 +49,7 @@ kiali_defaults:
     default_provider: ""
     enabled: false
     providers: []
+    tools: {}
     store_config:
       enabled: true
       inactivity_timeout: "30m"
