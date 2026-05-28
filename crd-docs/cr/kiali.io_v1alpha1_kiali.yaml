@@ -299,7 +299,7 @@ spec:
           insecure_skip_verify: false
           oauth2:
             audience: ""
-            auth_style: ""
+            auth_style: "autodetect"
             client_id: ""
             client_secret: ""
             scopes: []
@@ -331,7 +331,7 @@ spec:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: ""
+          auth_style: "autodetect"
           client_id: ""
           client_secret: ""
           scopes: []
@@ -380,7 +380,7 @@ spec:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: ""
+          auth_style: "autodetect"
           client_id: ""
           client_secret: ""
           scopes: []
@@ -418,7 +418,7 @@ spec:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: ""
+          auth_style: "autodetect"
           client_id: ""
           client_secret: ""
           scopes: []
@@ -451,7 +451,7 @@ spec:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: ""
+          auth_style: "autodetect"
           client_id: ""
           client_secret: ""
           scopes: []
