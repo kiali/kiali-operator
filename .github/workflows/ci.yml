@@ -27,7 +27,7 @@ jobs:
       run: |
         sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
         wget -qO /tmp/yq_checksums "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/checksums"
-        echo "$(grep 'yq_linux_amd64' /tmp/yq_checksums | awk '{print $1}')  /usr/local/bin/yq" | sha256sum --check
+        echo "$(grep '^yq_linux_amd64 ' /tmp/yq_checksums | awk '{print $19}')  /usr/local/bin/yq" | sha256sum --check
         sudo chmod +x /usr/local/bin/yq
         make validate
 
