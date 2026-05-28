@@ -28,19 +28,25 @@ on:
       # Makefile changes that might affect verification
       - 'Makefile'
 
+permissions: read-all
+
 jobs:
   verify-defaults:
+    permissions:
+      contents: read
     name: Verify CRD Defaults Match Ansible Defaults
     runs-on: ubuntu-latest
     steps:
     - name: Check out code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
 
     - name: Install yq
       env:
         YQ_VERSION: v4.40.5
       run: |
         sudo wget -qO /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+        wget -qO /tmp/yq_checksums "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/checksums"
+        echo "$(grep '^yq_linux_amd64 ' /tmp/yq_checksums | awk '{print $19}')  /usr/local/bin/yq" | sha256sum --check
         sudo chmod +x /usr/local/bin/yq
 
     - name: Verify CRD defaults match Ansible defaults

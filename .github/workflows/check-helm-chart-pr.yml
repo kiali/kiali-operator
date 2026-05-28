@@ -6,8 +6,13 @@ on:
     paths:
       - 'crd-docs/crd/**'
 
+permissions: read-all
+
 jobs:
   validate-crd-sync:
+    permissions:
+      contents: read
+      pull-requests: read
     name: Validate CRD Synchronization with Helm Charts
     runs-on: ubuntu-latest
 
@@ -54,7 +59,7 @@ jobs:
         echo "$helm_prs" | jq -r '.[] | "  - #\(.number): \(.title)"'
 
     - name: Check out helm-charts PR
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       with:
         repository: ${{ github.event.pull_request.head.repo.owner.login }}/helm-charts
         ref: ${{ github.event.pull_request.head.ref }}

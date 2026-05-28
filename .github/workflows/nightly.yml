@@ -17,8 +17,12 @@ on:
         default: quay.io/kiali/kiali-operator
         required: true
 
+permissions: read-all
+
 jobs:
   initialize:
+    permissions:
+      contents: read
     name: Initialize
     runs-on: ubuntu-latest
     outputs:
@@ -26,7 +30,7 @@ jobs:
       quay_tag: ${{ steps.quay_tag.outputs.quay_tag }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       with:
         ref: ${{ github.event.inputs.release_branch || github.ref_name }}
 
@@ -53,6 +57,8 @@ jobs:
         echo "Quay tag": ${{ steps.quay_tag.outputs.quay_tag }}
 
   push:
+    permissions:
+      contents: read
     name: Push latest
     # Avoid schedule workflows from forks to push images
     if: ${{ (github.event_name == 'schedule' && github.repository == 'kiali/kiali-operator') || github.event_name != 'schedule' }}
@@ -62,7 +68,7 @@ jobs:
       OPERATOR_QUAY_TAG: ${{ needs.initialize.outputs.quay_tag }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       with:
         ref: ${{ github.event.inputs.release_branch }}
 
