@@ -232,6 +232,20 @@ spec:
                     description: "Enable or disable the ChatAI feature."
                     type: boolean
                     default: false               
+                  tools:
+                    description: "Optional global filter for the ChatAI toolset. `enabled_tools` acts as an allowlist. `disabled_tools` acts as a denylist and is applied afterwards."
+                    type: object
+                    properties:
+                      disabled_tools:
+                        description: "A denylist of tool names to hide from all ChatAI providers. Applied after `enabled_tools`."
+                        type: array
+                        items:
+                          type: string
+                      enabled_tools:
+                        description: "An allowlist of tool names to expose to ChatAI providers. If set, only the listed tool names remain available."
+                        type: array
+                        items:
+                          type: string
                   providers:
                     description: "A list of providers that can be used for the ChatAI feature. This is the list of providers that will be available to the user to choose from."
                     type: array
@@ -256,6 +270,20 @@ spec:
                         key:
                           description: "The key of the provider. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                           type: string
+                        tools:
+                          description: "Optional provider-specific filter for the ChatAI toolset. Applied after the global `chat_ai.tools` filter. It can further restrict tools for this provider, but it cannot re-enable tools that were already filtered out globally or by feature availability."
+                          type: object
+                          properties:
+                            disabled_tools:
+                              description: "A denylist of tool names to hide from this ChatAI provider. Applied after `enabled_tools`."
+                              type: array
+                              items:
+                                type: string
+                            enabled_tools:
+                              description: "An allowlist of tool names to expose to this ChatAI provider. If set, only the listed tool names remain available for this provider."
+                              type: array
+                              items:
+                                type: string
                         models:
                           description: "A list of models that can be used for the ChatAI feature. This is the list of models that will be available to the user to choose from."
                           type: array
