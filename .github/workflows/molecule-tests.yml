@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout kiali-operator source
-      uses: actions/checkout@v5
+      uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd  # v5
       with:
         path: kiali-operator
         fetch-depth: 0
@@ -146,18 +146,18 @@ jobs:
         echo "KIALI_OPERATOR_FORK=$KIALI_OPERATOR_FORK" >> $GITHUB_OUTPUT
 
     - name: Install Helm
-      uses: Azure/setup-helm@v4.3.1
+      uses: Azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4  # v4.3.1
       with:
         version: 'v3.18.4'
 
     - name: Set up Go
-      uses: actions/setup-go@v6
+      uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c  # v6
       with:
         go-version: 'stable'
         cache: false
 
     - name: Setup Node.js
-      uses: actions/setup-node@v5
+      uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444  # v5
       with:
         node-version: '24'
 
