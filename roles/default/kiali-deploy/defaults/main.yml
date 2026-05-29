@@ -159,7 +159,7 @@ kiali_defaults:
           insecure_skip_verify: false
           oauth2:
             audience: ""
-            auth_style: "autodetect"
+            auth_style: "header"
             client_id: ""
             client_secret: ""
             scopes: []
@@ -186,7 +186,7 @@ kiali_defaults:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: "autodetect"
+          auth_style: "header"
           client_id: ""
           client_secret: ""
           scopes: []
@@ -235,7 +235,7 @@ kiali_defaults:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: "autodetect"
+          auth_style: "header"
           client_id: ""
           client_secret: ""
           scopes: []
@@ -273,7 +273,7 @@ kiali_defaults:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: "autodetect"
+          auth_style: "header"
           client_id: ""
           client_secret: ""
           scopes: []
@@ -301,7 +301,7 @@ kiali_defaults:
         insecure_skip_verify: false
         oauth2:
           audience: ""
-          auth_style: "autodetect"
+          auth_style: "header"
           client_id: ""
           client_secret: ""
           scopes: []
