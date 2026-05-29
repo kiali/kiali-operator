@@ -1106,7 +1106,7 @@ spec:
                                     default: "autodetect"
                                     enum: ["autodetect", "header", "params"]
                                   client_id:
-                                    description: "The OAuth2 client ID. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`."
+                                    description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
                                     type: string
                                   client_secret:
                                     description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
@@ -1218,7 +1218,7 @@ spec:
                                 default: "autodetect"
                                 enum: ["autodetect", "header", "params"]
                               client_id:
-                                description: "The OAuth2 client ID. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`."
+                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
                                 type: string
                               client_secret:
                                 description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
@@ -1457,7 +1457,7 @@ spec:
                                 default: "autodetect"
                                 enum: ["autodetect", "header", "params"]
                               client_id:
-                                description: "The OAuth2 client ID. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`."
+                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
                                 type: string
                               client_secret:
                                 description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
@@ -1574,7 +1574,7 @@ spec:
                                 default: "autodetect"
                                 enum: ["autodetect", "header", "params"]
                               client_id:
-                                description: "The OAuth2 client ID. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`."
+                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
                                 type: string
                               client_secret:
                                 description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
@@ -1690,7 +1690,7 @@ spec:
                                 default: "autodetect"
                                 enum: ["autodetect", "header", "params"]
                               client_id:
-                                description: "The OAuth2 client ID. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`."
+                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
                                 type: string
                               client_secret:
                                 description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."

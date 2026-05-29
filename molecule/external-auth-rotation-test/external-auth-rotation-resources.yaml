@@ -201,3 +201,12 @@ items:
   type: Opaque
   stringData:
     api-key: enabled-model-api-key-67890
+# OAuth2 client_secret for Prometheus - should be mounted when auth.type=oauth2
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: prometheus-oauth2-creds
+    namespace: "{{ kiali.install_namespace }}"
+  type: Opaque
+  stringData:
+    client_secret: test-prometheus-oauth2-secret

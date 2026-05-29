@@ -123,6 +123,24 @@
       fail_msg: "Expected all grafana secret volumes and mounts to be present in Kiali pod"
       success_msg: "Verified all grafana secret volumes and mounts are present"
 
+  - name: Assert Kiali pod has prometheus-oauth2-client-secret volume and mount
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      kiali_container: "{{ kiali_pod_spec.containers | selectattr('name', 'equalto', 'kiali') | first }}"
+      oauth2_volume: "{{ kiali_pod_spec.volumes | selectattr('name', 'equalto', 'prometheus-oauth2-client-secret') | list | first | default({}) }}"
+      oauth2_mount: "{{ kiali_container.volumeMounts | selectattr('name', 'equalto', 'prometheus-oauth2-client-secret') | list | first | default({}) }}"
+    assert:
+      that:
+      - oauth2_volume.name is defined
+      - oauth2_volume.secret.secretName == 'prometheus-oauth2-creds'
+      - oauth2_volume.secret['items'][0].key == 'client_secret'
+      - oauth2_volume.secret['items'][0].path == 'value.txt'
+      - oauth2_mount.name is defined
+      - oauth2_mount.mountPath == '/kiali-override-secrets/prometheus-oauth2-client-secret'
+      - oauth2_mount.readOnly == true
+      fail_msg: "Expected prometheus oauth2 client_secret volume and mount (auth.type=oauth2)"
+      success_msg: "Verified prometheus oauth2 client_secret volume and mount are present"
+
   # Verify that ChatAI secrets are ONLY mounted when enabled=true
   - name: Assert Kiali pod has enabled ChatAI provider key secret volume and mount
     vars:
