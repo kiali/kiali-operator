@@ -22,6 +22,16 @@
       fail_msg: "Expected NO chat-ai secret volumes in initial pod (using inline keys), but found: {{ chat_ai_volumes | map(attribute='name') | list }}"
       success_msg: "Verified initial pod has no chat-ai secret volumes (inline keys are used)"
 
+  - name: Assert initial Kiali pod has NO prometheus-oauth2 secret volumes (inline secret used)
+    vars:
+      kiali_pod_spec: "{{ kiali_pod.resources[0].spec }}"
+      oauth2_volumes: "{{ kiali_pod_spec.volumes | selectattr('name', 'match', '^prometheus-oauth2-') | list }}"
+    assert:
+      that:
+      - oauth2_volumes | length == 0
+      fail_msg: "Expected NO prometheus-oauth2 secret volumes in initial pod (using inline secret), but found: {{ oauth2_volumes | map(attribute='name') | list }}"
+      success_msg: "Verified initial pod has no prometheus-oauth2 secret volumes (inline secret is used)"
+
   - name: Assert Kiali ConfigMap has inline chat_ai keys (not secret references)
     vars:
       provider_key: "{{ kiali_configmap.chat_ai.providers | selectattr('name', 'equalto', 'enabled-provider') | map(attribute='key') | first }}"
@@ -97,8 +107,14 @@
             model: gpt-4-azure
             enabled: true
             key: "secret:chatai-model-disabled-provider-key:api-key"
+      prometheus_oauth2_update:
+        type: "oauth2"
+        oauth2:
+          client_id: "test-prometheus-client"
+          client_secret: "secret:prometheus-oauth2-creds:client_secret"
+          token_url: "https://idp.example.com/token"
     set_fact:
-      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}}, 'chat_ai': chat_ai_update}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}, 'prometheus': {'auth': prometheus_oauth2_update}}, 'chat_ai': chat_ai_update}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml

@@ -36,7 +36,7 @@ spec:
         type: "oauth2"
         oauth2:
           client_id: "test-prometheus-client"
-          client_secret: "secret:prometheus-oauth2-creds:client_secret"
+          client_secret: "inline-prometheus-secret"
           token_url: "https://idp.example.com/token"
     grafana:
       enabled: true
