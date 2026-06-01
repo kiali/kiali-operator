@@ -297,9 +297,16 @@ spec:
       prometheus:
         auth:
           insecure_skip_verify: false
+          oauth2:
+            audience: ""
+            auth_style: "header"
+            client_id: ""
+            client_secret: ""
+            scopes: []
+            token_url: ""
           password: ""
           token: ""
-          type: "none"
+          type: "none" # Valid values: none, basic, bearer, oauth2
           use_kiali_token: false
           username: ""
         cache_duration: 7
@@ -322,9 +329,16 @@ spec:
     grafana:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         token: ""
-        type: "none"
+        type: "none" # Valid values: none, basic, bearer, oauth2
         use_kiali_token: false
         username: ""
       dashboards:
@@ -364,8 +378,15 @@ spec:
     perses:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
-        type: "none"
+        type: "none" # Valid values: none, basic, bearer, oauth2
         use_kiali_token: false
         username: ""
       dashboards:
@@ -395,9 +416,16 @@ spec:
     prometheus:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         token: ""
-        type: "none"
+        type: "none" # Valid values: none, basic, bearer, oauth2
         use_kiali_token: false
         username: ""
       cache_duration: 7
@@ -421,9 +449,16 @@ spec:
     tracing:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         token: ""
-        type: "none"
+        type: "none" # Valid values: none, basic, bearer, oauth2
         use_kiali_token: false
         username: ""
       # default: custom_headers is empty

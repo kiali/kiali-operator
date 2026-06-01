@@ -159,6 +159,15 @@ spec:
       project: "istio-monitoring"
       url_format: ""
     prometheus:
+      auth:
+        type: oauth2
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: "test-client-id"
+          client_secret: "test-client-secret"
+          scopes: []
+          token_url: "https://login.example.com/token"
       custom_headers:
         X-Prometheus-Header: "prometheus-value"
       query_scope:
@@ -169,6 +178,15 @@ spec:
         retention_period: "30d"
         scrape_interval: "15s"
     tracing:
+      auth:
+        type: oauth2
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: "test-client-id"
+          client_secret: "test-client-secret"
+          scopes: []
+          token_url: "https://login.example.com/token"
       custom_headers:
         X-Jaeger-Header: "jaeger-value"
       disable_version_check: false
@@ -186,7 +204,7 @@ spec:
         org_id: "1"
         tenant: ""
         url_format: "grafana"
-      use_grpc: true
+      use_grpc: false
       use_waypoint_name: false
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 

@@ -508,6 +508,117 @@
   - can_i_create_clusterrolebindings.result.status.allowed is defined
   - can_i_create_clusterrolebindings.result.status.allowed == False
 
+- name: Validate oauth2 auth config for prometheus
+  fail:
+    msg: "external_services.prometheus.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
+  when:
+  - kiali_vars.external_services.prometheus is defined
+  - kiali_vars.external_services.prometheus.auth is defined
+  - kiali_vars.external_services.prometheus.auth.type | default('') == 'oauth2'
+  - (kiali_vars.external_services.prometheus.auth.oauth2 is not defined) or
+    (kiali_vars.external_services.prometheus.auth.oauth2.client_id | default('') == '') or
+    (kiali_vars.external_services.prometheus.auth.oauth2.token_url | default('') == '')
+
+- name: Validate oauth2 auth config for tracing
+  fail:
+    msg: "external_services.tracing.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
+  when:
+  - kiali_vars.external_services.tracing is defined
+  - kiali_vars.external_services.tracing.auth is defined
+  - kiali_vars.external_services.tracing.auth.type | default('') == 'oauth2'
+  - (kiali_vars.external_services.tracing.auth.oauth2 is not defined) or
+    (kiali_vars.external_services.tracing.auth.oauth2.client_id | default('') == '') or
+    (kiali_vars.external_services.tracing.auth.oauth2.token_url | default('') == '')
+
+- name: Validate oauth2 auth config for grafana
+  fail:
+    msg: "external_services.grafana.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
+  when:
+  - kiali_vars.external_services.grafana is defined
+  - kiali_vars.external_services.grafana.auth is defined
+  - kiali_vars.external_services.grafana.auth.type | default('') == 'oauth2'
+  - (kiali_vars.external_services.grafana.auth.oauth2 is not defined) or
+    (kiali_vars.external_services.grafana.auth.oauth2.client_id | default('') == '') or
+    (kiali_vars.external_services.grafana.auth.oauth2.token_url | default('') == '')
+
+- name: Validate oauth2 auth config for perses
+  fail:
+    msg: "external_services.perses.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
+  when:
+  - kiali_vars.external_services.perses is defined
+  - kiali_vars.external_services.perses.auth is defined
+  - kiali_vars.external_services.perses.auth.type | default('') == 'oauth2'
+  - (kiali_vars.external_services.perses.auth.oauth2 is not defined) or
+    (kiali_vars.external_services.perses.auth.oauth2.client_id | default('') == '') or
+    (kiali_vars.external_services.perses.auth.oauth2.token_url | default('') == '')
+
+- name: Validate oauth2 auth config for custom_dashboards prometheus
+  fail:
+    msg: "external_services.custom_dashboards.prometheus.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
+  when:
+  - kiali_vars.external_services.custom_dashboards is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.auth is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.auth.type | default('') == 'oauth2'
+  - (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2 is not defined) or
+    (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_id | default('') == '') or
+    (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.token_url | default('') == '')
+
+- name: Validate tracing oauth2 is not used with gRPC
+  fail:
+    msg: "external_services.tracing cannot use oauth2 auth with use_grpc=true (gRPC does not support HTTP-based OAuth2 token injection)"
+  when:
+  - kiali_vars.external_services.tracing is defined
+  - kiali_vars.external_services.tracing.auth is defined
+  - kiali_vars.external_services.tracing.auth.type | default('') == 'oauth2'
+  - kiali_vars.external_services.tracing.use_grpc | default(True) | bool == True
+
+- name: Validate prometheus oauth2 is not used with use_kiali_token
+  fail:
+    msg: "external_services.prometheus cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
+  when:
+  - kiali_vars.external_services.prometheus is defined
+  - kiali_vars.external_services.prometheus.auth is defined
+  - kiali_vars.external_services.prometheus.auth.type | default('') == 'oauth2'
+  - kiali_vars.external_services.prometheus.auth.use_kiali_token | default(False) | bool == True
+
+- name: Validate tracing oauth2 is not used with use_kiali_token
+  fail:
+    msg: "external_services.tracing cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
+  when:
+  - kiali_vars.external_services.tracing is defined
+  - kiali_vars.external_services.tracing.auth is defined
+  - kiali_vars.external_services.tracing.auth.type | default('') == 'oauth2'
+  - kiali_vars.external_services.tracing.auth.use_kiali_token | default(False) | bool == True
+
+- name: Validate grafana oauth2 is not used with use_kiali_token
+  fail:
+    msg: "external_services.grafana cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
+  when:
+  - kiali_vars.external_services.grafana is defined
+  - kiali_vars.external_services.grafana.auth is defined
+  - kiali_vars.external_services.grafana.auth.type | default('') == 'oauth2'
+  - kiali_vars.external_services.grafana.auth.use_kiali_token | default(False) | bool == True
+
+- name: Validate perses oauth2 is not used with use_kiali_token
+  fail:
+    msg: "external_services.perses cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
+  when:
+  - kiali_vars.external_services.perses is defined
+  - kiali_vars.external_services.perses.auth is defined
+  - kiali_vars.external_services.perses.auth.type | default('') == 'oauth2'
+  - kiali_vars.external_services.perses.auth.use_kiali_token | default(False) | bool == True
+
+- name: Validate custom_dashboards prometheus oauth2 is not used with use_kiali_token
+  fail:
+    msg: "external_services.custom_dashboards.prometheus cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
+  when:
+  - kiali_vars.external_services.custom_dashboards is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.auth is defined
+  - kiali_vars.external_services.custom_dashboards.prometheus.auth.type | default('') == 'oauth2'
+  - kiali_vars.external_services.custom_dashboards.prometheus.auth.use_kiali_token | default(False) | bool == True
+
 - include_tasks: get-discovery-selector-namespaces.yml
 
 # If Istio and Kiali are not co-located, the user will need to explicitly set discovery selectors themselves to tell Kiali where that namespace is.
@@ -728,6 +839,26 @@
       {% set d = d | combine({'perses-key': {'secret_name': kiali_vars.external_services.perses.auth.key_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.key_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.perses.auth.key_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
+      {# Prepare the secret volume for prometheus oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.prometheus is defined and kiali_vars.external_services.prometheus.enabled is defined and kiali_vars.external_services.prometheus.enabled|bool == True and kiali_vars.external_services.prometheus.auth is defined and (kiali_vars.external_services.prometheus.auth.type | default('')) == 'oauth2' and kiali_vars.external_services.prometheus.auth.oauth2 is defined and (kiali_vars.external_services.prometheus.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'prometheus-oauth2-client-secret': {'secret_name': kiali_vars.external_services.prometheus.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.prometheus.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for tracing oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.tracing is defined and kiali_vars.external_services.tracing.enabled is defined and kiali_vars.external_services.tracing.enabled|bool == True and kiali_vars.external_services.tracing.auth is defined and (kiali_vars.external_services.tracing.auth.type | default('')) == 'oauth2' and kiali_vars.external_services.tracing.auth.oauth2 is defined and (kiali_vars.external_services.tracing.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'tracing-oauth2-client-secret': {'secret_name': kiali_vars.external_services.tracing.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.tracing.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for grafana oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.grafana is defined and kiali_vars.external_services.grafana.enabled is defined and kiali_vars.external_services.grafana.enabled|bool == True and kiali_vars.external_services.grafana.auth is defined and (kiali_vars.external_services.grafana.auth.type | default('')) == 'oauth2' and kiali_vars.external_services.grafana.auth.oauth2 is defined and (kiali_vars.external_services.grafana.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'grafana-oauth2-client-secret': {'secret_name': kiali_vars.external_services.grafana.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.grafana.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for perses oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.perses is defined and kiali_vars.external_services.perses.enabled is defined and kiali_vars.external_services.perses.enabled|bool == True and kiali_vars.external_services.perses.auth is defined and (kiali_vars.external_services.perses.auth.type | default('')) == 'oauth2' and kiali_vars.external_services.perses.auth.oauth2 is defined and (kiali_vars.external_services.perses.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'perses-oauth2-client-secret': {'secret_name': kiali_vars.external_services.perses.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.perses.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
       {# Prepare the secret volume for login token signing key #}
       {% if kiali_vars is defined and kiali_vars.login_token is defined and (kiali_vars.login_token.signing_key | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'login-token-signing-key': {'secret_name': kiali_vars.login_token.signing_key | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.login_token.signing_key | regex_replace('secret:.+:(.+)', '\\1') }}) %}
@@ -756,6 +887,11 @@
       {# Prepare the secret volume for customdashboards prometheus key_file #}
       {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | default('')) | regex_search('secret:.+:.+') %}
       {% set d = d | combine({'customdashboards-prometheus-key': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:.+:(.+)', '\\1'), 'path': kiali_vars.external_services.custom_dashboards.prometheus.auth.key_file | regex_replace('secret:.+:(.+)', '\\1') }}) %}
+      {% endif %}
+
+      {# Prepare the secret volume for customdashboards prometheus oauth2 client_secret #}
+      {% if kiali_vars is defined and kiali_vars.external_services is defined and kiali_vars.external_services.custom_dashboards is defined and kiali_vars.external_services.custom_dashboards.enabled is defined and kiali_vars.external_services.custom_dashboards.enabled|bool == True and kiali_vars.external_services.custom_dashboards.prometheus is defined and kiali_vars.external_services.custom_dashboards.prometheus.auth is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.type | default('')) == 'oauth2' and kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2 is defined and (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | default('')) | regex_search('secret:.+:.+') %}
+      {% set d = d | combine({'customdashboards-prometheus-oauth2-client-secret': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
       {# Prepare the secret volumes for chat_ai provider and model keys #}

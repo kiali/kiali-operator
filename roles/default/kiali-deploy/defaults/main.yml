@@ -157,6 +157,13 @@ kiali_defaults:
       prometheus:
         auth:
           insecure_skip_verify: false
+          oauth2:
+            audience: ""
+            auth_style: "header"
+            client_id: ""
+            client_secret: ""
+            scopes: []
+            token_url: ""
           password: ""
           token: ""
           type: "none"
@@ -177,6 +184,13 @@ kiali_defaults:
     grafana:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         token: ""
         type: "none"
@@ -219,6 +233,13 @@ kiali_defaults:
     perses:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         type: "none"
         use_kiali_token: false
@@ -250,6 +271,13 @@ kiali_defaults:
     prometheus:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         token: ""
         type: "none"
@@ -271,6 +299,13 @@ kiali_defaults:
     tracing:
       auth:
         insecure_skip_verify: false
+        oauth2:
+          audience: ""
+          auth_style: "header"
+          client_id: ""
+          client_secret: ""
+          scopes: []
+          token_url: ""
         password: ""
         token: ""
         type: "none"
