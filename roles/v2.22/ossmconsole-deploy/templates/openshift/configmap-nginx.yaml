@@ -18,6 +18,8 @@ data:
         listen              [::]:9443 ssl;
         ssl_certificate     /var/serving-cert/tls.crt;
         ssl_certificate_key /var/serving-cert/tls.key;
+        ssl_protocols       TLSv1.3;
+        ssl_conf_command Groups x25519mlkem768:x25519:prime256v1:secp384r1;
 
         add_header oauth_token "$http_Authorization";
 
