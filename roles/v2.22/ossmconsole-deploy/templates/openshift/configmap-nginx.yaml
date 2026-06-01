@@ -18,6 +18,10 @@ data:
         listen              [::]:9443 ssl;
         ssl_certificate     /var/serving-cert/tls.crt;
         ssl_certificate_key /var/serving-cert/tls.key;
+        # Only TLS client is the OCP Console backend (Go 1.24+), so TLS 1.2 is unnecessary
+        ssl_protocols       TLSv1.3;
+        # PQC hybrid groups for ML-KEM; requires OpenSSL >= 3.5
+        ssl_ecdh_curve      x25519mlkem768:SecP256r1MLKEM768:x25519:prime256v1:secp384r1;
 
         add_header oauth_token "$http_Authorization";
 
