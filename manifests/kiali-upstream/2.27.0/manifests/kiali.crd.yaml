@@ -1093,32 +1093,6 @@ spec:
                               key_file:
                                 description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
-                              oauth2:
-                                description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
-                                type: object
-                                properties:
-                                  audience:
-                                    description: "The audience parameter sent with the token request. Some providers require this to scope the token."
-                                    type: string
-                                  auth_style:
-                                    description: "How to send client credentials to the token endpoint. Use `params` to send in the request body or `header` to send as HTTP Basic Auth (default)."
-                                    type: string
-                                    default: "header"
-                                    enum: ["header", "params"]
-                                  client_id:
-                                    description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
-                                    type: string
-                                  client_secret:
-                                    description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
-                                    type: string
-                                  scopes:
-                                    description: "A list of scopes to request with the token."
-                                    type: array
-                                    items:
-                                      type: string
-                                  token_url:
-                                    description: "The URL of the OAuth2 token endpoint."
-                                    type: string
                               password:
                                 description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
@@ -1126,7 +1100,7 @@ spec:
                                 description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                                 type: string
                               type:
-                                description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `oauth2` to use OAuth2 client_credentials flow. Use `none` to not use any authentication."
+                                description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
                                 type: string
                                 default: "none"
                               use_kiali_token:
@@ -1205,32 +1179,6 @@ spec:
                           key_file:
                             description: "The client private key file to use when accessing Grafana using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
-                          oauth2:
-                            description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
-                            type: object
-                            properties:
-                              audience:
-                                description: "The audience parameter sent with the token request. Some providers require this to scope the token."
-                                type: string
-                              auth_style:
-                                description: "How to send client credentials to the token endpoint. Use `params` to send in the request body or `header` to send as HTTP Basic Auth (default)."
-                                type: string
-                                default: "header"
-                                enum: ["header", "params"]
-                              client_id:
-                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
-                                type: string
-                              client_secret:
-                                description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
-                                type: string
-                              scopes:
-                                description: "A list of scopes to request with the token."
-                                type: array
-                                items:
-                                  type: string
-                              token_url:
-                                description: "The URL of the OAuth2 token endpoint."
-                                type: string
                           password:
                             description: "Password to be used when making requests to Grafana, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
@@ -1238,7 +1186,7 @@ spec:
                             description: "Token / API key to access Grafana, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
-                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Grafana server. Use `basic` to connect with username and password credentials. Use `oauth2` to use OAuth2 client_credentials flow. Use `none` to not use any authentication."
+                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Grafana server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
                             type: string
                             default: "none"
                           use_kiali_token:
@@ -1444,37 +1392,11 @@ spec:
                           key_file:
                             description: "The client private key file to use when accessing Perses using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
-                          oauth2:
-                            description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
-                            type: object
-                            properties:
-                              audience:
-                                description: "The audience parameter sent with the token request. Some providers require this to scope the token."
-                                type: string
-                              auth_style:
-                                description: "How to send client credentials to the token endpoint. Use `params` to send in the request body or `header` to send as HTTP Basic Auth (default)."
-                                type: string
-                                default: "header"
-                                enum: ["header", "params"]
-                              client_id:
-                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
-                                type: string
-                              client_secret:
-                                description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
-                                type: string
-                              scopes:
-                                description: "A list of scopes to request with the token."
-                                type: array
-                                items:
-                                  type: string
-                              token_url:
-                                description: "The URL of the OAuth2 token endpoint."
-                                type: string
                           password:
                             description: "Password to be used when making requests to Perses, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
-                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Perses server. Use `basic` to connect with username and password credentials. Use `oauth2` to use OAuth2 client_credentials flow. Use `none` to not use any authentication."
+                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Perses server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication."
                             type: string
                             default: "none"
                           use_kiali_token:
@@ -1561,32 +1483,6 @@ spec:
                           key_file:
                             description: "The client private key file to use when accessing Prometheus using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
-                          oauth2:
-                            description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
-                            type: object
-                            properties:
-                              audience:
-                                description: "The audience parameter sent with the token request. Some providers require this to scope the token."
-                                type: string
-                              auth_style:
-                                description: "How to send client credentials to the token endpoint. Use `params` to send in the request body or `header` to send as HTTP Basic Auth (default)."
-                                type: string
-                                default: "header"
-                                enum: ["header", "params"]
-                              client_id:
-                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
-                                type: string
-                              client_secret:
-                                description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
-                                type: string
-                              scopes:
-                                description: "A list of scopes to request with the token."
-                                type: array
-                                items:
-                                  type: string
-                              token_url:
-                                description: "The URL of the OAuth2 token endpoint."
-                                type: string
                           password:
                             description: "Password to be used when making requests to Prometheus, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
@@ -1594,7 +1490,7 @@ spec:
                             description: "Token / API key to access Prometheus, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
-                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `oauth2` to use OAuth2 client_credentials flow. Use `none` to not use any authentication (this is the default)."
+                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Prometheus server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
                             type: string
                             default: "none"
                           use_kiali_token:
@@ -1677,32 +1573,6 @@ spec:
                           key_file:
                             description: "The client private key file to use when accessing the Tracing server using https with mTLS. An empty string means no client private key is used. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the key is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
-                          oauth2:
-                            description: "Settings for OAuth2 client_credentials authentication. When auth.type is `oauth2`, these settings are used to obtain an access token."
-                            type: object
-                            properties:
-                              audience:
-                                description: "The audience parameter sent with the token request. Some providers require this to scope the token."
-                                type: string
-                              auth_style:
-                                description: "How to send client credentials to the token endpoint. Use `params` to send in the request body or `header` to send as HTTP Basic Auth (default)."
-                                type: string
-                                default: "header"
-                                enum: ["header", "params"]
-                              client_id:
-                                description: "The OAuth2 client ID (a public identifier per RFC 6749 §2.2)."
-                                type: string
-                              client_secret:
-                                description: "The OAuth2 client secret. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the value is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
-                                type: string
-                              scopes:
-                                description: "A list of scopes to request with the token."
-                                type: array
-                                items:
-                                  type: string
-                              token_url:
-                                description: "The URL of the OAuth2 token endpoint."
-                                type: string
                           password:
                             description: "Password to be used when making requests to the Tracing server, for basic authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the password is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
@@ -1710,7 +1580,7 @@ spec:
                             description: "Token / API key to access the Tracing server, for token-based authentication. May refer to a secret using the pattern `secret:<secretName>:<secretKey>`. When using a secret, the token is cached and automatically refreshed when the secret changes, enabling rotation without pod restart."
                             type: string
                           type:
-                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Tracing server. Use `basic` to connect with username and password credentials. Use `oauth2` to use OAuth2 client_credentials flow (only supported when use_grpc is false). Use `none` to not use any authentication (this is the default)."
+                            description: "The type of authentication to use when contacting the server. Use `bearer` to send the token to the Tracing server. Use `basic` to connect with username and password credentials. Use `none` to not use any authentication (this is the default)."
                             type: string
                             default: "none"
                           use_kiali_token:
