@@ -508,116 +508,44 @@
   - can_i_create_clusterrolebindings.result.status.allowed is defined
   - can_i_create_clusterrolebindings.result.status.allowed == False
 
-- name: Validate oauth2 auth config for prometheus
-  fail:
-    msg: "external_services.prometheus.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
-  when:
-  - kiali_vars.external_services.prometheus is defined
-  - kiali_vars.external_services.prometheus.auth is defined
-  - kiali_vars.external_services.prometheus.auth.type | default('') == 'oauth2'
-  - (kiali_vars.external_services.prometheus.auth.oauth2 is not defined) or
-    (kiali_vars.external_services.prometheus.auth.oauth2.client_id | default('') == '') or
-    (kiali_vars.external_services.prometheus.auth.oauth2.token_url | default('') == '')
+- name: Validate oauth2 auth configuration for all external services
+  vars:
+    oauth2_services:
+      - name: "prometheus"
+        svc: "{{ kiali_vars.external_services.prometheus }}"
+      - name: "tracing"
+        svc: "{{ kiali_vars.external_services.tracing }}"
+      - name: "grafana"
+        svc: "{{ kiali_vars.external_services.grafana }}"
+      - name: "perses"
+        svc: "{{ kiali_vars.external_services.perses }}"
+      - name: "custom_dashboards.prometheus"
+        svc: "{{ kiali_vars.external_services.custom_dashboards.prometheus }}"
+        enabled_override: "{{ kiali_vars.external_services.custom_dashboards.enabled | bool }}"
+    oauth2_error_msg: |
+      {% set errors = [] %}
+      {% for item in oauth2_services %}
+      {% set svc = item.svc %}
+      {% set enabled = item.enabled_override | default(svc.enabled) | bool %}
+      {% set is_oauth2 = enabled and (svc.auth.type | default('')) == 'oauth2' %}
+      {% if is_oauth2 %}
+      {% if (svc.auth.oauth2 is not defined) or (svc.auth.oauth2.client_id | default('') == '') or (svc.auth.oauth2.client_secret | default('') == '') or (svc.auth.oauth2.token_url | default('') == '') %}
+      {% set _ = errors.append('external_services.' ~ item.name ~ '.auth.oauth2 requires client_id, client_secret, and token_url when auth.type is oauth2') %}
+      {% elif svc.auth.use_kiali_token | default(False) | bool %}
+      {% set _ = errors.append('external_services.' ~ item.name ~ ' cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)') %}
+      {% elif 'use_grpc' in svc and svc.use_grpc | bool %}
+      {% set _ = errors.append('external_services.' ~ item.name ~ ' cannot use oauth2 auth with use_grpc=true (oauth2 token injection is not implemented for gRPC transport)') %}
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      {{ errors | join('; ') }}
+  set_fact:
+    oauth2_validation_error: "{{ oauth2_error_msg | trim }}"
 
-- name: Validate oauth2 auth config for tracing
+- name: Fail if oauth2 configuration is invalid
   fail:
-    msg: "external_services.tracing.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
-  when:
-  - kiali_vars.external_services.tracing is defined
-  - kiali_vars.external_services.tracing.auth is defined
-  - kiali_vars.external_services.tracing.auth.type | default('') == 'oauth2'
-  - (kiali_vars.external_services.tracing.auth.oauth2 is not defined) or
-    (kiali_vars.external_services.tracing.auth.oauth2.client_id | default('') == '') or
-    (kiali_vars.external_services.tracing.auth.oauth2.token_url | default('') == '')
-
-- name: Validate oauth2 auth config for grafana
-  fail:
-    msg: "external_services.grafana.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
-  when:
-  - kiali_vars.external_services.grafana is defined
-  - kiali_vars.external_services.grafana.auth is defined
-  - kiali_vars.external_services.grafana.auth.type | default('') == 'oauth2'
-  - (kiali_vars.external_services.grafana.auth.oauth2 is not defined) or
-    (kiali_vars.external_services.grafana.auth.oauth2.client_id | default('') == '') or
-    (kiali_vars.external_services.grafana.auth.oauth2.token_url | default('') == '')
-
-- name: Validate oauth2 auth config for perses
-  fail:
-    msg: "external_services.perses.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
-  when:
-  - kiali_vars.external_services.perses is defined
-  - kiali_vars.external_services.perses.auth is defined
-  - kiali_vars.external_services.perses.auth.type | default('') == 'oauth2'
-  - (kiali_vars.external_services.perses.auth.oauth2 is not defined) or
-    (kiali_vars.external_services.perses.auth.oauth2.client_id | default('') == '') or
-    (kiali_vars.external_services.perses.auth.oauth2.token_url | default('') == '')
-
-- name: Validate oauth2 auth config for custom_dashboards prometheus
-  fail:
-    msg: "external_services.custom_dashboards.prometheus.auth.oauth2 requires both client_id and token_url when auth.type is 'oauth2'"
-  when:
-  - kiali_vars.external_services.custom_dashboards is defined
-  - kiali_vars.external_services.custom_dashboards.prometheus is defined
-  - kiali_vars.external_services.custom_dashboards.prometheus.auth is defined
-  - kiali_vars.external_services.custom_dashboards.prometheus.auth.type | default('') == 'oauth2'
-  - (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2 is not defined) or
-    (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_id | default('') == '') or
-    (kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.token_url | default('') == '')
-
-- name: Validate tracing oauth2 is not used with gRPC
-  fail:
-    msg: "external_services.tracing cannot use oauth2 auth with use_grpc=true (gRPC does not support HTTP-based OAuth2 token injection)"
-  when:
-  - kiali_vars.external_services.tracing is defined
-  - kiali_vars.external_services.tracing.auth is defined
-  - kiali_vars.external_services.tracing.auth.type | default('') == 'oauth2'
-  - kiali_vars.external_services.tracing.use_grpc | default(True) | bool == True
-
-- name: Validate prometheus oauth2 is not used with use_kiali_token
-  fail:
-    msg: "external_services.prometheus cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
-  when:
-  - kiali_vars.external_services.prometheus is defined
-  - kiali_vars.external_services.prometheus.auth is defined
-  - kiali_vars.external_services.prometheus.auth.type | default('') == 'oauth2'
-  - kiali_vars.external_services.prometheus.auth.use_kiali_token | default(False) | bool == True
-
-- name: Validate tracing oauth2 is not used with use_kiali_token
-  fail:
-    msg: "external_services.tracing cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
-  when:
-  - kiali_vars.external_services.tracing is defined
-  - kiali_vars.external_services.tracing.auth is defined
-  - kiali_vars.external_services.tracing.auth.type | default('') == 'oauth2'
-  - kiali_vars.external_services.tracing.auth.use_kiali_token | default(False) | bool == True
-
-- name: Validate grafana oauth2 is not used with use_kiali_token
-  fail:
-    msg: "external_services.grafana cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
-  when:
-  - kiali_vars.external_services.grafana is defined
-  - kiali_vars.external_services.grafana.auth is defined
-  - kiali_vars.external_services.grafana.auth.type | default('') == 'oauth2'
-  - kiali_vars.external_services.grafana.auth.use_kiali_token | default(False) | bool == True
-
-- name: Validate perses oauth2 is not used with use_kiali_token
-  fail:
-    msg: "external_services.perses cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
-  when:
-  - kiali_vars.external_services.perses is defined
-  - kiali_vars.external_services.perses.auth is defined
-  - kiali_vars.external_services.perses.auth.type | default('') == 'oauth2'
-  - kiali_vars.external_services.perses.auth.use_kiali_token | default(False) | bool == True
-
-- name: Validate custom_dashboards prometheus oauth2 is not used with use_kiali_token
-  fail:
-    msg: "external_services.custom_dashboards.prometheus cannot use both oauth2 auth and use_kiali_token (conflicting authentication methods)"
-  when:
-  - kiali_vars.external_services.custom_dashboards is defined
-  - kiali_vars.external_services.custom_dashboards.prometheus is defined
-  - kiali_vars.external_services.custom_dashboards.prometheus.auth is defined
-  - kiali_vars.external_services.custom_dashboards.prometheus.auth.type | default('') == 'oauth2'
-  - kiali_vars.external_services.custom_dashboards.prometheus.auth.use_kiali_token | default(False) | bool == True
+    msg: "{{ oauth2_validation_error }}"
+  when: oauth2_validation_error != ''
 
 - include_tasks: get-discovery-selector-namespaces.yml
 

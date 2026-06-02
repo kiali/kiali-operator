@@ -877,3 +877,40 @@
 
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+
+  - name: Assert prometheus oauth2 config is written to ConfigMap
+    assert:
+      that:
+      - kiali_configmap.external_services.prometheus.auth.type == 'oauth2'
+      - kiali_configmap.external_services.prometheus.auth.oauth2.client_id == 'test-client-id'
+      - kiali_configmap.external_services.prometheus.auth.oauth2.token_url == 'https://login.example.com/token'
+      fail_msg: "Expected prometheus auth.type=oauth2 in ConfigMap, got: {{ kiali_configmap.external_services.prometheus.auth }}"
+      success_msg: "Verified prometheus oauth2 config is correctly written to ConfigMap"
+
+  - name: Assert tracing oauth2 config is written to ConfigMap
+    assert:
+      that:
+      - kiali_configmap.external_services.tracing.auth.type == 'oauth2'
+      - kiali_configmap.external_services.tracing.auth.oauth2.client_id == 'test-client-id'
+      - kiali_configmap.external_services.tracing.auth.oauth2.token_url == 'https://login.example.com/token'
+      fail_msg: "Expected tracing auth.type=oauth2 in ConfigMap, got: {{ kiali_configmap.external_services.tracing.auth }}"
+      success_msg: "Verified tracing oauth2 config is correctly written to ConfigMap"
+
+  - name: Assert grafana oauth2 config is written to ConfigMap
+    assert:
+      that:
+      - kiali_configmap.external_services.grafana.auth.type == 'oauth2'
+      - kiali_configmap.external_services.grafana.auth.oauth2.client_id == 'test-grafana-client'
+      - kiali_configmap.external_services.grafana.auth.oauth2.token_url == 'https://login.example.com/token'
+      fail_msg: "Expected grafana auth.type=oauth2 in ConfigMap, got: {{ kiali_configmap.external_services.grafana.auth }}"
+      success_msg: "Verified grafana oauth2 config is correctly written to ConfigMap"
+
+  - name: Assert custom_dashboards prometheus oauth2 config is written to ConfigMap
+    assert:
+      that:
+      - kiali_configmap.external_services.custom_dashboards.prometheus.auth.type == 'oauth2'
+      - kiali_configmap.external_services.custom_dashboards.prometheus.auth.oauth2.client_id == 'test-cd-client'
+      - kiali_configmap.external_services.custom_dashboards.prometheus.auth.oauth2.token_url == 'https://login.example.com/token'
+      fail_msg: "Expected custom_dashboards.prometheus auth.type=oauth2 in ConfigMap, got: {{ kiali_configmap.external_services.custom_dashboards.prometheus.auth }}"
+      success_msg: "Verified custom_dashboards prometheus oauth2 config is correctly written to ConfigMap"

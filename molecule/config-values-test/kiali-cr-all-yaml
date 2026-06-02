@@ -95,10 +95,23 @@ spec:
     custom_dashboards:
       discovery_auto_threshold: 10
       discovery_enabled: "auto"
-      enabled: false
+      enabled: true
       is_core: false
       namespace_label: "namespace"
+      prometheus:
+        auth:
+          type: oauth2
+          oauth2:
+            client_id: "test-cd-client"
+            client_secret: "test-cd-secret"
+            token_url: "https://login.example.com/token"
     grafana:
+      auth:
+        type: oauth2
+        oauth2:
+          client_id: "test-grafana-client"
+          client_secret: "test-grafana-secret"
+          token_url: "https://login.example.com/token"
       dashboards:
       - name: "Istio Service Dashboard"
         variables:
@@ -204,7 +217,7 @@ spec:
         org_id: "1"
         tenant: ""
         url_format: "grafana"
-      use_grpc: false
+      use_grpc: false # must be false when auth.type=oauth2 (oauth2 token injection is not implemented for gRPC transport)
       use_waypoint_name: false
       whitelist_istio_system: ["jaeger-query", "istio-ingressgateway"]
 
