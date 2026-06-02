@@ -4,3 +4,4 @@ v2.4: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.4"}
 v2.11: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.11"}
 v2.17: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.17"}
 v2.22: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.22"}
+v2.27: {"imageName": "quay.io/kiali/ossmconsole", "imageVersion": "v2.27"}

@@ -1,0 +1,27 @@
+- name: Delete Kiali roles from previously accessible namespaces
+  k8s:
+    state: absent
+    definition: |
+      {% for namespace in role_namespaces %}
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: "{{ kiali_vars.deployment.instance_name }}"
+        namespace: "{{ namespace }}"
+      ...
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: "{{ kiali_vars.deployment.instance_name }}"
+        namespace: "{{ namespace }}"
+      ...
+      ---
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: "{{ kiali_vars.deployment.instance_name }}-viewer"
+        namespace: "{{ namespace }}"
+      ...
+      {% endfor %}
