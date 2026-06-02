@@ -59,7 +59,7 @@ jobs:
         echo "$helm_prs" | jq -r '.[] | "  - #\(.number): \(.title)"'
 
     - name: Check out helm-charts PR
-      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       with:
         repository: ${{ github.event.pull_request.head.repo.owner.login }}/helm-charts
         ref: ${{ github.event.pull_request.head.ref }}
