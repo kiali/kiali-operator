@@ -62,6 +62,7 @@ PROPERTIES_TO_IGNORE=(
     "external_services.istio.istio_sidecar_annotation"
 
     # Array item defaults that don't have direct Ansible equivalents
+    "chat_ai.providers.items.insecure_skip_verify"
     "deployment.custom_secrets.items.optional"
     "extensions.items.enabled"
     "external_services.istio.component_status.components.items.is_core"
