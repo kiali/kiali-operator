@@ -8,3 +8,85 @@
   tasks:
   - import_tasks: ../ossmconsole-common/confirm_openshift.yml
   - import_tasks: ../ossmconsole-common/tasks.yml
+
+  - name: Get resources that should exist before removal
+    set_fact:
+      pre_nginx_conf: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='nginx-conf', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+      pre_plugin_conf: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='plugin-conf', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+      pre_deployment: "{{ query('kubernetes.core.k8s', kind='Deployment', resource_name='ossmconsole', namespace=ossmconsole.install_namespace, api_version='apps/v1') }}"
+      pre_service: "{{ query('kubernetes.core.k8s', kind='Service', resource_name='ossmconsole', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+      pre_consoleplugin: "{{ query('kubernetes.core.k8s', kind='ConsolePlugin', resource_name='ossmconsole', api_version='console.openshift.io/v1') }}"
+
+  - name: Assert all expected resources exist before removal
+    assert:
+      that:
+      - pre_nginx_conf | length == 1
+      - pre_plugin_conf | length == 1
+      - pre_deployment | length == 1
+      - pre_service | length == 1
+      - pre_consoleplugin | length == 1
+
+  - name: Remove OSSMConsole CR
+    k8s:
+      state: absent
+      api_version: kiali.io/v1alpha1
+      kind: OSSMConsole
+      namespace: "{{ ossmconsole_cr_namespace }}"
+      name: "{{ custom_resource.metadata.name }}"
+      wait: yes
+      wait_sleep: 5
+      wait_timeout: 600
+
+  - name: Assert nginx-conf ConfigMap is removed
+    k8s_info:
+      api_version: v1
+      kind: ConfigMap
+      namespace: "{{ ossmconsole.install_namespace }}"
+      name: nginx-conf
+    register: post_nginx_conf
+    until: post_nginx_conf.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert plugin-conf ConfigMap is removed
+    k8s_info:
+      api_version: v1
+      kind: ConfigMap
+      namespace: "{{ ossmconsole.install_namespace }}"
+      name: plugin-conf
+    register: post_plugin_conf
+    until: post_plugin_conf.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert ossmconsole Deployment is removed
+    k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ ossmconsole.install_namespace }}"
+      name: ossmconsole
+    register: post_deployment
+    until: post_deployment.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert ossmconsole Service is removed
+    k8s_info:
+      api_version: v1
+      kind: Service
+      namespace: "{{ ossmconsole.install_namespace }}"
+      name: ossmconsole
+    register: post_service
+    until: post_service.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert ossmconsole ConsolePlugin is removed
+    k8s_info:
+      api_version: console.openshift.io/v1
+      kind: ConsolePlugin
+      name: ossmconsole
+    register: post_consoleplugin
+    until: post_consoleplugin.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
