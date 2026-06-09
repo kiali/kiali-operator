@@ -30,18 +30,6 @@ metadata:
   name: {{ kiali_vars_remove.deployment.instance_name }}
 ---
 apiVersion: v1
-kind: ReplicaSet
-metadata:
-  namespace: "{{ kiali_vars_remove.deployment.namespace }}"
-  name: {{ kiali_vars_remove.deployment.instance_name }}
----
-apiVersion: v1
-kind: Pod
-metadata:
-  namespace: "{{ kiali_vars_remove.deployment.namespace }}"
-  name: {{ kiali_vars_remove.deployment.instance_name }}
----
-apiVersion: v1
 kind: Service
 metadata:
   namespace: "{{ kiali_vars_remove.deployment.namespace }}"
