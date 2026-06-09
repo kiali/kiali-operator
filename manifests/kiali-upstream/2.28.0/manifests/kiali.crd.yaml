@@ -974,6 +974,11 @@ spec:
                         type: array
                         items:
                           type: string
+                      groups:
+                        description: "Explicit TLS groups (supported key exchange mechanisms, e.g., X25519, secp256r1)."
+                        type: array
+                        items:
+                          type: string
                       max_version:
                         description: "Maximum TLS version (e.g., TLSv1.3, TLSv1.2)."
                         type: string

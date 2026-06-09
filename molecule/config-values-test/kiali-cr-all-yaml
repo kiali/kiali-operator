@@ -84,6 +84,7 @@ spec:
     strategy: {}
     tls_config:
       cipher_suites: []
+      groups: []
       max_version: ""
       min_version: ""
 
