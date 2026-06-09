@@ -55,9 +55,21 @@ rules:
   - security.istio.io
   - extensions.istio.io
   - telemetry.istio.io
-  - gateway.networking.k8s.io
   - inference.networking.k8s.io
   resources: ["*"]
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: ["gateway.networking.k8s.io"]
+  resources:
+  - gatewayclasses
+  - gateways
+  - grpcroutes
+  - httproutes
+  - referencegrants
+  - tcproutes
+  - tlsroutes
   verbs:
   - get
   - list
