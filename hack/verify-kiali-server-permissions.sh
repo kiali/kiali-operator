@@ -373,7 +373,8 @@ main() {
             compare_permissions "${combined_kiali_perms}" "${ossm_csv_perms}" "Kiali-Server" "OSSM-CSV"
         fi
         if [[ -n "${kiali_upstream_csv}" ]]; then
-            compare_permissions "${combined_kiali_perms}" "${upstream_csv_perms}" "Kiali-Server" "Upstream-CSV"
+            # Upstream CSV is non-OpenShift-only, so only check against kubernetes role template
+            compare_permissions "${kiali_k8s_perms}" "${upstream_csv_perms}" "Kiali-Server" "Upstream-CSV"
         fi
     fi
 
