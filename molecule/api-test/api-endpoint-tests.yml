@@ -1,0 +1,123 @@
+# Read-only API endpoint tests.
+# Imported twice from converge.yml: once with view_only_mode=false (role.yaml)
+# and once with view_only_mode=true (role-viewer.yaml).
+# Expects `kiali_base_url` and `api_test_pod` to be set before import.
+
+# Group A: Global endpoints (no path params)
+- name: "Test global API endpoints"
+  uri:
+    url: "{{ kiali_base_url }}{{ item.path }}"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+  loop:
+  - { name: "Root API", path: "/api" }
+  - { name: "Status", path: "/api/status" }
+  - { name: "Config", path: "/api/config" }
+  - { name: "Disabled features", path: "/api/config/disabled" }
+  - { name: "Auth info", path: "/api/auth/info" }
+  - { name: "Namespaces", path: "/api/namespaces" }
+  - { name: "Istio status", path: "/api/istio/status" }
+  - { name: "Istio config (all)", path: "/api/istio/config" }
+  - { name: "Istio validations (all)", path: "/api/istio/validations" }
+  - { name: "Istio permissions", path: "/api/istio/permissions" }
+  - { name: "Mesh TLS", path: "/api/mesh/tls" }
+  - { name: "Mesh graph", path: "/api/mesh/graph" }
+  - { name: "Mesh control planes", path: "/api/mesh/controlplanes" }
+  - { name: "Clusters health", path: "/api/clusters/health" }
+  - { name: "Clusters services", path: "/api/clusters/services" }
+  - { name: "Clusters workloads", path: "/api/clusters/workloads" }
+  - { name: "Clusters apps", path: "/api/clusters/apps" }
+  - { name: "Clusters TLS", path: "/api/clusters/tls" }
+  - { name: "Clusters metrics", path: "/api/clusters/metrics" }
+  - { name: "Tracing info", path: "/api/tracing" }
+  - { name: "Overview service latency", path: "/api/overview/metrics/services/latency" }
+  - { name: "Overview service rates", path: "/api/overview/metrics/services/rates" }
+  - { name: "Overview service throughput", path: "/api/overview/metrics/services/throughput" }
+  - { name: "Overview app rates", path: "/api/overview/metrics/apps/rates" }
+  loop_control:
+    label: "{{ item.name }}"
+
+# Integration info endpoints that return 503 when backends aren't configured.
+# These don't exercise unique K8s permissions; we just verify the server handles them.
+- name: "Test integration info endpoints (503 expected when unconfigured)"
+  uri:
+    url: "{{ kiali_base_url }}{{ item.path }}"
+    validate_certs: false
+    status_code: [200, 204, 503]
+  loop:
+  - { name: "Grafana info", path: "/api/grafana" }
+  - { name: "Perses info", path: "/api/perses" }
+  loop_control:
+    label: "{{ item.name }}"
+
+# Group B: Namespace-scoped endpoints
+- name: "Test namespace-scoped API endpoints"
+  uri:
+    url: "{{ kiali_base_url }}{{ item.path }}"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+  loop:
+  - { name: "Namespace info", path: "/api/namespaces/api-test/info" }
+  - { name: "Namespace Istio config", path: "/api/namespaces/api-test/istio" }
+  - { name: "Namespace validations", path: "/api/namespaces/api-test/validations" }
+  - { name: "Namespace TLS", path: "/api/namespaces/api-test/tls" }
+  - { name: "Namespace metrics", path: "/api/namespaces/api-test/metrics" }
+  loop_control:
+    label: "{{ item.name }}"
+
+# Group C: Resource-specific endpoints
+- name: "Test resource-specific API endpoints"
+  uri:
+    url: "{{ kiali_base_url }}{{ item.path }}"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+  loop:
+  - { name: "Workload details", path: "/api/namespaces/api-test/workloads/api-test-app" }
+  - { name: "Service details", path: "/api/namespaces/api-test/services/api-test-app" }
+  - { name: "App details", path: "/api/namespaces/api-test/apps/api-test-app" }
+  - { name: "Istio config details (VirtualService)", path: "/api/namespaces/api-test/istio/networking.istio.io/v1/virtualservices/api-test-app" }
+  - { name: "Service metrics", path: "/api/namespaces/api-test/services/api-test-app/metrics" }
+  - { name: "Workload metrics", path: "/api/namespaces/api-test/workloads/api-test-app/metrics" }
+  - { name: "App metrics", path: "/api/namespaces/api-test/apps/api-test-app/metrics" }
+  loop_control:
+    label: "{{ item.name }}"
+
+# Group D: Pod-specific endpoints (use dynamically discovered pod name)
+- name: "Test pod details"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/pods/{{ api_test_pod }}"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+- name: "Test pod logs"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/pods/{{ api_test_pod }}/logs?container=nginx"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+- name: "Test pod config dump (exercises pods/portforward)"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/pods/{{ api_test_pod }}/config_dump"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+# Group E: Graph endpoints
+- name: "Test graph API endpoints"
+  uri:
+    url: "{{ kiali_base_url }}{{ item.path }}"
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+  loop:
+  - { name: "Namespace graph", path: "/api/namespaces/graph?namespaces=api-test&duration=60s" }
+  - { name: "Service graph", path: "/api/namespaces/api-test/services/api-test-app/graph" }
+  - { name: "Workload graph", path: "/api/namespaces/api-test/workloads/api-test-app/graph" }
+  - { name: "App graph", path: "/api/namespaces/api-test/applications/api-test-app/graph" }
+  loop_control:
+    label: "{{ item.name }}"
