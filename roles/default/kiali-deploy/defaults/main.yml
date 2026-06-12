@@ -133,6 +133,7 @@ kiali_defaults:
     secret_name: "kiali"
     security_context: {}
     service_annotations: {}
+    service_labels: {}
     #service_type: "NodePort"
     strategy: {}
     tls_config:
