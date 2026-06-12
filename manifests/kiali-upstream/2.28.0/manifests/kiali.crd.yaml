@@ -958,6 +958,11 @@ spec:
                     type: object
                     additionalProperties:
                       type: string
+                  service_labels:
+                    description: "Custom labels to be created on the Kiali Service resource."
+                    type: object
+                    additionalProperties:
+                      type: string
                   service_type:
                     description: "The Kiali service type. Kubernetes determines what values are valid. Common values are 'NodePort', 'ClusterIP', and 'LoadBalancer'."
                     type: string

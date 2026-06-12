@@ -67,6 +67,8 @@
         some.test.io/keepCamelCaseFOO: camelCaseValueFOO
       new_service_annotations:
         another.test.io/keepCamelCaseBAR: camelCaseValueBAR
+      new_service_labels:
+        another.test.io/keepCamelCaseBAR: camelCaseValueBAR
       new_pod_labels:
         some.test.label/labelKeepCamelCaseFOO: labelCamelCaseValueFOO
       new_hpa:
@@ -225,6 +227,7 @@
       new_resources: null
       new_pod_annotations: null
       new_service_annotations: null
+      new_service_labels: null
       new_pod_labels: null
       new_hpa: null
       new_pdb: null
