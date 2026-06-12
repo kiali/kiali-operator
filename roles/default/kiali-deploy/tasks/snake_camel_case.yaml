@@ -77,6 +77,12 @@
       {%   set kiali_vars=kiali_vars | combine({'deployment': {'service_annotations': current_cr.spec.deployment.service_annotations }}, recursive=True) %}
       {% endif %}
       {# #}
+      {# deployment.service_labels #}
+      {% if kiali_vars.deployment.service_labels is defined and kiali_vars.deployment.service_labels | length > 0 %}
+      {%   set _=kiali_vars['deployment'].pop('service_labels') %}
+      {%   set kiali_vars=kiali_vars | combine({'deployment': {'service_labels': current_cr.spec.deployment.service_labels }}, recursive=True) %}
+      {% endif %}
+      {# #}
       {# deployment.hpa.spec #}
       {% if kiali_vars.deployment.hpa is defined and kiali_vars.deployment.hpa.spec is defined and kiali_vars.deployment.hpa.spec | length > 0 %}
       {%   set _=kiali_vars['deployment']['hpa'].pop('spec') %}
