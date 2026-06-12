@@ -1,0 +1,71 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  # Wait for the fixture pod to be fully ready including the Istio sidecar,
+  # which is needed for the config_dump endpoint test (port-forward to Envoy admin).
+  - name: Wait for test pod to be running with all containers ready
+    k8s_info:
+      kind: Pod
+      namespace: api-test
+      label_selectors:
+      - "app=api-test-app"
+    register: test_pods
+    until:
+    - test_pods.resources | length > 0
+    - test_pods.resources[0].status.phase == "Running"
+    - test_pods.resources[0].status.containerStatuses is defined
+    - (test_pods.resources[0].status.containerStatuses | selectattr('ready', 'equalto', true) | list | length) == (test_pods.resources[0].status.containerStatuses | length)
+    retries: 60
+    delay: 5
+
+  - name: Set test pod name
+    set_fact:
+      api_test_pod: "{{ test_pods.resources[0].metadata.name }}"
+
+  # ==========================================================================
+  # Pass 1: view_only_mode=false — validates role.yaml (full access)
+  # ==========================================================================
+
+  - name: "=== Pass 1: Testing with view_only_mode=false (role.yaml) ==="
+    debug:
+      msg: "Running read and write API endpoint tests against full-access role"
+
+  - import_tasks: api-endpoint-tests.yml
+  - import_tasks: api-write-tests.yml
+
+  # ==========================================================================
+  # Switch to view_only_mode=true and wait for operator reconciliation
+  # ==========================================================================
+
+  - import_tasks: ../common/set_view_only_mode.yml
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  # ==========================================================================
+  # Pass 2: view_only_mode=true — validates role-viewer.yaml (read only)
+  # ==========================================================================
+
+  - name: "=== Pass 2: Testing with view_only_mode=true (role-viewer.yaml) ==="
+    debug:
+      msg: "Running read-only API endpoint tests against viewer role"
+
+  - import_tasks: api-endpoint-tests.yml
+
+  - name: API test completed successfully
+    debug:
+      msg: |
+        API endpoint test completed:
+        - Pass 1 (view_only_mode=false): ~45 read endpoints + ~6 write endpoints passed (role.yaml)
+        - Pass 2 (view_only_mode=true): ~45 read endpoints passed (role-viewer.yaml)
+        - No 5xx errors detected — RBAC permissions are sufficient for both roles

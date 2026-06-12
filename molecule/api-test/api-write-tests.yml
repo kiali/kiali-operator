@@ -1,0 +1,93 @@
+# Write API endpoint tests (create, patch, delete).
+# Only imported during pass 1 (view_only_mode=false) since these verbs
+# are only granted by role.yaml, not role-viewer.yaml.
+# All resources are created in the api-test namespace so they are cleaned
+# up by the destroy phase if the test fails mid-way.
+
+# 1. Create a DestinationRule via Kiali API
+- name: "Write test: Create DestinationRule"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/destinationrules"
+    method: POST
+    body_format: json
+    body:
+      apiVersion: networking.istio.io/v1
+      kind: DestinationRule
+      metadata:
+        name: api-test-dr
+        namespace: api-test
+      spec:
+        host: api-test-app
+        trafficPolicy:
+          connectionPool:
+            tcp:
+              maxConnections: 100
+    validate_certs: false
+    status_code: [200, 201]
+  register: result
+  failed_when: result.status >= 500
+
+# 2. Patch the existing VirtualService via Kiali API
+- name: "Write test: Patch VirtualService"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/virtualservices/api-test-app"
+    method: PATCH
+    body_format: json
+    body:
+      metadata:
+        annotations:
+          api-test-write: patched
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+# 3. Delete the DestinationRule we just created
+- name: "Write test: Delete DestinationRule"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/destinationrules/api-test-dr"
+    method: DELETE
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+# 4. Patch the workload via Kiali API
+- name: "Write test: Patch workload"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/workloads/api-test-app?gvk=apps/v1/Deployment"
+    method: PATCH
+    body_format: json
+    body:
+      metadata:
+        annotations:
+          api-test-write: patched
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+# 5. Patch the service via Kiali API
+- name: "Write test: Patch service"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/services/api-test-app"
+    method: PATCH
+    body_format: json
+    body:
+      metadata:
+        annotations:
+          api-test-write: patched
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+# 6. Patch the namespace via Kiali API
+- name: "Write test: Patch namespace"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test"
+    method: PATCH
+    body_format: json
+    body:
+      metadata:
+        labels:
+          api-test-write: patched
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
