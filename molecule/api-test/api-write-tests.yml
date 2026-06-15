@@ -121,16 +121,21 @@
 
 # 8. Verify K8s Gateway detail page returns correct write permissions.
 #    Exercises the single-object getPermissions() code path.
-- name: "Write test: Verify K8s Gateway detail permissions"
+- name: "Write test: Get K8s Gateway detail"
   uri:
     url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/Gateway/api-test-gw"
     validate_certs: false
+    return_content: true
   register: gw_detail
-  failed_when: >-
-    gw_detail.status < 200 or gw_detail.status >= 300 or
-    gw_detail.json.permissions.create != True or
-    gw_detail.json.permissions.update != True or
-    gw_detail.json.permissions.delete != True
+  failed_when: gw_detail.status < 200 or gw_detail.status >= 300
+
+- name: "Write test: Verify K8s Gateway detail has write permissions"
+  assert:
+    that:
+    - gw_detail.json.permissions.create
+    - gw_detail.json.permissions.update
+    - gw_detail.json.permissions.delete
+    fail_msg: "K8s Gateway detail permissions are wrong: {{ gw_detail.json.permissions }}"
 
 # 9. Delete the K8s Gateway we just created
 - name: "Write test: Delete K8s Gateway"
@@ -150,4 +155,4 @@
   register: perms_result
   failed_when: >-
     perms_result.status < 200 or perms_result.status >= 300 or
-    perms_result.json['api-test']['gateway.networking.k8s.io/v1, Kind=Gateway'].create != True
+    not (perms_result.json['api-test']['gateway.networking.k8s.io/v1, Kind=Gateway'].create | bool)
