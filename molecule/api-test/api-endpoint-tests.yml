@@ -78,7 +78,7 @@
   - { name: "Workload details", path: "/api/namespaces/api-test/workloads/api-test-app" }
   - { name: "Service details", path: "/api/namespaces/api-test/services/api-test-app" }
   - { name: "App details", path: "/api/namespaces/api-test/apps/api-test-app" }
-  - { name: "Istio config details (VirtualService)", path: "/api/namespaces/api-test/istio/networking.istio.io/v1/virtualservices/api-test-app" }
+  - { name: "Istio config details (VirtualService)", path: "/api/namespaces/api-test/istio/networking.istio.io/v1/VirtualService/api-test-app" }
   - { name: "Service metrics", path: "/api/namespaces/api-test/services/api-test-app/metrics" }
   - { name: "Workload metrics", path: "/api/namespaces/api-test/workloads/api-test-app/metrics" }
   - { name: "App metrics", path: "/api/namespaces/api-test/apps/api-test-app/metrics" }

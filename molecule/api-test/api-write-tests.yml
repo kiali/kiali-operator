@@ -3,11 +3,15 @@
 # are only granted by role.yaml, not role-viewer.yaml.
 # All resources are created in the api-test namespace so they are cleaned
 # up by the destroy phase if the test fails mid-way.
+#
+# URL format: /api/namespaces/{ns}/istio/{group}/{version}/{Kind}[/{name}]
+# The {Kind} must be PascalCase Kubernetes Kind (e.g., DestinationRule, Gateway)
+# matching how the Kiali frontend constructs these URLs.
 
 # 1. Create a DestinationRule via Kiali API
 - name: "Write test: Create DestinationRule"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/destinationrules"
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/DestinationRule"
     method: POST
     body_format: json
     body:
@@ -25,12 +29,12 @@
     validate_certs: false
     status_code: [200, 201]
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
 # 2. Patch the existing VirtualService via Kiali API
 - name: "Write test: Patch VirtualService"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/virtualservices/api-test-app"
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/VirtualService/api-test-app"
     method: PATCH
     body_format: json
     body:
@@ -39,16 +43,16 @@
           api-test-write: patched
     validate_certs: false
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
 # 3. Delete the DestinationRule we just created
 - name: "Write test: Delete DestinationRule"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/destinationrules/api-test-dr"
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/networking.istio.io/v1/DestinationRule/api-test-dr"
     method: DELETE
     validate_certs: false
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
 # 4. Patch the workload via Kiali API
 - name: "Write test: Patch workload"
@@ -62,7 +66,7 @@
           api-test-write: patched
     validate_certs: false
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
 # 5. Patch the service via Kiali API
 - name: "Write test: Patch service"
@@ -76,7 +80,7 @@
           api-test-write: patched
     validate_certs: false
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
 # 6. Patch the namespace via Kiali API
 - name: "Write test: Patch namespace"
@@ -90,12 +94,12 @@
           api-test-write: patched
     validate_certs: false
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
 # 7. Create a K8s Gateway via Kiali API (exercises gateway.networking.k8s.io create permission)
 - name: "Write test: Create K8s Gateway"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways"
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/Gateway"
     method: POST
     body_format: json
     body:
@@ -113,38 +117,37 @@
     validate_certs: false
     status_code: [200, 201]
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
-# 8. Verify K8s Gateway detail page returns correct write permissions
-#    This exercises the single-object getPermissions() code path which uses
-#    SSAR with the plural resource name (not Kind).
+# 8. Verify K8s Gateway detail page returns correct write permissions.
+#    Exercises the single-object getPermissions() code path.
 - name: "Write test: Verify K8s Gateway detail permissions"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways/api-test-gw"
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/Gateway/api-test-gw"
     validate_certs: false
   register: gw_detail
   failed_when: >-
-    gw_detail.status >= 500 or
-    gw_detail.json.permissions.create != true or
-    gw_detail.json.permissions.update != true or
-    gw_detail.json.permissions.delete != true
+    gw_detail.status < 200 or gw_detail.status >= 300 or
+    gw_detail.json.permissions.create != True or
+    gw_detail.json.permissions.update != True or
+    gw_detail.json.permissions.delete != True
 
 # 9. Delete the K8s Gateway we just created
 - name: "Write test: Delete K8s Gateway"
   uri:
-    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways/api-test-gw"
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/Gateway/api-test-gw"
     method: DELETE
     validate_certs: false
   register: result
-  failed_when: result.status >= 500
+  failed_when: result.status < 200 or result.status >= 300
 
-# 10. Validate istio permissions endpoint reports correct K8s Gateway create permission
-#     This exercises the bulk GetIstioConfigPermissions() code path.
+# 10. Validate istio permissions endpoint reports correct K8s Gateway create permission.
+#     Exercises the bulk GetIstioConfigPermissions() code path.
 - name: "Write test: Verify K8s Gateway bulk create permission is granted"
   uri:
     url: "{{ kiali_base_url }}/api/istio/permissions?namespaces=api-test"
     validate_certs: false
   register: perms_result
   failed_when: >-
-    perms_result.status >= 500 or
-    perms_result.json['api-test']['gateway.networking.k8s.io/v1, Kind=Gateway'].create != true
+    perms_result.status < 200 or perms_result.status >= 300 or
+    perms_result.json['api-test']['gateway.networking.k8s.io/v1, Kind=Gateway'].create != True
