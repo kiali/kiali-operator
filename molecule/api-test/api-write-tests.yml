@@ -91,3 +91,45 @@
     validate_certs: false
   register: result
   failed_when: result.status >= 500
+
+# 7. Create a K8s Gateway via Kiali API (exercises gateway.networking.k8s.io create permission)
+- name: "Write test: Create K8s Gateway"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways"
+    method: POST
+    body_format: json
+    body:
+      apiVersion: gateway.networking.k8s.io/v1
+      kind: Gateway
+      metadata:
+        name: api-test-gw
+        namespace: api-test
+      spec:
+        gatewayClassName: istio
+        listeners:
+        - name: http
+          port: 80
+          protocol: HTTP
+    validate_certs: false
+    status_code: [200, 201]
+  register: result
+  failed_when: result.status >= 500
+
+# 8. Delete the K8s Gateway we just created
+- name: "Write test: Delete K8s Gateway"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways/api-test-gw"
+    method: DELETE
+    validate_certs: false
+  register: result
+  failed_when: result.status >= 500
+
+# 9. Validate istio permissions endpoint reports correct K8s Gateway create permission
+- name: "Write test: Verify K8s Gateway create permission is granted"
+  uri:
+    url: "{{ kiali_base_url }}/api/istio/permissions?namespaces=api-test"
+    validate_certs: false
+  register: perms_result
+  failed_when: >-
+    perms_result.status >= 500 or
+    perms_result.json['api-test']['gateway.networking.k8s.io/v1, Kind=Gateway'].create != true

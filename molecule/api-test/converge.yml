@@ -66,6 +66,6 @@
     debug:
       msg: |
         API endpoint test completed:
-        - Pass 1 (view_only_mode=false): ~45 read endpoints + ~6 write endpoints passed (role.yaml)
+        - Pass 1 (view_only_mode=false): ~45 read endpoints + ~9 write endpoints passed (role.yaml)
         - Pass 2 (view_only_mode=true): ~45 read endpoints passed (role-viewer.yaml)
         - No 5xx errors detected — RBAC permissions are sufficient for both roles
