@@ -115,7 +115,21 @@
   register: result
   failed_when: result.status >= 500
 
-# 8. Delete the K8s Gateway we just created
+# 8. Verify K8s Gateway detail page returns correct write permissions
+#    This exercises the single-object getPermissions() code path which uses
+#    SSAR with the plural resource name (not Kind).
+- name: "Write test: Verify K8s Gateway detail permissions"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways/api-test-gw"
+    validate_certs: false
+  register: gw_detail
+  failed_when: >-
+    gw_detail.status >= 500 or
+    gw_detail.json.permissions.create != true or
+    gw_detail.json.permissions.update != true or
+    gw_detail.json.permissions.delete != true
+
+# 9. Delete the K8s Gateway we just created
 - name: "Write test: Delete K8s Gateway"
   uri:
     url: "{{ kiali_base_url }}/api/namespaces/api-test/istio/gateway.networking.k8s.io/v1/gateways/api-test-gw"
@@ -124,8 +138,9 @@
   register: result
   failed_when: result.status >= 500
 
-# 9. Validate istio permissions endpoint reports correct K8s Gateway create permission
-- name: "Write test: Verify K8s Gateway create permission is granted"
+# 10. Validate istio permissions endpoint reports correct K8s Gateway create permission
+#     This exercises the bulk GetIstioConfigPermissions() code path.
+- name: "Write test: Verify K8s Gateway bulk create permission is granted"
   uri:
     url: "{{ kiali_base_url }}/api/istio/permissions?namespaces=api-test"
     validate_certs: false
