@@ -133,6 +133,12 @@
       - "{{ kiali_service.resources[0].metadata.annotations | length > 0 }}"
       - "{{ kiali_service.resources[0].metadata.annotations['another.test.io/keepCamelCaseBAR'] is defined and kiali_service.resources[0].metadata.annotations['another.test.io/keepCamelCaseBAR'] == 'camelCaseValueBAR' }}"
       fail_msg: "Service annotations was not applied successfully: {{ kiali_service.resources[0].metadata.annotations }}"
+  - name: Assert that service_labels was applied
+    assert:
+      that:
+      - "{{ kiali_service.resources[0].metadata.labels | length > 0 }}"
+      - "{{ kiali_service.resources[0].metadata.labels['another.test.io/keepCamelCaseBAR'] is defined and kiali_service.resources[0].metadata.labels['another.test.io/keepCamelCaseBAR'] == 'camelCaseValueBAR' }}"
+      fail_msg: "Service labels was not applied successfully: {{ kiali_service.resources[0].metadata.labels }}"
   - name: Assert that pod_labels was applied
     assert:
       that:
