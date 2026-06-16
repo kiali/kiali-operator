@@ -50,6 +50,8 @@ jobs:
         fi
 
   bump_version:
+    permissions:
+      contents: write
     name: Bump to Next Version
     needs: [release_tag]
     uses: ./.github/workflows/bump-release-version.yml
