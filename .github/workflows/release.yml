@@ -209,6 +209,7 @@ jobs:
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       with:
         ref: ${{ github.event.inputs.release_branch || github.ref_name }}
+        token: ${{ secrets.KIALI_BOT_TOKEN }}
 
     - name: Set version to release
       run: sed -i -r "s/^VERSION \?= (.*)/VERSION \?= $RELEASE_VERSION/" Makefile
