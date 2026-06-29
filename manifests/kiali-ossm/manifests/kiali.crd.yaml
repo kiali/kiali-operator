@@ -232,6 +232,18 @@ spec:
                     description: "Enable or disable the ChatAI feature."
                     type: boolean
                     default: false
+                  metrics:
+                    description: "Configuration for the ChatAI metrics."
+                    type: object
+                    properties:
+                      enabled:
+                        description: "Enable or disable the ChatAI metrics."
+                        type: boolean
+                        default: true
+                      include_username:
+                        description: "Include the username in the ChatAI metrics."
+                        type: boolean
+                        default: false
                   providers:
                     description: "A list of providers that can be used for the ChatAI feature. This is the list of providers that will be available to the user to choose from."
                     type: array

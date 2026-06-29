@@ -48,6 +48,9 @@ kiali_defaults:
   chat_ai:
     default_provider: ""
     enabled: false
+    metrics:
+      enabled: true
+      include_username: false
     providers: []
     store_config:
       enabled: true
