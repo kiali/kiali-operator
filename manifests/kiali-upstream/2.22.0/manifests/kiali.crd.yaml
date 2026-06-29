@@ -754,6 +754,30 @@ spec:
                           spec:
                             type: object
                             x-kubernetes-preserve-unknown-fields: true
+                  istio_gateway:
+                    description: |
+                      Configures if/how the Kiali endpoint should be exposed externally via Istio Gateway and VirtualService.
+                      This is an alternative to using a Kubernetes Ingress (defined in `deployment.ingress`).
+                      When enabled, a VirtualService will be created to route traffic to Kiali through an existing Istio Gateway.
+                    type: object
+                    properties:
+                      enabled:
+                        description: "Determines if a VirtualService should be created to expose Kiali through an Istio Gateway. If 'true', a VirtualService will be created. Default is 'false'."
+                        type: boolean
+                        default: false
+                      gateway:
+                        description: "The name of the Istio Gateway to use, in the format 'namespace/name'. This Gateway must already exist in the cluster."
+                        type: string
+                        default: "istio-system/istio-ingressgateway"
+                      hosts:
+                        description: "The list of hostnames to match for routing traffic to Kiali. These should match the hosts configured in the referenced Gateway."
+                        type: array
+                        items:
+                          type: string
+                      timeout:
+                        description: "Timeout for HTTP requests. Set to '0s' to disable timeout."
+                        type: string
+                        default: "0s"
                   instance_name:
                     description: "The instance name of this Kiali installation. This instance name will be the prefix prepended to the names of all Kiali resources created by the operator and will be used to label those resources as belonging to this Kiali installation instance. You cannot change this instance name after a Kiali CR is created. If you attempt to change it, the operator will abort with an error. If you want to change it, you must first delete the original Kiali CR and create a new one. Note that this does not affect the name of the auto-generated signing key secret. If you do not supply a signing key, the operator will create one for you in a secret, but that secret will always be named 'kiali-signing-key' and shared across all Kiali instances in the same deployment namespace. If you want a different signing key secret, you are free to create your own and tell the operator about it via `login_token.signing_key`. See the docs on that setting for more details. Note also that if you are setting this value, you may also want to change the `installation_tag` setting, but this is not required."
                     type: string
