@@ -193,17 +193,27 @@
     version_url: "{{ 'https://' + ossmconsole_vars.kiali.serviceName + '.' + ossmconsole_vars.kiali.serviceNamespace + '.svc.cluster.local:' + ossmconsole_vars.kiali.servicePort|string + '/api' }}"
   uri:
     url: "{{ version_url }}"
-    status_code: 200
+    status_code: [200, 401]
     validate_certs: false
     return_content: true
   register: kiali_info_results
   until:
   - kiali_info_results is defined
   - kiali_info_results.status is defined
-  - kiali_info_results.status == 200
+  - kiali_info_results.status == 200 or kiali_info_results.status == 401
   retries: 60
   delay: 5
   ignore_errors: yes
+
+# If Kiali returned 401, it is likely because server.require_auth is set to true in the Kiali CR.
+# In that case we cannot obtain the Kiali version, so skip the version check and proceed with the install.
+- name: Warn that Kiali version check is being skipped because the /api endpoint requires authentication
+  debug:
+    msg: "WARNING: Kiali returned HTTP 401 Unauthorized for the /api endpoint. This is likely because 'server.require_auth: true' is set in the Kiali CR. The Kiali version check will be skipped and OSSMC will be installed without verifying that the Kiali version matches. See https://github.com/kiali/kiali/issues/9964"
+  when:
+  - kiali_info_results is defined
+  - kiali_info_results.status is defined
+  - kiali_info_results.status == 401
 
 - name: Determine Kiali version
   vars:
@@ -252,6 +262,7 @@
 # Note that we ignore any "v" prefix that may be in front of the version numbers; always just compare major.minor (v or no-v).
 # If, for some reason, the user runs into an edge case where OSSMC needs to be installed even if the versions don't match,
 # set the env var OSSMC_SKIP_VERSION_CHECK=true in the operator.
+# The version check is also automatically skipped when Kiali returned 401 for the /api endpoint (e.g. server.require_auth: true).
 - name: Ensure Kiali major.minor version is supported by the version of OSSMC being installed
   vars:
     kiali_version_to_match: "{{ kiali_version | default('') | regex_replace('^[v]?([0-9]+.[0-9]+).*', '\\1') }}"
@@ -262,6 +273,7 @@
   when:
   - kiali_version_to_match != ossmc_version_to_match
   - lookup('env', 'OSSMC_SKIP_VERSION_CHECK') | default('false', True) != "true"
+  - kiali_info_results.status | default(0) != 401
 
 - name: Only allow ad-hoc OSSM Console image when appropriate
   fail:
