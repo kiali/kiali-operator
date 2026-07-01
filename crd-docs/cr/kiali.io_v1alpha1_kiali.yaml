@@ -48,6 +48,7 @@ spec:
   chat_ai:
     default_provider: ""
     enabled: false
+    max_tool_iterations: 5
     providers: []
     store_config:
       enabled: true
