@@ -2,7 +2,7 @@
   k8s:
     namespace: '{{ cr_namespace }}'
     definition: "{{ new_kiali_cr }}"
-  retries: 10
+  retries: 60
   delay: 5
   register: kiali_cr_patch_result
   until: kiali_cr_patch_result is succeeded
