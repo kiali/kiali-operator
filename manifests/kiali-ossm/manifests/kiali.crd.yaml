@@ -232,6 +232,10 @@ spec:
                     description: "Enable or disable the ChatAI feature."
                     type: boolean
                     default: false
+                  max_tool_iterations:
+                    description: "Maximum number of tool-call iterations (LLM call + tool execution round) allowed per request before the loop is force-aborted. Must be between 1 and 20."
+                    type: integer
+                    default: 5
                   providers:
                     description: "A list of providers that can be used for the ChatAI feature. This is the list of providers that will be available to the user to choose from."
                     type: array
