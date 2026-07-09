@@ -4,10 +4,6 @@ _output
 # Do not commit any compiled Ansible filter plugins
 *.pyc
 
-# Claude Code and Cursor — ignore all local files except code-reviewer docs (which are intentionally committed)
-.claude/*
-!.claude/code-reviewer/
-!.claude/code-reviewer/**
-.cursor/*
-!.cursor/code-reviewer/
-!.cursor/code-reviewer/**
+# Claude Code and Cursor — ignore local files
+.claude/
+.cursor/
