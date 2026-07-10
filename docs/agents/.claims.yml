@@ -1,0 +1,412 @@
+_meta:
+  operator-architecture_extracted_at: "cd9714f4b3d7b83b5470d0ee3ae07e768ae6d905"
+  crd-and-api_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
+  olm-manifests_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
+  molecule-testing_extracted_at: "cd9714f4b3d7b83b5470d0ee3ae07e768ae6d905"
+  build-and-ci_extracted_at: "a584e9b24c50f532e8b39d15175419dffeb8d8f7"
+
+claims:
+  # operator-architecture claims
+  - id: oa-1
+    topic: operator-architecture
+    type: technology
+    claim: "The kiali-operator is built on the ansible-operator-sdk base image from Operator Framework; all reconciliation logic is implemented as Ansible playbooks and roles."
+    source: watches-k8s.yaml
+    provenance:
+      origin: inferred
+
+  - id: oa-2
+    topic: operator-architecture
+    type: technology
+    claim: "Four watches files are shipped (watches-k8s.yaml, watches-k8s-ns.yaml, watches-os.yaml, watches-os-ns.yaml); the operator selects the appropriate one based on the deployment environment."
+    source: watches-k8s.yaml
+    provenance:
+      origin: inferred
+
+  - id: oa-3
+    topic: operator-architecture
+    type: pattern
+    claim: "All watchers set watchDependentResources: False and watchClusterScopedResources: False; each CR event triggers a full playbook run rather than tracking child resources."
+    source: watches-k8s.yaml
+    provenance:
+      origin: inferred
+
+  - id: oa-4
+    topic: operator-architecture
+    type: pattern
+    claim: "Roles are organized under roles/<version>/ (e.g., default, v1.73, v2.4, v2.11, v2.17, v2.22); playbooks/default-playbook.yml points to the current default version."
+    source: playbooks/default-playbook.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-5
+    topic: operator-architecture
+    type: pattern
+    claim: "On upgrade detection (status.specVersion differs from target version), the deploy playbook first runs the old version's kiali-remove role before deploying the new version."
+    source: playbooks/kiali-deploy.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-6
+    topic: operator-architecture
+    type: constraint
+    claim: "Three fields are immutable after first deploy: deployment.instance_name, deployment.namespace, and deployment.remote_cluster_resources_only — enforced at runtime in the Ansible role."
+    source: roles/default/kiali-deploy/tasks/main.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-7
+    topic: operator-architecture
+    type: pattern
+    claim: "The OSSMConsole CR is a singleton: only the oldest OSSMConsole CR is active at any time; any newer CR triggers meta: end_play and is silently ignored."
+    source: playbooks/ossmconsole-deploy.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-8
+    topic: operator-architecture
+    type: technology
+    claim: "Ansible collections pinned: kubernetes.core 4.0.0, community.general 9.0.0, operator_sdk.util v0.5.0, ansible.posix 1.6.2 — all installed from GitHub source refs, not Galaxy."
+    source: requirements.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-9
+    topic: operator-architecture
+    type: data_flow
+    claim: "Variable merging happens in two phases: phase 1 at role startup via vars/main.yml (deep-merge with stripnone filter), phase 2 via a large Jinja2 set_fact applying runtime-derived defaults from live cluster state."
+    source: roles/default/kiali-deploy/vars/main.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-10
+    topic: operator-architecture
+    type: pattern
+    claim: "The kiali-remove role uses kiali_vars_remove (not kiali_vars) — a lighter dict defined in its own vars/main.yml and defaults/main.yml — to avoid coupling to deploy-role defaults."
+    source: roles/default/kiali-remove/vars/main.yml
+    provenance:
+      origin: inferred
+
+  - id: oa-11
+    topic: operator-architecture
+    type: pattern
+    claim: "On OpenShift, the operator creates <instance>-cabundle-openshift ConfigMap annotated with service.beta.openshift.io/inject-cabundle=true; OpenShift service-ca-operator injects the cluster service CA into it automatically"
+    source: "roles/default/kiali-deploy/templates/openshift/cabundle.yaml"
+    provenance:
+      origin: inferred
+
+  - id: oa-12
+    topic: operator-architecture
+    type: boundary
+    claim: "The operator owns <instance>-cabundle-openshift (creates/removes it); the user owns <instance>-cabundle (operator never writes to it) — separation is intentional to prevent clobbering user-managed CAs on every reconciliation"
+    source: "roles/default/kiali-deploy/templates/openshift/cabundle.yaml"
+    provenance:
+      origin: user
+      context: "The user owns the kiali cabundle and the operator should not touch it, but the operator owns and manages the openshift one."
+      recorded: "2026-05-26"
+
+  - id: oa-13
+    topic: operator-architecture
+    type: data_flow
+    claim: "On OpenShift, /kiali-cabundle is a projected volume merging three ConfigMaps: <instance>-cabundle-openshift (required), <instance>-cabundle (optional, user-managed), <instance>-oauth-cabundle (optional); on Kubernetes only <instance>-cabundle is mounted (optional, single configMap volume)"
+    source: "roles/default/kiali-deploy/templates/openshift/deployment.yaml"
+    provenance:
+      origin: inferred
+
+  - id: oa-14
+    topic: operator-architecture
+    type: pattern
+    claim: "The secret:name:key URI scheme in Kiali CR auth fields causes the operator to create a secret volume mounted at /kiali-override-secrets/<volume-name>/ with readOnly: true; only runs for enabled external services"
+    source: "roles/default/kiali-deploy/tasks/main.yml"
+    provenance:
+      origin: inferred
+
+  - id: oa-15
+    topic: operator-architecture
+    type: constraint
+    claim: "secret:name:key expansion is intentionally gated on service.enabled: false suppresses mounting — avoids mounting secrets for disabled services and keeps RBAC requirements minimal"
+    source: "roles/default/kiali-deploy/tasks/main.yml"
+    provenance:
+      origin: user
+      context: "Intentional — no point mounting secrets for disabled services, avoids unnecessary RBAC requirements."
+      recorded: "2026-05-26"
+
+  - id: oa-16
+    topic: operator-architecture
+    type: data_flow
+    claim: "Kubernetes propagates Secret/ConfigMap changes to pod volume mounts with up to ~60s delay (kubelet sync period); the external-auth-rotation-test scenario pauses 90s after rotation before asserting Kiali uses new credentials"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: inferred
+
+  # crd-and-api claims
+  - id: ca-1
+    topic: crd-and-api
+    type: technology
+    claim: "Two CRDs are exposed: kialis.kiali.io (Kind: Kiali, v1alpha1, Namespaced) and ossmconsoles.kiali.io (Kind: OSSMConsole, v1alpha1, Namespaced)."
+    source: crd-docs/crd/kiali.io_kialis.yaml
+    provenance:
+      origin: inferred
+
+  - id: ca-2
+    topic: crd-and-api
+    type: boundary
+    claim: "crd-docs/crd/ holds the authoritative CRD source (golden copies); all other copies in manifests/ and helm-charts/ are derived via make sync-crds."
+    source: crd-docs/crd/kiali.io_kialis.yaml
+    provenance:
+      origin: inferred
+
+  - id: ca-3
+    topic: crd-and-api
+    type: constraint
+    claim: "The Kiali CR spec fields map 1:1 to the kiali_vars dictionary; all settings are rendered into a Kiali ConfigMap by Ansible — that ConfigMap must not be edited directly."
+    source: roles/default/kiali-deploy/defaults/main.yml
+    provenance:
+      origin: inferred
+
+  - id: ca-4
+    topic: crd-and-api
+    type: technology
+    claim: "HTML documentation is generated via Docker/Podman container quay.io/giantswarm/crd-docs-generator:0.9.0 using Mustache templates from crd-docs/config/; output goes to _output/crd-docs/."
+    source: crd-docs/config/kiali/apigen-config.yaml
+    provenance:
+      origin: inferred
+
+  - id: ca-5
+    topic: crd-and-api
+    type: boundary
+    claim: "make sync-crds propagates CRDs to: manifests/kiali-ossm/, the latest manifests/kiali-upstream/<version>/ directory, and ../helm-charts/ (if checked out)."
+    source: crd-docs/crd/kiali.io_kialis.yaml
+    provenance:
+      origin: inferred
+
+  - id: ca-6
+    topic: crd-and-api
+    type: constraint
+    claim: "make validate-cr (validates example CRs against CRD schema) is a separate target not called by make validate — must be run explicitly when modifying CRD schema or example CRs."
+    source: crd-docs/bin/validate-kiali-cr.sh
+    provenance:
+      origin: inferred
+
+  - id: ca-7
+    topic: crd-and-api
+    type: pattern
+    claim: "hack/verify-crd-defaults.sh uses a curated skip list for known intentional non-1:1 defaults, so not every CRD default: field must be an exact match to the Ansible defaults."
+    source: hack/verify-crd-defaults.sh
+    provenance:
+      origin: inferred
+
+  - id: ca-8
+    topic: crd-and-api
+    type: constraint
+    claim: "The OSSMConsole CR is OpenShift-only; the Kubernetes watches files do not register a watcher for OSSMConsole."
+    source: crd-docs/crd/kiali.io_ossmconsoles.yaml
+    provenance:
+      origin: inferred
+
+  # olm-manifests claims
+  - id: om-1
+    topic: olm-manifests
+    type: technology
+    claim: "Two OLM bundle variants are maintained: kiali-upstream (package: kiali, channels: alpha+stable, OperatorHub community) and kiali-ossm (package: kiali-ossm, channel: stable, Red Hat OCP)."
+    source: manifests/kiali-ossm/metadata/annotations.yaml
+    provenance:
+      origin: inferred
+
+  - id: om-2
+    topic: olm-manifests
+    type: pattern
+    claim: "The kiali-upstream bundle uses versioned directories (e.g., manifests/kiali-upstream/2.26.0/); kiali-ossm uses a single non-versioned directory with ${VAR} placeholders substituted at release via envsubst."
+    source: manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml
+    provenance:
+      origin: inferred
+
+  - id: om-3
+    topic: olm-manifests
+    type: constraint
+    claim: "make sync-crds only updates the CRD in the latest upstream version directory — historical version directories are not rewritten."
+    source: manifests/kiali-upstream
+    provenance:
+      origin: inferred
+
+  - id: om-4
+    topic: olm-manifests
+    type: data_flow
+    claim: "make validate runs: validate-crd-sync, verify-crd-compatibility, verify-kiali-server-permissions, verify-defaults, then opm render on both bundles — all steps must pass before publishing."
+    source: hack/verify-crd-backward-compatibility.sh
+    provenance:
+      origin: inferred
+
+  - id: om-5
+    topic: olm-manifests
+    type: boundary
+    claim: "The opm binary is auto-downloaded to _output/opm-install/opm if not found in PATH; version is auto-discovered from GitHub API with fallback to v1.56.0."
+    source: manifests/kiali-upstream
+    provenance:
+      origin: inferred
+
+  - id: om-6
+    topic: olm-manifests
+    type: pattern
+    claim: "hack/verify-crd-backward-compatibility.sh is skipped gracefully if origin/master is not available (e.g., fresh checkout without remote configured)."
+    source: hack/verify-crd-backward-compatibility.sh
+    provenance:
+      origin: inferred
+
+  # molecule-testing claims
+  - id: mt-1
+    topic: molecule-testing
+    type: constraint
+    claim: "Molecule tests require a running cluster (Kubernetes or OpenShift) with Istio installed; they are not unit tests and exercise the full operator reconciliation loop."
+    source: molecule/default/molecule.yml
+    provenance:
+      origin: inferred
+
+  - id: mt-2
+    topic: molecule-testing
+    type: constraint
+    claim: "The test driver runs inside a Podman container; Docker is no longer supported. Direct molecule invocation is unsupported — all canonical execution goes through hack/run-molecule-tests.sh in the kiali/kiali parent repo."
+    source: molecule/docker/Dockerfile
+    provenance:
+      origin: inferred
+
+  - id: mt-3
+    topic: molecule-testing
+    type: technology
+    claim: "25 test scenarios exist covering: namespace RBAC, auth strategies, multi-cluster, OSSMConsole, CWA mode transitions, config values, security guardrails, rolling restarts, and TLS."
+    source: molecule/
+    provenance:
+      origin: inferred
+
+  - id: mt-4
+    topic: molecule-testing
+    type: pattern
+    claim: "Shared reusable tasks live in molecule/common/ (for Kiali scenarios) and molecule/ossmconsole-common/ (for OSSMConsole scenarios); shared assertions live in molecule/asserts/."
+    source: molecule/common/tasks.yml
+    provenance:
+      origin: inferred
+
+  - id: mt-5
+    topic: molecule-testing
+    type: pattern
+    claim: "The default scenario has no kiali-cr.yaml in its directory; its molecule.yml sets cr_file_path to point at the shared molecule/kiali-cr.yaml at the top of the molecule directory."
+    source: molecule/default/molecule.yml
+    provenance:
+      origin: inferred
+
+  - id: mt-6
+    topic: molecule-testing
+    type: technology
+    claim: "Tests are controlled entirely by environment variables (CLUSTER_TYPE, MOLECULE_OPERATOR_INSTALLER, MOLECULE_KIALI_OPERATOR_IMAGE_NAME, etc.) — no test code changes needed to switch configurations."
+    source: molecule/default/molecule.yml
+    provenance:
+      origin: inferred
+
+  - id: mt-7
+    topic: molecule-testing
+    type: boundary
+    claim: "manage-operator-olm.yml patches env vars into an existing OLM-installed CSV rather than deploying the operator itself, used when MOLECULE_OPERATOR_INSTALLER=skip."
+    source: molecule/common/manage-operator-olm.yml
+    provenance:
+      origin: inferred
+
+  - id: mt-8
+    topic: molecule-testing
+    type: pattern
+    claim: "external-auth-rotation-test uses a real nginx echo server (grafana-echo) as the Grafana mock: it logs auth headers and validates mTLS client certs, enabling end-to-end verification that Kiali used rotated credentials"
+    source: "molecule/external-auth-rotation-test/external-auth-rotation-resources.yaml"
+    provenance:
+      origin: inferred
+
+  - id: mt-9
+    topic: molecule-testing
+    type: constraint
+    claim: "The external-auth-rotation-test design is intentionally full-stack (operator → k8s → kubelet → fsnotify → Kiali → HTTP call) because kubelet volume propagation cannot be faked in a unit test"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: user
+      context: "Confidence over speed — we want proof that the full stack works. An echo server gives a real end-to-end signal."
+      recorded: "2026-05-26"
+
+  - id: mt-10
+    topic: molecule-testing
+    type: data_flow
+    claim: "external-auth-rotation-test rotates: basic auth username+password, mTLS client cert/key (CN change), server CA in kiali-cabundle ConfigMap — all while Kiali runs; asserts no pod restart occurred"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: inferred
+
+  - id: mt-11
+    topic: molecule-testing
+    type: pattern
+    claim: "The test's negative CA phase sets kiali-cabundle to the old CA (which can't validate the new server cert), waits 90s for propagation, then asserts Kiali returns 503 and logs a TLS error — proving cert pool was rebuilt"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: inferred
+
+  - id: mt-12
+    topic: molecule-testing
+    type: constraint
+    claim: "Pre-generated self-signed test certs live in molecule/external-auth-rotation-test/certs/ (ca-old/new, client-old/new, server-old/new); CNs are 'kiali-client-old' and 'kiali-client-new'"
+    source: "molecule/external-auth-rotation-test/certs/"
+    provenance:
+      origin: inferred
+
+  - id: mt-13
+    topic: molecule-testing
+    type: pattern
+    claim: "ChatAI secret mounting gating is verified: disabled-model (model.enabled=false) and disabled-provider (provider.enabled=false) must have NO volumes in the pod spec even when secret: refs are present"
+    source: "molecule/external-auth-rotation-test/converge.yml"
+    provenance:
+      origin: inferred
+
+  # build-and-ci claims
+  - id: bc-1
+    topic: build-and-ci
+    type: technology
+    claim: "build/Dockerfile layers on the ansible-operator base image; it removes subscription-manager (operator-sdk conflict workaround), installs git and jmespath, bakes in Ansible collections via ansible-galaxy collection install."
+    source: build/Dockerfile
+    provenance:
+      origin: inferred
+
+  - id: bc-2
+    topic: build-and-ci
+    type: technology
+    claim: "Multi-arch builds use docker buildx with platforms linux/amd64,linux/arm64,linux/s390x,linux/ppc64le; QEMU is installed via tonistiigi/binfmt on Linux for cross-compilation."
+    source: Makefile
+    provenance:
+      origin: inferred
+
+  - id: bc-3
+    topic: build-and-ci
+    type: data_flow
+    claim: "make validate orchestrates 6 steps in order: validate-crd-sync, verify-crd-compatibility, verify-kiali-server-permissions, verify-defaults, kiali-ossm bundle render, kiali-upstream bundle render."
+    source: Makefile
+    provenance:
+      origin: inferred
+
+  - id: bc-4
+    topic: build-and-ci
+    type: constraint
+    claim: "make validate-cr is a separate target not invoked by make validate; run it explicitly when modifying CRD schema or example CRs."
+    source: Makefile
+    provenance:
+      origin: inferred
+
+  - id: bc-5
+    topic: build-and-ci
+    type: pattern
+    claim: "OPERATOR_CLUSTER_ROLE_CREATOR is auto-set to true when CLUSTER_WIDE_ACCESS=true and OPERATOR_INSTALL_KIALI=true in deploy-kiali-operator.sh — the default run implicitly grants this permission."
+    source: deploy/deploy-kiali-operator.sh
+    provenance:
+      origin: inferred
+
+  - id: bc-6
+    topic: build-and-ci
+    type: constraint
+    claim: "Collections are installed from GitHub source refs pinned in requirements.yml rather than from Galaxy to avoid outage dependencies."
+    source: requirements.yml
+    provenance:
+      origin: inferred
+
+contradictions: []
