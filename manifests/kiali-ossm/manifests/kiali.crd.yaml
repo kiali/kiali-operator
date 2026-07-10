@@ -207,6 +207,14 @@ spec:
                       client_id_prefix:
                         description: "DEPRECATED AFTER v1.73: A prefix that will be applied to the OpenShift OAuth client identifier."
                         type: string
+                      impersonation:
+                        description: "Settings for Kubernetes API impersonation. When enabled, users authenticate once to the home cluster and Kiali uses its service account to impersonate the user on all clusters (including home)."
+                        type: object
+                        properties:
+                          enabled:
+                            description: "When true, Kiali will use Kubernetes API impersonation for accessing all clusters instead of requiring per-cluster OAuth login. The user logs in once to the home cluster, and Kiali uses its service account credentials with impersonation headers carrying the user's identity. Requires the Kiali service account on each cluster to have ClusterRole permissions to impersonate users and groups. SECURITY NOTE: Enabling this grants the Kiali service account the ability to impersonate any user. Protect the service account token accordingly."
+                            type: boolean
+                            default: false
                       insecure_skip_verify_tls:
                         description: "Set true to skip verifying certificate validity when Kiali contacts OpenShift over https."
                         type: boolean

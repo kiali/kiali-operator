@@ -14,6 +14,14 @@ rules:
   verbs:
   - get
 {% endif %}
+{% if kiali_vars.auth.openshift.impersonation.enabled | default(false) | bool %}
+- apiGroups: [""]
+  resources:
+  - groups
+  - users
+  verbs:
+  - impersonate
+{% endif %}
 {% if kiali_vars.deployment.tls_config.source == 'auto' %}
 # Permission to read OpenShift TLSSecurityProfile for tls_config.source=auto
 - apiGroups: ["config.openshift.io"]

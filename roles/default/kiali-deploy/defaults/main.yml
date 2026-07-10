@@ -39,6 +39,8 @@ kiali_defaults:
         token_endpoint: ""
         userinfo_endpoint: ""
     openshift:
+      impersonation:
+        enabled: false
       insecure_skip_verify_tls: false
       #redirect_uris:
       #token_inactivity_timeout:
