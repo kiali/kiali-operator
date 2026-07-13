@@ -103,7 +103,7 @@
   when:
   - is_openshift == True
 
-- name: Delete OAuthClient on OpenShift if not using auth.strategy openshift
+- name: Delete OAuthClient on OpenShift if not needed
   k8s:
     state: absent
     api_version: "oauth.openshift.io/v1"
@@ -112,7 +112,7 @@
     - "app.kubernetes.io/instance = {{ kiali_vars.deployment.instance_name }}"
   when:
   - is_openshift == True
-  - kiali_vars.auth.strategy != "openshift"
+  - kiali_vars.auth.strategy != "openshift" or (kiali_vars.deployment.remote_cluster_resources_only|bool == True and kiali_vars.auth.openshift.impersonation.enabled|bool == True)
   # Ignore errors because OAuthClient API may not exist when OpenShift uses external OIDC authentication
   ignore_errors: true
 

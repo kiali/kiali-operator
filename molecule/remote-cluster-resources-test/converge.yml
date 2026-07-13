@@ -287,6 +287,105 @@
       - oauthclient.redirectURIs[0] == 'http://one-redirect-uri'
       - oauthclient.redirectURIs[1] == 'http://two-redirect-uri'
 
+  # IMPERSONATION TESTS
+  # At this point: remote_cluster_resources_only=true, auth.strategy=openshift, redirect_uris are set, OAuthClient exists.
+  # Enable impersonation and verify: OAuthClient is removed by the operator, impersonate ClusterRole rule is added.
+  # Note: redirect_uris remain set from the prior step — this verifies that stale redirect_uris
+  # don't cause OAuthClient creation when impersonation is enabled.
+
+  - debug: msg="Enable impersonation - OAuthClient should be removed and impersonate ClusterRole rule should be added"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'openshift': {'impersonation': {'enabled': true }}}}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  - name: "Impersonation enabled: make sure we only have the resources that are expected (no OAuthClient)"
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 0
+
+  - name: "Impersonation enabled: verify ConfigMap has impersonation.enabled set to true"
+    assert:
+      that:
+      - kiali_configmap.auth.openshift.impersonation.enabled == True
+
+  - name: "Impersonation enabled: get the OpenShift ClusterRole"
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      name: "{{ instance_name }}-{{ kiali.install_namespace }}-openshift"
+    register: openshift_clusterrole_result
+
+  - name: "Impersonation enabled: verify OpenShift ClusterRole exists"
+    assert:
+      that:
+      - openshift_clusterrole_result.resources | length == 1
+
+  - name: "Impersonation enabled: verify OpenShift ClusterRole contains impersonate rule for users and groups"
+    vars:
+      impersonate_rules: "{{ openshift_clusterrole_result.resources[0].rules | selectattr('verbs', 'contains', 'impersonate') | list }}"
+    assert:
+      that:
+      - impersonate_rules | length > 0
+      - "'users' in (impersonate_rules | map(attribute='resources') | flatten)"
+      - "'groups' in (impersonate_rules | map(attribute='resources') | flatten)"
+
+  # Now disable impersonation and add redirect_uris so OAuthClient is created.
+  - debug: msg="Disable impersonation with redirect_uris - OAuthClient should be created, impersonate ClusterRole rule should be removed"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'openshift': {'impersonation': {'enabled': false }, 'redirect_uris': ['http://one-redirect-uri'] }}}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  - name: "Impersonation disabled: make sure we only have the resources that are expected (OAuthClient is back)"
+    assert:
+      that:
+      - query('k8s', kind='ConfigMap',      namespace=queryNamespace, api_version=apiCMap, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Deployment',     namespace=queryNamespace, api_version=apiDepl, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Pod',            namespace=queryNamespace, api_version=apiPod,  label_selector=querySelector) | length == 0
+      - query('k8s', kind='Secret',         namespace=queryNamespace, api_version=apiSecr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Service',        namespace=queryNamespace, api_version=apiServ, label_selector=querySelector) | length == 0
+      - query('k8s', kind='ServiceAccount', namespace=queryNamespace, api_version=apiSvcA, label_selector=querySelector) | length == 1
+      - query('k8s', kind='Ingress',        namespace=queryNamespace, api_version=apiIngr, label_selector=querySelector) | length == 0
+      - query('k8s', kind='Route',          namespace=queryNamespace, api_version=apiRout, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='ConsoleLink',                              api_version=apiCoLn, label_selector=querySelector, errors='warn') | length == 0
+      - query('k8s', kind='OAuthClient',                              api_version=apiOAut, label_selector=querySelector, errors='warn') | length == 1
+
+  - name: "Impersonation disabled: verify ConfigMap has impersonation.enabled set to false"
+    assert:
+      that:
+      - kiali_configmap.auth.openshift.impersonation.enabled == False
+
+  - name: "Impersonation disabled: get the OpenShift ClusterRole"
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      name: "{{ instance_name }}-{{ kiali.install_namespace }}-openshift"
+    register: openshift_clusterrole_result
+
+  - name: "Impersonation disabled: verify OpenShift ClusterRole exists but does NOT contain impersonate rule"
+    vars:
+      impersonate_rules: "{{ openshift_clusterrole_result.resources[0].rules | selectattr('verbs', 'contains', 'impersonate') | list }}"
+    assert:
+      that:
+      - openshift_clusterrole_result.resources | length == 1
+      - impersonate_rules | length == 0
+
   - debug: msg="Change auth strategy back to anonymous to see OAuthClient resource gets removed"
   - include_tasks: ../common/set_kiali_cr.yml
     vars:
