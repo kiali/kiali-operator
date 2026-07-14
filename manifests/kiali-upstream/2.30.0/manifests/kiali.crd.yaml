@@ -880,6 +880,8 @@ spec:
                       ```
                       sidecar.istio.io/inject: "true"
                       ```
+                      Note that if you set a label key that conflicts with a standard Kiali label,
+                      your value will take precedence (user labels win on collision).
                     type: object
                     additionalProperties:
                       type: string
@@ -959,6 +961,14 @@ spec:
                     x-kubernetes-preserve-unknown-fields: true
                   service_annotations:
                     description: "Custom annotations to be created on the Kiali Service resource."
+                    type: object
+                    additionalProperties:
+                      type: string
+                  service_labels:
+                    description: |
+                      Custom labels to be created on the Kiali Service resource.
+                      Note that if you set a label key that conflicts with a standard Kiali label,
+                      your value will take precedence (user labels win on collision).
                     type: object
                     additionalProperties:
                       type: string
