@@ -405,11 +405,8 @@ spec:
         - apiGroups: [""]
           resources:
           - configmaps
-          - endpoints
-          - pods
           - serviceaccounts
           - services
-          - services/finalizers
           verbs:
           - create
           - delete
@@ -418,6 +415,11 @@ spec:
           - patch
           - update
           - watch
+        - apiGroups: [""]
+          resources:
+          - pods
+          verbs:
+          - get
         - apiGroups: [""]
           resources:
           - namespaces
@@ -465,7 +467,6 @@ spec:
         - apiGroups: ["apps"]
           resources:
           - deployments
-          - replicasets
           verbs:
           - create
           - delete
@@ -496,19 +497,6 @@ spec:
           - patch
           - update
           - watch
-        - apiGroups: ["monitoring.coreos.com"]
-          resources:
-          - servicemonitors
-          verbs:
-          - create
-          - get
-        - apiGroups: ["apps"]
-          resourceNames:
-          - kiali-operator
-          resources:
-          - deployments/finalizers
-          verbs:
-          - update
         - apiGroups: ["kiali.io"]
           resources:
           - '*'
@@ -524,7 +512,7 @@ spec:
           resources:
           - selfsubjectaccessreviews
           verbs:
-          - list
+          - create
         - apiGroups: ["rbac.authorization.k8s.io"]
           resources:
           - clusterrolebindings
@@ -539,14 +527,7 @@ spec:
           - patch
           - update
           - watch
-        - apiGroups: ["apiextensions.k8s.io"]
-          resources:
-          - customresourcedefinitions
-          verbs:
-          - get
-          - list
-          - watch
-        - apiGroups: ["extensions", "networking.k8s.io"]
+        - apiGroups: ["networking.k8s.io"]
           resources:
           - ingresses
           - networkpolicies
@@ -630,7 +611,6 @@ spec:
         - apiGroups: [""]
           resources:
           - configmaps
-          - endpoints
           - pods/log
           verbs:
           - get
@@ -652,8 +632,7 @@ spec:
           - pods/portforward
           verbs:
           - create
-          - post
-        - apiGroups: ["extensions", "apps"]
+        - apiGroups: ["apps"]
           resources:
           - daemonsets
           - deployments
@@ -674,14 +653,10 @@ spec:
           - watch
           - patch
         - apiGroups:
-          - config.istio.io
           - networking.istio.io
-          - authentication.istio.io
-          - rbac.istio.io
           - security.istio.io
           - extensions.istio.io
           - telemetry.istio.io
-          - gateway.networking.k8s.io
           - inference.networking.k8s.io
           resources: ["*"]
           verbs:
@@ -691,6 +666,36 @@ spec:
           - create
           - delete
           - patch
+        - apiGroups: ["gateway.networking.k8s.io"]
+          resources:
+          - gateways
+          - grpcroutes
+          - httproutes
+          - referencegrants
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - patch
+        - apiGroups: ["gateway.networking.k8s.io"]
+          resources:
+          - tcproutes
+          - tlsroutes
+          verbs:
+          - get
+          - list
+          - watch
+          - delete
+          - patch
+        - apiGroups: ["gateway.networking.k8s.io"]
+          resources:
+          - gatewayclasses
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups: ["apps.openshift.io"]
           resources:
           - deploymentconfigs
@@ -718,7 +723,5 @@ spec:
           resources:
           - mutatingwebhookconfigurations
           verbs:
-          - get
           - list
-          - watch
         serviceAccountName: kiali-operator

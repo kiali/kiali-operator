@@ -1,0 +1,84 @@
+- name: "Process API Test Resources [state={{ state }}]"
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+  tasks:
+  - name: "{{ 'Create' if state == 'present' else 'Delete' }} test namespace"
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: api-test
+          labels:
+            istio-injection: enabled
+
+  - name: "{{ 'Create' if state == 'present' else 'Delete' }} test deployment"
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: api-test-app
+          namespace: api-test
+          labels:
+            app: api-test-app
+            version: v1
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: api-test-app
+          template:
+            metadata:
+              labels:
+                app: api-test-app
+                version: v1
+            spec:
+              containers:
+              - name: nginx
+                image: nginxinc/nginx-unprivileged:stable
+                ports:
+                - containerPort: 8080
+    when: state == 'present'
+
+  - name: "{{ 'Create' if state == 'present' else 'Delete' }} test service"
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: api-test-app
+          namespace: api-test
+          labels:
+            app: api-test-app
+        spec:
+          selector:
+            app: api-test-app
+          ports:
+          - port: 80
+            targetPort: 8080
+    when: state == 'present'
+
+  - name: "{{ 'Create' if state == 'present' else 'Delete' }} test VirtualService"
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: networking.istio.io/v1
+        kind: VirtualService
+        metadata:
+          name: api-test-app
+          namespace: api-test
+        spec:
+          hosts:
+          - api-test-app
+          http:
+          - route:
+            - destination:
+                host: api-test-app
+    when: state == 'present'
