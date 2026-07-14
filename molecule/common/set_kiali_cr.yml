@@ -1,8 +1,13 @@
+# Callers build new_kiali_cr from a previously-read CR that includes a stale
+# metadata.resourceVersion. Stripping it lets the patch apply unconditionally
+# instead of racing with the operator reconciler (409 Conflict).
 - name: Change Kiali CR with new Kiali CR
+  vars:
+    cr_metadata_clean: "{{ new_kiali_cr.metadata | dict2items | rejectattr('key', 'equalto', 'resourceVersion') | list | items2dict }}"
   k8s:
     namespace: '{{ cr_namespace }}'
-    definition: "{{ new_kiali_cr }}"
-  retries: 60
+    definition: "{{ new_kiali_cr | combine({'metadata': cr_metadata_clean}) }}"
+  retries: 10
   delay: 5
   register: kiali_cr_patch_result
   until: kiali_cr_patch_result is succeeded
