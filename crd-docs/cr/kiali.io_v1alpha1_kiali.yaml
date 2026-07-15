@@ -271,6 +271,9 @@ spec:
     # default: service_annotations is empty
     service_annotations:
       svcAnnotation: "svcAnnotationValue"
+    # default: service_labels is empty
+    service_labels:
+      svcLabel: "svcLabelValue"
     # default: service_type is undefined
     service_type: "NodePort"
     strategy: {}
