@@ -27,6 +27,9 @@ spec:
         jwks_uri: ""
         token_endpoint: ""
         userinfo_endpoint: ""
+    openshift:
+      impersonation:
+        enabled: false
     strategy: "anonymous"
 
   chat_ai:

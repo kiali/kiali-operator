@@ -41,6 +41,8 @@ spec:
         token_endpoint: ""
         userinfo_endpoint: ""
     openshift:
+      impersonation:
+        enabled: false
       #redirect_uris:
       #token_inactivity_timeout:
       #token_max_age:
