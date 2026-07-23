@@ -40,6 +40,8 @@ kiali_defaults:
         userinfo_endpoint: ""
     openshift:
       impersonation:
+        allowed_groups: []
+        allowed_users: []
         enabled: false
       insecure_skip_verify_tls: false
       #redirect_uris:

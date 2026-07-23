@@ -342,6 +342,90 @@
       - "'users' in (impersonate_rules | map(attribute='resources') | flatten)"
       - "'groups' in (impersonate_rules | map(attribute='resources') | flatten)"
 
+  # ALLOWLIST TESTS
+  # At this point: impersonation is enabled, no allowlists set, ClusterRole has impersonate without resourceNames.
+
+  - debug: msg="Set allowed_users and allowed_groups - verify resourceNames appear in ClusterRole and ConfigMap"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'openshift': {'impersonation': {'enabled': true, 'allowed_users': ['alice@example.com', 'bob@example.com'], 'allowed_groups': ['developers', 'sre-team'] }}}}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  - name: "Allowlists set: verify ConfigMap contains allowed_users"
+    assert:
+      that:
+      - kiali_configmap.auth.openshift.impersonation.allowed_users is defined
+      - kiali_configmap.auth.openshift.impersonation.allowed_users | length == 2
+      - "'alice@example.com' in kiali_configmap.auth.openshift.impersonation.allowed_users"
+      - "'bob@example.com' in kiali_configmap.auth.openshift.impersonation.allowed_users"
+
+  - name: "Allowlists set: verify ConfigMap contains allowed_groups"
+    assert:
+      that:
+      - kiali_configmap.auth.openshift.impersonation.allowed_groups is defined
+      - kiali_configmap.auth.openshift.impersonation.allowed_groups | length == 2
+      - "'developers' in kiali_configmap.auth.openshift.impersonation.allowed_groups"
+      - "'sre-team' in kiali_configmap.auth.openshift.impersonation.allowed_groups"
+
+  - name: "Allowlists set: get the OpenShift ClusterRole"
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      name: "{{ instance_name }}-{{ kiali.install_namespace }}-openshift"
+    register: openshift_clusterrole_result
+
+  - name: "Allowlists set: verify users impersonate rule has resourceNames"
+    vars:
+      users_rules: "{{ openshift_clusterrole_result.resources[0].rules | selectattr('verbs', 'contains', 'impersonate') | selectattr('resources', 'contains', 'users') | list }}"
+    assert:
+      that:
+      - users_rules | length == 1
+      - users_rules[0].resourceNames is defined
+      - users_rules[0].resourceNames | length == 2
+      - "'alice@example.com' in users_rules[0].resourceNames"
+      - "'bob@example.com' in users_rules[0].resourceNames"
+
+  - name: "Allowlists set: verify groups impersonate rule has resourceNames including system groups"
+    vars:
+      groups_rules: "{{ openshift_clusterrole_result.resources[0].rules | selectattr('verbs', 'contains', 'impersonate') | selectattr('resources', 'contains', 'groups') | list }}"
+    assert:
+      that:
+      - groups_rules | length == 1
+      - groups_rules[0].resourceNames is defined
+      - groups_rules[0].resourceNames | length == 4
+      - "'system:authenticated' in groups_rules[0].resourceNames"
+      - "'system:authenticated:oauth' in groups_rules[0].resourceNames"
+      - "'developers' in groups_rules[0].resourceNames"
+      - "'sre-team' in groups_rules[0].resourceNames"
+
+  - debug: msg="Remove allowlists - verify resourceNames disappear from ClusterRole"
+  - include_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr_list.resources[0] | combine({'spec': {'auth': {'openshift': {'impersonation': {'enabled': true, 'allowed_users': [], 'allowed_groups': [] }}}}}, recursive=True) }}"
+  - include_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - include_tasks: ../common/tasks.yml
+
+  - name: "Allowlists removed: get the OpenShift ClusterRole"
+    vars:
+      instance_name: "{{ kiali.instance_name | default('kiali') }}"
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      name: "{{ instance_name }}-{{ kiali.install_namespace }}-openshift"
+    register: openshift_clusterrole_result
+
+  - name: "Allowlists removed: verify impersonate rules have NO resourceNames"
+    vars:
+      impersonate_rules: "{{ openshift_clusterrole_result.resources[0].rules | selectattr('verbs', 'contains', 'impersonate') | list }}"
+    assert:
+      that:
+      - impersonate_rules | length == 2
+      - impersonate_rules[0].resourceNames is not defined
+      - impersonate_rules[1].resourceNames is not defined
+
   # Now disable impersonation and add redirect_uris so OAuthClient is created.
   - debug: msg="Disable impersonation with redirect_uris - OAuthClient should be created, impersonate ClusterRole rule should be removed"
   - include_tasks: ../common/set_kiali_cr.yml

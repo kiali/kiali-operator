@@ -211,6 +211,16 @@ spec:
                         description: "Settings for Kubernetes API impersonation. When enabled, users authenticate once to the home cluster and Kiali uses its service account to impersonate the user on all clusters (including home)."
                         type: object
                         properties:
+                          allowed_groups:
+                            description: "When set, only these groups will be included in impersonation headers (in addition to system:authenticated and system:authenticated:oauth which are always included). If empty, all of the user's groups are impersonated. This also restricts the Kiali SA's ClusterRole via resourceNames. Must not contain system: prefixed groups. For full RBAC defense-in-depth, configure both allowed_users and allowed_groups."
+                            type: array
+                            items:
+                              type: string
+                          allowed_users:
+                            description: "When set, only users in this list are permitted to use Kiali with impersonation. Users not in this list will be denied access (HTTP 403). This also restricts the Kiali SA's ClusterRole via resourceNames, limiting which identities the SA can impersonate even at the Kubernetes RBAC level. Must not contain system: prefixed identities. For full RBAC defense-in-depth, configure both allowed_users and allowed_groups."
+                            type: array
+                            items:
+                              type: string
                           enabled:
                             description: "When true, Kiali will use Kubernetes API impersonation for accessing all clusters instead of requiring per-cluster OAuth login. The user logs in once to the home cluster, and Kiali uses its service account credentials with impersonation headers carrying the user's identity. Requires the Kiali service account on each cluster to have ClusterRole permissions to impersonate users and groups. SECURITY NOTE: Enabling this grants the Kiali service account the ability to impersonate any user. Protect the service account token accordingly."
                             type: boolean
