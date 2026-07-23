@@ -103,7 +103,7 @@
   when:
   - is_openshift == True
 
-- name: Delete OAuthClient on OpenShift if not using auth.strategy openshift
+- name: Delete OAuthClient on OpenShift if not needed
   k8s:
     state: absent
     api_version: "oauth.openshift.io/v1"
@@ -112,7 +112,7 @@
     - "app.kubernetes.io/instance = {{ kiali_vars.deployment.instance_name }}"
   when:
   - is_openshift == True
-  - kiali_vars.auth.strategy != "openshift"
+  - kiali_vars.auth.strategy != "openshift" or (kiali_vars.deployment.remote_cluster_resources_only|bool == True and kiali_vars.auth.openshift.impersonation.enabled|bool == True)
   # Ignore errors because OAuthClient API may not exist when OpenShift uses external OIDC authentication
   ignore_errors: true
 
@@ -140,21 +140,22 @@
 
 # For now, when creating remote cluster resources only, we are going to assume there is no way for us to determine what the redirect URIs are
 # going to be other than having the user explicitly configure them. So fail immediately if the user did not tell us what redirect URI[s] to use.
-# Note that this only comes into play when auth.strategy is "openshift".
+# Note that this only comes into play when auth.strategy is "openshift" and impersonation is disabled.
 - name: Fail if creating remote cluster resources with auth strategy of openshift, but the Kiali redirect URIs are not defined
   fail:
     msg: "Redirect URIs for the Kiali Server OAuthClient are not specified via auth.openshift.redirect_uris; this is required when creating remote cluster resources with auth.strategy of openshift."
   when:
   - kiali_vars.deployment.remote_cluster_resources_only|bool == True
   - kiali_vars.auth.strategy == 'openshift'
+  - kiali_vars.auth.openshift.impersonation.enabled|bool == False
   - kiali_vars.auth.openshift.redirect_uris | default([]) | length == 0
 
 # We only need to auto-discover the Kiali route if (a) we know it will exist and (b) we know we need it.
 # We know it will exist if we are creating the Kiali Server itself (i.e. remote_cluster_resources_only == False).
 # We know we need it for ConsoleLinks (and those are only created when we are creating the Kiali Server itself).
 # We know we need it for OAuthClient, too. That is also created when we are creating the Kiali Server itself. But it is also
-# created when creating only remote cluster resources - however, in that case, we are going to require the user to tell us
-# what redirect URIs to use (see the above fail task to ensure the user does that).
+# created when creating only remote cluster resources (unless impersonation is enabled, which skips OAuthClient entirely) -
+# however, in that case, we are going to require the user to tell us what redirect URIs to use (see the above fail task).
 # All of this is to say: we only need to auto-discover the route when we are creating the Kiali Server itself (we do not
 # auto-discover the route when we are creating only the remote cluster resources).
 # We also don't expect the Route if it was disabled (which also disables other features like OAuthClient -- see https://github.com/kiali/kiali/issues/8023)
@@ -172,6 +173,7 @@
   - is_openshift == True
   - kiali_vars.deployment.ingress.enabled|bool == True
   - kiali_vars.auth.strategy == "openshift"
+  - kiali_vars.deployment.remote_cluster_resources_only|bool == False or kiali_vars.auth.openshift.impersonation.enabled|bool == False
 
 - name: Delete all ConsoleLinks for namespaces that are no longer accessible
   k8s:
