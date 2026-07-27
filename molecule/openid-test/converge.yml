@@ -49,6 +49,7 @@
     assert:
       that:
       - kiali_configmap.auth.openid.discovery_override.authorization_endpoint == ""
+      - kiali_configmap.auth.openid.discovery_override.end_session_endpoint == ""
       - kiali_configmap.auth.openid.discovery_override.token_endpoint == ""
       - kiali_configmap.auth.openid.discovery_override.userinfo_endpoint == ""
       - kiali_configmap.auth.openid.discovery_override.jwks_uri == ""
@@ -170,7 +171,7 @@
 
   - name: "Update: Build new Kiali CR with discovery_override configuration"
     set_fact:
-      new_kiali_cr_with_discovery: "{{ current_kiali_cr | combine({'spec': {'auth': {'openid': {'discovery_override': {'authorization_endpoint': openid.discovery_override.authorization_endpoint, 'jwks_uri': openid.discovery_override.jwks_uri, 'token_endpoint': openid.discovery_override.token_endpoint, 'userinfo_endpoint': openid.discovery_override.userinfo_endpoint}}}}}, recursive=True) }}"
+      new_kiali_cr_with_discovery: "{{ current_kiali_cr | combine({'spec': {'auth': {'openid': {'discovery_override': {'authorization_endpoint': openid.discovery_override.authorization_endpoint, 'end_session_endpoint': openid.discovery_override.end_session_endpoint, 'jwks_uri': openid.discovery_override.jwks_uri, 'token_endpoint': openid.discovery_override.token_endpoint, 'userinfo_endpoint': openid.discovery_override.userinfo_endpoint}}}}}, recursive=True) }}"
 
   - name: "Update: Apply updated Kiali CR with discovery_override"
     import_tasks: ../common/set_kiali_cr.yml
@@ -190,6 +191,8 @@
       - kiali_configmap.auth.openid.discovery_override is defined
       - kiali_configmap.auth.openid.discovery_override.authorization_endpoint is defined
       - kiali_configmap.auth.openid.discovery_override.authorization_endpoint != ""
+      - kiali_configmap.auth.openid.discovery_override.end_session_endpoint is defined
+      - kiali_configmap.auth.openid.discovery_override.end_session_endpoint != ""
       - kiali_configmap.auth.openid.discovery_override.jwks_uri is defined
       - kiali_configmap.auth.openid.discovery_override.jwks_uri != ""
       - kiali_configmap.auth.openid.discovery_override.token_endpoint is defined
@@ -204,6 +207,8 @@
       that:
       - kiali_configmap.auth.openid.discovery_override.authorization_endpoint is search(nip_io_base_url)
       - kiali_configmap.auth.openid.discovery_override.authorization_endpoint is search("/oauth2/auth")
+      - kiali_configmap.auth.openid.discovery_override.end_session_endpoint is search(nip_io_base_url)
+      - kiali_configmap.auth.openid.discovery_override.end_session_endpoint is search("/oauth2/sessions/logout")
       - kiali_configmap.auth.openid.discovery_override.jwks_uri is search(nip_io_base_url)
       - kiali_configmap.auth.openid.discovery_override.jwks_uri is search("jwks.json")
       - kiali_configmap.auth.openid.discovery_override.token_endpoint is search(nip_io_base_url)

@@ -10,6 +10,7 @@ spec:
       client_id: {{ openid.client_id }}
       insecure_skip_verify_tls: true
       issuer_uri: {{ openid.issuer_uri }}
+      post_logout_redirect_uri: "http://{{ nip_io_base_url }}:32080/kiali/"
       username_claim: {{ openid.username_claim }}
   deployment:
     ingress:

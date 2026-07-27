@@ -24,9 +24,11 @@ spec:
     openid:
       discovery_override:
         authorization_endpoint: ""
+        end_session_endpoint: ""
         jwks_uri: ""
         token_endpoint: ""
         userinfo_endpoint: ""
+      post_logout_redirect_uri: ""
     openshift:
       impersonation:
         allowed_groups: []
@@ -37,12 +39,15 @@ spec:
   chat_ai:
     default_provider: ""
     enabled: false
+    max_tool_iterations: 5
     providers: []
     store_config:
       enabled: true
+      inactivity_timeout: "30m"
       max_cache_memory_mb: 1024
       reduce_threshold: 15
       reduce_with_ai: false
+    tools: {}
 
   installation_tag: "config-values-test-installation"
 
@@ -71,6 +76,10 @@ spec:
         metricName: "request_rate"
         dataType: "raw"
 
+  identity:
+    cert_file: ""
+    private_key_file: ""
+
   deployment:
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
     image_digest: ""
@@ -80,7 +89,10 @@ spec:
     ingress:
       enabled: true
     logger:
+      log_format: "text"
       log_level: info
+      sampler_rate: "1"
+      time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: {{ kiali.install_namespace }}
     network_policy:
       enabled: true
@@ -253,6 +265,8 @@ spec:
     version_label_name: "app.kubernetes.io/version"
 
   kiali_feature_flags:
+    authz:
+      require_namespace_get: false
     custom_workload_types:
     - group: "argoproj.io"
       version: "v1alpha1"
@@ -316,6 +330,10 @@ spec:
     excluded_workloads: ["CronJob", "DeploymentConfig", "Job", "ReplicationController"]
     qps: 175
 
+  login_token:
+    expiration_seconds: 86400
+    signing_key: ""
+
   server:
     address: "0.0.0.0"
     audit_log: true
@@ -325,6 +343,9 @@ spec:
     observability:
       metrics:
         enabled: true
+        health_status:
+          enabled: false
+          max_consecutive_na: 3
         port: 9090
       tracing:
         collector_type: "otel"

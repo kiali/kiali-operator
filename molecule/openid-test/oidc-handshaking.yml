@@ -24,6 +24,12 @@
     step8_response: ""
     step9_response: ""
     step10_response: ""
+    step11_response: ""
+    step12_response: ""
+    step13_response: ""
+    step14_kiali_redirect: ""
+    step14_hydra_response: ""
+    logout_redirect_url: ""
 
 - name: "Step 1: Send request to Kiali auth info endpoint and expect OpenID strategy configuration"
   uri:
@@ -382,3 +388,136 @@
   assert:
     that:
     - step10_response.json | length > 0
+
+# =============================================================================
+# OIDC RP-INITIATED LOGOUT (Steps 11-14)
+# Verifies that Kiali's logout terminates both the local session and the IdP session.
+# =============================================================================
+
+- name: "Step 11: Call Kiali logout API and expect redirect URL to IdP end_session_endpoint"
+  uri:
+    url: "{{ kiali_base_url }}/api/logout"
+    headers:
+      Cookie: "{{ kiali_cookies }}"
+    return_content: yes
+    validate_certs: false
+    status_code: 200
+  register: step11_response
+
+- name: "Step 11: DEBUG: Log logout API request and response"
+  vars:
+    msg: |
+      === Call Kiali logout API and expect redirect URL to IdP end_session_endpoint ===
+      Request URL: {{ kiali_base_url }}/api/logout
+      Request cookies sent: {{ kiali_cookies }}
+      Response status code: {{ step11_response.status }}
+      Response content: {{ step11_response.json }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 11: Assert logout response contains redirect_url with expected parameters"
+  assert:
+    that:
+    - step11_response.json.redirect_url is defined
+    - step11_response.json.redirect_url != ""
+    - step11_response.json.redirect_url is search("/oauth2/sessions/logout")
+    - step11_response.json.redirect_url is search("id_token_hint=")
+    - step11_response.json.redirect_url is search("post_logout_redirect_uri=")
+    fail_msg: "Logout response should contain redirect_url pointing to Hydra's end_session_endpoint with id_token_hint and post_logout_redirect_uri"
+    success_msg: "Logout response contains valid redirect_url for RP-Initiated Logout"
+
+- name: "Step 11: Extract the logout redirect URL for later use"
+  set_fact:
+    logout_redirect_url: "{{ step11_response.json.redirect_url }}"
+
+- name: "Step 12: Verify logout response cleared session cookies"
+  assert:
+    that:
+    - step11_response.set_cookie is defined
+    - step11_response.set_cookie is search("kiali-token-[^=]+=;") or step11_response.set_cookie is search("Max-Age=0")
+    fail_msg: "Logout response should include Set-Cookie headers that clear the session cookies"
+    success_msg: "Logout response correctly clears session cookies"
+
+- name: "Step 12: Verify request without cookies returns 401"
+  uri:
+    url: "{{ kiali_base_url }}/api/namespaces"
+    validate_certs: false
+    status_code: 401
+  register: step12_response
+
+- name: "Step 12: DEBUG: Log session invalidation check"
+  vars:
+    msg: |
+      === Verify request without session cookies is rejected ===
+      Request URL: {{ kiali_base_url }}/api/namespaces
+      Request cookies sent: None
+      Response status code: {{ step12_response.status }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 13: Follow the logout redirect URL to Hydra to terminate the IdP session"
+  uri:
+    url: "{{ logout_redirect_url }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    validate_certs: false
+    follow_redirects: none
+    status_code: [302, 303]
+  register: step13_response
+
+- name: "Step 13: DEBUG: Log Hydra logout redirect"
+  vars:
+    msg: |
+      === Follow the logout redirect URL to Hydra ===
+      Request URL: {{ logout_redirect_url }}
+      Request cookies sent: {{ hydra_cookies }}
+      Response status code: {{ step13_response.status }}
+      Response location: {{ step13_response.location if step13_response.location is defined else 'None' }}
+      Response cookies received: {{ step13_response.set_cookie if step13_response.set_cookie is defined else 'None' }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 13: Assert Hydra accepted the logout and redirected"
+  assert:
+    that:
+    - step13_response.status in [302, 303]
+    - step13_response.location is defined
+    fail_msg: "Hydra should accept the RP-Initiated Logout and redirect to post_logout_redirect_uri"
+    success_msg: "Hydra accepted the logout and redirected as expected"
+
+- name: "Step 14: Verify IdP session is terminated by re-initiating auth flow and checking for login prompt"
+  get_all_cookies:
+    url: "{{ auth_endpoint }}"
+    validate_certs: false
+  register: step14_kiali_redirect
+
+- name: "Step 14: Follow redirect to Hydra authorization endpoint"
+  vars:
+    step14_hydra_url: "{{ step14_kiali_redirect.location | regex_replace('hydra.*\\.ory\\.svc\\.cluster\\.local:4444', nip_io_base_url + ':' + hydra.public_port|string) }}"
+  uri:
+    url: "{{ step14_hydra_url }}"
+    headers:
+      Cookie: "{{ hydra_cookies }}"
+    return_content: yes
+    validate_certs: false
+    follow_redirects: none
+    status_code: 302
+  register: step14_hydra_response
+
+- name: "Step 14: DEBUG: Log re-authentication attempt"
+  vars:
+    msg: |
+      === Verify IdP session is terminated ===
+      Kiali redirect location: {{ step14_kiali_redirect.location }}
+      Hydra response status: {{ step14_hydra_response.status }}
+      Hydra response location: {{ step14_hydra_response.location if step14_hydra_response.location is defined else 'None' }}
+  debug:
+    msg: "{{ msg.split('\n') }}"
+
+- name: "Step 14: Assert that Hydra requires re-authentication (login prompt)"
+  assert:
+    that:
+    - step14_hydra_response.location is defined
+    - step14_hydra_response.location is search("login_challenge=")
+    fail_msg: "After IdP logout, Hydra should present a login challenge instead of auto-authenticating. This means the IdP session was NOT terminated."
+    success_msg: "IdP session was correctly terminated - Hydra requires re-authentication"
