@@ -118,7 +118,47 @@
   - current_cr.status.deployment.namespace is defined
   - current_cr.status.deployment.namespace != ossmconsole_vars.deployment.namespace
 
-# If we need to auto-discover some things that require the Kiali Route, get the route now - first look in the CR's namespace then anywhere else. If Kiali is not found, abort.
+# Determine if the user explicitly asked for a specific Kiali service. If they did, we treat Kiali as a
+# hard requirement and will fail the install if it cannot be found/reached. If they did not, this is the
+# common case where we opportunistically look for Kiali but are willing to install OSSMC without it
+# (a.k.a. "lite mode") when none can be found.
+- name: Determine if the user explicitly configured a Kiali service to use
+  set_fact:
+    kiali_explicitly_configured: "{{ ossmconsole_vars.kiali.serviceName != '' or ossmconsole_vars.kiali.serviceNamespace != '' or ossmconsole_vars.kiali.servicePort|int != 0 }}"
+
+- name: Determine if the user explicitly configured all three Kiali service settings
+  set_fact:
+    kiali_all_explicitly_configured: "{{ ossmconsole_vars.kiali.serviceName != '' and ossmconsole_vars.kiali.serviceNamespace != '' and ossmconsole_vars.kiali.servicePort|int != 0 }}"
+
+# kiali.autoDiscover only controls the opportunistic Route-discovery step below. It has no effect when
+# all three kiali.serviceName/serviceNamespace/servicePort settings are explicitly configured, since
+# discovery is already skipped in that case. Disabling it while only some of those three are set is
+# ambiguous (we would need to auto-discover the rest, which is exactly what is disabled), so fail fast
+# with a clear message instead of leaving kiali_route undefined for the tasks below that depend on it.
+- fail:
+    msg: "When kiali.autoDiscover is false, you must specify all of kiali.serviceName, kiali.serviceNamespace, and kiali.servicePort together, or leave all three empty to force lite mode."
+  when:
+  - not (ossmconsole_vars.kiali.autoDiscover | bool)
+  - kiali_explicitly_configured == True
+  - kiali_all_explicitly_configured == False
+
+- set_fact:
+    kiali_available: true
+
+- name: Auto-discovery is disabled and no Kiali was explicitly configured - OSSM Console will be installed in lite mode without Kiali integration
+  debug:
+    msg: "kiali.autoDiscover is false and no Kiali service was explicitly configured. OSSM Console will be installed without Kiali integration (lite mode); no auto-discovery will be attempted."
+  when:
+  - not (ossmconsole_vars.kiali.autoDiscover | bool)
+  - kiali_explicitly_configured == False
+
+- set_fact:
+    kiali_available: false
+  when:
+  - not (ossmconsole_vars.kiali.autoDiscover | bool)
+  - kiali_explicitly_configured == False
+
+# If we need to auto-discover some things that require the Kiali Route, get the route now - first look in the CR's namespace then anywhere else. If Kiali is not found, abort only if the user explicitly configured Kiali; otherwise install in lite mode without Kiali integration.
 - name: Auto-discover the Kiali Route - preference goes to a Kiali installed in the same namespace as the CR
   vars:
     kiali_in_namespace: "{{ query(k8s_plugin, label_selector='app.kubernetes.io/name=kiali', api_version='route.openshift.io/v1', kind='Route', namespace=current_cr.metadata.namespace) }}"
@@ -126,6 +166,7 @@
   set_fact:
     kiali_route: "{{ kiali_in_namespace[0] if kiali_in_namespace | length > 0 else (kiali_anywhere[0] if kiali_anywhere | length > 0 else '') }}"
   when:
+  - ossmconsole_vars.kiali.autoDiscover | bool
   - ossmconsole_vars.kiali.serviceName == "" or ossmconsole_vars.kiali.serviceNamespace == "" or ossmconsole_vars.kiali.servicePort|int == 0
   ignore_errors: yes
 
@@ -134,11 +175,28 @@
   when:
   - kiali_route is defined
   - kiali_route == ""
+  - kiali_explicitly_configured == True
+
+- name: No Kiali was found and none was explicitly configured - OSSM Console will be installed in lite mode without Kiali integration
+  debug:
+    msg: "No Kiali installation was found. OSSM Console will be installed without Kiali integration (lite mode). If a Kiali is installed later, re-apply the OSSMConsole CR to enable full integration."
+  when:
+  - kiali_route is defined
+  - kiali_route == ""
+  - kiali_explicitly_configured == False
+
+- set_fact:
+    kiali_available: false
+  when:
+  - kiali_route is defined
+  - kiali_route == ""
+  - kiali_explicitly_configured == False
 
 - name: Auto-discover the Kiali Service Name
   set_fact:
     kiali_service_name: "{{ kiali_route.spec.to.name }}"
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.serviceName == ""
   ignore_errors: yes
 
@@ -146,6 +204,7 @@
   set_fact:
     kiali_service_namespace: "{{ kiali_route.metadata.namespace }}"
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.serviceNamespace == ""
   ignore_errors: yes
 
@@ -153,24 +212,28 @@
   set_fact:
     kiali_service_port: "{{ kiali_route.spec.port.targetPort }}"
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.servicePort|int == 0
   ignore_errors: yes
 
 - fail:
     msg: "Failed to auto-discover the Kiali Service Name. Make sure Kiali is installed. You can specify 'kiali.serviceName' in the CR if there is a Kiali Service the plugin can use but cannot be auto-discovered by this operator."
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.serviceName == ""
   - kiali_service_name is not defined or kiali_service_name == ""
 
 - fail:
     msg: "Failed to auto-discover the Kiali Service Namespace. Make sure Kiali is installed. You can specify 'kiali.serviceNamespace' in the CR if there is a Kiali Service the plugin can use but cannot be auto-discovered by this operator."
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.serviceNamespace == ""
   - kiali_service_namespace is not defined or kiali_service_namespace == ""
 
 - fail:
     msg: "Failed to auto-discover the Kiali Service Port. Make sure Kiali is installed. You can specify 'kiali.servicePort' in the CR if there is a Kiali Service the plugin can use but cannot be auto-discovered by this operator."
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.servicePort|int == 0
   - kiali_service_port is not defined or kiali_service_port == ""
 
@@ -178,14 +241,17 @@
 - set_fact:
     ossmconsole_vars: "{{ ossmconsole_vars | combine({'kiali': {'serviceName': kiali_service_name}}, recursive=True) }}"
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.serviceName == ""
 - set_fact:
     ossmconsole_vars: "{{ ossmconsole_vars | combine({'kiali': {'serviceNamespace': kiali_service_namespace}}, recursive=True) }}"
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.serviceNamespace == ""
 - set_fact:
     ossmconsole_vars: "{{ ossmconsole_vars | combine({'kiali': {'servicePort': kiali_service_port}}, recursive=True) }}"
   when:
+  - kiali_available == True
   - ossmconsole_vars.kiali.servicePort|int == 0
 
 - name: Ask Kiali for information about itself
@@ -204,6 +270,8 @@
   retries: 60
   delay: 5
   ignore_errors: yes
+  when:
+  - kiali_available == True
 
 # If Kiali returned 401, it is likely because server.require_auth is set to true in the Kiali CR.
 # In that case we cannot obtain the Kiali version, so skip the version check and proceed with the install.
@@ -211,6 +279,7 @@
   debug:
     msg: "WARNING: Kiali returned HTTP 401 Unauthorized for the /api endpoint. This is likely because 'server.require_auth: true' is set in the Kiali CR. The Kiali version check will be skipped and OSSMC will be installed without verifying that the Kiali version matches. See https://github.com/kiali/kiali/issues/9964"
   when:
+  - kiali_available == True
   - kiali_info_results is defined
   - kiali_info_results.status is defined
   - kiali_info_results.status == 401
@@ -221,6 +290,7 @@
   set_fact:
     kiali_version: "{{ kiali_info_results.json | json_query(q) }}"
   when:
+  - kiali_available == True
   - kiali_info_results is defined
   - kiali_info_results.json is defined
   ignore_errors: yes
@@ -246,9 +316,10 @@
       deployment:
         namespace: "{{ ossmconsole_vars.deployment.namespace }}"
       kiali:
-        serviceName: "{{ ossmconsole_vars.kiali.serviceName }}"
-        serviceNamespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
-        servicePort: "{{ ossmconsole_vars.kiali.servicePort|int }}"
+        available: "{{ kiali_available }}"
+        serviceName: "{{ ossmconsole_vars.kiali.serviceName if kiali_available else '' }}"
+        serviceNamespace: "{{ ossmconsole_vars.kiali.serviceNamespace if kiali_available else '' }}"
+        servicePort: "{{ ossmconsole_vars.kiali.servicePort|int if kiali_available else 0 }}"
 
 # The OSSMC plugin must talk to a Kiali of the same version.
 # We asked the Kiali Server what version it is, so we already have that.
@@ -271,6 +342,7 @@
   fail:
     msg: "The version of the Kiali Server [{{ kiali_version_to_match }}] does not match the OSSMC version [{{ ossmc_version_to_match }}]. OSSMC will not be installed. To skip this check and allow for the install to continue, set the operator environment variable OSSMC_SKIP_VERSION_CHECK to 'true'."
   when:
+  - kiali_available == True
   - kiali_version_to_match != ossmc_version_to_match
   - lookup('env', 'OSSMC_SKIP_VERSION_CHECK') | default('false', True) != "true"
   - kiali_info_results.status | default(0) != 401
@@ -400,7 +472,7 @@
   - processed_resources_dict is defined
   - processed_resources_dict[keyname] is defined
   - processed_resources_dict[keyname].changed == True
-  - processed_resources_dict[keyname].method == "patch"
+  - processed_resources_dict[keyname].method == "update"
 
 - include_tasks: update-status-progress.yml
   vars:

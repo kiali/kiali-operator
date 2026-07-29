@@ -91,15 +91,22 @@ spec:
                   namespace:
                     description: "The namespace into which OSSM Console is to be installed. If this is empty or not defined, the default will be the namespace where the OSSMConsole CR is located. Currently the only namespace supported is the namespace where the OSSMConsole CR is located."
                     type: string
+              internal:
+                description: "Unstructured section for internal testing and debugging features. Not officially supported - fields here may change or be removed without notice."
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
               kiali:
                 type: object
                 properties:
+                  autoDiscover:
+                    description: "Controls whether the operator will opportunistically auto-discover a Kiali installation via its OpenShift Route when none of `kiali.serviceName`, `kiali.serviceNamespace`, and `kiali.servicePort` are set. If those three settings are all empty and this is set to `false`, OSSM Console is installed in lite mode (without Kiali integration) rather than attempting discovery. This setting has no effect if all three of `kiali.serviceName`, `kiali.serviceNamespace`, and `kiali.servicePort` are explicitly set (auto-discovery is already skipped in that case, and the explicitly configured Kiali installation is used). Setting this to `false` while only some (not all, and not none) of those three settings are specified is invalid and will fail reconciliation. Defaults to `true`."
+                    type: boolean
                   serviceName:
-                    description: "The internal Kiali service that the OpenShift Console will use to proxy API calls. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
+                    description: "The internal Kiali service that the OpenShift Console will use to proxy API calls. If empty and `kiali.autoDiscover` is `true` (the default), an attempt will be made to auto-discover it from the Kiali OpenShift Route. If none of `kiali.serviceName`, `kiali.serviceNamespace`, and `kiali.servicePort` are set and no Kiali installation can be auto-discovered (or `kiali.autoDiscover` is `false`), OSSM Console will still be installed, but without Kiali integration (a.k.a. 'lite mode'). If any of these three settings are explicitly set, a Kiali installation matching that configuration is required and the install will fail if it cannot be found or its version does not match. See `kiali.autoDiscover` for what happens when only some (not all) of these three settings are specified."
                     type: string
                   serviceNamespace:
-                    description: "The namespace where the Kiali service is deployed. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route. It will assume that the OpenShift Route and the Kiali service are deployed in the same namespace."
+                    description: "The namespace where the Kiali service is deployed. If empty and `kiali.autoDiscover` is `true` (the default), an attempt will be made to auto-discover it from the Kiali OpenShift Route. It will assume that the OpenShift Route and the Kiali service are deployed in the same namespace. If none of `kiali.serviceName`, `kiali.serviceNamespace`, and `kiali.servicePort` are set and no Kiali installation can be auto-discovered (or `kiali.autoDiscover` is `false`), OSSM Console will still be installed, but without Kiali integration (a.k.a. 'lite mode'). If any of these three settings are explicitly set, a Kiali installation matching that configuration is required and the install will fail if it cannot be found or its version does not match. See `kiali.autoDiscover` for what happens when only some (not all) of these three settings are specified."
                     type: string
                   servicePort:
-                    description: "The internal port used by the Kiali service for the API. If empty, an attempt will be made to auto-discover it from the Kiali OpenShift Route."
+                    description: "The internal port used by the Kiali service for the API. If empty and `kiali.autoDiscover` is `true` (the default), an attempt will be made to auto-discover it from the Kiali OpenShift Route. If none of `kiali.serviceName`, `kiali.serviceNamespace`, and `kiali.servicePort` are set and no Kiali installation can be auto-discovered (or `kiali.autoDiscover` is `false`), OSSM Console will still be installed, but without Kiali integration (a.k.a. 'lite mode'). If any of these three settings are explicitly set, a Kiali installation matching that configuration is required and the install will fail if it cannot be found or its version does not match. See `kiali.autoDiscover` for what happens when only some (not all) of these three settings are specified."
                     type: integer
