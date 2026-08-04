@@ -31,10 +31,12 @@ kiali_defaults:
       https_proxy: ""
       insecure_skip_verify_tls: false
       issuer_uri: ""
+      post_logout_redirect_uri: ""
       scopes: ["openid", "profile", "email"]
       username_claim: "sub"
       discovery_override:
         authorization_endpoint: ""
+        end_session_endpoint: ""
         jwks_uri: ""
         token_endpoint: ""
         userinfo_endpoint: ""

@@ -36,6 +36,7 @@ provisioner:
           client_id: kiali-app
           discovery_override:
             authorization_endpoint: "https://{{ nip_io_base_url }}:{{ hydra.public_port }}/oauth2/auth"
+            end_session_endpoint: "https://{{ nip_io_base_url }}:{{ hydra.public_port }}/oauth2/sessions/logout"
             jwks_uri: "https://{{ nip_io_base_url }}:{{ hydra.public_port }}/.well-known/jwks.json"
             token_endpoint: "https://{{ nip_io_base_url }}:{{ hydra.public_port }}/oauth2/token"
             userinfo_endpoint: "https://{{ nip_io_base_url }}:{{ hydra.public_port }}/userinfo"
