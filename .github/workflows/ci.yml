@@ -18,12 +18,15 @@ jobs:
     - name: Check out code
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       with:
-        # Fetch enough history to compare CRDs against base branch for backward compatibility check
+        # Fetch enough history and tags to compare CRDs against the base branch for the
+        # backward compatibility check, and to know which versions have already been
+        # released for the released-version-manifest-immutability check.
         fetch-depth: 0
+        fetch-tags: true
 
-    - name: Fetch origin/master for CRD compatibility check
+    - name: Fetch origin/master for CRD compatibility and released-version checks
       run: |
-        git fetch origin master:refs/remotes/origin/master || true
+        git fetch origin master:refs/remotes/origin/master --tags || true
 
     - name: Validate OLM metadata
       env:
