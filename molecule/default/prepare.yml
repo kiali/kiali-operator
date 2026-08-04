@@ -72,6 +72,8 @@
       - "--set"
       - "clusterRoleCreator={{ kiali.operator_cluster_role_creator | default('true') }}"
       - "--set"
+      - "supportImpersonation={{ kiali.operator_support_impersonation | default(is_openshift | ternary('true', 'false')) }}"
+      - "--set"
       - "onlyViewOnlyMode={{ kiali.operator_only_view_only_mode | default('false') }}"
       - "--debug"
       - "kiali-operator"
