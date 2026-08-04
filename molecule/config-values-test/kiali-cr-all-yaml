@@ -77,8 +77,8 @@ spec:
         dataType: "raw"
 
   identity:
-    cert_file: ""
-    private_key_file: ""
+    cert_file: "{{ '/kiali-cert/tls.crt' if is_openshift else '' }}"
+    private_key_file: "{{ '/kiali-cert/tls.key' if is_openshift else '' }}"
 
   deployment:
     cluster_wide_access: {{ kiali.cluster_wide_access|bool }}
