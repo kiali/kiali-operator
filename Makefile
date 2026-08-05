@@ -83,7 +83,7 @@ else
 endif
 
 ## validate: Checks the latest version of the OLM bundle metadata for correctness.
-validate: .ensure-opm-exists validate-crd-sync verify-crd-compatibility verify-kiali-server-permissions verify-defaults
+validate: .ensure-opm-exists validate-crd-sync verify-crd-compatibility verify-kiali-server-permissions verify-defaults verify-no-released-version-changes
 	@printf "========== Validating kiali-ossm metadata ==========\n"
 	@mkdir -p ${OUTDIR}/kiali-ossm-validation/bundle && rm -rf ${OUTDIR}/kiali-ossm-validation/* && mkdir -p ${OUTDIR}/kiali-ossm-validation/bundle && cp -R ./manifests/kiali-ossm/manifests ${OUTDIR}/kiali-ossm-validation/bundle/ && cp -R ./manifests/kiali-ossm/metadata ${OUTDIR}/kiali-ossm-validation/bundle/ && cat ./manifests/kiali-ossm/manifests/kiali.clusterserviceversion.yaml | KIALI_OPERATOR="registry.redhat.io/openshift-service-mesh/kiali-rhel9-operator:2.4.5" KIALI_OPERATOR_VERSION="2.4.5" CREATED_AT="2021-01-01T00:00:00Z" envsubst > ${OUTDIR}/kiali-ossm-validation/bundle/manifests/kiali.clusterserviceversion.yaml; \
 	if ${OPM} render ${OUTDIR}/kiali-ossm-validation/bundle --output yaml > ${OUTDIR}/kiali-ossm-validation/catalog.yaml 2>/dev/null; then \
@@ -127,6 +127,15 @@ verify-crd-compatibility:
 		${ROOTDIR}/hack/verify-crd-backward-compatibility.sh origin/master; \
 	else \
 		echo "Skipping backward compatibility check - origin/master not available"; \
+	fi
+
+## verify-no-released-version-changes: Verifies that no already-released kiali-upstream version manifests were modified
+verify-no-released-version-changes:
+	@printf "\n========== Verifying No Changes To Already-Released Versions ==========\n"
+	@if git rev-parse --verify origin/master >/dev/null 2>&1; then \
+		${ROOTDIR}/hack/verify-no-released-version-changes.sh origin/master; \
+	else \
+		echo "Skipping released-version check - origin/master not available"; \
 	fi
 
 .gen-crd-doc-kiali:
