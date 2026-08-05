@@ -246,8 +246,29 @@
     debug:
       msg: "Testing OAuth2 authentication flow using auto-discovery (/.well-known/openid-configuration)"
 
+  # The OIDC handshaking is wrapped in block/rescue to handle a known race
+  # condition: after the kube-apiserver rolls out with OIDC config, there is a
+  # brief window where the apiserver pods report ready but the OIDC authenticator
+  # has not yet fully initialized. Retrying the real auth flow (which resets all
+  # state on each attempt) is the most reliable way to ride out this window.
   - name: "OAuth2 Auto-Discovery: Run OIDC handshaking test"
-    include_tasks: oidc-handshaking.yml
+    block:
+    - include_tasks: oidc-handshaking.yml
+    rescue:
+    - name: "OIDC handshaking attempt 1 failed - possible API server OIDC readiness race"
+      debug:
+        msg: "{{ ansible_failed_result.msg | default('OIDC handshaking failed') }} - retrying in 30s (attempt 2/3)..."
+    - pause:
+        seconds: 30
+    - block:
+      - include_tasks: oidc-handshaking.yml
+      rescue:
+      - name: "OIDC handshaking attempt 2 failed"
+        debug:
+          msg: "{{ ansible_failed_result.msg | default('OIDC handshaking failed') }} - retrying in 30s (attempt 3/3)..."
+      - pause:
+          seconds: 30
+      - include_tasks: oidc-handshaking.yml
 
   # =============================================================================
   # AUTO-DISCOVERY VALIDATION

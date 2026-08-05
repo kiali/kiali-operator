@@ -327,13 +327,29 @@
     delay: 10
     ignore_errors: true
 
-  # Brief pause to let API server stabilize after rollout
-  - name: "Pause for API server stabilization"
-    pause:
-      seconds: 30
-      prompt: "Waiting 30s for API server to stabilize after rollout..."
+  # Verify all kube-apiserver nodes are running the latest static pod revision.
+  # The ClusterOperator can report Available before all nodes finish rolling out,
+  # and even after the pod is running the OIDC authenticator may need a moment to
+  # initialize. Checking node revisions is a stronger "rollout complete" signal.
+  - name: "Wait for all kube-apiserver nodes to reach latest revision"
+    k8s_info:
+      api_version: operator.openshift.io/v1
+      kind: KubeAPIServer
+      name: cluster
+    register: kas_operator
+    until: >-
+      kas_operator.resources is defined and
+      kas_operator.resources | length > 0 and
+      kas_operator.resources[0].status.latestAvailableRevision is defined and
+      kas_operator.resources[0].status.nodeStatuses is defined and
+      kas_operator.resources[0].status.nodeStatuses | length > 0 and
+      (kas_operator.resources[0].status.nodeStatuses |
+       rejectattr('currentRevision', 'equalto', kas_operator.resources[0].status.latestAvailableRevision) |
+       list | length == 0)
+    retries: 180
+    delay: 10
+    ignore_errors: true
 
-  # Verify the rollout actually completed - fail if it didn't
   - name: "Verify kube-apiserver rollout completed successfully"
     k8s_info:
       api_version: config.openshift.io/v1
@@ -357,7 +373,9 @@
 
   - name: "DEBUG: API server rollout complete"
     debug:
-      msg: "API server rollout complete. OpenShift now accepts Hydra OIDC tokens."
+      msg:
+      - "API server rollout complete. OpenShift now accepts Hydra OIDC tokens."
+      - "All nodes at revision: {{ kas_operator.resources[0].status.latestAvailableRevision | default('unknown') }}"
 
   # =============================================================================
   # CREATE RBAC FOR OIDC USER
