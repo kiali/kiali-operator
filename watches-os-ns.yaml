@@ -5,6 +5,7 @@
   group: kiali.io
   kind: Kiali
   playbook: playbooks/kiali-deploy.yml
+  markUnsafe: True
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: True
@@ -17,6 +18,7 @@
   kind: Secret
   playbook: playbooks/kiali-multi-cluster-secret-detected.yml
   manageStatus: False
+  markUnsafe: True
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: False
@@ -29,6 +31,7 @@
   kind: Namespace
   playbook: playbooks/kiali-new-namespace-detected.yml
   manageStatus: False
+  markUnsafe: True
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: False
@@ -37,6 +40,7 @@
   group: kiali.io
   kind: OSSMConsole
   playbook: playbooks/ossmconsole-deploy.yml
+  markUnsafe: True
   watchDependentResources: False
   watchClusterScopedResources: False
   snakeCaseParameters: False
