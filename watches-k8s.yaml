@@ -5,6 +5,7 @@
   group: kiali.io
   kind: Kiali
   playbook: playbooks/kiali-deploy.yml
+  markUnsafe: True
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: True
@@ -17,6 +18,7 @@
   kind: Secret
   playbook: playbooks/kiali-multi-cluster-secret-detected.yml
   manageStatus: False
+  markUnsafe: True
   watchDependentResources: False
   watchClusterScopedResources: False
   watchAnnotationsChanges: False
