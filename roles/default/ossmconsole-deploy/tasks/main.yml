@@ -136,7 +136,7 @@
 # ambiguous (we would need to auto-discover the rest, which is exactly what is disabled), so fail fast
 # with a clear message instead of leaving kiali_route undefined for the tasks below that depend on it.
 - fail:
-    msg: "When kiali.autoDiscover is false, you must specify all of kiali.serviceName, kiali.serviceNamespace, and kiali.servicePort together, or leave all three empty to force lite mode."
+    msg: "When kiali.autoDiscover is false, you must specify all of kiali.serviceName, kiali.serviceNamespace, and kiali.servicePort together, or leave all three empty to install without Kiali integration."
   when:
   - not (ossmconsole_vars.kiali.autoDiscover | bool)
   - kiali_explicitly_configured == True
@@ -145,9 +145,9 @@
 - set_fact:
     kiali_available: true
 
-- name: Auto-discovery is disabled and no Kiali was explicitly configured - OSSM Console will be installed in lite mode without Kiali integration
+- name: Auto-discovery is disabled and no Kiali was explicitly configured - OSSM Console will be installed without Kiali integration
   debug:
-    msg: "kiali.autoDiscover is false and no Kiali service was explicitly configured. OSSM Console will be installed without Kiali integration (lite mode); no auto-discovery will be attempted."
+    msg: "kiali.autoDiscover is false and no Kiali service was explicitly configured. OSSM Console will be installed without Kiali integration; no auto-discovery will be attempted."
   when:
   - not (ossmconsole_vars.kiali.autoDiscover | bool)
   - kiali_explicitly_configured == False
@@ -158,17 +158,44 @@
   - not (ossmconsole_vars.kiali.autoDiscover | bool)
   - kiali_explicitly_configured == False
 
-# If we need to auto-discover some things that require the Kiali Route, get the route now - first look in the CR's namespace then anywhere else. If Kiali is not found, abort only if the user explicitly configured Kiali; otherwise install in lite mode without Kiali integration.
+# Auto-discover the Kiali Route when service settings were not fully configured. Prefer a Route in the OSSMConsole
+# CR's own namespace; if none exists there, use a Route from another namespace. If no Route is found, abort only when
+# the user explicitly configured Kiali; otherwise install in lite mode without Kiali integration. The Route may not
+# exist on the first attempt if Kiali is still starting, so retry briefly before giving up.
 - name: Auto-discover the Kiali Route - preference goes to a Kiali installed in the same namespace as the CR
-  vars:
-    kiali_in_namespace: "{{ query(k8s_plugin, label_selector='app.kubernetes.io/name=kiali', api_version='route.openshift.io/v1', kind='Route', namespace=current_cr.metadata.namespace) }}"
-    kiali_anywhere: "{{ query(k8s_plugin, label_selector='app.kubernetes.io/name=kiali', api_version='route.openshift.io/v1', kind='Route') }}"
-  set_fact:
-    kiali_route: "{{ kiali_in_namespace[0] if kiali_in_namespace | length > 0 else (kiali_anywhere[0] if kiali_anywhere | length > 0 else '') }}"
+  k8s_info:
+    api_version: route.openshift.io/v1
+    kind: Route
+    label_selectors:
+    - app.kubernetes.io/name=kiali
+  register: kiali_routes_discovered
+  until:
+  - kiali_routes_discovered.resources is defined
+  - kiali_routes_discovered.resources | length > 0
+  retries: 24
+  delay: 5
+  ignore_errors: yes
   when:
   - ossmconsole_vars.kiali.autoDiscover | bool
-  - ossmconsole_vars.kiali.serviceName == "" or ossmconsole_vars.kiali.serviceNamespace == "" or ossmconsole_vars.kiali.servicePort|int == 0
-  ignore_errors: yes
+  - kiali_all_explicitly_configured == False
+
+- name: Select the preferred Kiali Route from discovered routes
+  set_fact:
+    kiali_route: "{{ (kiali_routes_discovered.resources | selectattr('metadata.namespace', 'equalto', current_cr.metadata.namespace) | list | first) | default(kiali_routes_discovered.resources[0], true) }}"
+  when:
+  - ossmconsole_vars.kiali.autoDiscover | bool
+  - kiali_all_explicitly_configured == False
+  - kiali_routes_discovered is defined
+  - kiali_routes_discovered.resources is defined
+  - kiali_routes_discovered.resources | length > 0
+
+- name: Remember that no Kiali Route was discovered
+  set_fact:
+    kiali_route: ""
+  when:
+  - ossmconsole_vars.kiali.autoDiscover | bool
+  - kiali_all_explicitly_configured == False
+  - kiali_route is not defined
 
 - fail:
     msg: "Failed to auto-discover the Kiali Route. Make sure Kiali is installed. You can specify the full 'kiali' section in the CR if there is a Kiali installed but cannot be auto-discovered by this operator."
@@ -177,9 +204,9 @@
   - kiali_route == ""
   - kiali_explicitly_configured == True
 
-- name: No Kiali was found and none was explicitly configured - OSSM Console will be installed in lite mode without Kiali integration
+- name: No Kiali was found and none was explicitly configured - OSSM Console will be installed without Kiali integration
   debug:
-    msg: "No Kiali installation was found. OSSM Console will be installed without Kiali integration (lite mode). If a Kiali is installed later, re-apply the OSSMConsole CR to enable full integration."
+    msg: "No Kiali installation was found. OSSM Console will be installed without Kiali integration. If a Kiali is installed later, re-apply the OSSMConsole CR to enable Kiali integration."
   when:
   - kiali_route is defined
   - kiali_route == ""
