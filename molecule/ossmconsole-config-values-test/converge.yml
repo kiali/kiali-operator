@@ -10,6 +10,12 @@
   - import_tasks: ../ossmconsole-common/tasks.yml
   - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
 
+  - name: Confirm the default CR renders internal.techPreview as false in the plugin-conf ConfigMap
+    assert:
+      that:
+      - ossmconsole_configmap.internal.techPreview == false
+      fail_msg: "Expected internal.techPreview to default to false: {{ ossmconsole_configmap }}"
+
   - set_fact:
       current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
@@ -63,3 +69,75 @@
       that:
       - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == (current_ossmconsole_cr.status.kiali.servicePort | int)
       - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == 20001
+
+  # ---------------------------------------------------------------------------------------------
+  # Test kiali.autoDiscover. A real Kiali is installed and discoverable in this scenario, so this
+  # is the only place we can prove that autoDiscover: false forces installation without Kiali integration even though Kiali
+  # could otherwise be found -- and that it has no effect once fully configured (this is exactly
+  # what the OSSMC Connect/Disconnect actions rely on).
+  # ---------------------------------------------------------------------------------------------
+
+  # Re-fetch first - the fact above is stale (from before the servicePort patch/reconcile cycle) and
+  # would carry a resourceVersion the API server has since moved past, causing a 409 Conflict on patch.
+  - set_fact:
+      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: Remember the working Kiali service settings before testing autoDiscover
+    set_fact:
+      known_good_kiali_service_name: "{{ current_ossmconsole_cr.status.kiali.serviceName }}"
+      known_good_kiali_service_namespace: "{{ current_ossmconsole_cr.status.kiali.serviceNamespace }}"
+
+  - name: Disable auto-discovery and clear the Kiali service settings to force installation without Kiali integration
+    set_fact:
+      current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'autoDiscover': false, 'serviceName': '', 'serviceNamespace': '', 'servicePort': 0}}}, recursive=True) }}"
+
+  - import_tasks: ../ossmconsole-common/set_ossmconsole_cr.yml
+    vars:
+      new_ossmconsole_cr: "{{ current_ossmconsole_cr }}"
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+
+  - set_fact:
+      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: Confirm autoDiscover false with nothing configured forces installation without Kiali integration even though a real Kiali is present
+    assert:
+      that:
+      - current_ossmconsole_cr.status.kiali.available == false
+      - ossmconsole_consoleplugin.spec.proxy is not defined or ossmconsole_consoleplugin.spec.proxy | length == 0
+
+  - name: Re-enable Kiali integration with explicit service settings while autoDiscover remains false
+    set_fact:
+      current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'autoDiscover': false, 'serviceName': known_good_kiali_service_name, 'serviceNamespace': known_good_kiali_service_namespace, 'servicePort': 20001}}}, recursive=True) }}"
+
+  - import_tasks: ../ossmconsole-common/set_ossmconsole_cr.yml
+    vars:
+      new_ossmconsole_cr: "{{ current_ossmconsole_cr }}"
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+
+  - set_fact:
+      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: Confirm explicit config still works with autoDiscover false, proving discovery-disabled has no effect once fully configured
+    assert:
+      that:
+      - current_ossmconsole_cr.status.kiali.available == true
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.name == known_good_kiali_service_name
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.namespace == known_good_kiali_service_namespace
+      - ossmconsole_consoleplugin.spec.proxy[0].endpoint.service.port == 20001
+
+  - name: Set only a partial Kiali configuration while autoDiscover is false
+    set_fact:
+      broken_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'autoDiscover': false, 'serviceName': '', 'serviceNamespace': '', 'servicePort': 20001}}}, recursive=True) }}"
+
+  - import_tasks: ../ossmconsole-common/set_ossmconsole_cr.yml
+    vars:
+      new_ossmconsole_cr: "{{ broken_ossmconsole_cr }}"
+
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_failure.yml
+
+  - name: Confirm the reconciliation failure is about the ambiguous partial autoDiscover configuration
+    assert:
+      that:
+      - "'autoDiscover' in ossmconsole_cr_failure_message"

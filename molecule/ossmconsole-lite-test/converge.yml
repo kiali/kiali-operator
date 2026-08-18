@@ -1,0 +1,59 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+
+  - set_fact:
+      current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+
+  - name: The current CR status
+    debug:
+      msg: "{{ current_ossmconsole_cr.status }}"
+
+  - name: Confirm all the core OSSM Console resources exist even though no Kiali is installed
+    assert:
+      that:
+      - ossmconsole_deployment.resources | length == 1
+      - ossmconsole_configmap_resource is defined
+      - ossmconsole_consoleplugin is defined
+      - ossmconsole_consoleplugin.spec.backend.service.name == 'ossmconsole'
+
+  - name: Confirm the CR status reports Kiali as unavailable
+    assert:
+      that:
+      - current_ossmconsole_cr.status.kiali.available == false
+      - current_ossmconsole_cr.status.kiali.serviceName == ""
+      - current_ossmconsole_cr.status.kiali.serviceNamespace == ""
+      - current_ossmconsole_cr.status.kiali.servicePort|int == 0
+
+  - name: Confirm the ConsolePlugin was created without a Kiali proxy entry
+    assert:
+      that:
+      - ossmconsole_consoleplugin.spec.proxy is not defined or ossmconsole_consoleplugin.spec.proxy | length == 0
+
+  # Now confirm that explicitly configuring Kiali (even partially) when no Kiali can be found is
+  # treated as a bad deployment scenario and hard-fails the reconciliation, rather than silently
+  # falling back to installation without Kiali integration. This is different than the "nothing configured, nothing found" case
+  # tested above: here the user asked for Kiali integration, so we must not silently degrade.
+
+  - name: Explicitly configure a Kiali servicePort even though no Kiali is installed on the cluster
+    set_fact:
+      broken_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'servicePort': 15014}}}, recursive=True) }}"
+
+  - import_tasks: ../ossmconsole-common/set_ossmconsole_cr.yml
+    vars:
+      new_ossmconsole_cr: "{{ broken_ossmconsole_cr }}"
+
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_failure.yml
+
+  - name: Confirm the reconciliation failure is about the inability to find Kiali
+    assert:
+      that:
+      - "'Kiali' in ossmconsole_cr_failure_message"
+      - "'Make sure Kiali is installed' in ossmconsole_cr_failure_message"

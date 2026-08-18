@@ -1,0 +1,85 @@
+- name: Prepare
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - name: Skip test if not on OpenShift
+    import_tasks: ../ossmconsole-common/confirm_openshift.yml
+
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Determine if the operator installation is managed externally or not
+    set_fact:
+      operator_installer: "{{ lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) }}" # can be 'helm' or 'skip'
+
+  - name: Make sure the operator namespace exists
+    k8s:
+      state: present
+      api_version: v1
+      kind: Namespace
+      name: "{{ kiali.operator_namespace }}"
+
+  - name: Find the latest Operator Helm Chart
+    shell: "ls -dt1 {{ lookup('env', 'MOLECULE_HELM_CHARTS_REPO') }}/_output/charts/kiali-operator*.tgz | head -n 1"
+    register: helm_chart_op_ls
+    when:
+    - operator_installer == "helm"
+
+  - set_fact:
+      helm_chart_location: "{{ helm_chart_op_ls.stdout | trim }}"
+    when:
+    - operator_installer == "helm"
+    - helm_chart_op_ls.stdout is defined
+
+  - fail:
+      msg: "The helm chart does not appear to be built. Run 'make build-helm-chart'."
+    when:
+    - operator_installer == "helm"
+    - helm_chart_location is not defined or helm_chart_location | length == 0
+
+  # This test deliberately does NOT install Kiali - it confirms OSSM Console can be installed
+  # without Kiali integration when no Kiali installation is found on the cluster.
+  - name: Install Operator via Helm
+    command:
+      argv:
+      - "helm"
+      - "upgrade"
+      - "--install"
+      - "--atomic"
+      - "--cleanup-on-fail"
+      - "--namespace={{ kiali.operator_namespace }}"
+      - "--set"
+      - "debug.enableProfiler={{ lookup('env', 'MOLECULE_OPERATOR_PROFILER_ENABLED') | default('true', True) }}"
+      - "--set"
+      - "allowAdHocKialiNamespace=true"
+      - "--set"
+      - "allowAdHocKialiImage=true"
+      - "--set"
+      - "allowAdHocOSSMConsoleImage=true"
+      - "--set"
+      - "allowAdHocContainers=true"
+      - "--set"
+      - "allowSecurityContextOverride=true"
+      - "--set"
+      - "cr.create=false"
+      - "--set"
+      - "image.repo={{ kiali.operator_image_name }}"
+      - "--set"
+      - "image.tag={{ kiali.operator_version }}"
+      - "--set"
+      - "image.pullPolicy={{ kiali.operator_image_pull_policy }}"
+      - "--set"
+      - "image.pullSecrets={{ '{' + lookup('env', 'OPERATOR_IMAGE_PULL_SECRET_NAME') + '}' }}"
+      - "--set"
+      - "watchNamespace={{ kiali.operator_watch_namespace }}"
+      - "--set"
+      - "clusterRoleCreator={{ kiali.operator_cluster_role_creator | default('true') }}"
+      - "--debug"
+      - "kiali-operator"
+      - "{{ helm_chart_location }}"
+    when:
+    - operator_installer == "helm"
+
+- name: Install OSSM Console without a Kiali installation present
+  import_playbook: ../ossmconsole-default/install_ossmconsole.yml
