@@ -121,7 +121,7 @@
 # Determine if the user explicitly asked for a specific Kiali service. If they did, we treat Kiali as a
 # hard requirement and will fail the install if it cannot be found/reached. If they did not, this is the
 # common case where we opportunistically look for Kiali but are willing to install OSSMC without it
-# (a.k.a. "lite mode") when none can be found.
+# without Kiali integration when none can be found.
 - name: Determine if the user explicitly configured a Kiali service to use
   set_fact:
     kiali_explicitly_configured: "{{ ossmconsole_vars.kiali.serviceName != '' or ossmconsole_vars.kiali.serviceNamespace != '' or ossmconsole_vars.kiali.servicePort|int != 0 }}"
@@ -160,7 +160,7 @@
 
 # Auto-discover the Kiali Route when service settings were not fully configured. Prefer a Route in the OSSMConsole
 # CR's own namespace; if none exists there, use a Route from another namespace. If no Route is found, abort only when
-# the user explicitly configured Kiali; otherwise install in lite mode without Kiali integration. The Route may not
+# the user explicitly configured Kiali; otherwise install without Kiali integration. The Route may not
 # exist on the first attempt if Kiali is still starting, so retry briefly before giving up.
 - name: Auto-discover the Kiali Route - preference goes to a Kiali installed in the same namespace as the CR
   k8s_info:

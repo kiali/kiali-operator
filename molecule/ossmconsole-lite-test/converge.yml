@@ -39,7 +39,7 @@
 
   # Now confirm that explicitly configuring Kiali (even partially) when no Kiali can be found is
   # treated as a bad deployment scenario and hard-fails the reconciliation, rather than silently
-  # falling back to lite mode. This is different than the "nothing configured, nothing found" case
+  # falling back to installation without Kiali integration. This is different than the "nothing configured, nothing found" case
   # tested above: here the user asked for Kiali integration, so we must not silently degrade.
 
   - name: Explicitly configure a Kiali servicePort even though no Kiali is installed on the cluster

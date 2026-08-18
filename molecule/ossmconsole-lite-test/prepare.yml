@@ -39,7 +39,7 @@
     - helm_chart_location is not defined or helm_chart_location | length == 0
 
   # This test deliberately does NOT install Kiali - it confirms OSSM Console can be installed
-  # in "lite mode" (no Kiali integration) when no Kiali installation is found on the cluster.
+  # without Kiali integration when no Kiali installation is found on the cluster.
   - name: Install Operator via Helm
     command:
       argv:

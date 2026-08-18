@@ -72,9 +72,9 @@
 
   # ---------------------------------------------------------------------------------------------
   # Test kiali.autoDiscover. A real Kiali is installed and discoverable in this scenario, so this
-  # is the only place we can prove that autoDiscover: false forces lite mode even though Kiali
+  # is the only place we can prove that autoDiscover: false forces installation without Kiali integration even though Kiali
   # could otherwise be found -- and that it has no effect once fully configured (this is exactly
-  # what the OSSMC-lite Demote/Promote actions rely on).
+  # what the OSSMC Connect/Disconnect actions rely on).
   # ---------------------------------------------------------------------------------------------
 
   # Re-fetch first - the fact above is stale (from before the servicePort patch/reconcile cycle) and
@@ -87,7 +87,7 @@
       known_good_kiali_service_name: "{{ current_ossmconsole_cr.status.kiali.serviceName }}"
       known_good_kiali_service_namespace: "{{ current_ossmconsole_cr.status.kiali.serviceNamespace }}"
 
-  - name: Disable auto-discovery and clear the Kiali service settings to force lite mode
+  - name: Disable auto-discovery and clear the Kiali service settings to force installation without Kiali integration
     set_fact:
       current_ossmconsole_cr: "{{ current_ossmconsole_cr | combine({'spec': {'kiali': {'autoDiscover': false, 'serviceName': '', 'serviceNamespace': '', 'servicePort': 0}}}, recursive=True) }}"
 
@@ -100,7 +100,7 @@
   - set_fact:
       current_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
 
-  - name: Confirm autoDiscover false with nothing configured forces lite mode even though a real Kiali is present
+  - name: Confirm autoDiscover false with nothing configured forces installation without Kiali integration even though a real Kiali is present
     assert:
       that:
       - current_ossmconsole_cr.status.kiali.available == false
