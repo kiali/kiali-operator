@@ -16,7 +16,12 @@ spec:
     imageVersion: ""
     namespace: ""
 
+  # default: internal is an empty object (techPreview is disabled)
+  # internal:
+  #   techPreview: true
+
   kiali:
+    autoDiscover: true
     serviceName: ""
     serviceNamespace: ""
     servicePort: 0

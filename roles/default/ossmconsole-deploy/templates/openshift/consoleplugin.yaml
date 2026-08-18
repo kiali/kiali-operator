@@ -14,6 +14,7 @@ spec:
       port: 9443
       basePath: "/"
     type: Service
+{% if kiali_available %}
   proxy:
   - alias: kiali
     authorization: UserToken
@@ -23,3 +24,8 @@ spec:
         namespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
         port: {{ ossmconsole_vars.kiali.servicePort | int }}
       type: Service
+{% else %}
+  # Explicitly null (rather than simply omitting the key) so the patch clears any proxy that was set by a
+  # previous reconciliation - a merge patch leaves keys absent from the payload untouched on the live object.
+  proxy: null
+{% endif %}

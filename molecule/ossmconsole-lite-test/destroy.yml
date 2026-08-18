@@ -1,0 +1,75 @@
+- name: Destroy
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - name: Skip test if not on OpenShift
+    import_tasks: ../ossmconsole-common/confirm_openshift.yml
+
+- name: Uninstall the OSSM Console
+  import_playbook: ../ossmconsole-default/remove_ossmconsole.yml
+
+- name: Uninstall the operator - no Kiali installation to remove since none was installed
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Determine if the operator installation is managed externally or not
+    set_fact:
+      operator_installer: "{{ lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) }}" # can be 'helm' or 'skip'
+
+  - name: Uninstall Operator via Helm
+    command:
+      argv:
+      - "helm"
+      - "uninstall"
+      - "--namespace={{ kiali.operator_namespace }}"
+      - "--debug"
+      - "kiali-operator"
+    when:
+    - operator_installer == "helm"
+    ignore_errors: yes
+
+  # Helm does not uninstall CRDs, we need to do it here
+  - name: Remove CRDs
+    vars:
+      crds_yaml: "{{ lookup('env', 'MOLECULE_HELM_CHARTS_REPO') + '/kiali-operator/crds/crds.yaml' }}"
+    k8s:
+      state: absent
+      src: "{{ crds_yaml }}"
+      wait: yes
+    when:
+    - operator_installer == "helm"
+    ignore_errors: yes
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Removing Operator namespace
+    k8s:
+      state: absent
+      api_version: v1
+      kind: Namespace
+      name: "{{ kiali.operator_namespace }}"
+      wait: yes
+    when:
+    - operator_installer == "helm"
+    - kiali.operator_namespace != istio.control_plane_namespace
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Removing CR namespace if it is different than control plane and operator namespace
+    k8s:
+      state: absent
+      api_version: v1
+      kind: Namespace
+      name: "{{ ossmconsole_cr_namespace }}"
+      wait: yes
+    when:
+    - ossmconsole_cr_namespace != istio.control_plane_namespace
+    - ossmconsole_cr_namespace != kiali.operator_namespace
+    retries: "{{ wait_retries }}"
+    delay: 5
