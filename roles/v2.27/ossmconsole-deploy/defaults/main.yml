@@ -18,7 +18,10 @@ ossmconsole_defaults:
     imageVersion: ""
     namespace: ""
 
+  internal: {}
+
   kiali:
+    autoDiscover: true
     serviceName: ""
     serviceNamespace: ""
     servicePort: 0
