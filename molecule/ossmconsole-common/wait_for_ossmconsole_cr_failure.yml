@@ -1,0 +1,18 @@
+- name: Wait for the OSSMConsole CR reconciliation to fail
+  k8s_info:
+    api_version: kiali.io/v1alpha1
+    kind: OSSMConsole
+    name: "{{ custom_resource.metadata.name }}"
+    namespace: "{{ ossmconsole_cr_namespace }}"
+  register: ossmconsole_cr_failure_list
+  until:
+  - ossmconsole_cr_failure_list is success
+  - ossmconsole_cr_failure_list.resources is defined
+  - ossmconsole_cr_failure_list.resources | length > 0
+  - ossmconsole_cr_failure_list | json_query('resources[*].status.conditions[?type==`Failure`].status') | flatten | join == 'True'
+  - ossmconsole_cr_failure_list | json_query('resources[*].status.conditions[?type==`Failure`].reason') | flatten | join == 'Failed'
+  retries: "{{ wait_retries }}"
+  delay: 5
+
+- set_fact:
+    ossmconsole_cr_failure_message: "{{ ossmconsole_cr_failure_list | json_query('resources[0].status.conditions[?type==`Failure`].message') | flatten | join }}"

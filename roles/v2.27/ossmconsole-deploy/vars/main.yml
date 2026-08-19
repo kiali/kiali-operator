@@ -22,6 +22,13 @@ ossmconsole_vars:
     {{ ossmconsole_defaults.deployment }}
     {%- endif -%}
 
+  internal: |
+    {%- if internal is defined and internal is iterable -%}
+    {{ ossmconsole_defaults.internal | combine((internal | stripnone), recursive=True) }}
+    {%- else -%}
+    {{ ossmconsole_defaults.internal }}
+    {%- endif -%}
+
   kiali: |
     {%- if kiali is defined and kiali is iterable -%}
     {{ ossmconsole_defaults.kiali | combine((kiali | stripnone), recursive=True) }}

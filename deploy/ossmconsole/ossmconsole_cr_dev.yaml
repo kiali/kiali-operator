@@ -12,7 +12,10 @@ spec:
     imagePullPolicy: "Always"
     imagePullSecrets:
     - ${PULL_SECRET_NAME}
+  internal:
+    techPreview: true
   kiali:
+    autoDiscover: ${OSSMCONSOLE_CR_AUTO_DISCOVER}
     serviceName: ""
     serviceNamespace: ""
     servicePort: 0
