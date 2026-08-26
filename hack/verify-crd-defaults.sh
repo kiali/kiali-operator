@@ -61,8 +61,21 @@ PROPERTIES_TO_IGNORE=(
     "external_services.istio.istio_injection_annotation"
     "external_services.istio.istio_sidecar_annotation"
 
-    # Array item defaults that don't have direct Ansible equivalents
+    # DEPRECATED AFTER v2.31: superseded by "ai.chat_ai.*". Kept in the CRD schema only
+    # for backward compatibility with older CRs; the Ansible role no longer reads or
+    # defaults these, so they are intentionally absent from defaults/main.yml.
+    "chat_ai.enabled"
+    "chat_ai.max_tool_iterations"
     "chat_ai.providers.items.insecure_skip_verify"
+    "chat_ai.store_config.enabled"
+    "chat_ai.store_config.inactivity_timeout"
+    "chat_ai.store_config.max_cache_memory_mb"
+    "chat_ai.store_config.reduce_threshold"
+    "chat_ai.store_config.reduce_with_ai"
+    
+
+    # Array item defaults that don't have direct Ansible equivalents
+    "ai.chat_ai.providers.items.insecure_skip_verify"
     "deployment.custom_secrets.items.optional"
     "extensions.items.enabled"
     "external_services.istio.component_status.components.items.is_core"
