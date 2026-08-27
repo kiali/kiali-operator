@@ -60,7 +60,7 @@ spec:
                 description: "Configuration for the AI feature."
                 type: object
                 properties:
-                  chat_ai: 
+                  chat:
                     description: "Configuration for the ChatAI feature."
                     type: object
                     properties:

@@ -78,9 +78,10 @@ The `kiali.io_kialis.yaml` CRD uses OpenAPI v3 schema validation (`openAPIV3Sche
 | Spec Group | Purpose |
 |------------|---------|
 | `additional_display_details` | Extra annotations Kiali will look for on workloads/services to display as links |
+| `ai` | AI feature settings; `ai.chat` holds the ChatAI assistant integration (providers, models, caching) |
 | `api` | (Deprecated after v1.73) Kiali API access settings |
 | `auth` | Authentication strategy (`openshift`, `token`, `openid`, `anonymous`, `header`) and OpenID Connect params |
-| `chat_ai` | AI assistant integration (providers, models, caching) |
+| `chat_ai` | (Deprecated after v2.31, superseded by `ai.chat`) AI assistant integration (providers, models, caching) |
 | `clustering` | Multi-cluster secret autodetect, remote cluster configuration |
 | `custom_dashboards` | Custom monitoring dashboard definitions |
 | `deployment` | Image, namespace, RBAC mode (`cluster_wide_access`), resources, affinity, ingress, TLS |

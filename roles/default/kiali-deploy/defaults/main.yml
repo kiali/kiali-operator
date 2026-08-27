@@ -17,7 +17,7 @@ kiali_defaults:
     icon_annotation: "kiali.io/api-type"
 
   ai:
-    chat_ai:
+    chat:
       allowed_users: []
       default_provider: ""
       enabled: false
