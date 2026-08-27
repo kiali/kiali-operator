@@ -7,3 +7,7 @@ _output
 # Claude Code and Cursor — ignore local files
 .claude/
 .cursor/
+
+# OpenAI / Codex / ChatGPT Desktop
+.codex/
+.agents/
