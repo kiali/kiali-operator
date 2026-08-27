@@ -14,6 +14,21 @@ spec:
 
   version: "default"
 
+  ai:
+    chat:
+      default_provider: ""
+      enabled: false
+      max_tool_iterations: 5
+      providers: []
+      store_config:
+        enabled: true
+        inactivity_timeout: "30m"
+        max_cache_memory_mb: 1024
+        reduce_threshold: 15
+        reduce_with_ai: false
+      tools: {}
+    enabled: false
+
   auth:
     strategy: ""
     openid:
@@ -49,20 +64,7 @@ spec:
         enabled: false
       #redirect_uris:
       #token_inactivity_timeout:
-      #token_max_age:
-
-  chat_ai:
-    default_provider: ""
-    enabled: false
-    max_tool_iterations: 5
-    providers: []
-    store_config:
-      enabled: true
-      inactivity_timeout: "30m"
-      max_cache_memory_mb: 1024
-      reduce_threshold: 15
-      reduce_with_ai: false
-    tools: {}
+      #token_max_age:  
 
   clustering:
     autodetect_secrets:

@@ -215,7 +215,7 @@ The operator implements a **`secret:name:key` URI scheme** that allows any crede
 - `external_services.custom_dashboards.prometheus.auth.{username, password, token, cert_file, key_file}`
 - `external_services.perses.auth.{username, password, cert_file, key_file}`
 - `login_token.signing_key`
-- `chat_ai.providers[*].key` and `chat_ai.providers[*].models[*].key` (only when `enabled: true`)
+- `ai.chat.providers[*].key` and `ai.chat.providers[*].models[*].key` (only when `enabled: true`)
 
 For each matched field, the deployment template creates a Secret volume and mounts it at `/kiali-override-secrets/<volume-name>/` with `readOnly: true`. The Kiali server reads the file from disk via `conf.GetCredential("/kiali-override-secrets/...")`, which is watched by `CredentialManager` for rotation.
 

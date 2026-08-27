@@ -822,10 +822,10 @@
       {% set d = d | combine({'customdashboards-prometheus-oauth2-client-secret': {'secret_name': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | regex_replace('secret:(.+):.+', '\\1'), 'secret_key': kiali_vars.external_services.custom_dashboards.prometheus.auth.oauth2.client_secret | regex_replace('secret:.+:(.+)', '\\1') }}) %}
       {% endif %}
 
-      {# Prepare the secret volumes for chat_ai provider and model keys #}
+      {# Prepare the secret volumes for ai.chat provider and model keys #}
       {# Note: provider.enabled and model.enabled default to false if not specified #}
-      {% if kiali_vars is defined and kiali_vars.chat_ai is defined and kiali_vars.chat_ai.enabled is defined and kiali_vars.chat_ai.enabled|bool and kiali_vars.chat_ai.providers is defined and kiali_vars.chat_ai.providers|length > 0 %}
-      {% for provider in kiali_vars.chat_ai.providers %}
+      {% if kiali_vars is defined and kiali_vars.ai is defined and kiali_vars.ai.enabled is defined and kiali_vars.ai.enabled|bool and kiali_vars.ai.chat is defined and kiali_vars.ai.chat.enabled is defined and kiali_vars.ai.chat.enabled|bool and kiali_vars.ai.chat.providers is defined and kiali_vars.ai.chat.providers|length > 0 %}
+      {% for provider in kiali_vars.ai.chat.providers %}
       {% set provider_name = (provider.name | default('', true) | lower | regex_replace('[^a-z0-9-]+', '-') | regex_replace('(^-+|-+$)', '')) | default('unknown', true) %}
       {% if provider.enabled is defined and provider.enabled|bool %}
       {% if (provider.key | default('', true)) | regex_search('secret:.+:.+') %}

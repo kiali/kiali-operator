@@ -32,10 +32,10 @@
       fail_msg: "Expected NO prometheus-oauth2 secret volumes in initial pod (using inline secret), but found: {{ oauth2_volumes | map(attribute='name') | list }}"
       success_msg: "Verified initial pod has no prometheus-oauth2 secret volumes (inline secret is used)"
 
-  - name: Assert Kiali ConfigMap has inline chat_ai keys (not secret references)
+  - name: Assert Kiali ConfigMap has inline chat AI keys (not secret references)
     vars:
-      provider_key: "{{ kiali_configmap.chat_ai.providers | selectattr('name', 'equalto', 'enabled-provider') | map(attribute='key') | first }}"
-      model_key: "{{ (kiali_configmap.chat_ai.providers | selectattr('name', 'equalto', 'enabled-provider') | first).models | selectattr('name', 'equalto', 'enabled-model') | map(attribute='key') | first }}"
+      provider_key: "{{ kiali_configmap.ai.chat.providers | selectattr('name', 'equalto', 'enabled-provider') | map(attribute='key') | first }}"
+      model_key: "{{ (kiali_configmap.ai.chat.providers | selectattr('name', 'equalto', 'enabled-provider') | first).models | selectattr('name', 'equalto', 'enabled-model') | map(attribute='key') | first }}"
     assert:
       that:
       - provider_key == 'inline-enabled-provider-key'
@@ -43,7 +43,7 @@
       - "'secret:' not in provider_key"
       - "'secret:' not in model_key"
       fail_msg: "Expected inline keys in ConfigMap, but found provider_key={{ provider_key }}, model_key={{ model_key }}"
-      success_msg: "Verified ConfigMap has inline chat_ai keys (provider={{ provider_key }}, model={{ model_key }})"
+      success_msg: "Verified ConfigMap has inline chat AI keys (provider={{ provider_key }}, model={{ model_key }})"
 
   # Create the external auth resources before switching the CR to secret-based auth
   - name: Create external auth rotation test resources
@@ -114,7 +114,7 @@
           client_secret: "secret:prometheus-oauth2-creds:client_secret"
           token_url: "https://idp.example.com/token"
     set_fact:
-      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}, 'prometheus': {'auth': prometheus_oauth2_update}}, 'chat_ai': chat_ai_update}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}, 'prometheus': {'auth': prometheus_oauth2_update}}, 'ai': {'chat': chat_ai_update}}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml

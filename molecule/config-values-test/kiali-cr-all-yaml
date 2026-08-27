@@ -36,18 +36,20 @@ spec:
         enabled: false
     strategy: "anonymous"
 
-  chat_ai:
-    default_provider: ""
+  ai:
     enabled: false
-    max_tool_iterations: 5
-    providers: []
-    store_config:
-      enabled: true
-      inactivity_timeout: "30m"
-      max_cache_memory_mb: 1024
-      reduce_threshold: 15
-      reduce_with_ai: false
-    tools: {}
+    chat:
+      default_provider: ""
+      enabled: false
+      max_tool_iterations: 5
+      providers: []
+      store_config:
+        enabled: true
+        inactivity_timeout: "30m"
+        max_cache_memory_mb: 1024
+        reduce_threshold: 15
+        reduce_with_ai: false
+      tools: {}
 
   installation_tag: "config-values-test-installation"
 
