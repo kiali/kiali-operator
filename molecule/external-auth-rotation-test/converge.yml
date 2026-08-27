@@ -114,7 +114,7 @@
           client_secret: "secret:prometheus-oauth2-creds:client_secret"
           token_url: "https://idp.example.com/token"
     set_fact:
-      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}, 'prometheus': {'auth': prometheus_oauth2_update}}, 'chat_ai': chat_ai_update}}, recursive=True) }}"
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': {'external_services': {'grafana': {'auth': grafana_auth_update}, 'prometheus': {'auth': prometheus_oauth2_update}}, 'ai': {'chat': chat_ai_update}}}, recursive=True) }}"
 
   - import_tasks: ../common/set_kiali_cr.yml
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
