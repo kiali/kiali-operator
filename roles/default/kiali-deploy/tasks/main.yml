@@ -824,7 +824,7 @@
 
       {# Prepare the secret volumes for ai.chat provider and model keys #}
       {# Note: provider.enabled and model.enabled default to false if not specified #}
-      {% if kiali_vars is defined and kiali_vars.ai is defined and kiali_vars.ai.chat is defined and kiali_vars.ai.chat.enabled is defined and kiali_vars.ai.chat.enabled|bool and kiali_vars.ai.chat.providers is defined and kiali_vars.ai.chat.providers|length > 0 %}
+      {% if kiali_vars is defined and kiali_vars.ai is defined and kiali_vars.ai.enabled is defined and kiali_vars.ai.enabled|bool and kiali_vars.ai.chat is defined and kiali_vars.ai.chat.enabled is defined and kiali_vars.ai.chat.enabled|bool and kiali_vars.ai.chat.providers is defined and kiali_vars.ai.chat.providers|length > 0 %}
       {% for provider in kiali_vars.ai.chat.providers %}
       {% set provider_name = (provider.name | default('', true) | lower | regex_replace('[^a-z0-9-]+', '-') | regex_replace('(^-+|-+$)', '')) | default('unknown', true) %}
       {% if provider.enabled is defined and provider.enabled|bool %}
