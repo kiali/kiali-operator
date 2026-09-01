@@ -31,7 +31,9 @@ kiali_defaults:
         reduce_with_ai: false
       tools: {}
     enabled: false
-
+    metrics:
+      enabled: false
+      include_username: false
   auth:
     openid:
       additional_request_params: {}

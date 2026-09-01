@@ -193,7 +193,19 @@ spec:
                   enabled:
                     description: "Enable or disable the AI feature."
                     type: boolean
-                    default: false                  
+                    default: false    
+                  metrics:
+                    description: "Configuration for the ChatAI metrics."
+                    type: object
+                    properties:
+                      enabled:
+                        description: "Enable or disable the ChatAI metrics."
+                        type: boolean
+                        default: false
+                      include_username:
+                        description: "Include the username in the ChatAI metrics."
+                        type: boolean
+                        default: false                
               api:
                 description: "DEPRECATED AFTER v1.73: These settings control how the Kiali API should be accessed."
                 type: object
