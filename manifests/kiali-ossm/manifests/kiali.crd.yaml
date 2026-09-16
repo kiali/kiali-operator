@@ -968,16 +968,20 @@ spec:
                     description: "Configures the logger that emits messages to the Kiali server pod logs."
                     type: object
                     properties:
-                      log_level:
-                        description: "The lowest priority of messages to log. Must be one of: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`."
-                        type: string
-                        enum: ["trace", "debug", "info", "warn", "error", "fatal"]
-                        default: "info"
                       log_format:
                         description: "Indicates if the logs should be written with one log message per line or using a JSON format. Must be one of: `text` or `json`."
                         type: string
                         enum: ["text", "json"]
                         default: "text"
+                      log_level:
+                        description: "The lowest priority of messages to log. Must be one of: `trace`, `debug`, `info`, `warn`, `error`, or `fatal`."
+                        type: string
+                        enum: ["trace", "debug", "info", "warn", "error", "fatal"]
+                        default: "info"
+                      log_prometheus_queries:
+                        description: "When true and log_level is trace, Kiali logs PromQL instant and range queries used to obtain metrics."
+                        type: boolean
+                        default: false
                       sampler_rate:
                         description: "With this setting every sampler_rate-th message will be logged. By default, every message is logged. As an example, setting this to `'2'` means every other message will be logged. The value of this setting is a string but must be parsable as an integer."
                         type: string
