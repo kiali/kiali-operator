@@ -113,6 +113,7 @@ kiali_defaults:
     logger:
       log_format: "text"
       log_level: "info"
+      log_prometheus_queries: false
       sampler_rate: "1"
       time_field_format: "2006-01-02T15:04:05Z07:00"
     namespace: ""
