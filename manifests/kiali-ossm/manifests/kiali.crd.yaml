@@ -2283,7 +2283,7 @@ spec:
                             description: "Default language used in Kiali application."
                             type: string
                           show_selector:
-                            description: "Deprecated. Language selection is available in Preferences by default. If false, the language selector is hidden until this setting is removed in a future release."
+                            description: "DEPRECATED AFTER v2.27: Language selection is available in Preferences by default. If false, the language selector is hidden until this setting is removed in a future release."
                             type: boolean
                             default: true
                       list:

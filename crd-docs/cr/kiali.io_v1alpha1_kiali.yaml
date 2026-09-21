@@ -564,7 +564,6 @@ spec:
           tcp: "sent"
       i18n:
         language: "en"
-        show_selector: true
       list:
         include_health: true
         include_istio_resources: true
