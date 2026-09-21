@@ -410,7 +410,7 @@ kiali_defaults:
         include_validations: true
         show_include_toggles: false
       i18n:
-        show_selector: false
+        show_selector: true
       mesh:
         find_options:
         - description: "Find: unhealthy nodes"
