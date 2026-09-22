@@ -1,0 +1,31 @@
+apiVersion: console.openshift.io/v1
+kind: ConsolePlugin
+metadata:
+  name: ossmconsole
+  labels: {{ ossmconsole_resource_metadata_labels }}
+spec:
+  displayName: "OpenShift Service Mesh Console"
+  i18n:
+    loadType: Preload
+  backend:
+    service:
+      name: ossmconsole
+      namespace: "{{ ossmconsole_vars.deployment.namespace }}"
+      port: 9443
+      basePath: "/"
+    type: Service
+{% if kiali_available %}
+  proxy:
+  - alias: kiali
+    authorization: UserToken
+    endpoint:
+      service:
+        name: {{ ossmconsole_vars.kiali.serviceName }}
+        namespace: "{{ ossmconsole_vars.kiali.serviceNamespace }}"
+        port: {{ ossmconsole_vars.kiali.servicePort | int }}
+      type: Service
+{% else %}
+  # Explicitly null (rather than simply omitting the key) so the patch clears any proxy that was set by a
+  # previous reconciliation - a merge patch leaves keys absent from the payload untouched on the live object.
+  proxy: null
+{% endif %}
