@@ -5,3 +5,4 @@ v2.11: {"image_name": "quay.io/kiali/kiali", "image_version": "v2.11"}
 v2.17: {"image_name": "quay.io/kiali/kiali", "image_version": "v2.17"}
 v2.22: {"image_name": "quay.io/kiali/kiali", "image_version": "v2.22"}
 v2.27: {"image_name": "quay.io/kiali/kiali", "image_version": "v2.27"}
+v2.33: {"image_name": "quay.io/kiali/kiali", "image_version": "v2.33"}
