@@ -358,6 +358,7 @@
       custom_service_labels:
         first_service_label: "svc1"
         secondServiceCamelCase: "svc2"
+        app.kubernetes.io/name: "custom-kiali-service"
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'service_labels': custom_service_labels}}}, recursive=True) }}"
 
@@ -704,9 +705,10 @@
       that:
       - kiali_service_labels.first_service_label == 'svc1'
       - kiali_service_labels.secondServiceCamelCase == 'svc2'
-      - kiali_service_labels['app.kubernetes.io/name'] == 'kiali'
+      - kiali_service_labels['app.kubernetes.io/name'] == 'custom-kiali-service'
       - kiali_pod_labels.first_service_label is not defined
       - kiali_pod_labels.secondServiceCamelCase is not defined
+      - kiali_pod_labels['app.kubernetes.io/name'] == 'kiali'
       fail_msg: "Service labels were not properly applied to the Service resource"
 
   - name: Make sure the extra labels were added to the OpenShift resources
