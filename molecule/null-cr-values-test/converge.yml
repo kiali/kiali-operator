@@ -37,6 +37,7 @@
       - kiali_configmap.deployment.resources.requests.memory == "64Mi"
       - kiali_configmap.deployment.resources.limits.memory == "1Gi"
       - kiali_configmap.deployment.service_annotations | length == 0
+      - kiali_configmap.deployment.service_labels | length == 0
       - kiali_configmap.external_services.custom_dashboards.prometheus.custom_headers | length == 0
       - kiali_configmap.external_services.custom_dashboards.prometheus.query_scope | length == 0
       - kiali_configmap.external_services.istio.istio_identity_domain == ""

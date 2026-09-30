@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ kiali_vars.deployment.instance_name }}
   namespace: "{{ kiali_vars.deployment.namespace }}"
-  labels: {{ kiali_resource_metadata_labels }}
+  labels: {{ kiali_resource_metadata_labels | combine(kiali_vars.deployment.service_labels) }}
   annotations:
 {% if kiali_vars.server.web_fqdn|length != 0 and kiali_vars.server.web_schema|length != 0 %}
     kiali.io/external-url: {{ kiali_vars.server.web_schema + '://' + kiali_vars.server.web_fqdn + ((':' + kiali_vars.server.web_port | string) if (kiali_vars.server.web_port | string | length != 0) else '') + (kiali_vars.server.web_root | default('')) }}

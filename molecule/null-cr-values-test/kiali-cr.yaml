@@ -60,6 +60,7 @@ spec:
     resources: null
     secret_name: null
     service_annotations: null
+    service_labels: null
     service_type: {{ 'LoadBalancer' if is_kind else 'NodePort' }}
     tolerations: null
     version_label: null
