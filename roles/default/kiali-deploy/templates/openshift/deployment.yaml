@@ -154,6 +154,11 @@ spec:
           mountPath: "/kiali-secret"
         - name: kiali-cabundle
           mountPath: "/kiali-cabundle"
+{% if kiali_vars.ai.consumption.prizes_config_map|default('')|length > 0 %}
+        - name: kiali-ai-pricing
+          mountPath: "/kiali-ai-pricing"
+          readOnly: true
+{% endif %}
 {% for sec in kiali_deployment_secret_volumes %}
         - name: {{ sec }}
           mountPath: "/kiali-override-secrets/{{ sec }}"
@@ -201,6 +206,15 @@ spec:
           - configMap:
               name: {{ kiali_vars.deployment.instance_name }}-oauth-cabundle
               optional: true
+{% if kiali_vars.ai.consumption.prizes_config_map|default('')|length > 0 %}
+      - name: kiali-ai-pricing
+        configMap:
+          # User-managed ConfigMap named by ai.consumption.prizes_config_map. Must contain
+          # a prices.yaml key in the same format as config/ai_default_prices.yaml.
+          # optional so the Kiali pod still starts if the ConfigMap has not been created yet.
+          name: {{ kiali_vars.ai.consumption.prizes_config_map }}
+          optional: true
+{% endif %}
 {% for sec in kiali_deployment_secret_volumes %}
       - name: {{ sec }}
         secret:

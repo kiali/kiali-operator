@@ -16,6 +16,7 @@ spec:
 
   ai:
     chat:
+      allowed_users: []
       default_provider: ""
       enabled: false
       max_tool_iterations: 5
@@ -27,7 +28,12 @@ spec:
         reduce_threshold: 15
         reduce_with_ai: false
       tools: {}
+    consumption:
+      allowed_users_dashboard: []
+      budgets: []
+      prizes_config_map: ""
     enabled: false
+    metrics: false
 
   auth:
     strategy: ""

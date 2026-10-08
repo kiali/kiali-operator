@@ -65,7 +65,7 @@ spec:
                     type: object
                     properties:
                       allowed_users:
-                        description: "A list of users that are allowed to use the ChatAI feature. This is the list of users that will be allowed to use the ChatAI feature."
+                        description: "A list of users that are allowed to use the ChatAI feature. If this list is empty, all users have access. If populated, only the specified users can see and interact with the Chatbot."
                         type: array
                         items:
                           type: string
@@ -136,7 +136,7 @@ spec:
                               description: "The name of the provider."
                               type: string
                             tools:
-                              description: "Optional provider-specific filter for the ChatAI toolset. Applied after the global `chat_ai.tools` filter. It can further restrict tools for this provider, but it cannot re-enable tools that were already filtered out globally or by feature availability."
+                              description: "Optional provider-specific filter for the ChatAI toolset. Applied after the global `ai.chat.tools` filter. It can further restrict tools for this provider, but it cannot re-enable tools that were already filtered out globally or by feature availability."
                               type: object
                               properties:
                                 disabled_tools:
@@ -190,10 +190,57 @@ spec:
                             type: array
                             items:
                               type: string
+                  consumption:
+                    description: "Configuration for the AI consumption/cost-tracking subsystem. Requires `ai.metrics` to be enabled. Kiali ships with a built-in default token pricing catalog; set `prizes_config_map` to load a replacement catalog from a user-managed ConfigMap."
+                    type: object
+                    properties:
+                      allowed_users_dashboard:
+                        description: "A list of users that are allowed to view the AI consumption dashboard. If this list is empty, all users have access."
+                        type: array
+                        items:
+                          type: string
+                      budgets:
+                        description: "Budget limits and model/provider restrictions applied per user. If empty, no budget restrictions are applied."
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            allowed_models:
+                              description: "Model names or IDs this budget allows. Supports `*` wildcards. If empty, all models of the allowed providers may be used."
+                              type: array
+                              items:
+                                type: string
+                            allowed_providers:
+                              description: "Provider types this budget allows (`openai`, `anthropic`, `google`, `lightspeed`). If empty, all configured providers may be used."
+                              type: array
+                              items:
+                                type: string
+                            interval:
+                              description: "Budget reset interval. Valid values are `weekly` and `monthly`."
+                              type: string
+                            max_cost:
+                              description: "Maximum estimated cost allowed in the budget interval, in the pricing currency (typically USD)."
+                              type: number
+                            max_tokens:
+                              description: "Maximum number of tokens allowed in the budget interval, expressed in millions of tokens."
+                              type: number
+                            usernames:
+                              description: "Users this budget applies to. Use `*` as a catch-all. Required and must not be empty."
+                              type: array
+                              items:
+                                type: string
+                      prizes_config_map:
+                        description: "Name of a ConfigMap in the Kiali deployment namespace that holds a custom token pricing catalog. The ConfigMap is user-managed (the operator never creates or writes it) and must contain a `prices.yaml` key in the same format as Kiali's built-in catalog (`models:` list of provider/model prices; see `config/ai_default_prices.yaml` in the kiali repo). The operator mounts it read-only at `/kiali-ai-pricing` with `optional: true`. If omitted or empty, or if the file cannot be read, Kiali uses its built-in catalog."
+                        type: string
+                        default: ""
                   enabled:
                     description: "Enable or disable the AI feature."
                     type: boolean
-                    default: false                  
+                    default: false
+                  metrics:
+                    description: "Enable or disable ChatAI usage metrics. Required for consumption tracking and the AI dashboard."
+                    type: boolean
+                    default: false
               api:
                 description: "DEPRECATED AFTER v1.73: These settings control how the Kiali API should be accessed."
                 type: object

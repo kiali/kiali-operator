@@ -30,8 +30,12 @@ kiali_defaults:
         reduce_threshold: 15
         reduce_with_ai: false
       tools: {}
+    consumption:
+      allowed_users_dashboard: []
+      budgets: []
+      prizes_config_map: ""
     enabled: false
-
+    metrics: false
   auth:
     openid:
       additional_request_params: {}
