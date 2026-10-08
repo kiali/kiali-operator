@@ -422,6 +422,10 @@
     set_fact:
       current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'deployment': {'additional_pod_init_containers_yaml': init_containers}}}, recursive=True) }}"
 
+  - name: Set spec.ai.consumption.prizes_config_map (user-provided ConfigMap name)
+    set_fact:
+      current_kiali_cr: "{{ current_kiali_cr | combine({'spec': {'ai': {'consumption': {'prizes_config_map': 'kiali-ai-prices'}}}}, recursive=True) }}"
+
   - name: The new Kiali CR to be tested
     debug:
       msg: "{{ current_kiali_cr }}"
@@ -548,6 +552,21 @@
       - kiali_pod.resources[0].spec | json_query(es2_volume_optional_query) | join
       - kiali_pod.resources[0].spec | json_query(es1_mountPath_query) | join == '/extra-secret-1'
       - kiali_pod.resources[0].spec | json_query(es2_mountPath_query) | join == '/extra-secret-2'
+
+  - name: Assert the operator mounts the user-set prizes ConfigMap
+    vars:
+      pricing_volume_name_query: "volumes[?name=='kiali-ai-pricing'].configMap.name"
+      pricing_volume_optional_query: "volumes[?name=='kiali-ai-pricing'].configMap.optional"
+      pricing_mountPath_query: "containers[{{ kiali_container_index | int }}].volumeMounts[?name=='kiali-ai-pricing'].mountPath"
+      pricing_readOnly_query: "containers[{{ kiali_container_index | int }}].volumeMounts[?name=='kiali-ai-pricing'].readOnly"
+    assert:
+      that:
+      - kiali_configmap.ai.consumption.prizes_config_map == 'kiali-ai-prices'
+      - kiali_pod.resources[0].spec | json_query(pricing_volume_name_query) | join == 'kiali-ai-prices'
+      - kiali_pod.resources[0].spec | json_query(pricing_volume_optional_query) | join
+      - kiali_pod.resources[0].spec | json_query(pricing_mountPath_query) | join == '/kiali-ai-pricing'
+      - kiali_pod.resources[0].spec | json_query(pricing_readOnly_query) | join
+      fail_msg: "User set spec.ai.consumption.prizes_config_map=kiali-ai-prices; expected that ConfigMap mounted optional at /kiali-ai-pricing"
 
   - name: Test the default deployment.resources is now empty
     vars:
@@ -914,3 +933,12 @@
       - kiali_configmap.external_services.custom_dashboards.prometheus.auth.oauth2.token_url == 'https://login.example.com/token'
       fail_msg: "Expected custom_dashboards.prometheus auth.type=oauth2 in ConfigMap, got: {{ kiali_configmap.external_services.custom_dashboards.prometheus.auth }}"
       success_msg: "Verified custom_dashboards prometheus oauth2 config is correctly written to ConfigMap"
+
+  - name: Assert the prizes ConfigMap is not mounted when prizes_config_map is the default empty value
+    vars:
+      pricing_volumes: "{{ kiali_pod.resources[0].spec.volumes | selectattr('name', 'equalto', 'kiali-ai-pricing') | list }}"
+    assert:
+      that:
+      - kiali_configmap.ai.consumption.prizes_config_map | default('') | length == 0
+      - pricing_volumes | length == 0
+      fail_msg: "Default prizes_config_map is empty; did not expect kiali-ai-pricing volume, found: {{ pricing_volumes }}"

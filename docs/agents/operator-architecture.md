@@ -204,6 +204,47 @@ The two ConfigMaps have distinct ownership: the operator **owns and manages** `<
 
 The `cabundle-openshift` ConfigMap is skipped when `deployment.remote_cluster_resources_only: true` (no Kiali server is deployed to that cluster, so there is nothing to mount).
 
+## AI consumption configuration
+
+AI consumption settings live in the Kiali CR under `ai.consumption` and are dumped into the main `<instance>` ConfigMap with the rest of `spec`.
+
+`ai.metrics` must be `true` for consumption tracking and the AI dashboard. `ai.consumption` then configures:
+
+| Field | Purpose |
+|---|---|
+| `allowed_users_dashboard` | Users who can view the consumption dashboard. Empty means all users. |
+| `budgets` | Per-user budget limits (`usernames`, `interval` weekly/monthly, `max_cost`, `max_tokens` in millions, optional `allowed_providers` / `allowed_models`). Empty means no budget restrictions. |
+| `prizes_config_map` | Name of a user-managed ConfigMap in the Kiali deployment namespace. Empty means the Kiali server uses its built-in catalog (`config/ai_default_prices.yaml` in the main kiali repo). |
+
+When `prizes_config_map` is a non-empty ConfigMap name, the deployment templates (both `kubernetes/` and `openshift/` variants) mount that ConfigMap at `/kiali-ai-pricing` (`readOnly: true`). This follows the same ownership model as the user-managed `<instance>-cabundle` ConfigMap: the operator never creates, writes to, or manages the content of the pricing ConfigMap — it only adds the volume/volumeMount. The volume is marked `optional: true` so the pod still starts if the ConfigMap has not been created yet.
+
+The ConfigMap must contain a `prices.yaml` key in the same format as the built-in catalog (`models:` list of provider/model/USD-per-million prices). If the file is missing or invalid, the Kiali server logs the error and falls back to the embedded catalog. A pod restart is required after updating the ConfigMap contents.
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kiali-ai-prices
+  namespace: istio-system   # same namespace as the Kiali server
+data:
+  prices.yaml: |
+    models:
+      - provider: openai
+        model_id: gpt-4o
+        currency: USD
+        prices:
+          input_cost_per_million: 2.50
+          output_cost_per_million: 10.00
+```
+
+```yaml
+spec:
+  ai:
+    metrics: true
+    consumption:
+      prizes_config_map: kiali-ai-prices
+```
+
 ## Secret Volume Mounts and Credential Rotation
 
 The operator implements a **`secret:name:key` URI scheme** that allows any credential field in the Kiali CR to reference a Kubernetes Secret rather than storing the value inline. The deploy role (`tasks/main.yml`) scans all enabled external service auth blocks for fields matching the pattern `secret:<secretName>:<secretKey>` and builds a dict `kiali_deployment_secret_volumes` that maps each logical volume name (e.g. `grafana-username`) to its Secret name and key.
