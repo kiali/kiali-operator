@@ -615,10 +615,13 @@ spec:
           - patch
           - update
           - watch
-        # The permissions below are for Kiali itself; operator needs these so it can escalate when creating Kiali's roles
+        # The permissions below are for Kiali itself; operator needs these so it can escalate when creating Kiali's roles.
+        # NOTE: The operator must hold the superset of all permissions across all supported operand versions
+        # (v1.73 through v2.33) to satisfy Kubernetes RBAC escalation checks when creating operand ClusterRoles.
         - apiGroups: [""]
           resources:
           - configmaps
+          - endpoints # Backward compatibility: required by operand versions <= v2.27
           - pods/log
           verbs:
           - get
@@ -640,7 +643,8 @@ spec:
           - pods/portforward
           verbs:
           - create
-        - apiGroups: ["apps"]
+          - post # Backward compatibility: required by operand versions <= v2.27
+        - apiGroups: ["extensions", "apps"] # Backward compatibility: "extensions" required by operand versions <= v2.27
           resources:
           - daemonsets
           - deployments
@@ -665,6 +669,7 @@ spec:
           - security.istio.io
           - extensions.istio.io
           - telemetry.istio.io
+          - gateway.networking.k8s.io # Backward compatibility: operand versions <= v2.27 use wildcard resources for this apiGroup
           - inference.networking.k8s.io
           resources: ["*"]
           verbs:
@@ -738,5 +743,7 @@ spec:
           resources:
           - mutatingwebhookconfigurations
           verbs:
+          - get # Backward compatibility: required by operand versions <= v2.27
           - list
+          - watch # Backward compatibility: required by operand versions <= v2.27
         serviceAccountName: kiali-operator
