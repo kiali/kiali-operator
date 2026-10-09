@@ -2,6 +2,9 @@
   vars:
     status_progress_message: "Creating core resources"
 
+- name: Resolve nginx TLS from cluster APIServer tlsSecurityProfile
+  include_tasks: openshift/tls-profile.yml
+
 - name: Create OSSM Console objects on OpenShift
   include_tasks: process-resource.yml
   vars:

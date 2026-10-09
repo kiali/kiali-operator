@@ -47,3 +47,13 @@
   finalizer:
     name: kiali.io/finalizer
     playbook: playbooks/ossmconsole-remove.yml
+# Reconcile OSSM Console when the cluster APIServer TLS security profile changes
+- version: v1
+  group: config.openshift.io
+  kind: APIServer
+  playbook: playbooks/cluster-apiserver-tls-changed.yml
+  manageStatus: False
+  markUnsafe: True
+  watchDependentResources: False
+  watchClusterScopedResources: True
+  watchAnnotationsChanges: False

@@ -1,0 +1,2 @@
+# Backward-compatible alias; watches use playbooks/cluster-apiserver-tls-changed.yml directly.
+- import_playbook: cluster-apiserver-tls-changed.yml

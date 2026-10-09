@@ -1,0 +1,121 @@
+# Assert OSSMC nginx TLS Ansible filter plugins (roles/.../filter_plugins or playbooks/filter_plugins via ANSIBLE_FILTER_PLUGINS).
+
+- name: Evaluate Modern TLS profile mapping
+  ansible.builtin.set_fact:
+    ossmconsole_tls_modern: "{{ {'type': 'Modern'} | ossmconsole_nginx_tls_from_profile }}"
+
+- name: Assert Modern profile mapping
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_modern.ssl_protocols == 'TLSv1.3'
+      - "'TLS_AES_128_GCM_SHA256' in ossmconsole_tls_modern.ssl_ciphersuites_line"
+      - "'TLS_CHACHA20_POLY1305_SHA256' in ossmconsole_tls_modern.ssl_ciphersuites_line"
+      - "'CCM' not in ossmconsole_tls_modern.ssl_ciphersuites_line"
+      - ossmconsole_tls_modern.ssl_ciphers == ''
+
+- name: Evaluate Intermediate TLS profile mapping
+  ansible.builtin.set_fact:
+    ossmconsole_tls_intermediate: "{{ {'type': 'Intermediate'} | ossmconsole_nginx_tls_from_profile }}"
+
+- name: Assert Intermediate profile mapping
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_intermediate.ssl_protocols == 'TLSv1.2 TLSv1.3'
+      - "'ECDHE-RSA-AES128-GCM-SHA256' in ossmconsole_tls_intermediate.ssl_ciphers"
+      - "'ssl_conf_command Ciphersuites' in ossmconsole_tls_intermediate.ssl_ciphersuites_line"
+
+- name: Evaluate Old TLS profile mapping
+  ansible.builtin.set_fact:
+    ossmconsole_tls_old: "{{ {'type': 'Old'} | ossmconsole_nginx_tls_from_profile }}"
+
+- name: Assert Old profile mapping
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_old.ssl_protocols == 'TLSv1 TLSv1.1 TLSv1.2 TLSv1.3'
+      - "'DES-CBC3-SHA' in ossmconsole_tls_old.ssl_ciphers"
+      - "'TLS_AES_128_GCM_SHA256' in ossmconsole_tls_old.ssl_ciphersuites_line"
+
+- name: Evaluate Custom TLS profile mapping
+  ansible.builtin.set_fact:
+    ossmconsole_tls_custom: "{{ {'type': 'Custom', 'custom': {'minTLSVersion': 'VersionTLS13', 'ciphers': ['TLS_AES_128_GCM_SHA256'], 'groups': ['X25519MLKEM768']}} | ossmconsole_nginx_tls_from_profile }}"
+
+- name: Assert Custom profile mapping
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_custom.ssl_protocols == 'TLSv1.3'
+      - "'?X25519MLKEM768' in ossmconsole_tls_custom.ssl_ecdh_curve"
+      - "'TLS_AES_128_GCM_SHA256' in ossmconsole_tls_custom.ssl_ciphersuites_line"
+
+- name: Assert missing profile defaults to Intermediate
+  ansible.builtin.assert:
+    that:
+      - (None | ossmconsole_nginx_tls_from_profile).ssl_protocols == 'TLSv1.2 TLSv1.3'
+
+- name: Evaluate unknown profile type mapping
+  ansible.builtin.set_fact:
+    ossmconsole_tls_unknown_profile: "{{ {'type': 'FutureProfile'} | ossmconsole_nginx_tls_from_profile }}"
+
+- name: Assert unknown profile type defaults to Intermediate
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_unknown_profile.ssl_protocols == 'TLSv1.2 TLSv1.3'
+
+- name: Assert should_honor_cluster_tls_profile semantics
+  ansible.builtin.assert:
+    that:
+      - not ('' | should_honor_cluster_tls_profile)
+      - not (None | should_honor_cluster_tls_profile)
+      - not ('LegacyAdheringComponentsOnly' | should_honor_cluster_tls_profile)
+      - ('StrictAllComponents' | should_honor_cluster_tls_profile)
+      - ('FutureUnknownPolicy' | should_honor_cluster_tls_profile)
+
+- name: Evaluate legacy adherence APIServer mapping
+  ansible.builtin.set_fact:
+    ossmconsole_tls_legacy_adherence: "{{ {'tlsAdherence': 'LegacyAdheringComponentsOnly', 'tlsSecurityProfile': {'type': 'Modern'}} | ossmconsole_nginx_tls_for_apiserver }}"
+
+- name: Assert legacy adherence keeps legacy nginx TLS
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_legacy_adherence.ssl_protocols == 'TLSv1.3'
+      - ossmconsole_tls_legacy_adherence.ssl_ciphersuites_line == ''
+
+- name: Evaluate strict adherence with Modern profile
+  ansible.builtin.set_fact:
+    ossmconsole_tls_strict_modern: "{{ {'tlsAdherence': 'StrictAllComponents', 'tlsSecurityProfile': {'type': 'Modern'}} | ossmconsole_nginx_tls_for_apiserver }}"
+
+- name: Assert strict adherence uses cluster Modern profile
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_strict_modern.ssl_protocols == 'TLSv1.3'
+      - "'TLS_AES_128_GCM_SHA256' in ossmconsole_tls_strict_modern.ssl_ciphersuites_line"
+
+- name: Evaluate empty APIServer specs
+  ansible.builtin.set_fact:
+    ossmconsole_tls_empty_spec: "{{ {} | ossmconsole_nginx_tls_for_apiserver }}"
+    ossmconsole_tls_none_spec: "{{ None | ossmconsole_nginx_tls_for_apiserver }}"
+
+- name: Assert empty APIServer specs use legacy nginx TLS
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_empty_spec.ssl_protocols == 'TLSv1.3'
+      - ossmconsole_tls_empty_spec.ssl_ciphersuites_line == ''
+      - ossmconsole_tls_none_spec.ssl_protocols == 'TLSv1.3'
+
+- name: Evaluate strict adherence without tlsSecurityProfile
+  ansible.builtin.set_fact:
+    ossmconsole_tls_strict_no_profile: "{{ {'tlsAdherence': 'StrictAllComponents'} | ossmconsole_nginx_tls_for_apiserver }}"
+
+- name: Assert strict adherence without profile defaults to Intermediate
+  ansible.builtin.assert:
+    that:
+      - ossmconsole_tls_strict_no_profile.ssl_protocols == 'TLSv1.2 TLSv1.3'
+
+- name: Assert cluster APIServer TLS fingerprint is stable
+  ansible.builtin.assert:
+    that:
+      - (apiserver_spec | cluster_apiserver_tls_fingerprint) == (apiserver_spec | cluster_apiserver_tls_fingerprint)
+  vars:
+    apiserver_spec:
+      tlsAdherence: StrictAllComponents
+      tlsSecurityProfile:
+        type: Modern

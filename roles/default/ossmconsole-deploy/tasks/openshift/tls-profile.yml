@@ -1,0 +1,21 @@
+- name: Read cluster APIServer TLS configuration for OSSMC nginx
+  k8s_info:
+    api_version: config.openshift.io/v1
+    kind: APIServer
+    name: cluster
+  register: ossmconsole_cluster_apiserver
+
+- name: Abort when cluster APIServer resource is missing
+  fail:
+    msg: "APIServer/cluster not found; cannot configure OSSMC nginx TLS."
+  when: ossmconsole_cluster_apiserver.resources | default([]) | length == 0
+
+- name: Build nginx TLS settings from APIServer (profile + tlsAdherence)
+  set_fact:
+    ossmconsole_honor_cluster_tls_profile: "{{ ossmconsole_cluster_apiserver.resources[0].spec.tlsAdherence | default('') | should_honor_cluster_tls_profile }}"
+    ossmconsole_nginx_tls: "{{ ossmconsole_cluster_apiserver.resources[0].spec | ossmconsole_nginx_tls_for_apiserver }}"
+    ossmconsole_apiserver_tls_fingerprint: "{{ ossmconsole_cluster_apiserver.resources[0].spec | cluster_apiserver_tls_fingerprint }}"
+
+- name: Debug OSSMC nginx TLS settings
+  debug:
+    msg: "OSSMC nginx TLS: honor_cluster_profile=[{{ ossmconsole_honor_cluster_tls_profile }}] protocols=[{{ ossmconsole_nginx_tls.ssl_protocols }}]"
