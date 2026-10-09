@@ -1,0 +1,30 @@
+# Rolling-restart Kiali server deployments that use deployment.tls_config.source=auto (OpenShift default).
+# Kiali resolves the cluster TLSSecurityProfile only at process startup (tlspolicy.Resolve).
+
+- name: List Kiali custom resources
+  k8s_info:
+    api_version: kiali.io/v1alpha1
+    kind: Kiali
+  register: kiali_crs_for_tls
+
+- name: Look up Kiali deployment for rolling restart
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: "{{ item.spec.deployment.instance_name | default('kiali') }}"
+    namespace: "{{ item.metadata.namespace }}"
+  register: kiali_deployment_lookup
+  loop: "{{ kiali_crs_for_tls.resources | default([]) }}"
+  when:
+  - kiali_crs_for_tls.resources | length > 0
+  - (item.spec.deployment.tls_config.source | default('')) in ['', 'auto']
+
+- name: Force Kiali server rolling restart after cluster APIServer TLS change
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition: "{{ item.resources[0] | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/last-updated': lookup('pipe', 'date') }}}}}, recursive=True) }}"
+  loop: "{{ kiali_deployment_lookup.results | default([]) }}"
+  when:
+  - item.resources is defined
+  - item.resources | length > 0
