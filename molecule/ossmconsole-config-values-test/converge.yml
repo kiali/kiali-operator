@@ -141,3 +141,32 @@
     assert:
       that:
       - "'autoDiscover' in ossmconsole_cr_failure_message"
+
+  - name: Get OSSMC nginx-conf ConfigMap for TLS directive validation
+    k8s_info:
+      api_version: v1
+      kind: ConfigMap
+      name: nginx-conf
+      namespace: "{{ ossmconsole.install_namespace }}"
+    register: ossmconsole_nginx_conf
+
+  - name: Assert nginx-conf renders cluster-driven TLS settings
+    assert:
+      that:
+      - ossmconsole_nginx_conf.resources | length == 1
+      - "'ssl_protocols' in ossmconsole_nginx_conf.resources[0].data['nginx.conf']"
+      - "'ssl_ecdh_curve' in ossmconsole_nginx_conf.resources[0].data['nginx.conf']"
+      - (ossmconsole_nginx_conf.resources[0].metadata.annotations['ossmconsole.kiali.io/apiserver-tls-fingerprint'] | default('')) | length > 0
+      fail_msg: "Expected nginx-conf to include APIServer-driven TLS directives and fingerprint annotation"
+
+  - name: Run cluster APIServer TLS changed playbook (idempotent when fingerprint unchanged)
+    command: ansible-playbook playbooks/cluster-apiserver-tls-changed.yml
+    args:
+      chdir: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+    register: apiserver_tls_playbook
+    changed_when: false
+
+  - name: Assert cluster APIServer TLS playbook completed successfully
+    assert:
+      that:
+      - apiserver_tls_playbook.rc == 0

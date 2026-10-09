@@ -5,11 +5,16 @@
     name: cluster
   register: ossmconsole_cluster_apiserver
 
+- name: Abort when cluster APIServer resource is missing
+  fail:
+    msg: "APIServer/cluster not found; cannot configure OSSMC nginx TLS."
+  when: ossmconsole_cluster_apiserver.resources | default([]) | length == 0
+
 - name: Build nginx TLS settings from APIServer (profile + tlsAdherence)
   set_fact:
-    ossmconsole_cluster_apiserver_spec: "{{ ossmconsole_cluster_apiserver.resources[0].spec }}"
     ossmconsole_honor_cluster_tls_profile: "{{ ossmconsole_cluster_apiserver.resources[0].spec.tlsAdherence | default('') | should_honor_cluster_tls_profile }}"
     ossmconsole_nginx_tls: "{{ ossmconsole_cluster_apiserver.resources[0].spec | ossmconsole_nginx_tls_for_apiserver }}"
+    ossmconsole_apiserver_tls_fingerprint: "{{ ossmconsole_cluster_apiserver.resources[0].spec | cluster_apiserver_tls_fingerprint }}"
 
 - name: Debug OSSMC nginx TLS settings
   debug:

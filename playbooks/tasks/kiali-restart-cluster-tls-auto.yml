@@ -17,9 +17,10 @@
   loop: "{{ kiali_crs_for_tls.resources | default([]) }}"
   when:
   - kiali_crs_for_tls.resources | length > 0
-  - (item.spec.deployment.tls_config.source | default('')) in ['', 'auto']
+  - item.spec.deployment is not defined or item.spec.deployment.tls_config is not defined or (item.spec.deployment.tls_config.source | default('')) in ['', 'auto']
 
 - name: Force Kiali server rolling restart after cluster APIServer TLS change
+  # ignore_errors: deployment may be missing or RBAC may deny patch during concurrent reconcile
   ignore_errors: yes
   k8s:
     state: present

@@ -6,7 +6,7 @@ format_version: 1
 
 ## Framework
 
-All operator testing is done via **Molecule integration tests**. No unit test frameworks are used. Any new operator tests must be implemented as Molecule tests.
+Operator behavior is primarily validated via **Molecule integration tests**. **Exception:** OSSMC nginx TLS mapping uses `unittest` modules under `roles/default/ossmconsole-deploy/filter_plugins/` and `playbooks/filter_plugins/test_openshift_cluster_tls_parity.py`, executed by `make validate-ossmconsole-nginx-tls` in CI. Extend those unit tests when changing TLS filter logic; add or extend Molecule assertions (e.g. `molecule/ossmconsole-config-values-test`) for rendered `nginx-conf` output.
 
 Molecule uses the Ansible provisioner and runs against a real Kubernetes or OpenShift cluster.
 

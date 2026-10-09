@@ -1,8 +1,11 @@
 from __future__ import absolute_import, division, print_function
 
+import json
+
 __metaclass__ = type
 
 # OpenShift APIServer TLSSecurityProfile built-in specs (config.openshift.io/v1 TLSProfiles).
+# When tlsAdherence requires honoring the cluster profile, built-in "Old" includes weak ciphers by design.
 _BUILTIN_PROFILES = {
     "Old": {
         "minTLSVersion": "VersionTLS10",
@@ -130,6 +133,19 @@ def _nginx_curve_name(group):
     return name
 
 
+def cluster_apiserver_tls_fingerprint(apiserver_spec):
+    """
+    Stable fingerprint of APIServer TLS fields used for OSSMC nginx (tlsAdherence + tlsSecurityProfile).
+    """
+    if apiserver_spec is None:
+        apiserver_spec = {}
+    payload = {
+        "tlsAdherence": apiserver_spec.get("tlsAdherence") or "",
+        "tlsSecurityProfile": apiserver_spec.get("tlsSecurityProfile") or {},
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
 def ossmconsole_nginx_tls_for_apiserver(apiserver_spec):
     """
     Build nginx TLS directives from APIServer spec, gated by tlsAdherence (ShouldHonorClusterTLSProfile semantics).
@@ -177,6 +193,7 @@ def ossmconsole_nginx_tls_from_profile(profile):
 class FilterModule(object):
     def filters(self):
         return {
+            "cluster_apiserver_tls_fingerprint": cluster_apiserver_tls_fingerprint,
             "ossmconsole_nginx_tls_from_profile": ossmconsole_nginx_tls_from_profile,
             "ossmconsole_nginx_tls_for_apiserver": ossmconsole_nginx_tls_for_apiserver,
             "should_honor_cluster_tls_profile": should_honor_cluster_tls_profile,

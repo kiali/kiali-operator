@@ -1,8 +1,10 @@
 from __future__ import absolute_import, division, print_function
 
+import json
+
 __metaclass__ = type
 
-# Keep in sync with roles/default/ossmconsole-deploy/filter_plugins/ossmconsole_nginx_tls.py
+# Keep in sync with roles/default|v2.27|v2.33/ossmconsole-deploy/filter_plugins/ossmconsole_nginx_tls.py
 
 _BUILTIN_PROFILES = {
     "Old": {
@@ -125,6 +127,16 @@ def _nginx_curve_name(group):
     return name
 
 
+def cluster_apiserver_tls_fingerprint(apiserver_spec):
+    if apiserver_spec is None:
+        apiserver_spec = {}
+    payload = {
+        "tlsAdherence": apiserver_spec.get("tlsAdherence") or "",
+        "tlsSecurityProfile": apiserver_spec.get("tlsSecurityProfile") or {},
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
 def ossmconsole_nginx_tls_for_apiserver(apiserver_spec):
     if apiserver_spec is None:
         apiserver_spec = {}
@@ -165,6 +177,7 @@ def ossmconsole_nginx_tls_from_profile(profile):
 class FilterModule(object):
     def filters(self):
         return {
+            "cluster_apiserver_tls_fingerprint": cluster_apiserver_tls_fingerprint,
             "ossmconsole_nginx_tls_from_profile": ossmconsole_nginx_tls_from_profile,
             "ossmconsole_nginx_tls_for_apiserver": ossmconsole_nginx_tls_for_apiserver,
             "should_honor_cluster_tls_profile": should_honor_cluster_tls_profile,

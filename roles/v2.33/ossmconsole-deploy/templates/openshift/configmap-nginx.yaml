@@ -4,6 +4,8 @@ metadata:
   name: nginx-conf
   namespace: "{{ ossmconsole_vars.deployment.namespace }}"
   labels: {{ ossmconsole_resource_metadata_labels }}
+  annotations:
+    ossmconsole.kiali.io/apiserver-tls-fingerprint: "{{ ossmconsole_apiserver_tls_fingerprint }}"
 data:
   nginx.conf: |
     error_log /dev/stdout;
@@ -18,7 +20,7 @@ data:
         listen              [::]:9443 ssl;
         ssl_certificate     /var/serving-cert/tls.crt;
         ssl_certificate_key /var/serving-cert/tls.key;
-        # TLS settings from cluster APIServer spec.tlsSecurityProfile (OpenShift TLS adherence)
+        # TLS from cluster APIServer tlsSecurityProfile when tlsAdherence requires it; ? on curves skips missing groups (FIPS)
         ssl_protocols       {{ ossmconsole_nginx_tls.ssl_protocols }};
 {% if ossmconsole_nginx_tls.ssl_ciphers | length > 0 %}
         ssl_ciphers         {{ ossmconsole_nginx_tls.ssl_ciphers }};
