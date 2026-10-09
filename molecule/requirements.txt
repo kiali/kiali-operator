@@ -4,5 +4,7 @@
 molecule
 jmespath
 junit-xml
-kubernetes
+# Keep below 32.0.0: it removed kubernetes.client.apis.core_v1_api, which
+# kubernetes.core 4.0.0's k8s_exec still imports (NameError otherwise).
+kubernetes<32
 docker
