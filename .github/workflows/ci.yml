@@ -28,9 +28,6 @@ jobs:
       run: |
         git fetch origin master:refs/remotes/origin/master --tags || true
 
-    - name: OSSMC nginx TLS filter unit tests
-      run: make validate-ossmconsole-nginx-tls
-
     - name: Validate OLM metadata
       env:
         YQ_VERSION: v4.40.5
