@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 ################################################
 # NOTE: AS OF NOVEMBER, 2024, THIS NO LONGER
 # PERFORMS ANY WORK FOR THE COMMUNITY OPERATOR.
@@ -18,6 +20,9 @@
 # PRs based on the branches this script creates.
 # This prepares OLM metadata for both upstream
 # and community Kiali operator.
+# The required version selects the Kiali operator
+# release tag to fetch and check out before copying
+# its manifest data.
 #
 # You must have forked the following two repos:
 # * https://github.com/k8s-operatorhub/community-operators
@@ -34,30 +39,42 @@ DEFAULT_GIT_REPO_OPERATORHUB=${SCRIPT_DIR}/../../../community-operators/communit
 DEFAULT_GIT_REPO_REDHAT=${SCRIPT_DIR}/../../../community-operators/community-operators-prod
 GIT_REPO_OPERATORHUB=${DEFAULT_GIT_REPO_OPERATORHUB}
 GIT_REPO_REDHAT=${DEFAULT_GIT_REPO_REDHAT}
+VERSION=""
 
 while [[ $# -gt 0 ]]; do
   key="$1"
   case $key in
+    -v|--version)
+      if [[ $# -lt 2 || -z "${2:-}" || "${2:-}" == -* ]]; then
+        echo "You must specify a version with $key (for example, v2.33.0)." >&2
+        exit 1
+      fi
+      VERSION="$2"
+      shift;shift
+      ;;
     -go|--gitrepo-operatorhub) GIT_REPO_OPERATORHUB="$2" ; shift;shift ;;
     -gr|--gitrepo-redhat)      GIT_REPO_REDHAT="$2"      ; shift;shift ;;
     -h|--help)
       cat <<HELPMSG
-$0 [option...]
+$0 --version <version> [option...]
 
 Valid options:
+  -v|--version <version>
+      Required. The Kiali operator release version whose manifest data will be used (for example, v2.33.0 or 2.33.0).
+      Fetches the release tag from origin, then checks it out in this Kiali operator repository (detached HEAD).
   -go|--gitrepo-operatorhub <directory>
       The directory where the local community-operators git repo is located.
       This is the location where you git cloned the repo https://github.com/k8s-operatorhub/community-operators
       Default: ${DEFAULT_GIT_REPO_OPERATORHUB}
       which resolves to:
-      $(readlink -f ${DEFAULT_GIT_REPO_OPERATORHUB} || echo '<git repo does not exist at the default location>')
+      $(readlink -f "${DEFAULT_GIT_REPO_OPERATORHUB}" || echo '<git repo does not exist at the default location>')
   -gr|--gitrepo-redhat <directory>
       THIS IS NO LONGER USED!
       The directory where the local community-operators-prod git repo is located.
       This is the location where you git cloned the repo https://github.com/redhat-openshift-ecosystem/community-operators-prod
       Default: ${DEFAULT_GIT_REPO_REDHAT}
       which resolves to:
-      $(readlink -f ${DEFAULT_GIT_REPO_REDHAT} || echo '<git repo does not exist at the default location>')
+      $(readlink -f "${DEFAULT_GIT_REPO_REDHAT}" || echo '<git repo does not exist at the default location>')
 HELPMSG
       exit 1
       ;;
@@ -70,6 +87,11 @@ done
 
 # Validate some things before trying to do anything
 
+if [ -z "${VERSION}" ]; then
+  echo "You must specify a version with --version (for example, v2.33.0)." >&2
+  exit 1
+fi
+
 if [ ! -d "${GIT_REPO_OPERATORHUB}" ]; then
   echo "You must specify a valid community-operators git repo: ${GIT_REPO_OPERATORHUB}"
   exit 1
@@ -81,6 +103,10 @@ fi
 ###  exit 1
 ### fi
 ###
+
+# Fetch only the release tag so unrelated local tags cannot conflict.
+git -C "${SCRIPT_DIR}/.." fetch --no-tags --verbose origin tag "v${VERSION#v}"
+git -C "${SCRIPT_DIR}/.." checkout --detach "refs/tags/v${VERSION#v}"
 
 COMMUNITY_MANIFEST_DIR="${SCRIPT_DIR}/kiali-community"
 UPSTREAM_MANIFEST_DIR="${SCRIPT_DIR}/kiali-upstream"
@@ -112,10 +138,11 @@ GIT_REPO_UPSTREAM_BRANCH_NAME="kiali-upstream-${DATETIME_NOW}"
 ### git commit --signoff -m '[kiali] update kiali'
 ###
 
-cd ${GIT_REPO_OPERATORHUB}
+GIT_REPO_OPERATORHUB="$(cd "${GIT_REPO_OPERATORHUB}" && pwd -P)"
+cd "${GIT_REPO_OPERATORHUB}"
 git fetch origin --verbose
-git checkout -b ${GIT_REPO_UPSTREAM_BRANCH_NAME} origin/main
-cp -R ${UPSTREAM_MANIFEST_DIR}/* ${GIT_REPO_OPERATORHUB}/operators/kiali
+git checkout -b "${GIT_REPO_UPSTREAM_BRANCH_NAME}" origin/main
+cp -R "${UPSTREAM_MANIFEST_DIR}"/* "${GIT_REPO_OPERATORHUB}/operators/kiali"
 git add -A
 git commit --signoff -m '[kiali] update kiali'
 
