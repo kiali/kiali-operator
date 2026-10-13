@@ -232,7 +232,7 @@ make CLUSTER_TYPE=openshift build-ui build test cluster-push
 
 ### OSSMC scenarios
 
-The `ossmconsole-*` scenarios only run on OpenShift; `ossmconsole-common/confirm_openshift.yml` ends the play elsewhere, and `run-molecule-tests.sh` skips `ossmconsole-config-values-test`, `ossmconsole-lite-test` and `ossmconsole-tls-profile-test` by default on minikube/KinD. The default OSSMC role runs the TLS profile helper (`/usr/local/bin/ossmc-tls-profile`), so the plugin image under test must contain it. Use a locally built plugin image the cluster can pull (`MOLECULE_PLUGIN_IMAGE_NAME`/`MOLECULE_PLUGIN_IMAGE_VERSION`, or `dev` for the internal registry) together with the local operator and helm-charts checkouts:
+The `ossmconsole-*` scenarios only run on OpenShift; `ossmconsole-common/confirm_openshift.yml` ends the play elsewhere, and `run-molecule-tests.sh` skips `ossmconsole-config-values-test`, `ossmconsole-lite-test` and `ossmconsole-tls-profile-test` by default on minikube/KinD. For a version whose deploy role runs the TLS profile helper (`/usr/local/bin/ossmc-tls-profile`), the plugin image under test must contain it. Use a locally built plugin image the cluster can pull (`MOLECULE_PLUGIN_IMAGE_NAME`/`MOLECULE_PLUGIN_IMAGE_VERSION`, or `dev` for the internal registry) together with the local operator and helm-charts checkouts:
 
 ```bash
 ./hack/run-molecule-tests.sh \
@@ -243,7 +243,7 @@ The `ossmconsole-*` scenarios only run on OpenShift; `ossmconsole-common/confirm
   -at "ossmconsole-default ossmconsole-lite-test ossmconsole-tls-profile-test"
 ```
 
-`ossmconsole-tls-profile-test` reads the cluster's current TLS profile and never patches `APIServer/cluster`. It requires a profile OSSMC supports (not `Old` or a minimum below TLS 1.2, which OSSMC deliberately refuses to serve). Its in-cluster TLS probe (`ossmconsole-tls-profile-test/tls_probe.yml`) runs a short-lived Job with the OSSMC image under test and cleans up the Job and its trust ConfigMap afterwards. The TLS-profile-specific checks in `ossmconsole-default`, `ossmconsole-lite-test` and `ossmconsole-tls-profile-test` only apply when `MOLECULE_OSSMCONSOLE_CR_SPEC_VERSION` is `default`.
+`ossmconsole-tls-profile-test` reads the cluster's current TLS profile and never patches `APIServer/cluster`. It requires a profile OSSMC supports (not `Old` or a minimum below TLS 1.2, which OSSMC deliberately refuses to serve). Its in-cluster TLS probe (`ossmconsole-tls-profile-test/tls_probe.yml`) runs a short-lived Job with the OSSMC image under test and cleans up the Job and its trust ConfigMap afterwards. TLS-profile-specific assertions run for versions whose deploy role includes the helper wiring; keep the scenario guards aligned as versioned roles adopt that contract.
 
 ### Key flags for `run-molecule-tests.sh`
 

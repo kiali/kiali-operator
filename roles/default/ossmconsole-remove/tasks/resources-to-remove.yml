@@ -27,3 +27,20 @@ apiVersion: console.openshift.io/v1
 kind: ConsolePlugin
 metadata:
   name: ossmconsole
+---
+# TLS profile helper resources created by this version's deploy role.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ossmconsole-tls
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ossmconsole-tls
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: "{{ ossmconsole_vars_remove.deployment.namespace }}"
+  name: ossmconsole-service-account

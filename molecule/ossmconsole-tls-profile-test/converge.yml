@@ -17,12 +17,11 @@
   - import_tasks: ../ossmconsole-common/tasks.yml
   - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
 
-  # The default role is currently the only role with TLS profile helper wiring. Released spec.version
-  # roles will acquire it over time. Until every supported version has the wiring, this scenario tests
-  # only default; remove this guard when every supported version has the wiring.
-  - name: Skip this TLS profile scenario for a non-default OSSMConsole spec.version
+  # Run helper-specific checks only for spec.versions whose deploy role wires in the TLS profile helper. Older
+  # supported versions use the legacy nginx contract; keep the guard aligned as versioned roles adopt the helper.
+  - name: Skip TLS profile checks when the selected version uses the legacy nginx contract
     debug:
-      msg: "Skipping: this TLS profile scenario currently runs only for the default role, until every supported OSSMConsole spec.version has the helper wiring."
+      msg: "Skipping: the selected OSSMConsole spec.version does not wire in the TLS profile helper."
     when:
     - ossmconsole.spec_version != 'default'
   - meta: end_play

@@ -37,9 +37,8 @@
       that:
       - ossmconsole_consoleplugin.spec.proxy is not defined or ossmconsole_consoleplugin.spec.proxy | length == 0
 
-  # The default role currently wires the OSSMC image to read the cluster TLS profile itself. Released
-  # spec.version roles will acquire that wiring over time. Keep this block scoped to default while any
-  # supported version lacks it; the pod becomes Ready only after the helper applies a policy and nginx serves it.
+  # These readiness checks apply to versions whose deploy role wires in the TLS profile helper; older supported
+  # versions retain the legacy nginx contract. Keep the guard aligned with helper support as versioned roles adopt it.
   - when:
     - ossmconsole.spec_version == 'default'
     block:
@@ -95,8 +94,8 @@
   # ---------------------------------------------------------------------------------------------
   # Downgrade cleanup: switch the CR to a historical spec.version that supports installation without
   # Kiali, prove the historical workload runs with the legacy (static nginx) contract and none of the
-  # newer role's helper wiring survives, and verify the TLS profile ServiceAccount and cluster RBAC
-  # are removed on the switch. Then delete the CR and verify cleanup again. This block is
+  # previously installed version's helper wiring survives, and verify the TLS profile ServiceAccount and cluster RBAC
+  # are removed on the switch. Then delete the CR. This block is
   # only needed while v2.33 or an earlier supported version uses the legacy image contract. Remove it
   # once v2.33 and all earlier versions are no longer supported.
   # ---------------------------------------------------------------------------------------------

@@ -29,10 +29,9 @@
       - pre_service | length == 1
       - pre_consoleplugin | length == 1
 
-  # Some currently supported historical spec.version roles do not create the ServiceAccount and cluster
-  # RBAC. The default role currently does, and released roles will acquire this wiring over time. Keep
-  # this assertion scoped to default until every supported version creates these resources. Their removal
-  # is asserted for every version below because that is safe.
+  # Some supported spec.version roles predate the TLS profile helper and do not create these resources. Gate the
+  # existence assertion on versions whose deploy role wires in the helper, and extend the condition as more roles
+  # adopt it. The post-removal absence checks run for every version; only helper-enabled versions exercise cleanup.
   - name: Assert the OSSMC TLS profile ServiceAccount and cluster RBAC exist before removal
     assert:
       that:
