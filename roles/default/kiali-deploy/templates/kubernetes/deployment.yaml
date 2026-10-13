@@ -194,7 +194,7 @@ spec:
       - name: kiali-ai-pricing
         configMap:
           # User-managed ConfigMap named by ai.consumption.prices_config_map. Must contain
-          # a prices.yaml key in the same format as config/ai_default_prices.yaml.
+          # a prices.yaml key. See https://kiali.io/docs/ai/
           # optional so the Kiali pod still starts if the ConfigMap has not been created yet.
           name: {{ kiali_vars.ai.consumption.prices_config_map }}
           optional: true

@@ -230,7 +230,7 @@ spec:
                               items:
                                 type: string
                       prices_config_map:
-                        description: "Name of a ConfigMap in the Kiali deployment namespace that holds a custom token pricing catalog. The ConfigMap is user-managed (the operator never creates or writes it) and must contain a `prices.yaml` key in the same format as Kiali's built-in catalog (`models:` list of provider/model prices; see `config/ai_default_prices.yaml` in the kiali repo). The operator mounts it read-only at `/kiali-ai-pricing` with `optional: true`. If omitted or empty, or if the file cannot be read, Kiali uses its built-in catalog."
+                        description: "Name of a ConfigMap in the Kiali deployment namespace that holds a custom token pricing catalog. The ConfigMap is user-managed (the operator never creates or writes it). The operator mounts it read-only at `/kiali-ai-pricing` with `optional: true`. If omitted or empty, or if the file cannot be read, Kiali uses its built-in catalog. For the ConfigMap format and how to install it, see the documentation at https://kiali.io/docs/ai/chatbot/kiali-chatbot-prices/"
                         type: string
                         default: ""
                   enabled:

@@ -562,7 +562,7 @@
       - kiali_pod.resources[0].spec | json_query(es1_mountPath_query) | join == '/extra-secret-1'
       - kiali_pod.resources[0].spec | json_query(es2_mountPath_query) | join == '/extra-secret-2'
 
-  - name: Assert the operator mounts the user-set prizes ConfigMap
+  - name: Assert the operator mounts the user-set prices ConfigMap
     vars:
       pricing_volume_name_query: "volumes[?name=='kiali-ai-pricing'].configMap.name"
       pricing_volume_optional_query: "volumes[?name=='kiali-ai-pricing'].configMap.optional"

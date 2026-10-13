@@ -214,11 +214,11 @@ AI consumption settings live in the Kiali CR under `ai.consumption` and are dump
 |---|---|
 | `allowed_users_dashboard` | Users who can view the consumption dashboard. Empty means all users. |
 | `budgets` | Per-user budget limits (`usernames`, `interval` weekly/monthly, `max_cost`, `max_tokens` in millions, optional `allowed_providers` / `allowed_models`). Empty means no budget restrictions. |
-| `prices_config_map` | Name of a user-managed ConfigMap in the Kiali deployment namespace. Empty means the Kiali server uses its built-in catalog (`config/ai_default_prices.yaml` in the main kiali repo). |
+| `prices_config_map` | Name of a user-managed ConfigMap in the Kiali deployment namespace. Empty means the Kiali server uses its built-in catalog. For format and installation, see https://kiali.io/docs/ai/ |
 
 When `prices_config_map` is a non-empty ConfigMap name, the deployment templates (both `kubernetes/` and `openshift/` variants) mount that ConfigMap at `/kiali-ai-pricing` (`readOnly: true`). This follows the same ownership model as the user-managed `<instance>-cabundle` ConfigMap: the operator never creates, writes to, or manages the content of the pricing ConfigMap — it only adds the volume/volumeMount. The volume is marked `optional: true` so the pod still starts if the ConfigMap has not been created yet.
 
-The ConfigMap must contain a `prices.yaml` key in the same format as the built-in catalog (`models:` list of provider/model/USD-per-million prices). If the file is missing or invalid, the Kiali server logs the error and falls back to the embedded catalog. A pod restart is required after updating the ConfigMap contents.
+The ConfigMap must contain a `prices.yaml` key. If the file is missing or invalid, the Kiali server logs the error and falls back to the embedded catalog. A pod restart is required after updating the ConfigMap contents. See https://kiali.io/docs/ai/chatbot/ for the catalog schema.
 
 ```yaml
 apiVersion: v1
