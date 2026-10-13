@@ -957,7 +957,7 @@
       fail_msg: "Expected custom_dashboards.prometheus auth.type=oauth2 in ConfigMap, got: {{ kiali_configmap.external_services.custom_dashboards.prometheus.auth }}"
       success_msg: "Verified custom_dashboards prometheus oauth2 config is correctly written to ConfigMap"
 
-  - name: Assert the prizes ConfigMap is not mounted when prices_config_map is the default empty value
+  - name: Assert the prices ConfigMap is not mounted when prices_config_map is the default empty value
     vars:
       pricing_volumes: "{{ kiali_pod.resources[0].spec.volumes | selectattr('name', 'equalto', 'kiali-ai-pricing') | list }}"
     assert:
