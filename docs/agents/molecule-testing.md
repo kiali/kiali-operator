@@ -69,8 +69,10 @@ The test driver runs inside a **Podman** container (Docker is no longer supporte
 | `rolling-restart-test` | ConfigMap changes trigger rolling restart of Kiali pod |
 | `tls-profile-test` | TLS configuration and certificate handling |
 | `token-test` | Token-based auth strategy |
-| `ossmconsole-default` | Basic OSSMConsole CR install and remove on OpenShift |
+| `ossmconsole-default` | Basic OSSMConsole CR install and remove on OpenShift (smoke test), including the OSSMC TLS profile ServiceAccount, ClusterRole and ClusterRoleBinding |
 | `ossmconsole-config-values-test` | OSSMConsole config values propagated correctly |
+| `ossmconsole-lite-test` | OSSMC installed without a Kiali Server; TLS profile helper becomes Ready without Kiali; downgrade to a historical `spec.version` then CR deletion leaves no TLS profile RBAC behind |
+| `ossmconsole-tls-profile-test` | OSSMC cluster TLS profile support against the cluster's current `APIServer/cluster` profile (never changes it): RBAC/Deployment/`nginx.conf` wiring, helper readiness and "policy applied" log, in-cluster verified `openssl s_client` probes (TLS 1.3 asset fetch, CCM-only rejection with a positive control, TLS 1.2 per profile, wrong-CA/wrong-hostname controls), ServiceAccount least privilege via SubjectAccessReviews, and ignored-CR deletion |
 
 ## Scenario Structure
 
@@ -227,6 +229,21 @@ make CLUSTER_TYPE=openshift build-ui build test cluster-push
   -hcrp false \
   -at "token-test"
 ```
+
+### OSSMC scenarios
+
+The `ossmconsole-*` scenarios only run on OpenShift; `ossmconsole-common/confirm_openshift.yml` ends the play elsewhere, and `run-molecule-tests.sh` skips `ossmconsole-config-values-test`, `ossmconsole-lite-test` and `ossmconsole-tls-profile-test` by default on minikube/KinD. The default OSSMC role runs the TLS profile helper (`/usr/local/bin/ossmc-tls-profile`), so the plugin image under test must contain it. Use a locally built plugin image the cluster can pull (`MOLECULE_PLUGIN_IMAGE_NAME`/`MOLECULE_PLUGIN_IMAGE_VERSION`, or `dev` for the internal registry) together with the local operator and helm-charts checkouts:
+
+```bash
+./hack/run-molecule-tests.sh \
+  --client-exe "$(which oc)" \
+  --cluster-type openshift \
+  -udi true \
+  -hcrp false \
+  -at "ossmconsole-default ossmconsole-lite-test ossmconsole-tls-profile-test"
+```
+
+`ossmconsole-tls-profile-test` reads the cluster's current TLS profile and never patches `APIServer/cluster`. It requires a profile OSSMC supports (not `Old` or a minimum below TLS 1.2, which OSSMC deliberately refuses to serve). Its in-cluster TLS probe (`ossmconsole-tls-profile-test/tls_probe.yml`) runs a short-lived Job with the OSSMC image under test and cleans up the Job and its trust ConfigMap afterwards. The TLS-profile-specific checks in `ossmconsole-default`, `ossmconsole-lite-test` and `ossmconsole-tls-profile-test` only apply when `MOLECULE_OSSMCONSOLE_CR_SPEC_VERSION` is `default`.
 
 ### Key flags for `run-molecule-tests.sh`
 

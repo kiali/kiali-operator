@@ -1,0 +1,293 @@
+# Tests OSSMC support for the OpenShift cluster TLS profile (APIServer/cluster spec.tlsSecurityProfile).
+#
+# The OSSMC image itself reads the cluster TLS profile and configures nginx; the operator only installs the
+# ServiceAccount, ClusterRole and ClusterRoleBinding that grant that read access, plus the static wiring
+# (helper command, readiness probe and the nginx include). This test verifies that wiring and then verifies the
+# TLS behavior of the running OSSMC against the cluster's CURRENT profile. It never changes cluster configuration
+# (APIServer/cluster is never patched). Live profile changes are covered by the plugin repository's own tests.
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+  - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+
+  # The default role is currently the only role with TLS profile helper wiring. Released spec.version
+  # roles will acquire it over time. Until every supported version has the wiring, this scenario tests
+  # only default; remove this guard when every supported version has the wiring.
+  - name: Skip this TLS profile scenario for a non-default OSSMConsole spec.version
+    debug:
+      msg: "Skipping: this TLS profile scenario currently runs only for the default role, until every supported OSSMConsole spec.version has the helper wiring."
+    when:
+    - ossmconsole.spec_version != 'default'
+  - meta: end_play
+    when:
+    - ossmconsole.spec_version != 'default'
+
+  # ---------------------------------------------------------------------------------------------
+  # 1. Read the current cluster TLS profile and compute the expected effective policy.
+  #    This mirrors only the parts of the OSSMC helper's resolution rules that this test asserts on:
+  #    an absent profile means Intermediate; Old and any minimum below TLS 1.2 are not supported;
+  #    TLS 1.3 is always served with the three standard TLS 1.3 suites; TLS 1.2 is served only when the
+  #    effective minimum is TLS 1.2 (a Custom TLS 1.2 profile whose cipher list names only TLS 1.3
+  #    suites is served as TLS 1.3 only).
+  # ---------------------------------------------------------------------------------------------
+
+  - name: Get the OpenShift APIServer configuration
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+    register: openshift_apiserver
+
+  - name: Assert the APIServer/cluster resource exists
+    assert:
+      that:
+      - openshift_apiserver.resources | length == 1
+
+  - name: Determine the cluster TLS profile
+    set_fact:
+      cluster_tls_profile: "{{ openshift_apiserver.resources[0].spec.tlsSecurityProfile | default(None) }}"
+
+  - name: Determine the cluster TLS profile type and minimum TLS version
+    vars:
+      tls12_spellings: ['', 'VersionTLS12', 'TLSv1.2', 'TLS1.2']
+      tls13_spellings: ['VersionTLS13', 'TLSv1.3', 'TLS1.3']
+    set_fact:
+      cluster_tls_profile_type: "{{ 'Intermediate' if (cluster_tls_profile is none or cluster_tls_profile == '') else (cluster_tls_profile.type | default('')) }}"
+      cluster_tls_min_version: >-
+        {%- set p = cluster_tls_profile -%}
+        {%- if p is none or p == '' or p.type | default('') == 'Intermediate' -%}TLS12
+        {%- elif p.type | default('') == 'Modern' -%}TLS13
+        {%- elif p.type | default('') == 'Custom' and p.custom is defined and p.custom is not none -%}
+        {%-   set v = p.custom.minTLSVersion | default('', true) -%}
+        {%-   if v in tls12_spellings -%}TLS12
+        {%-   elif v in tls13_spellings -%}TLS13
+        {%-   else -%}unsupported
+        {%-   endif -%}
+        {%- else -%}unsupported
+        {%- endif -%}
+
+  - name: Determine whether OSSMC must accept TLS 1.2 under the cluster TLS profile
+    vars:
+      tls13_names: ['tls_aes_128_gcm_sha256', 'tls_aes_256_gcm_sha384', 'tls_chacha20_poly1305_sha256']
+      custom_ciphers: "{{ (cluster_tls_profile.custom.ciphers | default([], true)) if cluster_tls_profile_type == 'Custom' else [] }}"
+      custom_tls12_ciphers: "{{ custom_ciphers | map('lower') | reject('in', tls13_names) | list }}"
+    set_fact:
+      expected_tls12_allowed: >-
+        {{ cluster_tls_min_version == 'TLS12' and (cluster_tls_profile_type != 'Custom' or custom_ciphers | length == 0 or custom_tls12_ciphers | length > 0) }}
+
+  - name: The cluster TLS profile and the expected OSSMC policy
+    debug:
+      msg: "Cluster TLS profile: [{{ cluster_tls_profile | default('not set - Intermediate', true) }}]; type=[{{ cluster_tls_profile_type }}]; effective minimum=[{{ cluster_tls_min_version }}]; TLS 1.2 expected to be accepted=[{{ expected_tls12_allowed }}]"
+
+  - name: Assert the cluster TLS profile is one OSSMC supports
+    assert:
+      that:
+      - cluster_tls_min_version in ['TLS12', 'TLS13']
+      fail_msg: "This test requires a cluster TLS profile OSSMC supports. OSSMC deliberately does not serve under Old, a minimum below TLS 1.2, or an unknown profile type, so it can never become ready on this cluster. Profile: {{ cluster_tls_profile }}"
+
+  # ---------------------------------------------------------------------------------------------
+  # 2. Check the wiring the operator installs.
+  # ---------------------------------------------------------------------------------------------
+
+  - name: Get the OSSMC TLS profile ClusterRole, ClusterRoleBinding, ServiceAccount and nginx-conf ConfigMap
+    set_fact:
+      ossmc_tls_clusterrole: "{{ query('kubernetes.core.k8s', kind='ClusterRole', resource_name='ossmconsole-tls', api_version='rbac.authorization.k8s.io/v1') }}"
+      ossmc_tls_clusterrolebinding: "{{ query('kubernetes.core.k8s', kind='ClusterRoleBinding', resource_name='ossmconsole-tls', api_version='rbac.authorization.k8s.io/v1') }}"
+      ossmc_serviceaccount: "{{ query('kubernetes.core.k8s', kind='ServiceAccount', resource_name='ossmconsole-service-account', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+      ossmc_nginx_conf: "{{ query('kubernetes.core.k8s', kind='ConfigMap', resource_name='nginx-conf', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+
+  - name: Assert the ClusterRole grants exactly get on apiservers/cluster
+    assert:
+      that:
+      - ossmc_tls_clusterrole | length == 1
+      - ossmc_tls_clusterrole[0].rules | length == 1
+      - ossmc_tls_clusterrole[0].rules[0].apiGroups == ['config.openshift.io']
+      - ossmc_tls_clusterrole[0].rules[0].resources == ['apiservers']
+      - ossmc_tls_clusterrole[0].rules[0].resourceNames == ['cluster']
+      - ossmc_tls_clusterrole[0].rules[0].verbs == ['get']
+      fail_msg: "Unexpected ossmconsole-tls ClusterRole: {{ ossmc_tls_clusterrole }}"
+
+  - name: Assert the ClusterRoleBinding binds the ClusterRole to the OSSMC ServiceAccount in the CR namespace
+    assert:
+      that:
+      - ossmc_serviceaccount | length == 1
+      - ossmc_tls_clusterrolebinding | length == 1
+      - ossmc_tls_clusterrolebinding[0].roleRef.apiGroup == 'rbac.authorization.k8s.io'
+      - ossmc_tls_clusterrolebinding[0].roleRef.kind == 'ClusterRole'
+      - ossmc_tls_clusterrolebinding[0].roleRef.name == 'ossmconsole-tls'
+      - ossmc_tls_clusterrolebinding[0].subjects | length == 1
+      - ossmc_tls_clusterrolebinding[0].subjects[0].kind == 'ServiceAccount'
+      - ossmc_tls_clusterrolebinding[0].subjects[0].name == 'ossmconsole-service-account'
+      - ossmc_tls_clusterrolebinding[0].subjects[0].namespace == ossmconsole_cr_namespace
+      fail_msg: "Unexpected ossmconsole-tls ClusterRoleBinding: {{ ossmc_tls_clusterrolebinding }}"
+
+  - name: Find the OSSMC container in the Deployment
+    set_fact:
+      ossmc_pod_spec: "{{ ossmconsole_deployment.resources[0].spec.template.spec }}"
+      ossmc_container: "{{ ossmconsole_deployment.resources[0].spec.template.spec.containers | selectattr('name', 'equalto', 'ossmconsole') | first }}"
+
+  - name: Assert the Deployment runs the TLS profile helper with its ServiceAccount and exec readiness probe, and no liveness probe
+    assert:
+      that:
+      - ossmc_pod_spec.serviceAccountName == 'ossmconsole-service-account'
+      - ossmc_pod_spec.automountServiceAccountToken | default(true) == true
+      - ossmc_container.command == ['/usr/local/bin/ossmc-tls-profile']
+      - ossmc_container.readinessProbe is defined
+      - ossmc_container.readinessProbe.exec.command == ['/usr/local/bin/ossmc-tls-profile', 'probe']
+      - ossmc_container.readinessProbe.periodSeconds == 5
+      - ossmc_container.readinessProbe.timeoutSeconds == 3
+      - ossmc_container.livenessProbe is not defined
+      fail_msg: "Unexpected OSSMC Deployment pod spec: {{ ossmc_pod_spec }}"
+
+  - name: Assert nginx.conf includes the helper-rendered TLS policy and has no hardcoded TLS directives
+    assert:
+      that:
+      - ossmc_nginx_conf | length == 1
+      - "'include /tmp/ossmc/tls.conf;' in ossmc_nginx_conf[0].data['nginx.conf']"
+      - "'ssl_protocols' not in ossmc_nginx_conf[0].data['nginx.conf']"
+      - "'ssl_ecdh_curve' not in ossmc_nginx_conf[0].data['nginx.conf']"
+      fail_msg: "Unexpected nginx.conf: {{ ossmc_nginx_conf[0].data['nginx.conf'] | default('') }}"
+
+  # ---------------------------------------------------------------------------------------------
+  # 3. Check the helper: the pod becomes Ready and the helper logs that it applied a policy.
+  # ---------------------------------------------------------------------------------------------
+
+  - name: Wait for the OSSMC pod to become Ready
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ ossmconsole.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/name=ossmconsole"
+    register: ossmc_ready_pods
+    until:
+    - ossmc_ready_pods is success
+    - ossmc_ready_pods.resources | length == 1
+    - ossmc_ready_pods.resources[0].metadata.deletionTimestamp is not defined
+    - ossmc_ready_pods | json_query('resources[0].status.conditions[?type==`Ready`].status') | join == 'True'
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Wait for the TLS profile helper to log that it applied the policy
+    k8s_log:
+      namespace: "{{ ossmconsole.install_namespace }}"
+      name: "{{ ossmc_ready_pods.resources[0].metadata.name }}"
+      container: ossmconsole
+    register: ossmc_helper_log
+    until:
+    - ossmc_helper_log is success
+    - "'policy applied' in (ossmc_helper_log.log | default(''))"
+    retries: 60
+    delay: 5
+
+  # ---------------------------------------------------------------------------------------------
+  # 4. Check the TLS behavior from inside the cluster with verified TLS probes.
+  # ---------------------------------------------------------------------------------------------
+
+  - name: Probe the OSSMC TLS listener
+    include_tasks: tls_probe.yml
+    vars:
+      tls_probe_namespace: "{{ ossmconsole.install_namespace }}"
+      tls_probe_image: "{{ ossmc_container.image }}"
+      tls_probe_image_pull_policy: "{{ ossmc_container.imagePullPolicy | default('IfNotPresent') }}"
+      tls_probe_image_pull_secrets: "{{ ossmc_pod_spec.imagePullSecrets | default([]) }}"
+      tls_probe_expect_tls12: "{{ expected_tls12_allowed | bool }}"
+
+  # ---------------------------------------------------------------------------------------------
+  # 5. Check the ServiceAccount has exactly the access it needs and nothing more.
+  # ---------------------------------------------------------------------------------------------
+
+  - name: Check the OSSMC ServiceAccount permissions with SubjectAccessReviews
+    k8s:
+      state: present
+      definition:
+        apiVersion: authorization.k8s.io/v1
+        kind: SubjectAccessReview
+        spec:
+          user: "system:serviceaccount:{{ ossmconsole_cr_namespace }}:ossmconsole-service-account"
+          resourceAttributes: "{{ item.attributes }}"
+    register: ossmc_sar
+    loop:
+    - expected: true
+      attributes: {group: config.openshift.io, resource: apiservers, name: cluster, verb: get}
+    - expected: false
+      attributes: {group: config.openshift.io, resource: apiservers, verb: list}
+    - expected: false
+      attributes: {group: config.openshift.io, resource: apiservers, verb: watch}
+    - expected: false
+      attributes: {group: config.openshift.io, resource: apiservers, name: cluster, verb: update}
+    - expected: false
+      attributes: {group: "", resource: secrets, namespace: "{{ ossmconsole_cr_namespace }}", verb: get}
+
+  - name: Assert the OSSMC ServiceAccount can only get apiservers/cluster
+    assert:
+      that:
+      - (item.result.status.allowed | default(false)) == item.item.expected
+      fail_msg: "SubjectAccessReview for {{ item.item.attributes }} returned allowed=[{{ item.result.status.allowed | default(false) }}] but expected [{{ item.item.expected }}]"
+    loop: "{{ ossmc_sar.results }}"
+    loop_control:
+      label: "{{ item.item.attributes }}"
+
+  # ---------------------------------------------------------------------------------------------
+  # 6. Deleting an ignored (newer) OSSMConsole CR must not remove the controlling CR's resources.
+  # ---------------------------------------------------------------------------------------------
+
+  - name: Create a second, newer OSSMConsole CR that the operator will ignore
+    k8s:
+      state: present
+      definition:
+        apiVersion: kiali.io/v1alpha1
+        kind: OSSMConsole
+        metadata:
+          name: ossmconsole-ignored
+          namespace: "{{ ossmconsole_cr_namespace }}"
+        spec: "{{ custom_resource.spec }}"
+
+  - name: Wait for the operator to reconcile and ignore the second OSSMConsole CR
+    k8s_info:
+      api_version: kiali.io/v1alpha1
+      kind: OSSMConsole
+      namespace: "{{ ossmconsole_cr_namespace }}"
+      name: ossmconsole-ignored
+    register: ignored_ossmconsole_cr
+    until:
+    - ignored_ossmconsole_cr is success
+    - ignored_ossmconsole_cr.resources | length == 1
+    - ignored_ossmconsole_cr.resources[0].metadata.finalizers | default([]) | length > 0
+    - "'Ignoring this CR' in (ignored_ossmconsole_cr.resources[0].status.progress.message | default(''))"
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Delete the ignored OSSMConsole CR and wait for its finalizer to finish
+    k8s:
+      state: absent
+      api_version: kiali.io/v1alpha1
+      kind: OSSMConsole
+      namespace: "{{ ossmconsole_cr_namespace }}"
+      name: ossmconsole-ignored
+      wait: yes
+      wait_sleep: 5
+      wait_timeout: 600
+
+  - name: Get the controlling CR's resources after the ignored CR was deleted
+    set_fact:
+      after_ignored_serviceaccount: "{{ query('kubernetes.core.k8s', kind='ServiceAccount', resource_name='ossmconsole-service-account', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+      after_ignored_clusterrole: "{{ query('kubernetes.core.k8s', kind='ClusterRole', resource_name='ossmconsole-tls', api_version='rbac.authorization.k8s.io/v1') }}"
+      after_ignored_clusterrolebinding: "{{ query('kubernetes.core.k8s', kind='ClusterRoleBinding', resource_name='ossmconsole-tls', api_version='rbac.authorization.k8s.io/v1') }}"
+      after_ignored_deployment: "{{ query('kubernetes.core.k8s', kind='Deployment', resource_name='ossmconsole', namespace=ossmconsole.install_namespace, api_version='apps/v1') }}"
+
+  - name: Assert the controlling CR's ServiceAccount, ClusterRole, ClusterRoleBinding and Deployment remain
+    assert:
+      that:
+      - after_ignored_serviceaccount | length == 1
+      - after_ignored_clusterrole | length == 1
+      - after_ignored_clusterrolebinding | length == 1
+      - after_ignored_deployment | length == 1
+      fail_msg: "Deleting an ignored OSSMConsole CR removed resources owned by the controlling CR"

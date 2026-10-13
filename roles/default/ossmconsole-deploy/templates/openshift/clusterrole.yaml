@@ -1,0 +1,12 @@
+# Grants the OSSMC pod read access to the cluster TLS profile only. The OSSMC image itself reads
+# APIServer/cluster and configures nginx; the operator has no TLS logic of its own.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ossmconsole-tls
+  labels: {{ ossmconsole_resource_metadata_labels }}
+rules:
+- apiGroups: ["config.openshift.io"]
+  resources: ["apiservers"]
+  resourceNames: ["cluster"]
+  verbs: ["get"]

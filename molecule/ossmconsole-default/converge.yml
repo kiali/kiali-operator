@@ -16,6 +16,9 @@
       pre_deployment: "{{ query('kubernetes.core.k8s', kind='Deployment', resource_name='ossmconsole', namespace=ossmconsole.install_namespace, api_version='apps/v1') }}"
       pre_service: "{{ query('kubernetes.core.k8s', kind='Service', resource_name='ossmconsole', namespace=ossmconsole.install_namespace, api_version='v1') }}"
       pre_consoleplugin: "{{ query('kubernetes.core.k8s', kind='ConsolePlugin', resource_name='ossmconsole', api_version='console.openshift.io/v1') }}"
+      pre_serviceaccount: "{{ query('kubernetes.core.k8s', kind='ServiceAccount', resource_name='ossmconsole-service-account', namespace=ossmconsole.install_namespace, api_version='v1') }}"
+      pre_clusterrole: "{{ query('kubernetes.core.k8s', kind='ClusterRole', resource_name='ossmconsole-tls', api_version='rbac.authorization.k8s.io/v1') }}"
+      pre_clusterrolebinding: "{{ query('kubernetes.core.k8s', kind='ClusterRoleBinding', resource_name='ossmconsole-tls', api_version='rbac.authorization.k8s.io/v1') }}"
 
   - name: Assert all expected resources exist before removal
     assert:
@@ -25,6 +28,19 @@
       - pre_deployment | length == 1
       - pre_service | length == 1
       - pre_consoleplugin | length == 1
+
+  # Some currently supported historical spec.version roles do not create the ServiceAccount and cluster
+  # RBAC. The default role currently does, and released roles will acquire this wiring over time. Keep
+  # this assertion scoped to default until every supported version creates these resources. Their removal
+  # is asserted for every version below because that is safe.
+  - name: Assert the OSSMC TLS profile ServiceAccount and cluster RBAC exist before removal
+    assert:
+      that:
+      - pre_serviceaccount | length == 1
+      - pre_clusterrole | length == 1
+      - pre_clusterrolebinding | length == 1
+    when:
+    - ossmconsole.spec_version == 'default'
 
   - name: Remove OSSMConsole CR
     k8s:
@@ -88,5 +104,36 @@
       name: ossmconsole
     register: post_consoleplugin
     until: post_consoleplugin.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert ossmconsole-service-account ServiceAccount is removed
+    k8s_info:
+      api_version: v1
+      kind: ServiceAccount
+      namespace: "{{ ossmconsole.install_namespace }}"
+      name: ossmconsole-service-account
+    register: post_serviceaccount
+    until: post_serviceaccount.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert ossmconsole-tls ClusterRole is removed
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      name: ossmconsole-tls
+    register: post_clusterrole
+    until: post_clusterrole.resources | length == 0
+    retries: "{{ wait_retries }}"
+    delay: 5
+
+  - name: Assert ossmconsole-tls ClusterRoleBinding is removed
+    k8s_info:
+      api_version: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      name: ossmconsole-tls
+    register: post_clusterrolebinding
+    until: post_clusterrolebinding.resources | length == 0
     retries: "{{ wait_retries }}"
     delay: 5

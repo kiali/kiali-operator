@@ -37,6 +37,40 @@
       that:
       - ossmconsole_consoleplugin.spec.proxy is not defined or ossmconsole_consoleplugin.spec.proxy | length == 0
 
+  # The default role currently wires the OSSMC image to read the cluster TLS profile itself. Released
+  # spec.version roles will acquire that wiring over time. Keep this block scoped to default while any
+  # supported version lacks it; the pod becomes Ready only after the helper applies a policy and nginx serves it.
+  - when:
+    - ossmconsole.spec_version == 'default'
+    block:
+    - name: Wait for the OSSMC pod to become Ready without Kiali
+      k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: "{{ ossmconsole.install_namespace }}"
+        label_selectors:
+        - "app.kubernetes.io/name=ossmconsole"
+      register: ossmc_ready_pods
+      until:
+      - ossmc_ready_pods is success
+      - ossmc_ready_pods.resources | length == 1
+      - ossmc_ready_pods.resources[0].metadata.deletionTimestamp is not defined
+      - ossmc_ready_pods | json_query('resources[0].status.conditions[?type==`Ready`].status') | join == 'True'
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    - name: Wait for the TLS profile helper to log that it applied the policy without Kiali
+      k8s_log:
+        namespace: "{{ ossmconsole.install_namespace }}"
+        name: "{{ ossmc_ready_pods.resources[0].metadata.name }}"
+        container: ossmconsole
+      register: ossmc_helper_log
+      until:
+      - ossmc_helper_log is success
+      - "'policy applied' in (ossmc_helper_log.log | default(''))"
+      retries: 60
+      delay: 5
+
   # Now confirm that explicitly configuring Kiali (even partially) when no Kiali can be found is
   # treated as a bad deployment scenario and hard-fails the reconciliation, rather than silently
   # falling back to installation without Kiali integration. This is different than the "nothing configured, nothing found" case
@@ -57,3 +91,97 @@
       that:
       - "'Kiali' in ossmconsole_cr_failure_message"
       - "'Make sure Kiali is installed' in ossmconsole_cr_failure_message"
+
+  # ---------------------------------------------------------------------------------------------
+  # Downgrade cleanup: switch the CR to a historical spec.version that supports installation without
+  # Kiali, prove the historical workload runs with the legacy (static nginx) contract and none of the
+  # newer role's helper wiring survives, and verify the TLS profile ServiceAccount and cluster RBAC
+  # are removed on the switch. Then delete the CR and verify cleanup again. This block is
+  # only needed while v2.33 or an earlier supported version uses the legacy image contract. Remove it
+  # once v2.33 and all earlier versions are no longer supported.
+  # ---------------------------------------------------------------------------------------------
+
+  - when:
+    - ossmconsole.spec_version == 'default'
+    block:
+    - name: Define the historical version to downgrade to
+      set_fact:
+        downgrade_version: v2.33
+        supported_ossmconsole_images: "{{ lookup('file', lookup('env', 'MOLECULE_PROJECT_DIRECTORY') + '/playbooks/ossmconsole-default-supported-images.yml') | from_yaml }}"
+        operator_installer: "{{ lookup('env', 'MOLECULE_OPERATOR_INSTALLER') | default('helm', True) }}"
+
+    - name: Get the TLS profile helper Deployment image before the downgrade
+      set_fact:
+        pre_downgrade_image: "{{ lookup('kubernetes.core.k8s', api_version='apps/v1', kind='Deployment', namespace=ossmconsole.install_namespace, resource_name='ossmconsole').spec.template.spec.containers[0].image }}"
+
+    # Re-fetch first so the patch carries the current resourceVersion. In the same update, undo the broken
+    # Kiali configuration above and clear the image overrides (set to "" rather than removed - a merge patch
+    # leaves absent keys untouched) so the operator selects the historical version's own image.
+    - name: Switch the CR to the historical version and clear the image overrides
+      vars:
+        latest_ossmconsole_cr: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name) }}"
+      set_fact:
+        downgraded_ossmconsole_cr: "{{ latest_ossmconsole_cr | combine({'spec': {'version': downgrade_version, 'kiali': {'servicePort': 0}, 'deployment': {'imageName': '', 'imageVersion': '', 'imageDigest': ''}}}, recursive=True) }}"
+
+    - import_tasks: ../ossmconsole-common/set_ossmconsole_cr.yml
+      vars:
+        new_ossmconsole_cr: "{{ downgraded_ossmconsole_cr }}"
+
+    - import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+
+    - name: Wait for the historical OSSMC workload to be ready
+      k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ ossmconsole.install_namespace }}"
+        name: ossmconsole
+      register: downgraded_deployment
+      until:
+      - downgraded_deployment is success
+      - downgraded_deployment.resources | length == 1
+      - downgraded_deployment.resources[0].spec.template.spec.containers[0].image != pre_downgrade_image
+      - downgraded_deployment.resources[0].status.observedGeneration | default(0) == downgraded_deployment.resources[0].metadata.generation
+      - downgraded_deployment.resources[0].status.updatedReplicas | default(0) == 1
+      - downgraded_deployment.resources[0].status.availableReplicas | default(0) == 1
+      - downgraded_deployment.resources[0].status.replicas | default(0) == 1
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    - name: Get the historical nginx-conf ConfigMap and CR status
+      set_fact:
+        downgraded_nginx_conf: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=ossmconsole.install_namespace, resource_name='nginx-conf') }}"
+        downgraded_ossmconsole_cr_status: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole', namespace=ossmconsole_cr_namespace, resource_name=custom_resource.metadata.name).status }}"
+        downgraded_pod_spec: "{{ downgraded_deployment.resources[0].spec.template.spec }}"
+
+    - name: Assert the historical workload uses the historical image and the legacy contract, with no helper wiring left over
+      vars:
+        expected_image: "{{ supported_ossmconsole_images[downgrade_version].imageName }}:{{ supported_ossmconsole_images[downgrade_version].imageVersion }}"
+      assert:
+        that:
+        - downgraded_ossmconsole_cr_status.specVersion == downgrade_version
+        - operator_installer != 'helm' or downgraded_pod_spec.containers[0].image == expected_image
+        - downgraded_pod_spec.containers[0].command is not defined
+        - downgraded_pod_spec.containers[0].readinessProbe is not defined
+        - downgraded_pod_spec.containers[0].livenessProbe is not defined
+        - downgraded_pod_spec.serviceAccountName | default('default') != 'ossmconsole-service-account'
+        - "'ssl_protocols' in downgraded_nginx_conf.data['nginx.conf']"
+        - "'include /tmp/ossmc/tls.conf;' not in downgraded_nginx_conf.data['nginx.conf']"
+        fail_msg: "The historical OSSMC workload does not match the legacy contract (expected image [{{ expected_image }}]): pod spec={{ downgraded_pod_spec }}"
+
+    - name: Assert the version switch removed the TLS profile ServiceAccount and cluster RBAC
+      assert:
+        that:
+        - query('kubernetes.core.k8s', api_version='v1', kind='ServiceAccount', namespace=ossmconsole.install_namespace, resource_name='ossmconsole-service-account') | length == 0
+        - query('kubernetes.core.k8s', api_version='rbac.authorization.k8s.io/v1', kind='ClusterRole', resource_name='ossmconsole-tls') | length == 0
+        - query('kubernetes.core.k8s', api_version='rbac.authorization.k8s.io/v1', kind='ClusterRoleBinding', resource_name='ossmconsole-tls') | length == 0
+
+    - name: Remove the downgraded OSSMConsole CR
+      k8s:
+        state: absent
+        api_version: kiali.io/v1alpha1
+        kind: OSSMConsole
+        namespace: "{{ ossmconsole_cr_namespace }}"
+        name: "{{ custom_resource.metadata.name }}"
+        wait: yes
+        wait_sleep: 5
+        wait_timeout: 600

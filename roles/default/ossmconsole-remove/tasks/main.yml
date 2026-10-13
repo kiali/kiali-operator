@@ -70,3 +70,27 @@
     - resources-to-remove.yml
   retries: 6
   delay: 10
+
+# The helper-enabled role creates cluster-scoped RBAC, which is not covered by the
+# namespaced resource template. This also runs when changing spec.version away from default.
+- name: Delete OSSM Console TLS profile ServiceAccount and cluster RBAC
+  ignore_errors: yes
+  k8s:
+    state: absent
+    api_version: "{{ item.api_version }}"
+    kind: "{{ item.kind }}"
+    name: "{{ item.name }}"
+    namespace: "{{ item.namespace | default(omit) }}"
+  loop:
+  - api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: ossmconsole-tls
+  - api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    name: ossmconsole-tls
+  - api_version: v1
+    kind: ServiceAccount
+    name: ossmconsole-service-account
+    namespace: "{{ ossmconsole_vars_remove.deployment.namespace }}"
+  retries: 6
+  delay: 10
