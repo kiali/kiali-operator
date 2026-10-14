@@ -1,0 +1,223 @@
+- name: Tests
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  vars:
+    custom_resource: "{{ lookup('template', ossmconsole_cr_file_path) | from_yaml }}"
+  tasks:
+  - import_tasks: ../ossmconsole-common/confirm_openshift.yml
+  - import_tasks: ../ossmconsole-common/tasks.yml
+  # Kiali common gather: sets the facts (kiali_base_url, kiali_pod, ...) that
+  # wait_for_kiali_running.yml needs for the fan-out restart checks below.
+  - import_tasks: ../common/tasks.yml
+
+  # Verify this is actually OpenShift - the test should only run on OpenShift
+  - name: Assert that this is an OpenShift cluster
+    assert:
+      that:
+      - is_openshift == True
+      fail_msg: "This test requires an OpenShift cluster because the nginx TLS configuration follows the cluster TLS security profile"
+
+  # ========================================
+  # Compute the expected rendering from the cluster's CURRENT profile.
+  # The cluster profile is never changed by this test.
+  # ========================================
+
+  - name: Get the OpenShift APIServer configuration
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+    register: openshift_apiserver
+
+  - name: Resolve the expected nginx directives with the same filter plugin the role uses
+    set_fact:
+      expected_tls: "{{ openshift_apiserver.resources[0].spec.tlsSecurityProfile | default(None) | resolve_tls_profile }}"
+
+  - name: Debug the expected resolution
+    debug:
+      msg: "Cluster profile -> valid={{ expected_tls.valid }} directives={{ expected_tls.directives }}"
+
+  # ========================================
+  # Assert the rendered ConfigMap matches the expected resolution exactly.
+  # ========================================
+
+  - name: Get the nginx-conf ConfigMap
+    set_fact:
+      nginx_conf: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=ossmconsole.install_namespace, resource_name='nginx-conf') }}"
+
+  # The Ciphersuites line is hardcoded because the resolver pins the three standard
+  # TLS 1.3 suites for every profile (the issue 874 fix); everything else is asserted
+  # from the cluster's actual profile below.
+  - name: Assert the nginx-conf ConfigMap matches the expected rendering
+    vars:
+      rendered: "{{ nginx_conf.data['nginx.conf'] }}"
+    assert:
+      that:
+      - expected_tls.valid
+      - rendered is search('ssl_conf_command Ciphersuites TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256;')
+      - rendered is search(expected_tls.directives[0] | regex_escape())
+      - "'CCM' not in rendered"
+      - "'DES-CBC3' not in rendered"
+      fail_msg: "nginx-conf ConfigMap does not match the cluster TLS profile rendering"
+
+  - name: Assert every expected directive line is present verbatim
+    vars:
+      rendered: "{{ nginx_conf.data['nginx.conf'] }}"
+    assert:
+      that:
+      - rendered is search(directive | regex_escape())
+    loop: "{{ expected_tls.directives }}"
+    loop_control:
+      loop_var: directive
+
+  # ========================================
+  # Assert the deployment wiring: httpsGet readiness probe, replicas, no liveness probe.
+  # ========================================
+
+  - name: Assert the deployment TLS wiring
+    vars:
+      container: "{{ ossmconsole_deployment.resources[0].spec.template.spec.containers[0] }}"
+    assert:
+      that:
+      - ossmconsole_deployment.resources[0].spec.replicas | int == 1
+      - container.readinessProbe.httpGet.scheme == 'HTTPS'
+      - container.readinessProbe.httpGet.path == '/plugin-manifest.json'
+      - container.readinessProbe.httpGet.port | int == 9443
+      - container.livenessProbe is not defined
+      fail_msg: "Deployment is missing the TLS-coupled readiness probe or has wrong replicas"
+
+  # ========================================
+  # Verify the served TLS with a bounded in-cluster probe job.
+  # ========================================
+
+  - name: Run the TLS probe against the ossmconsole service
+    import_tasks: tls_probe.yml
+    vars:
+      tls_probe_expect_tls12: >-
+        {{ 'refused' if (expected_tls.directives[0] == 'ssl_protocols TLSv1.3;') else 'allowed' }}
+
+  # ========================================
+  # Idempotency: touching the CR the way the APIServer watch fan-out does must
+  # re-reconcile WITHOUT changing the ConfigMap or restarting the pod.
+  # ========================================
+
+  - name: Record the deployment last-updated annotation before the touch
+    set_fact:
+      last_updated_before: "{{ ossmconsole_deployment.resources[0].spec.template.metadata.annotations['ossmconsole.kiali.io/last-updated'] }}"
+
+  - name: Touch the OSSMConsole CR the way the APIServer watch fan-out playbook does
+    vars:
+      current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+    k8s:
+      definition:
+        apiVersion: "{{ custom_resource.apiVersion }}"
+        kind: "{{ custom_resource.kind }}"
+        metadata:
+          name: "{{ custom_resource.metadata.name }}"
+          namespace: "{{ ossmconsole_cr_namespace }}"
+          annotations:
+            kiali.io/reconcile: "{{ current_timestamp_string }}"
+
+  - name: Wait for the operator to finish reconciling the touched CR
+    import_tasks: ../ossmconsole-common/wait_for_ossmconsole_cr_changes.yml
+
+  - name: Re-read the deployment for the no-restart assertion
+    set_fact:
+      settled_deployment: "{{ query('kubernetes.core.k8s', api_version='apps/v1', kind='Deployment', namespace=ossmconsole.install_namespace, resource_name='ossmconsole') }}"
+
+  - name: Assert the unchanged profile caused no pod restart
+    vars:
+      last_updated_after: "{{ settled_deployment[0].spec.template.metadata.annotations['ossmconsole.kiali.io/last-updated'] }}"
+    assert:
+      that:
+      - last_updated_after == last_updated_before
+      fail_msg: "An unchanged cluster TLS profile must not restart the OSSM Console pod (before={{ last_updated_before }} after={{ last_updated_after }})"
+
+  # ========================================
+  # The APIServer watch fan-out also restarts the Kiali servers (they resolve
+  # the profile only at startup). The scenario installs a Kiali server via its
+  # prepare chain, so verify both halves of the playbook here: the restart on
+  # a profile-relevant event, and the no-op on an unrelated change.
+  # ========================================
+
+  - name: Get the Kiali Deployment and its current pod
+    k8s_info:
+      api_version: apps/v1
+      kind: Deployment
+      namespace: "{{ kiali.install_namespace }}"
+      label_selectors:
+      - "app.kubernetes.io/instance=kiali"
+    register: tls_test_kiali_deployment
+
+  - name: Record the Kiali pod before the fan-out
+    set_fact:
+      kiali_pod_before: "{{ query('kubernetes.core.k8s', api_version='v1', kind='Pod', namespace=kiali.install_namespace, label_selector='app.kubernetes.io/instance=kiali') | map(attribute='metadata.name') | list }}"
+
+  - name: Run the tls-profile fan-out playbook the way the APIServer watch does
+    command: >
+      ansible-playbook {{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/playbooks/tls-profile-detected.yml
+      -e '{ "apiserver": { "metadata": { "name": "cluster" },
+             "spec": { "tlsSecurityProfile": {{ openshift_apiserver.resources[0].spec.tlsSecurityProfile | default(None) | to_json }} } } }'
+
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  - name: Assert the Kiali pod was replaced by the restart
+    vars:
+      pods_now: "{{ query('kubernetes.core.k8s', api_version='v1', kind='Pod', namespace=kiali.install_namespace, label_selector='app.kubernetes.io/instance=kiali') | map(attribute='metadata.name') | list }}"
+    assert:
+      that:
+      - pods_now | difference(kiali_pod_before) | length > 0
+      fail_msg: "The tls-profile fan-out must restart the Kiali server (before={{ kiali_pod_before }} now={{ pods_now }})"
+
+  - name: Assert the Kiali deployment carries the profile hash annotation
+    vars:
+      expected_hash: "{{ (openshift_apiserver.resources[0].spec.tlsSecurityProfile | default(None) | to_json) | hash('sha256') }}"
+    assert:
+      that:
+      - tls_test_kiali_deployment.resources | length == 1
+      - lookup('kubernetes.core.k8s', api_version='apps/v1', kind='Deployment', namespace=kiali.install_namespace,
+               resource_name=tls_test_kiali_deployment.resources[0].metadata.name).spec.template.metadata.annotations['operator.kiali.io/tls-profile'] | default('') == expected_hash
+      fail_msg: "Kiali deployment must carry operator.kiali.io/tls-profile = hash of the cluster profile"
+
+  - name: Record the Kiali pod after the restart (baseline for the no-op check)
+    set_fact:
+      kiali_pod_after_restart: "{{ query('kubernetes.core.k8s', api_version='v1', kind='Pod', namespace=kiali.install_namespace, label_selector='app.kubernetes.io/instance=kiali') | map(attribute='metadata.name') | list }}"
+
+  - name: Run the fan-out playbook again with an APIServer change that does NOT touch the profile
+    command: >
+      ansible-playbook {{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/playbooks/tls-profile-detected.yml
+      -e '{ "apiserver": { "metadata": { "name": "cluster" },
+             "spec": { "tlsSecurityProfile": {{ openshift_apiserver.resources[0].spec.tlsSecurityProfile | default(None) | to_json }},
+                        "audit": { "profile": "Unrelated" } } } }'
+
+  # If a spurious restart was triggered, this waits out the rollout before the
+  # pod-name assertion below; when nothing restarted it returns immediately.
+  - import_tasks: ../common/wait_for_kiali_running.yml
+
+  - name: Assert the unrelated APIServer change did not restart the Kiali server
+    vars:
+      pods_now: "{{ query('kubernetes.core.k8s', api_version='v1', kind='Pod', namespace=kiali.install_namespace, label_selector='app.kubernetes.io/instance=kiali') | map(attribute='metadata.name') | list }}"
+    assert:
+      that:
+      - kiali_pod_after_restart | difference(pods_now) | length == 0
+      fail_msg: "An APIServer/cluster change that does not touch tlsSecurityProfile must not restart the Kiali server (before={{ kiali_pod_after_restart }} now={{ pods_now }})"
+
+  # ========================================
+  # Invalid-profile handling is covered at the filter level (unit tests) plus
+  # the replicas wiring asserted above; this scenario never changes the
+  # cluster-wide APIServer object.
+  # ========================================
+
+  - name: Test completed successfully
+    debug:
+      msg: |
+        OSSM Console TLS profile test completed successfully:
+        - nginx-conf ConfigMap rendered from the cluster TLS security profile
+        - TLS 1.3 suites pinned (no CCM) and verified by a live handshake
+        - TLS 1.2 {{ 'refused' if (expected_tls.directives[0] == 'ssl_protocols TLSv1.3;') else 'allowed' }} as the profile requires
+        - httpsGet readiness probe wired; replicas correct
+        - unchanged profile re-reconcile is a no-op (no pod restart)
+        - the tls-profile fan-out restarts the Kiali server on a profile change,
+          and does not restart it on an unrelated APIServer/cluster change

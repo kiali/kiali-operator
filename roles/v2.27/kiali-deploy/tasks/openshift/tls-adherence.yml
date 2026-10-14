@@ -1,0 +1,77 @@
+# Reject an explicit deployment.tls_config.source of 'config' when the cluster TLS
+# adherence is strict, and stop a running server that is serving outside the
+# cluster's policy. OpenShift clusters can pin a cluster-wide TLS adherence
+# (spec.tlsAdherence on APIServer/cluster): under StrictAllComponents every
+# component must honor the cluster TLS security profile, so a Kiali CR may not
+# bypass it with its own TLS configuration. This is a CR-validity rule - it
+# applies to every OpenShift reconcile that asks for an explicit TLS config,
+# including remote_cluster_resources_only installs.
+#
+# The only value that permits an explicit TLS config is exactly
+# "LegacyAdheringComponentsOnly" (the documented default when the field is absent).
+# Any other value - "StrictAllComponents" or an unknown future enum value - fails
+# closed, which is the forward-compatibility rule the API itself prescribes
+# (unknown values are to be treated as StrictAllComponents).
+#
+# When the gate trips, the Kiali deployment is removed (a fresh install has
+# nothing to remove): the server serves nothing rather than serve outside the
+# cluster's policy, the same stance the OSSM Console deploy role takes for an
+# invalid cluster TLS profile. Removing the deployment - rather than scaling it
+# to zero - is what makes recovery work in every configuration: the deployment
+# template omits spec.replicas when the HPA is enabled (so the operator never
+# fights the autoscaler), which means a zero-replica deployment would never be
+# scaled back up (an HPA does not scale from zero). A removed deployment is
+# simply re-created by the next successful reconcile, and the API server
+# defaults an omitted replicas to 1 - HPA or not. This is the same
+# delete-and-recreate move the role already uses when the image changes.
+# The CR spec is left untouched - the user's declared configuration stays
+# exactly as written.
+#
+# This file is only included when the CR explicitly sets source to 'config': the
+# configuration defaults set source to 'auto' on OpenShift, so an ordinary
+# reconcile never reads APIServer/cluster here.
+
+- name: Read the cluster TLS adherence (APIServer/cluster)
+  set_fact:
+    kiali_cluster_apiserver: "{{ query('kubernetes.core.k8s', api_version='config.openshift.io/v1', kind='APIServer', resource_name='cluster') }}"
+
+- name: Fail clearly when APIServer/cluster cannot be read
+  fail:
+    msg: >-
+      APIServer/cluster was not found; the cluster TLS adherence cannot be determined
+      while the Kiali CR asks for an explicit TLS configuration
+      (deployment.tls_config.source: config). Nothing was changed.
+  when:
+  - kiali_cluster_apiserver | length == 0
+
+- name: Normalize the cluster TLS adherence
+  set_fact:
+    # absent/empty/null default to the documented legacy mode (the boolean second
+    # arg to default covers undefined, empty string and null); any value other than
+    # exactly LegacyAdheringComponentsOnly is treated as strict - fail closed
+    kiali_tls_adherence: "{{ kiali_cluster_apiserver[0].get('spec', {}).get('tlsAdherence') | default('LegacyAdheringComponentsOnly', true) }}"
+
+- name: Remove the Kiali server deployment - it is serving TLS outside the cluster's policy
+  k8s:
+    state: absent
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ kiali_vars.deployment.namespace }}"
+    name: "{{ kiali_vars.deployment.instance_name }}"
+  when:
+  - kiali_vars.deployment.tls_config.source | default('') == 'config'
+  - kiali_tls_adherence != 'LegacyAdheringComponentsOnly'
+
+- name: Reject an explicit TLS config when the cluster TLS adherence is strict
+  fail:
+    msg: >-
+      The cluster TLS adherence is [{{ kiali_tls_adherence }}] (APIServer/cluster
+      spec.tlsAdherence); the Kiali CR may not set deployment.tls_config.source to
+      'config'. The Kiali server deployment has been removed because it was serving
+      TLS outside the cluster's policy. Remove the setting (or set it to 'auto') so
+      Kiali follows the cluster TLS security profile, or ask your cluster admin to
+      set the adherence to LegacyAdheringComponentsOnly; Kiali will be redeployed by
+      the next successful reconciliation.
+  when:
+  - kiali_vars.deployment.tls_config.source | default('') == 'config'
+  - kiali_tls_adherence != 'LegacyAdheringComponentsOnly'

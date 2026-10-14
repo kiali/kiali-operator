@@ -341,6 +341,17 @@
   set_fact:
     kiali_vars: "{{ kiali_vars_yaml | from_yaml }}"
 
+# Validate the explicit TLS config source against the cluster TLS adherence (OpenShift only).
+# Runs after the configuration defaults so that, on OpenShift, source == 'config' can only
+# mean the CR set it explicitly. Fails the reconcile (the CR status shows the error) and
+# removes the running deployment - a server that cannot comply with the cluster's
+# TLS policy serves nothing. The user must fix the CR or the cluster adherence.
+- name: Reject an explicit TLS config when the cluster TLS adherence is strict
+  include_tasks: openshift/tls-adherence.yml
+  when:
+  - is_openshift == True
+  - kiali_vars.deployment.tls_config.source | default('') == 'config'
+
 # Indicate how users are to authenticate to Kiali, making sure the strategy is valid.
 - debug:
     msg: "AUTH STRATEGY={{ kiali_vars.auth.strategy }}"
