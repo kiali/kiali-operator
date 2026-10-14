@@ -34,6 +34,18 @@
   watchDependentResources: False
   watchClusterScopedResources: False
   snakeCaseParameters: False
+  # required for triggering due to the APIServer watch
+  watchAnnotationsChanges: True
   finalizer:
     name: kiali.io/finalizer
     playbook: playbooks/ossmconsole-remove.yml
+# Watching the cluster TLS security profile so OSSMC and Kiali can be notified
+- version: v1
+  group: config.openshift.io
+  kind: APIServer
+  playbook: playbooks/tls-profile-detected.yml
+  manageStatus: False
+  markUnsafe: True
+  watchDependentResources: False
+  watchClusterScopedResources: False
+  watchAnnotationsChanges: False

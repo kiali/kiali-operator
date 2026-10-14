@@ -1,0 +1,56 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  tasks:
+
+  # This playbook processes changes to the cluster TLS security profile
+  # (APIServer/cluster). Both operands follow that profile:
+  #
+  # - The operator renders the OSSM Console nginx TLS configuration from it, so
+  #   every OSSMConsole CR is "touched" (an annotation modified) causing the
+  #   operator to reconcile those CRs, re-rendering the nginx-conf ConfigMap
+  #   from the new profile and restarting the OSSM Console pod to pick it up.
+  #   An unchanged profile makes that reconcile a no-op. This part is a no-op
+  #   when there are no OSSMConsole CRs installed in the cluster.
+  #
+  # - The Kiali server resolves the profile itself, in-process, at startup
+  #   (tlspolicy/resolver.go); re-reconciling a Kiali CR re-renders identical
+  #   resources and would not restart the server. So every Kiali Deployment is
+  #   restarted directly, the same way the operator restarts the server when
+  #   its config changes (see kiali-multi-cluster-secret-detected.yml), and the
+  #   restarted servers re-resolve the profile at startup.
+  #
+  # The Kiali restart is keyed to a hash of the profile itself, not a timestamp:
+  # the APIServer watch fires on ANY change to the APIServer/cluster object
+  # (audit settings, annotations, ...), and patching an identical annotation
+  # value is a no-op, so unrelated changes do not restart the Kiali servers.
+  # Note: if the new profile is one the Kiali server rejects at startup (for
+  # example Old), the restarted server stays in CrashLoopBackOff until a valid
+  # profile is observed; the next profile event restarts it once more.
+
+  - name: "Touch the OSSMConsole CRs because the cluster TLS security profile changed [{{ __apiserver.metadata.name }}]"
+    ignore_errors: yes
+    vars:
+      current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:00Z') }}"
+      ossmconsole_cr_list: "{{ query('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole') }}"
+    k8s:
+      state: "present"
+      definition: "{{ item | combine({'metadata': {'annotations': {'kiali.io/reconcile': current_timestamp_string}}}, recursive=True) }}"
+    loop: "{{ ossmconsole_cr_list }}"
+    when:
+    - item.metadata.annotations['kiali.io/reconcile'] | default('') != current_timestamp_string
+
+  - name: "Restart the Kiali servers because the cluster TLS security profile changed [{{ __apiserver.metadata.name }}]"
+    ignore_errors: yes
+    vars:
+      # Hash of the profile (not a timestamp): patching an unchanged value is a
+      # no-op, so unrelated APIServer/cluster edits do not restart the servers.
+      tls_profile_value: "{{ (__apiserver.spec.tlsSecurityProfile | default(None) | to_json) | hash('sha256') }}"
+      kiali_deployments_list: "{{ query('kubernetes.core.k8s', label_selector='app.kubernetes.io/name=kiali', api_version='apps/v1', kind='Deployment') }}"
+    k8s:
+      state: "present"
+      definition: "{{ item | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/tls-profile': tls_profile_value }}}}}, recursive=True) }}"
+    loop: "{{ kiali_deployments_list }}"
+    when:
+    - item.spec.template.metadata.annotations['operator.kiali.io/tls-profile'] | default('') != tls_profile_value
