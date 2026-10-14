@@ -71,6 +71,7 @@ The test driver runs inside a **Podman** container (Docker is no longer supporte
 | `token-test` | Token-based auth strategy |
 | `ossmconsole-default` | Basic OSSMConsole CR install and remove on OpenShift |
 | `ossmconsole-config-values-test` | OSSMConsole config values propagated correctly |
+| `ossmconsole-tls-profile-test` | OSSMC nginx TLS configuration follows the cluster TLS security profile (reads the current profile; never changes it) |
 
 ## Scenario Structure
 

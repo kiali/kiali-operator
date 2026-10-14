@@ -26,6 +26,16 @@
       - pre_service | length == 1
       - pre_consoleplugin | length == 1
 
+  - name: Assert the nginx-conf ConfigMap is rendered from the cluster TLS profile
+    vars:
+      rendered_nginx_conf: "{{ pre_nginx_conf[0].data['nginx.conf'] }}"
+    assert:
+      that:
+      - "'ssl_conf_command Ciphersuites' in rendered_nginx_conf"
+      - "'CCM' not in rendered_nginx_conf"
+      - rendered_nginx_conf is search('ssl_protocols +TLSv1\\.')
+      fail_msg: "nginx-conf ConfigMap must render TLS directives from the cluster profile (no static TLS config, no CCM)"
+
   - name: Remove OSSMConsole CR
     k8s:
       state: absent
