@@ -67,10 +67,11 @@ The test driver runs inside a **Podman** container (Docker is no longer supporte
 | `remote-cluster-resources-test` | `remote_cluster_resources_only: true` mode |
 | `roles-test` | Per-namespace Role/RoleBinding creation |
 | `rolling-restart-test` | ConfigMap changes trigger rolling restart of Kiali pod |
-| `tls-profile-test` | TLS configuration and certificate handling |
+| `tls-profile-test` | TLS configuration and certificate handling; TLS adherence gate (`source: config` rejected under `StrictAllComponents`, with fan-out re-reconcile on adherence changes — strict-path assertions skip on clusters without the `TLSAdherence` feature gate) |
 | `token-test` | Token-based auth strategy |
 | `ossmconsole-default` | Basic OSSMConsole CR install and remove on OpenShift |
 | `ossmconsole-config-values-test` | OSSMConsole config values propagated correctly |
+| `ossmconsole-tls-profile-test` | OSSMC nginx TLS configuration follows the cluster TLS security profile (reads the current profile; never changes it) |
 
 ## Scenario Structure
 
@@ -241,6 +242,15 @@ make CLUSTER_TYPE=openshift build-ui build test cluster-push
 | `-d` / `--debug` | Enable Ansible debug output |
 
 Under the hood the script runs tests inside a Podman container built from `molecule/docker/Dockerfile` in this repo — that image extends `quay.io/ansible/creator-ee` with jmespath, the `kubernetes` Python library, the Ansible collections from `requirements.yml`, and Helm. The operator repo is mounted into the container; KUBECONFIG is injected as a volume. (Docker is no longer supported; the `--docker-or-podman` flag is accepted for compatibility but podman is always used.)
+
+## tls-profile-test Scenario (TLS adherence gate)
+
+Beyond the auto/config source switching, `molecule/tls-profile-test/` verifies the operator's TLS adherence gate: on OpenShift, a Kiali CR with `deployment.tls_config.source: config` must fail its reconcile when `APIServer/cluster` `spec.tlsAdherence` is `StrictAllComponents`.
+
+- **Scenario-start normalization** — the cluster's starting adherence is not guaranteed, so the scenario records it and normalizes it to `LegacyAdheringComponentsOnly` itself (only when needed); the original value is restored at the end. An originally-absent field ends at `LegacyAdheringComponentsOnly` because the API forbids removing the field once set (behaviorally identical to absent).
+- **Strict-phase** — patches the cluster adherence to `StrictAllComponents`, then asserts the fan-out touches the Kiali CR (`operator.kiali.io/tls-adherence` annotation = `strict`), the reconcile fails with the gate message in the CR status (`type: Failure` condition), the deployment is **removed and the pods are gone** (a server that cannot comply serves nothing), and the ConfigMap is left as-is. Recovery is asserted in both directions: fixing the CR to `auto` reconciles and re-creates the deployment while still strict; flipping adherence back to Legacy stamps `non-strict` with Kiali staying healthy.
+- **Feature-gate skip** — the `tlsAdherence` field is feature-gated (`TLSAdherence`), so on clusters without the gate the patch is silently pruned or rejected. Acceptance is detected by reading the value back (not by the patch result); when not accepted, the strict-path assertions are skipped with a notice and the scenario stays green — the legacy/inert paths still run fully.
+- **No-op assertion** — invokes `playbooks/tls-profile-detected.yml` directly with a synthetic `apiserver` carrying an unrelated `spec.audit` change and asserts the Kiali CR touch annotation is unchanged (an unrelated APIServer edit must not re-reconcile the Kiali CRs).
 
 ## external-auth-rotation-test Scenario
 

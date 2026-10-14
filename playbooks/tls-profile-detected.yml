@@ -1,0 +1,102 @@
+- hosts: localhost
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  vars:
+    # ansible-operator injects the watched object as _<group>_<kind> with the
+    # dots and dashes of the group escaped to underscores (core-group kinds
+    # like Secret/Namespace get the short __secret / __namespace form only
+    # because their group is empty). APIServer is in config.openshift.io.
+    apiserver: "{{ _config_openshift_io_apiserver }}"
+  tasks:
+
+  # This playbook processes changes to the cluster TLS security profile
+  # (APIServer/cluster). Both operands follow that profile:
+  #
+  # - The operator renders the OSSM Console nginx TLS configuration from it, so
+  #   every OSSMConsole CR is "touched" (an annotation modified) causing the
+  #   operator to reconcile those CRs, re-rendering the nginx-conf ConfigMap
+  #   from the new profile and restarting the OSSM Console pod to pick it up.
+  #   An unchanged profile makes that reconcile a no-op. This part is a no-op
+  #   when there are no OSSMConsole CRs installed in the cluster.
+  #
+  # - The Kiali server resolves the profile itself, in-process, at startup
+  #   (tlspolicy/resolver.go); re-reconciling a Kiali CR re-renders identical
+  #   resources and would not restart the server. So every Kiali Deployment is
+  #   restarted directly, the same way the operator restarts the server when
+  #   its config changes (see kiali-multi-cluster-secret-detected.yml), and the
+  #   restarted servers re-resolve the profile at startup.
+  #
+  # The Kiali restart is keyed to a hash of the profile itself, not a timestamp:
+  # the APIServer watch fires on ANY change to the APIServer/cluster object
+  # (audit settings, annotations, ...), and patching an identical annotation
+  # value is a no-op, so unrelated changes do not restart the Kiali servers.
+  # Note: if the new profile is one the Kiali server rejects at startup (for
+  # example Old), the restarted server stays in CrashLoopBackOff until a valid
+  # profile is observed; the next profile event restarts it once more.
+
+  - name: "Touch the OSSMConsole CRs because the cluster TLS security profile changed [{{ apiserver.metadata.name }}]"
+    ignore_errors: yes
+    vars:
+      current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
+      ossmconsole_cr_list: "{{ query('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole') }}"
+    k8s:
+      state: "present"
+      definition: "{{ item | combine({'metadata': {'annotations': {'kiali.io/reconcile': current_timestamp_string}}}, recursive=True) }}"
+    loop: "{{ ossmconsole_cr_list }}"
+    when:
+    - item.metadata.annotations['kiali.io/reconcile'] | default('') != current_timestamp_string
+
+  - name: "Restart the Kiali servers because the cluster TLS security profile changed [{{ apiserver.metadata.name }}]"
+    ignore_errors: yes
+    vars:
+      # Hash of the profile (not a timestamp): patching an unchanged value is a
+      # no-op, so unrelated APIServer/cluster edits do not restart the servers.
+      tls_profile_value: "{{ (apiserver.spec.tlsSecurityProfile | default(None) | to_json) | hash('sha256') }}"
+      kiali_deployments_list: "{{ query('kubernetes.core.k8s', label_selector='app.kubernetes.io/name=kiali', api_version='apps/v1', kind='Deployment') }}"
+    k8s:
+      state: "present"
+      definition: "{{ item | combine({'spec': {'template': {'metadata': {'annotations': {'operator.kiali.io/tls-profile': tls_profile_value }}}}}, recursive=True) }}"
+    loop: "{{ kiali_deployments_list }}"
+    when:
+    - item.spec.template.metadata.annotations['operator.kiali.io/tls-profile'] | default('') != tls_profile_value
+
+  # The cluster TLS adherence (spec.tlsAdherence) gates whether a Kiali CR may
+  # set deployment.tls_config.source to 'config' (rejected under strict adherence -
+  # see roles/*/kiali-deploy/tasks/openshift/tls-adherence.yml, which also scales a
+  # running server to zero when the gate trips). The Kiali server resolves the TLS
+  # profile itself, so re-rendering the CR resources is not enough: the CRs must be
+  # re-reconciled so the gate re-evaluates. The Kiali CRs are touched the same way
+  # the OSSMConsole CRs are above, but on a dedicated annotation whose value is
+  # the GATE DECISION, not the raw adherence:
+  # - "strict" when the gate would reject an explicit TLS config (any adherence
+  #   value other than exactly LegacyAdheringComponentsOnly), "non-strict" when it
+  #   would allow one (absent/empty/legacy) - the same normalization the gate
+  #   applies, so only the outcome matters;
+  # - patching an unchanged value is a no-op, so the touch fires only when the
+  #   decision actually changes - a transition between two strict values (say a
+  #   future enum value replacing StrictAllComponents) does not trigger a needless
+  #   reconcile, and unrelated APIServer/cluster edits do not either;
+  # - only this task writes the annotation, so the guard is exact (the shared
+  #   kiali.io/reconcile annotation is also written with timestamps by the
+  #   namespace fan-out, which would defeat the guard);
+  # - non-strict -> strict re-runs the gate on running installs (a CR with an
+  #   explicit TLS config now fails its reconcile and its server is scaled to
+  #   zero); strict -> non-strict recovers it automatically (the reconcile
+  #   succeeds and the deployment is scaled back up).
+  # The CR spec is deliberately never modified here - enforcement lives entirely
+  # in the gate, and the user's declared configuration stays as they wrote it.
+  # Adherence is deliberately NOT part of the operator.kiali.io/tls-profile restart
+  # hash above: it defines no TLS settings of its own, it only gates CR validity.
+  - name: "Re-reconcile the Kiali CRs because the cluster TLS adherence changed [{{ apiserver.metadata.name }}]"
+    ignore_errors: yes
+    vars:
+      tls_adherence_gate: "{{ 'strict' if (apiserver.get('spec', {}).get('tlsAdherence') | default('LegacyAdheringComponentsOnly', true)) != 'LegacyAdheringComponentsOnly' else 'non-strict' }}"
+      kiali_cr_list: "{{ query('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali') }}"
+    k8s:
+      state: "present"
+      definition: "{{ item | combine({'metadata': {'annotations': {'operator.kiali.io/tls-adherence': tls_adherence_gate}}}, recursive=True) }}"
+    loop: "{{ kiali_cr_list }}"
+    when:
+    - item.metadata.annotations['operator.kiali.io/tls-adherence'] | default('') != tls_adherence_gate
+

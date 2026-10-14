@@ -1,0 +1,160 @@
+# Bounded in-cluster TLS probe for the OSSM Console service.
+#
+# Runs the OSSMC plugin image under test (the same image the Deployment uses)
+# as a Job in the install namespace, and verifies the served TLS with
+# openssl s_client against the ossmconsole service: certificate verification
+# against the service CA, a real asset over HTTP, the pinned TLS 1.3 suites
+# (a CCM-only client must be rejected, with a positive control proving the
+# client could have negotiated CCM), and TLS 1.2 accepted or refused per the
+# cluster profile.
+#
+# Required vars:
+#   tls_probe_expect_tls12: "allowed" or "refused"
+
+- name: Create a ConfigMap to receive the service CA bundle
+  k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: ossmconsole-tls-probe-cabundle
+        namespace: "{{ ossmconsole.install_namespace }}"
+        annotations:
+          service.beta.openshift.io/inject-cabundle: "true"
+
+- name: Wait for the service CA bundle to be injected
+  k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    namespace: "{{ ossmconsole.install_namespace }}"
+    name: ossmconsole-tls-probe-cabundle
+  register: tls_probe_cabundle
+  until: tls_probe_cabundle.resources[0].data['service-ca.crt'] is defined
+  retries: "{{ wait_retries }}"
+  delay: 5
+
+- name: Run the TLS probe Job with the image under test
+  vars:
+    probe_image: "{{ ossmconsole_deployment.resources[0].spec.template.spec.containers[0].image }}"
+    probe_host: "ossmconsole.{{ ossmconsole.install_namespace }}.svc"
+    probe_script: |
+      set -u
+      HOST="{{ probe_host }}"
+      CA=/cabundle/service-ca.crt
+      fail() { echo "PROBE-FAIL: $1"; exit 1; }
+      # 1. Verified handshake serving a real plugin asset. s_client prints its
+      #    connection and verification messages to stderr and only the HTTP
+      #    response to stdout, so stderr is captured separately for diagnostics
+      #    and stdout stays clean for the status-line check.
+      ERRLOG=/tmp/probe-handshake.err
+      HTTP=$(printf 'GET /plugin-manifest.json HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "$HOST" | \
+        timeout 20 openssl s_client -connect "$HOST:9443" -servername "$HOST" -verify_hostname "$HOST" \
+          -CAfile "$CA" -verify_return_error -quiet 2>"$ERRLOG") || { cat "$ERRLOG" >&2; fail "verified handshake failed"; }
+      echo "$HTTP" | head -1 | grep -q " 200 " || fail "asset not served: $(echo "$HTTP" | head -1)"
+      # 2. Negotiation must stay inside the policy. -quiet suppresses the
+      #    "Verify return code" summary line, so verification is proven by the
+      #    completed handshake itself (-verify_return_error aborts on failure)
+      #    plus the absence of "verify error" lines.
+      INFO=$(echo | timeout 20 openssl s_client -connect "$HOST:9443" -servername "$HOST" -verify_hostname "$HOST" \
+          -CAfile "$CA" -verify_return_error 2>&1) || fail "handshake failed"
+      echo "$INFO" | grep -E 'New, TLSv1\.[23],' > /dev/null || fail "unexpected protocol: $(echo "$INFO" | grep 'New,')"
+      if echo "$INFO" | grep -q 'verify error'; then fail "certificate not verified"; fi
+      # 3. Positive control: this client CAN negotiate CCM against a CCM-only server.
+      #    'New, TLSv1' (not just 'New,') is the success pattern: a REJECTED
+      #    handshake also prints a "New, (NONE), Cipher is (NONE)" line.
+      CONTROL=skip
+      openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=ctrl -keyout /tmp/k.pem -out /tmp/c.pem > /dev/null 2>&1
+      openssl s_server -accept 127.0.0.1:8443 -cert /tmp/c.pem -key /tmp/k.pem -tls1_3 \
+        -ciphersuites TLS_AES_128_CCM_SHA256 -quiet -naccept 1 > /dev/null 2>&1 &
+      sleep 2
+      if echo | timeout 10 openssl s_client -connect 127.0.0.1:8443 -tls1_3 -ciphersuites TLS_AES_128_CCM_SHA256 2>&1 | grep -q 'New, TLSv1'; then
+        CONTROL=ok
+      fi
+      wait
+      # 4. A CCM-only client must be rejected by OSSMC (only counted when the control succeeded).
+      if [ "$CONTROL" = "ok" ]; then
+        if echo | timeout 20 openssl s_client -connect "$HOST:9443" -tls1_3 -ciphersuites TLS_AES_128_CCM_SHA256 2>&1 | grep -q 'New, TLSv1'; then
+          fail "CCM-only TLS 1.3 client was served (issue 874)"
+        fi
+      else
+        echo "PROBE-WARN: CCM positive control did not negotiate; CCM rejection not counted"
+      fi
+      # 5. TLS 1.2 allowed or refused per the cluster profile.
+      if [ "{{ tls_probe_expect_tls12 }}" = "allowed" ]; then
+        echo | timeout 20 openssl s_client -connect "$HOST:9443" -servername "$HOST" -CAfile "$CA" \
+          -verify_return_error -tls1_2 2>&1 | grep -q 'New, TLSv1.2,' || fail "TLS 1.2 expected but refused"
+      else
+        if echo | timeout 20 openssl s_client -connect "$HOST:9443" -tls1_2 2>&1 | grep -q 'New, TLSv1.2,'; then
+          fail "TLS 1.2 served but the profile refuses it"
+        fi
+      fi
+      echo "PROBE-PASS"
+  k8s:
+    state: present
+    definition:
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: ossmconsole-tls-probe
+        namespace: "{{ ossmconsole.install_namespace }}"
+      spec:
+        backoffLimit: 1
+        activeDeadlineSeconds: 180
+        template:
+          metadata:
+            name: ossmconsole-tls-probe
+          spec:
+            restartPolicy: Never
+            containers:
+            - name: probe
+              image: "{{ probe_image }}"
+              imagePullPolicy: "{{ ossmconsole.image_pull_policy }}"
+              command: ["/bin/sh", "-c", "{{ probe_script }}"]
+              volumeMounts:
+              - name: cabundle
+                readOnly: true
+                mountPath: /cabundle
+            volumes:
+            - name: cabundle
+              configMap:
+                name: ossmconsole-tls-probe-cabundle
+                defaultMode: 420
+
+- name: Wait for the TLS probe Job to finish
+  k8s_info:
+    api_version: batch/v1
+    kind: Job
+    namespace: "{{ ossmconsole.install_namespace }}"
+    name: ossmconsole-tls-probe
+  register: tls_probe_job
+  until: tls_probe_job.resources[0].status.succeeded is defined or tls_probe_job.resources[0].status.failed is defined
+  retries: "{{ wait_retries }}"
+  delay: 5
+
+- name: Fetch the probe pod logs
+  k8s_log:
+    namespace: "{{ ossmconsole.install_namespace }}"
+    label_selectors:
+    - job-name=ossmconsole-tls-probe
+  register: tls_probe_logs
+
+- name: Assert the TLS probe passed
+  assert:
+    that:
+    - tls_probe_job.resources[0].status.succeeded is defined
+    - tls_probe_job.resources[0].status.succeeded | int == 1
+    - "'PROBE-PASS' in tls_probe_logs.log"
+    fail_msg: "TLS probe failed: {{ tls_probe_logs.log | default('no logs') }}"
+
+- name: Debug the probe output
+  debug:
+    msg: "{{ tls_probe_logs.log | split('\n') | select('search', 'PROBE-') | list }}"
+
+- name: Remove the TLS probe Job and CA ConfigMap
+  k8s:
+    state: absent
+    definition: "{{ item }}"
+  loop:
+  - "{{ {'apiVersion': 'batch/v1', 'kind': 'Job', 'metadata': {'name': 'ossmconsole-tls-probe', 'namespace': ossmconsole.install_namespace}} }}"
+  - "{{ {'apiVersion': 'v1', 'kind': 'ConfigMap', 'metadata': {'name': 'ossmconsole-tls-probe-cabundle', 'namespace': ossmconsole.install_namespace}} }}"

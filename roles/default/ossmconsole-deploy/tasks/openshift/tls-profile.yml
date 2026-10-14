@@ -1,0 +1,52 @@
+# Read the OpenShift cluster TLS security profile and resolve it to the nginx
+# TLS directives for the OSSM Console plugin. The operator renders the resolved
+# directives into the nginx-conf ConfigMap and restarts the pod when they change
+# (see tasks/main.yml). A definitively invalid profile scales the deployment to
+# zero: OSSMC serves nothing rather than serve outside the cluster's policy.
+# A failed read fails the reconcile and changes nothing, so the last good
+# ConfigMap keeps serving.
+
+- include_tasks: update-status-progress.yml
+  vars:
+    status_progress_message: "Determining cluster TLS security profile"
+
+- name: Read the cluster TLS security profile (APIServer/cluster)
+  set_fact:
+    ossmconsole_cluster_apiserver: "{{ query('kubernetes.core.k8s', api_version='config.openshift.io/v1', kind='APIServer', resource_name='cluster') }}"
+
+- name: Fail clearly when APIServer/cluster cannot be read
+  fail:
+    msg: >-
+      APIServer/cluster was not found; the cluster TLS security profile cannot be
+      determined. Nothing was changed.
+  when: ossmconsole_cluster_apiserver | length == 0
+
+- name: Resolve the cluster TLS security profile to nginx directives
+  set_fact:
+    ossmconsole_tls: "{{ ossmconsole_cluster_apiserver[0].get('spec', {}).get('tlsSecurityProfile') | resolve_tls_profile }}"
+
+- name: Set the deployment replica count from the profile verdict
+  set_fact:
+    ossmconsole_replicas: "{{ 0 if not ossmconsole_tls.valid else 1 }}"
+
+- name: Report TLS profile resolution warnings
+  debug:
+    msg: "OSSM Console TLS profile: {{ item }}"
+  loop: "{{ ossmconsole_tls.warnings }}"
+  when: ossmconsole_tls.warnings | length > 0
+
+- name: Report the resolved TLS profile
+  debug:
+    msg: >-
+      OSSM Console TLS profile [{{ ossmconsole_tls.profile }}] valid={{ ossmconsole_tls.valid }};
+      nginx directives: {{ ossmconsole_tls.directives | join(' | ') }}
+  when: ossmconsole_tls.valid
+
+- name: Report an invalid cluster TLS profile
+  debug:
+    msg: >-
+      OSSM Console: the cluster TLS profile is definitively invalid; scaling the
+      deployment to zero. OSSMC serves nothing rather than serve outside the
+      cluster's policy, and recovers when a valid profile is observed. Reason:
+      {{ ossmconsole_tls.reason }}
+  when: not ossmconsole_tls.valid

@@ -1,3 +1,5 @@
+- include_tasks: tls-profile.yml
+
 - include_tasks: update-status-progress.yml
   vars:
     status_progress_message: "Creating core resources"
@@ -6,7 +8,10 @@
   include_tasks: process-resource.yml
   vars:
     process_resource_templates:
-    - "templates/openshift/configmap-nginx.yaml"
+    # When the profile is definitively invalid, the nginx-conf ConfigMap is left
+    # untouched (the last good config stays on disk) and the deployment scales
+    # to zero; see tasks/openshift/tls-profile.yml.
+    - "{{ 'templates/openshift/configmap-nginx.yaml' if ossmconsole_tls.valid else '' }}"
     - "templates/openshift/configmap-plugin.yaml"
     - "templates/openshift/deployment.yaml"
     - "templates/openshift/service.yaml"
