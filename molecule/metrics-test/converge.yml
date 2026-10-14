@@ -24,6 +24,7 @@
       prom_namespace_label: "namespace"
 
   # Operator metrics are always enabled - make sure we have them
+  # use common/query-prometheus.yml to send prometheus queries and obtain its results
 
   # an operator http-metric
   - import_tasks: ../common/query-prometheus.yml
