@@ -489,7 +489,8 @@
 # If it did, we need to restart the pod so it can re-read the new config.
 - name: Force the OSSM Console pod to restart if necessary
   vars:
-    keyname: "{{ 'ConfigMap-plugin-conf' }}"
+    plugin_conf_key: "{{ 'ConfigMap-plugin-conf' }}"
+    nginx_conf_key: "{{ 'ConfigMap-nginx-conf' }}"
     updated_deployment: "{{ lookup(k8s_plugin, resource_name='ossmconsole', namespace=ossmconsole_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'ossmconsole.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
@@ -497,9 +498,17 @@
   when:
   - deployment_is_new == False
   - processed_resources_dict is defined
-  - processed_resources_dict[keyname] is defined
-  - processed_resources_dict[keyname].changed == True
-  - processed_resources_dict[keyname].method == "update"
+  - >
+    (
+      processed_resources_dict[plugin_conf_key] is defined
+      and processed_resources_dict[plugin_conf_key].changed
+      and processed_resources_dict[plugin_conf_key].method == 'update'
+    )
+    or (
+      processed_resources_dict[nginx_conf_key] is defined
+      and processed_resources_dict[nginx_conf_key].changed
+      and processed_resources_dict[nginx_conf_key].method == 'update'
+    )
 
 - include_tasks: update-status-progress.yml
   vars:

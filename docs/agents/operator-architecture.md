@@ -69,8 +69,9 @@ Watchers added only in the namespace-scoped variants (`watches-k8s-ns.yaml`, `wa
 
 Watchers added only in the OpenShift variants (`watches-os.yaml`, `watches-os-ns.yaml`):
 - `kiali.io/v1alpha1 OSSMConsole` → `playbooks/ossmconsole-deploy.yml` (with finalizer pointing to `ossmconsole-remove.yml`). This watcher also sets `snakeCaseParameters: False`, which means the OSSMConsole CR spec keys are passed to Ansible as-is (camelCase) rather than being converted to snake_case.
+- `config.openshift.io/v1 APIServer` (cluster) → `playbooks/cluster-apiserver-tls-changed.yml` with `watchClusterScopedResources: True`. Reconciles the singleton OSSMConsole CR when cluster TLS adherence/profile changes and restarts Kiali instances that use `deployment.tls_config.source` auto when honoring is required.
 
-All watchers set `watchDependentResources: False` and `watchClusterScopedResources: False` — the operator does not track child or cluster-scoped resources for cascading reconciliation; each CR event triggers a full playbook run. `watchAnnotationsChanges: True` is set for the Kiali CR so annotation-only changes (without spec changes) also trigger reconciliation.
+Most watchers set `watchDependentResources: False` and `watchClusterScopedResources: False` — the operator does not track child resources for cascading reconciliation; each CR event triggers a full playbook run. The APIServer watch is an exception and is cluster-scoped. `watchAnnotationsChanges: True` is set for the Kiali CR so annotation-only changes (without spec changes) also trigger reconciliation.
 
 ## Playbook Entry Points
 
@@ -86,6 +87,7 @@ Additional playbooks:
 - `kiali-new-namespace-detected.yml` — triggered (in namespace-scoped mode only) when a new Namespace is created. Touches the `kiali.io/reconcile` annotation on any Kiali CRs that were created *before* the new namespace, causing the operator to reconcile them. Those reconciliations then determine whether the new namespace should be accessible. It does not directly provision RBAC.
 - `kiali-multi-cluster-secret-detected.yml` — triggered when a Secret with label `kiali.io/kiali-multi-cluster-secret: "true"` changes. Patches the `operator.kiali.io/last-updated` annotation on all Kiali Deployments in the same namespace, forcing a pod restart so the servers pick up the updated remote cluster credentials. Does not touch Kiali CRs or trigger CR reconciliation.
 - `ossmconsole-deploy.yml` / `ossmconsole-remove.yml` — OSSMConsole equivalents. OSSMConsole is a **singleton**: only the oldest OSSMConsole CR is active at any time. If multiple CRs exist, the deploy role compares creation timestamps and defers to the oldest; any newer CR triggers `meta: end_play` and is silently ignored. The deploy role also enforces additional runtime gates: (1) the OpenShift Console must be installed and not in `Removed` state, or deployment is aborted; (2) the Kiali Service name/namespace/port are auto-discovered from the Kiali Route if not specified in `spec.kiali`, and the role fails if Kiali cannot be found; (3) the major.minor version of the Kiali Server must match the OSSMC version being installed — this check can be bypassed with `OSSMC_SKIP_VERSION_CHECK=true` on the operator Deployment.
+- `cluster-apiserver-tls-changed.yml` — triggered by cluster `APIServer` updates on OpenShift. Reconciles only the oldest OSSMConsole CR (avoids `meta: end_play` in a multi-CR loop), skips work when the `nginx-conf` ConfigMap TLS fingerprint is unchanged, and restarts auto-TLS Kiali servers when cluster TLS profile honoring is active.
 - `kiali-default-supported-images.yml` / `ossmconsole-default-supported-images.yml` — version-to-image mapping files loaded as vars (not playbooks)
 
 ## Role Versioning Strategy

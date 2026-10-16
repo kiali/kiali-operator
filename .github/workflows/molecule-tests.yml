@@ -6,6 +6,7 @@ on:
     paths:
       - 'molecule/**'
       - 'roles/default/**'
+      - 'playbooks/**'
       - '.github/workflows/molecule-tests.yml'
 
 permissions: read-all
@@ -37,6 +38,13 @@ jobs:
         CHANGED_FILES=$(git diff --name-only "origin/${BASE_REF}...HEAD")
         echo "Changed files:"
         echo "$CHANGED_FILES"
+
+        # OSSMC nginx TLS filter mapping (Ansible asserts; no unittest)
+        if echo "$CHANGED_FILES" | grep -qE '^(roles/default/ossmconsole-deploy/filter_plugins|playbooks/filter_plugins|playbooks/cluster-apiserver|playbooks/ossmconsole|playbooks/tasks/kiali-restart-cluster-tls|molecule/ossmconsole-common/ossmconsole_nginx_tls_filter_asserts)'; then
+          if [[ "$TESTS_TO_RUN" != *"ossmconsole-nginx-tls-filter-test"* ]]; then
+            TESTS_TO_RUN="$TESTS_TO_RUN ossmconsole-nginx-tls-filter-test"
+          fi
+        fi
 
         # Extract molecule test names from changed files
         CHANGED_MOLECULE_TESTS=$(echo "$CHANGED_FILES" | grep '^molecule/' | cut -d'/' -f2 | grep -E '.*-test$' | sort -u)

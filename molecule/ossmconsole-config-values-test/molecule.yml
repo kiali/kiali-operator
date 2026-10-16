@@ -12,6 +12,7 @@ provisioner:
   config_options:
     defaults:
       callbacks_enabled: junit
+      filter_plugins: ../../roles/default/ossmconsole-deploy/filter_plugins
   playbooks:
     destroy: ../ossmconsole-default/destroy.yml
     prepare: ../ossmconsole-default/prepare.yml

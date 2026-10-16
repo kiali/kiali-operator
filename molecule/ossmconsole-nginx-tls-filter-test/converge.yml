@@ -1,0 +1,15 @@
+- name: OSSMC nginx TLS filters (role filter_plugins copy)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - import_tasks: ../ossmconsole-common/ossmconsole_nginx_tls_filter_asserts.yml
+
+- name: OSSMC nginx TLS filters (playbook filter_plugins copy)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment:
+    ANSIBLE_FILTER_PLUGINS: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/playbooks/filter_plugins"
+  tasks:
+    - import_tasks: ../ossmconsole-common/ossmconsole_nginx_tls_filter_asserts.yml

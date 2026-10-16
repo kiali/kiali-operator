@@ -1,0 +1,103 @@
+# Triggered when config.openshift.io/v1 APIServer cluster changes (TLS profile or tlsAdherence).
+# Reconciles OSSMC and restarts Kiali servers when cluster TLS policy requires it.
+
+- hosts: localhost
+  gather_facts: no
+  collections:
+  - kubernetes.core
+  tasks:
+
+  - name: Read cluster APIServer TLS configuration
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+    register: cluster_apiserver_tls
+
+  - name: Abort when cluster APIServer resource is missing
+    fail:
+      msg: "APIServer/cluster not found; cannot reconcile OSSMC nginx TLS."
+    when: cluster_apiserver_tls.resources | default([]) | length == 0
+
+  - name: Record TLS adherence policy
+    set_fact:
+      cluster_tls_adherence: "{{ cluster_apiserver_tls.resources[0].spec.tlsAdherence | default('') }}"
+
+  - name: Determine whether cluster TLS profile must be honored
+    set_fact:
+      cluster_honor_tls_profile: "{{ cluster_tls_adherence | should_honor_cluster_tls_profile }}"
+
+  - name: Compute cluster APIServer TLS fingerprint
+    set_fact:
+      cluster_apiserver_tls_fingerprint: "{{ cluster_apiserver_tls.resources[0].spec | cluster_apiserver_tls_fingerprint }}"
+
+  - name: Log cluster TLS adherence handling
+    debug:
+      msg: "APIServer TLS event: tlsAdherence=[{{ cluster_tls_adherence | default('') }}] honor_cluster_profile=[{{ cluster_honor_tls_profile }}]"
+
+  - name: Determine the default playbook
+    include_vars:
+      file: default-playbook.yml
+      name: default_playbook
+
+  - name: Determine the default supported images for all known versions
+    include_vars:
+      file: ossmconsole-default-supported-images.yml
+      name: supported_ossmconsole_images
+
+  - name: Find all OSSMConsole custom resources
+    k8s_info:
+      api_version: kiali.io/v1alpha1
+      kind: OSSMConsole
+    register: ossmconsole_crs
+
+  - name: Select oldest OSSMConsole CR (singleton controller)
+    set_fact:
+      oldest_ossmconsole_cr: "{{ (ossmconsole_crs.resources | sort(attribute='metadata.creationTimestamp'))[0] }}"
+    when: ossmconsole_crs.resources | default([]) | length > 0
+
+  - name: Read nginx-conf ConfigMap TLS fingerprint from active OSSMC deployment
+    vars:
+      ossmconsole_target_namespace: "{{ oldest_ossmconsole_cr.status.deployment.namespace | default(oldest_ossmconsole_cr.spec.deployment.namespace | default(oldest_ossmconsole_cr.metadata.namespace)) }}"
+    k8s_info:
+      api_version: v1
+      kind: ConfigMap
+      name: nginx-conf
+      namespace: "{{ ossmconsole_target_namespace }}"
+    register: ossmconsole_nginx_conf_cm
+    when: oldest_ossmconsole_cr is defined
+
+  - name: Skip when cluster APIServer TLS settings are unchanged
+    meta: end_play
+    when:
+    - cluster_apiserver_tls_fingerprint is defined
+    - ossmconsole_nginx_conf_cm is defined
+    - ossmconsole_nginx_conf_cm.resources | default([]) | length > 0
+    - (ossmconsole_nginx_conf_cm.resources[0].metadata.annotations['ossmconsole.kiali.io/apiserver-tls-fingerprint'] | default('')) == cluster_apiserver_tls_fingerprint
+
+  - name: Determine OSSMConsole version for image resolution
+    set_fact:
+      version: "{{ oldest_ossmconsole_cr.spec.version | default(default_playbook.playbook) }}"
+    when: oldest_ossmconsole_cr is defined
+
+  - name: Prepare OSSMConsole supported images (RELATED_IMAGE overrides)
+    include_tasks: tasks/ossmconsole-supported-images-prep.yml
+    when: oldest_ossmconsole_cr is defined
+
+  - name: Reconcile OSSM Console (nginx TLS from profile when tlsAdherence requires it)
+    include_role:
+      name: "{{ version }}/ossmconsole-deploy"
+    vars:
+      _kiali_io_ossmconsole: "{{ oldest_ossmconsole_cr }}"
+      ansible_operator_meta:
+        name: "{{ oldest_ossmconsole_cr.metadata.name }}"
+        namespace: "{{ oldest_ossmconsole_cr.metadata.namespace }}"
+      deployment: "{{ oldest_ossmconsole_cr.spec.deployment | default({}) }}"
+      internal: "{{ oldest_ossmconsole_cr.spec.internal | default({}) }}"
+      kiali: "{{ oldest_ossmconsole_cr.spec.kiali | default({}) }}"
+    when: oldest_ossmconsole_cr is defined
+
+  # Kiali reads the cluster TLS profile only at startup when deployment.tls_config.source is auto.
+  - name: Restart Kiali servers that use tls_config.source auto
+    include_tasks: tasks/kiali-restart-cluster-tls-auto.yml
+    when: cluster_honor_tls_profile | bool

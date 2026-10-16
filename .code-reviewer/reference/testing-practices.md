@@ -10,6 +10,13 @@ All operator testing is done via **Molecule integration tests**. No unit test fr
 
 Molecule uses the Ansible provisioner and runs against a real Kubernetes or OpenShift cluster.
 
+### OSSMC nginx TLS filter plugins
+
+Pure-Python TLS mapping logic is validated with **Ansible `assert` tasks** that invoke the filter plugins (see `molecule/ossmconsole-common/ossmconsole_nginx_tls_filter_asserts.yml`). Run via:
+
+- `molecule/ossmconsole-nginx-tls-filter-test` — role and playbook `filter_plugins` copies (CI when OSSMC TLS playbooks/filters change)
+- `molecule/ossmconsole-config-values-test` — same asserts plus rendered `nginx-conf` on OpenShift
+
 ## Scenario Structure
 
 Each test scenario lives in `molecule/<name>-test/` and must contain:
@@ -40,6 +47,7 @@ scenario:
 ## CI Behavior
 
 - **`config-values-test` always runs** in CI on every PR that touches `molecule/`, `roles/default/`, or the molecule CI workflow. It is the baseline smoke test and must always pass.
+- **`ossmconsole-nginx-tls-filter-test`** runs when OSSMC nginx TLS filter/playbook files change (see `molecule-tests.yml`).
 - Additional scenarios run automatically in CI only when their files are modified in the PR.
 
 ### config-values-test coverage requirement
@@ -49,3 +57,4 @@ When new configuration settings are added to the operator, `config-values-test` 
 | Date | Change | Trigger |
 |------|--------|---------|
 | 2026-04-08 | Initial generation | /code-reviewer:setup |
+| 2026-10-09 | Document OSSMC nginx TLS filter Molecule asserts | OSSMC cluster TLS profile work |

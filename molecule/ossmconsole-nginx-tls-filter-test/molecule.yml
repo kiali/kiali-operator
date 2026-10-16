@@ -1,0 +1,24 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: $DORP
+platforms:
+- name: default
+  groups:
+  - k8s
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callbacks_enabled: junit
+      filter_plugins: ../../roles/default/ossmconsole-deploy/filter_plugins
+  playbooks:
+    prepare: prepare.yml
+    destroy: destroy.yml
+scenario:
+  name: ossmconsole-nginx-tls-filter-test
+  test_sequence:
+  - prepare
+  - converge
+  - destroy
