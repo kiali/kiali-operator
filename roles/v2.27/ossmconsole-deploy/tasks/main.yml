@@ -485,15 +485,20 @@
 
 # If something changed that can only be picked up when the OSSM Console pod starts up, then restart the pod using a rolling restart
 # We do this by checking the processed_resources_dict created by process-resources.yml task. If there is a map key
-# with the kind (ConfigMap) with the name of our config map appended to it ("-plugin-conf") see if that config map changed.
-# If it did, we need to restart the pod so it can re-read the new config.
+# with the kind (ConfigMap) with the name of our config map appended to it ("-plugin-conf" or "-nginx-conf") see if that config map changed.
+# If it did, we need to restart the pod so it can re-read the new config. This includes the nginx-conf ConfigMap,
+# whose TLS directives follow the cluster TLS security profile.
 - name: Force the OSSM Console pod to restart if necessary
   vars:
-    keyname: "{{ 'ConfigMap-plugin-conf' }}"
     updated_deployment: "{{ lookup(k8s_plugin, resource_name='ossmconsole', namespace=ossmconsole_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'ossmconsole.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
     definition: "{{ updated_deployment }}"
+  loop:
+  - "ConfigMap-plugin-conf"
+  - "ConfigMap-nginx-conf"
+  loop_control:
+    loop_var: keyname
   when:
   - deployment_is_new == False
   - processed_resources_dict is defined
