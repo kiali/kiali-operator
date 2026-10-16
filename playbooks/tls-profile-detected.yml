@@ -32,7 +32,7 @@
   - name: "Touch the OSSMConsole CRs because the cluster TLS security profile changed [{{ __apiserver.metadata.name }}]"
     ignore_errors: yes
     vars:
-      current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:00Z') }}"
+      current_timestamp_string: "{{ now(utc=True, fmt='%Y-%m-%dT%H:%M:%SZ') }}"
       ossmconsole_cr_list: "{{ query('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='OSSMConsole') }}"
     k8s:
       state: "present"
