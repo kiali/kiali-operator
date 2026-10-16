@@ -118,6 +118,56 @@
   - current_cr.status.deployment.namespace is defined
   - current_cr.status.deployment.namespace != ossmconsole_vars.deployment.namespace
 
+# The OSSMC pod reads the cluster TLS profile (apiservers/cluster) itself. The operator grants that read access with a
+# dedicated ClusterRole and ClusterRoleBinding, so it must be able to create both. Fail early with an actionable message if it cannot.
+- name: Determine if the operator can create the OSSMC TLS profile RBAC - can_i create clusterroles
+  register: can_i_create_clusterroles
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterroles
+          verb: create
+
+- name: Determine if the operator can create the OSSMC TLS profile RBAC - can_i create clusterrolebindings
+  register: can_i_create_clusterrolebindings
+  ignore_errors: yes
+  k8s:
+    state: present
+    definition:
+      apiVersion: authorization.k8s.io/v1
+      kind: SelfSubjectAccessReview
+      spec:
+        resourceAttributes:
+          group: rbac.authorization.k8s.io
+          resource: clusterrolebindings
+          verb: create
+
+- name: Fail if the operator cannot create the OSSMC TLS profile RBAC - clusterroles
+  fail:
+    msg: "OSSMC requires the operator to be able to create ClusterRoles and ClusterRoleBindings in order to grant the OSSMC ServiceAccount read access to the cluster TLS profile (apiservers/cluster). If the operator was installed with the Helm chart, set clusterRoleCreator=true."
+  when:
+  - can_i_create_clusterroles is defined
+  - can_i_create_clusterroles.result is defined
+  - can_i_create_clusterroles.result.status is defined
+  - can_i_create_clusterroles.result.status.allowed is defined
+  - can_i_create_clusterroles.result.status.allowed == False
+
+- name: Fail if the operator cannot create the OSSMC TLS profile RBAC - clusterrolebindings
+  fail:
+    msg: "OSSMC requires the operator to be able to create ClusterRoles and ClusterRoleBindings in order to grant the OSSMC ServiceAccount read access to the cluster TLS profile (apiservers/cluster). If the operator was installed with the Helm chart, set clusterRoleCreator=true."
+  when:
+  - can_i_create_clusterrolebindings is defined
+  - can_i_create_clusterrolebindings.result is defined
+  - can_i_create_clusterrolebindings.result.status is defined
+  - can_i_create_clusterrolebindings.result.status.allowed is defined
+  - can_i_create_clusterrolebindings.result.status.allowed == False
+
 # Determine if the user explicitly asked for a specific Kiali service. If they did, we treat Kiali as a
 # hard requirement and will fail the install if it cannot be found/reached. If they did not, this is the
 # common case where we opportunistically look for Kiali but are willing to install OSSMC without it
@@ -485,11 +535,14 @@
 
 # If something changed that can only be picked up when the OSSM Console pod starts up, then restart the pod using a rolling restart
 # We do this by checking the processed_resources_dict created by process-resources.yml task. If there is a map key
-# with the kind (ConfigMap) with the name of our config map appended to it ("-plugin-conf") see if that config map changed.
-# If it did, we need to restart the pod so it can re-read the new config.
+# with the kind (ConfigMap) with the name of one of our config maps appended to it ("-plugin-conf" or "-nginx-conf")
+# see if that config map was updated. If either was, we need to restart the pod (once) so it can re-read the new config.
+# Both config maps are mounted via subPath, which the kubelet never refreshes in a running container.
 - name: Force the OSSM Console pod to restart if necessary
   vars:
-    keyname: "{{ 'ConfigMap-plugin-conf' }}"
+    keynames:
+    - "ConfigMap-plugin-conf"
+    - "ConfigMap-nginx-conf"
     updated_deployment: "{{ lookup(k8s_plugin, resource_name='ossmconsole', namespace=ossmconsole_vars.deployment.namespace, api_version='apps/v1', kind='Deployment') | combine({'spec': {'template': {'metadata': {'annotations': {'ossmconsole.kiali.io/last-updated': lookup('pipe','date') }}}}}, recursive=True) }}"
   k8s:
     state: "present"
@@ -497,9 +550,7 @@
   when:
   - deployment_is_new == False
   - processed_resources_dict is defined
-  - processed_resources_dict[keyname] is defined
-  - processed_resources_dict[keyname].changed == True
-  - processed_resources_dict[keyname].method == "update"
+  - (processed_resources_dict | dict2items | selectattr('key', 'in', keynames) | selectattr('value.changed', 'equalto', True) | selectattr('value.method', 'equalto', 'update') | list | length) > 0
 
 - include_tasks: update-status-progress.yml
   vars:

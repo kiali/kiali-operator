@@ -23,13 +23,22 @@ spec:
       - name: {{ n }}
 {% endfor %}
 {% endif %}
+      serviceAccountName: ossmconsole-service-account
+      automountServiceAccountToken: true
       containers:
       - name: ossmconsole
         image: {{ ossmconsole_vars.deployment.imageName }}{{ '@' + ossmconsole_vars.deployment.imageDigest if ossmconsole_vars.deployment.imageDigest != '' else '' }}:{{ ossmconsole_vars.deployment.imageVersion }}
         imagePullPolicy: {{ ossmconsole_vars.deployment.imagePullPolicy }}
+        # The helper in the OSSMC image reads the cluster TLS profile, renders /tmp/ossmc/tls.conf and supervises nginx.
+        command: ["/usr/local/bin/ossmc-tls-profile"]
         ports:
         - containerPort: 9443
           protocol: TCP
+        readinessProbe:
+          exec:
+            command: ["/usr/local/bin/ossmc-tls-profile", "probe"]
+          periodSeconds: 5
+          timeoutSeconds: 3
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false

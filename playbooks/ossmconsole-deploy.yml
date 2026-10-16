@@ -23,6 +23,15 @@
     set_fact:
       version: "{{ version | default(default_playbook.playbook) }}"
 
+  - name: If the version is changing, run the old version-specific remove role
+    include_role:
+      name: "{{ _kiali_io_ossmconsole.status.specVersion }}/ossmconsole-remove"
+    when:
+    - skip_reconciliation is not defined or skip_reconciliation == False
+    - _kiali_io_ossmconsole.status is defined
+    - _kiali_io_ossmconsole.status.specVersion is defined
+    - version != _kiali_io_ossmconsole.status.specVersion
+
   - name: Determine the default supported images for all known versions
     include_vars:
       file: "ossmconsole-default-supported-images.yml"
@@ -71,4 +80,3 @@
 
   - debug:
       msg: OSSMCONSOLE RECONCILIATION IS DONE.
-

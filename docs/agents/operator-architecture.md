@@ -88,6 +88,8 @@ Additional playbooks:
 - `ossmconsole-deploy.yml` / `ossmconsole-remove.yml` — OSSMConsole equivalents. OSSMConsole is a **singleton**: only the oldest OSSMConsole CR is active at any time. If multiple CRs exist, the deploy role compares creation timestamps and defers to the oldest; any newer CR triggers `meta: end_play` and is silently ignored. The deploy role also enforces additional runtime gates: (1) the OpenShift Console must be installed and not in `Removed` state, or deployment is aborted; (2) the Kiali Service name/namespace/port are auto-discovered from the Kiali Route if not specified in `spec.kiali`, and the role fails if Kiali cannot be found; (3) the major.minor version of the Kiali Server must match the OSSMC version being installed — this check can be bypassed with `OSSMC_SKIP_VERSION_CHECK=true` on the operator Deployment.
 - `kiali-default-supported-images.yml` / `ossmconsole-default-supported-images.yml` — version-to-image mapping files loaded as vars (not playbooks)
 
+When an OSSMConsole CR changes `spec.version`, `ossmconsole-deploy.yml` runs the installed version's remove role before including the requested version's deploy role, as `kiali-deploy.yml` does for Kiali. A version whose deploy role creates TLS profile resources must include their cleanup in its corresponding remove role. An image change within the same `spec.version` follows the normal reconciliation path.
+
 ## Role Versioning Strategy
 
 Roles are organized under `roles/<version>/`:
@@ -145,6 +147,32 @@ It removes:
 - OpenShift ConsoleLinks — removed directly in `tasks/main.yml`
 - The `kiali.io/<instance>.home` label from the `kiali-signing-key` secret (indicating this instance no longer uses it); if no other instance labels remain on the secret, the secret itself is also deleted
 - The `kiali.io/<instance>.home` namespace labels applied by the deploy role
+
+## OSSMC Cluster TLS Profile Support
+
+OSSMC's nginx follows the OpenShift cluster TLS profile (`APIServer/cluster` `spec.tlsSecurityProfile`). **All profile logic lives in the OSSMC image**, not in the operator: a Python helper in the image (`/usr/local/bin/ossmc-tls-profile`) reads the profile with the pod's ServiceAccount, renders `/tmp/ossmc/tls.conf`, supervises nginx, and applies profile changes inside the running container (no pod restart, no operator reconcile). The operator has no TLS logic: no filter plugins, no APIServer reads or watches (`watches-os.yaml`/`watches-os-ns.yaml` are unchanged), and no TLS directives in its templates. Each versioned deploy role that enables the helper is responsible for its static resources and pod wiring, with matching cleanup in the corresponding remove role:
+
+| Resource / wiring | Where |
+|---|---|
+| ServiceAccount `ossmconsole-service-account` (CR namespace) | `roles/default/ossmconsole-deploy/templates/openshift/serviceaccount.yaml` |
+| ClusterRole `ossmconsole-tls` — exactly `get` on `config.openshift.io` `apiservers`, `resourceNames: [cluster]` | `templates/openshift/clusterrole.yaml` |
+| ClusterRoleBinding `ossmconsole-tls` — binds that ClusterRole to the ServiceAccount in the CR namespace | `templates/openshift/clusterrolebinding.yaml` |
+| Deployment: `command: ["/usr/local/bin/ossmc-tls-profile"]`, `serviceAccountName`, `automountServiceAccountToken: true`, exec readiness probe `ossmc-tls-profile probe` (`periodSeconds: 5`, `timeoutSeconds: 3`), **no liveness probe** | `templates/openshift/deployment.yaml` |
+| `nginx-conf` ConfigMap: `include /tmp/ossmc/tls.conf;` instead of hardcoded `ssl_protocols`/`ssl_ecdh_curve` | `templates/openshift/configmap-nginx.yaml` |
+
+`tasks/openshift/os-main.yml` processes the templates in this order: `serviceaccount`, `clusterrole`, `clusterrolebinding`, `configmap-nginx`, `configmap-plugin`, `deployment`, `service`, `consoleplugin` — the pod's identity and RBAC exist before it starts, and a new pod never mounts an old `nginx.conf`. The final restart block in `tasks/main.yml` restarts the pod once when either `ConfigMap-plugin-conf` or `ConfigMap-nginx-conf` was actually updated (`changed` and `method == update`); an unchanged reconcile does not restart it.
+
+**Cluster-RBAC prerequisite.** Before processing any template, the deploy role runs `SelfSubjectAccessReview`s for `create` on `clusterroles` and `clusterrolebindings`. If either is denied, reconciliation fails with:
+
+> OSSMC requires the operator to be able to create ClusterRoles and ClusterRoleBindings in order to grant the OSSMC ServiceAccount read access to the cluster TLS profile (apiservers/cluster). If the operator was installed with the Helm chart, set clusterRoleCreator=true.
+
+OSSMC installation (including OSSMC without Kiali) therefore requires an operator that can create ClusterRoles/ClusterRoleBindings and holds `get` on `config.openshift.io/apiservers` (it cannot grant what it does not hold). The OSSM OLM bundle grants both. A Helm install with an effective `clusterRoleCreator=false` cannot install OSSMC (Kiali-only installs remain valid).
+
+**Template/image pairing.** A versioned deploy role that starts the TLS profile helper requires an OSSMC image that contains it. On `master`, `ossmconsole-default-supported-images.yml` maps `default` to `operator_version`, which resolves to the plugin's `latest` image. Historical roles that retain the legacy contract set no helper command, so they continue running nginx with static TLS configuration even when using an image that contains the helper; upgrading the image alone does not enable the feature. A helper-enabled role paired with an image that lacks the helper fails at container start (missing executable). A custom image override (`ALLOW_AD_HOC_OSSMCONSOLE_IMAGE` with `spec.deployment.imageName`/`imageVersion`) used with a helper-enabled role must implement the same helper/include/probe contract; otherwise the pod fails to start or never becomes ready.
+
+**Removal and version switches.** The cluster-scoped ClusterRole/ClusterRoleBinding cannot be cleaned up by namespaced owner references. A remove role must explicitly delete the TLS profile ServiceAccount and cluster RBAC when its matching deploy role creates them. CR deletion and `spec.version` changes invoke the installed version's remove role before removing or replacing its installation. A switch to a legacy version therefore removes the old helper wiring and TLS RBAC; switching to a version whose deploy role enables the helper creates them again. Roles that retain the legacy contract do not create these TLS resources. Remove roles end the play for ignored (non-oldest) CRs before cleanup.
+
+**Molecule coverage.** `ossmconsole-default` checks that helper resources exist and are removed for versions whose deploy roles create them. `ossmconsole-tls-profile-test` verifies the wiring, the helper's readiness, the real TLS behavior against the cluster's current profile (without changing cluster configuration) and the ServiceAccount's least privilege. `ossmconsole-lite-test` verifies the helper works without Kiali and checks that changing to a legacy version removes the installed version's helper RBAC. See [Molecule Test Suite](molecule-testing.md) for how to run them (OpenShift only).
 
 ## Ansible Collections
 

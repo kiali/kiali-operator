@@ -1,0 +1,348 @@
+# Probes the TLS behavior of the OSSMC nginx listener (ossmconsole.<ns>.svc:9443) from inside the cluster.
+#
+# This scenario never changes APIServer/cluster. It therefore verifies only the behavior selected by the
+# cluster's current TLS profile: for example, it asserts either TLS 1.2 acceptance or TLS 1.2 rejection,
+# not both in one run. Client-capability controls can also leave a rejection assertion not run. The plugin
+# repository's container integration tests provide the full controlled profile matrix.
+#
+# A short-lived Job runs the OSSMC plugin image under test (the same image as the Deployment, so no other client image
+# has to be chosen, pinned or pulled) with its command overridden to run "openssl s_client" against the Service. The
+# client trusts only the OpenShift service CA, which is injected into a test-owned ConfigMap, and verifies the
+# Service hostname. Each case prints its raw s_client output between markers; this file parses the verification
+# status, negotiated protocol, cipher and HTTP status out of the Job log and asserts on them.
+#
+# Positive controls run inside the same Job against a local "openssl s_server" on 127.0.0.1 with a throwaway
+# self-signed certificate. A rejection by OSSMC only counts as server-side enforcement if the exact same client
+# invocation succeeds against the local control server; otherwise the case is reported as not run.
+#
+# Required vars:
+#   tls_probe_namespace          - namespace of the ossmconsole Service (also where the Job and ConfigMap are created)
+#   tls_probe_image              - the OSSMC plugin image under test
+#   tls_probe_image_pull_policy  - the pull policy to use for that image
+#   tls_probe_image_pull_secrets - list of {name: ...} pull secrets (may be empty)
+#   tls_probe_expect_tls12       - true if the cluster TLS profile means OSSMC must accept TLS 1.2, false if it must reject it
+
+- name: Define the TLS probe resources
+  set_fact:
+    tls_probe_job_name: ossmconsole-tls-probe
+    tls_probe_configmap_name: ossmconsole-tls-probe-cabundle
+    tls_probe_host: "ossmconsole.{{ tls_probe_namespace }}.svc"
+    tls_probe_allowed_tls13_suites:
+    - TLS_AES_128_GCM_SHA256
+    - TLS_AES_256_GCM_SHA384
+    - TLS_CHACHA20_POLY1305_SHA256
+    tls_probe_cases:
+    - ccm_control
+    - tls12_control
+    - tls13_verified
+    - tls13_ccm_only
+    - tls12
+    - wrong_ca
+    - wrong_hostname
+
+- block:
+  - name: Remove any TLS probe Job left over from a previous run
+    k8s:
+      state: absent
+      api_version: batch/v1
+      kind: Job
+      namespace: "{{ tls_probe_namespace }}"
+      name: "{{ tls_probe_job_name }}"
+      delete_options:
+        propagationPolicy: Foreground
+      wait: yes
+      wait_timeout: 120
+
+  - name: Create the TLS probe trust ConfigMap - OpenShift injects the service CA into it
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: "{{ tls_probe_configmap_name }}"
+          namespace: "{{ tls_probe_namespace }}"
+          annotations:
+            service.beta.openshift.io/inject-cabundle: "true"
+
+  - name: Wait for the service CA to be injected into the TLS probe trust ConfigMap
+    k8s_info:
+      api_version: v1
+      kind: ConfigMap
+      namespace: "{{ tls_probe_namespace }}"
+      name: "{{ tls_probe_configmap_name }}"
+    register: tls_probe_configmap
+    until:
+    - tls_probe_configmap.resources | length == 1
+    - tls_probe_configmap.resources[0].data is defined
+    - tls_probe_configmap.resources[0].data['service-ca.crt'] is defined
+    - tls_probe_configmap.resources[0].data['service-ca.crt'] | length > 0
+    retries: 60
+    delay: 5
+
+  - name: Run the TLS probe Job
+    k8s:
+      state: present
+      definition:
+        apiVersion: batch/v1
+        kind: Job
+        metadata:
+          name: "{{ tls_probe_job_name }}"
+          namespace: "{{ tls_probe_namespace }}"
+          labels:
+            app.kubernetes.io/name: ossmconsole-tls-probe
+        spec:
+          backoffLimit: 0
+          activeDeadlineSeconds: 300
+          template:
+            metadata:
+              labels:
+                app.kubernetes.io/name: ossmconsole-tls-probe
+            spec:
+              restartPolicy: Never
+              automountServiceAccountToken: false
+              imagePullSecrets: "{{ tls_probe_image_pull_secrets }}"
+              containers:
+              - name: probe
+                image: "{{ tls_probe_image }}"
+                imagePullPolicy: "{{ tls_probe_image_pull_policy }}"
+                command: ["/bin/bash", "-c"]
+                args:
+                - |
+                  set -u
+                  HOST="{{ tls_probe_host }}"
+                  PORT=9443
+                  CA=/probe-ca/service-ca.crt
+                  ASSET=/plugin-manifest.json
+                  WORK=/tmp/ossmc-tls-probe
+                  mkdir -p "${WORK}"
+                  # The exact client arguments of the CCM-only and TLS 1.2 cases, shared by the controls and the real probes.
+                  CCM_ARGS="-tls1_3 -ciphersuites TLS_AES_128_CCM_SHA256"
+                  TLS12_ARGS="-tls1_2"
+
+                  # run_case <name> <host> <port> <servername> <cafile> <path> [extra s_client args...]
+                  run_case() {
+                    local name="$1" host="$2" port="$3" sni="$4" cafile="$5" path="$6"
+                    shift 6
+                    echo "=== BEGIN CASE ${name}"
+                    printf 'GET %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n' "${path}" "${sni}" \
+                      | timeout 20 openssl s_client -connect "${host}:${port}" -servername "${sni}" -verify_hostname "${sni}" \
+                          -verify_return_error -CAfile "${cafile}" -no_ticket -ign_eof "$@" 2>&1 | head -c 65536
+                    local rc="${PIPESTATUS[1]}"
+                    echo
+                    echo "=== RC ${name} ${rc}"
+                    echo "=== END CASE ${name}"
+                  }
+
+                  # start_control_server <port> [extra s_server args...] - local positive-control server
+                  start_control_server() {
+                    local port="$1"
+                    shift
+                    openssl s_server -accept "127.0.0.1:${port}" -cert "${WORK}/control.crt" -key "${WORK}/control.key" -www -quiet "$@" > "${WORK}/s_server_${port}.log" 2>&1 &
+                    CONTROL_PID=$!
+                    for _ in $(seq 1 50); do
+                      if ss -ltn 2>/dev/null | grep -q "127.0.0.1:${port} "; then return 0; fi
+                      sleep 0.1
+                    done
+                    echo "control server on port ${port} did not start:"
+                    cat "${WORK}/s_server_${port}.log"
+                  }
+
+                  openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=localhost" -addext "subjectAltName=DNS:localhost" \
+                    -keyout "${WORK}/control.key" -out "${WORK}/control.crt" > "${WORK}/req.log" 2>&1 || cat "${WORK}/req.log"
+
+                  # CCM positive control: proves this client can negotiate TLS_AES_128_CCM_SHA256 when a server offers it.
+                  start_control_server 18443 -tls1_3 -ciphersuites TLS_AES_128_CCM_SHA256
+                  run_case ccm_control 127.0.0.1 18443 localhost "${WORK}/control.crt" / ${CCM_ARGS}
+                  kill "${CONTROL_PID}" 2>/dev/null; wait "${CONTROL_PID}" 2>/dev/null
+
+                  # TLS 1.2 positive control: proves this client can negotiate TLS 1.2 when a server offers it.
+                  start_control_server 18444 -tls1_2
+                  run_case tls12_control 127.0.0.1 18444 localhost "${WORK}/control.crt" / ${TLS12_ARGS}
+                  kill "${CONTROL_PID}" 2>/dev/null; wait "${CONTROL_PID}" 2>/dev/null
+
+                  # Probes against OSSMC.
+                  run_case tls13_verified "${HOST}" "${PORT}" "${HOST}" "${CA}" "${ASSET}" -tls1_3
+                  run_case tls13_ccm_only "${HOST}" "${PORT}" "${HOST}" "${CA}" "${ASSET}" ${CCM_ARGS}
+                  run_case tls12 "${HOST}" "${PORT}" "${HOST}" "${CA}" "${ASSET}" ${TLS12_ARGS}
+
+                  # Verification controls: a CA that did not sign the serving certificate, and a name not in it.
+                  run_case wrong_ca "${HOST}" "${PORT}" "${HOST}" "${WORK}/control.crt" "${ASSET}" -tls1_3
+                  run_case wrong_hostname "${HOST}" "${PORT}" "wrong-hostname.${HOST}" "${CA}" "${ASSET}" -tls1_3
+                  echo "=== PROBE DONE"
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  privileged: false
+                  runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
+                  capabilities:
+                    drop:
+                    - ALL
+                volumeMounts:
+                - name: probe-ca
+                  mountPath: /probe-ca
+                  readOnly: true
+              volumes:
+              - name: probe-ca
+                configMap:
+                  name: "{{ tls_probe_configmap_name }}"
+
+  - name: Wait for the TLS probe Job to finish
+    k8s_info:
+      api_version: batch/v1
+      kind: Job
+      namespace: "{{ tls_probe_namespace }}"
+      name: "{{ tls_probe_job_name }}"
+    register: tls_probe_job
+    until:
+    - tls_probe_job.resources | length == 1
+    - (tls_probe_job.resources[0].status.succeeded | default(0) | int) > 0 or (tls_probe_job.resources[0].status.failed | default(0) | int) > 0
+    retries: 72
+    delay: 5
+
+  - name: Find the TLS probe Pod
+    k8s_info:
+      api_version: v1
+      kind: Pod
+      namespace: "{{ tls_probe_namespace }}"
+      label_selectors:
+      - "job-name={{ tls_probe_job_name }}"
+    register: tls_probe_pod
+
+  - name: Get the TLS probe output
+    k8s_log:
+      namespace: "{{ tls_probe_namespace }}"
+      name: "{{ tls_probe_pod.resources[0].metadata.name }}"
+      container: probe
+    register: tls_probe_log
+
+  - name: Dump the TLS probe output
+    debug:
+      msg: "{{ tls_probe_log.log_lines }}"
+
+  - name: Assert the TLS probe Job ran to completion
+    assert:
+      that:
+      - (tls_probe_job.resources[0].status.succeeded | default(0) | int) > 0
+      - "'=== PROBE DONE' in tls_probe_log.log"
+      fail_msg: "The TLS probe Job did not complete: {{ tls_probe_job.resources[0].status }}"
+
+  # Classify each case. The order matters:
+  # - timeout:           the client hit its 20s deadline
+  # - connect_error:     the endpoint was missing or unreachable (no TLS exchange happened)
+  # - client_limitation: the local client could not even build a ClientHello with the requested parameters
+  # - verify_failed:     the handshake was aborted because certificate or hostname verification failed
+  # - ok:                a handshake completed (a real cipher was negotiated)
+  # - rejected:          the server refused the handshake (no shared cipher/protocol)
+  # - unknown:           anything else
+  - name: Parse the TLS probe results
+    vars:
+      case_out: "{{ tls_probe_log.log | regex_search('=== BEGIN CASE ' + item + '\\n(?s:.*?)=== END CASE ' + item) | default('', true) }}"
+      rc: "{{ case_out | regex_search('=== RC ' + item + ' (\\d+)', '\\1') | default(['-1'], true) | first }}"
+      verify: "{{ case_out | regex_search('Verify return code: (\\d+)', '\\1') | default([''], true) | first }}"
+      protocol: "{{ case_out | regex_search('Protocol\\s*:\\s*(\\S+)', '\\1') | default([''], true) | first }}"
+      cipher: "{{ case_out | regex_search('Cipher is (\\S+)', '\\1') | default([''], true) | first }}"
+      http: "{{ case_out | regex_search('(?m)^HTTP/1\\.[01] (\\d{3})', '\\1') | default([''], true) | first }}"
+      outcome: >-
+        {%- if case_out == '' -%}missing
+        {%- elif rc == '124' -%}timeout
+        {%- elif case_out is search('connect:errno=|Connection refused|Name or service not known|No route to host|getaddrinfo|BIO_lookup|Connection timed out') -%}connect_error
+        {%- elif case_out is search('no ciphers available|no protocols available|no cipher match|Error with command|Unknown option|unknown option') -%}client_limitation
+        {%- elif case_out is search('verify error:num=|certificate verify failed') or (verify != '' and verify != '0') -%}verify_failed
+        {%- elif cipher != '' and cipher != '(NONE)' and rc == '0' -%}ok
+        {%- elif case_out is search('alert handshake failure|alert protocol version|no shared cipher|unsupported protocol|alert insufficient security|SSL alert number (40|70|71)|wrong version number') or cipher == '(NONE)' -%}rejected
+        {%- else -%}unknown
+        {%- endif -%}
+    set_fact:
+      tls_probe_results: "{{ tls_probe_results | default({}) | combine({item: {'rc': rc, 'verify': verify, 'protocol': protocol, 'cipher': cipher, 'http': http, 'outcome': outcome}}) }}"
+    loop: "{{ tls_probe_cases }}"
+
+  - name: TLS probe results
+    debug:
+      msg: "{{ tls_probe_results }}"
+
+  - name: Assert the wrong-CA and wrong-hostname controls fail certificate verification and never get an HTTP response
+    assert:
+      that:
+      - tls_probe_results.wrong_ca.outcome == 'verify_failed'
+      - tls_probe_results.wrong_ca.http == ''
+      - tls_probe_results.wrong_hostname.outcome == 'verify_failed'
+      - tls_probe_results.wrong_hostname.http == ''
+      fail_msg: "Verification failures must abort the handshake: wrong_ca={{ tls_probe_results.wrong_ca }} wrong_hostname={{ tls_probe_results.wrong_hostname }}"
+
+  - name: Assert a verified TLS 1.3 handshake serves a real plugin asset
+    assert:
+      that:
+      - tls_probe_results.tls13_verified.outcome == 'ok'
+      - tls_probe_results.tls13_verified.verify == '0'
+      - tls_probe_results.tls13_verified.protocol == 'TLSv1.3'
+      - tls_probe_results.tls13_verified.cipher in tls_probe_allowed_tls13_suites
+      - tls_probe_results.tls13_verified.http == '200'
+      fail_msg: "Expected a verified TLS 1.3 handshake with one of {{ tls_probe_allowed_tls13_suites }} and HTTP 200: {{ tls_probe_results.tls13_verified }}"
+
+  - name: Assert OSSMC rejects a CCM-only TLS 1.3 client (only meaningful if the CCM positive control succeeded)
+    assert:
+      that:
+      - tls_probe_results.tls13_ccm_only.outcome == 'rejected'
+      - tls_probe_results.tls13_ccm_only.http == ''
+      fail_msg: "OSSMC must reject a TLS_AES_128_CCM_SHA256-only client with a handshake failure (not a timeout, connect or verification error): {{ tls_probe_results.tls13_ccm_only }}"
+    when:
+    - tls_probe_results.ccm_control.outcome == 'ok'
+
+  - name: Report that the CCM case was not run
+    debug:
+      msg: "WARNING: CCM case NOT RUN - the CCM positive control did not negotiate TLS_AES_128_CCM_SHA256 with the local control server, so a rejection by OSSMC would not prove server-side enforcement: {{ tls_probe_results.ccm_control }}"
+    when:
+    - tls_probe_results.ccm_control.outcome != 'ok'
+
+  - name: Assert OSSMC accepts TLS 1.2 as the cluster TLS profile requires
+    assert:
+      that:
+      - tls_probe_results.tls12.outcome == 'ok'
+      - tls_probe_results.tls12.verify == '0'
+      - tls_probe_results.tls12.protocol == 'TLSv1.2'
+      - tls_probe_results.tls12.http == '200'
+      fail_msg: "The cluster TLS profile allows TLS 1.2, so OSSMC must accept a verified TLS 1.2 handshake: {{ tls_probe_results.tls12 }}"
+    when:
+    - tls_probe_expect_tls12 | bool
+
+  - name: Assert OSSMC rejects TLS 1.2 as the cluster TLS profile requires (only meaningful if the TLS 1.2 positive control succeeded)
+    assert:
+      that:
+      - tls_probe_results.tls12.outcome == 'rejected'
+      - tls_probe_results.tls12.http == ''
+      fail_msg: "The cluster TLS profile requires TLS 1.3, so OSSMC must reject a TLS 1.2 client with a handshake failure (not a timeout, connect or verification error): {{ tls_probe_results.tls12 }}"
+    when:
+    - not (tls_probe_expect_tls12 | bool)
+    - tls_probe_results.tls12_control.outcome == 'ok'
+
+  - name: Report that the TLS 1.2 rejection case was not run
+    debug:
+      msg: "WARNING: TLS 1.2 rejection case NOT RUN - the TLS 1.2 positive control did not negotiate TLS 1.2 with the local control server: {{ tls_probe_results.tls12_control }}"
+    when:
+    - not (tls_probe_expect_tls12 | bool)
+    - tls_probe_results.tls12_control.outcome != 'ok'
+
+  always:
+  - name: Delete the TLS probe Job
+    k8s:
+      state: absent
+      api_version: batch/v1
+      kind: Job
+      namespace: "{{ tls_probe_namespace }}"
+      name: "{{ tls_probe_job_name }}"
+      delete_options:
+        propagationPolicy: Foreground
+      wait: yes
+      wait_timeout: 120
+    ignore_errors: yes
+
+  - name: Delete the TLS probe trust ConfigMap
+    k8s:
+      state: absent
+      api_version: v1
+      kind: ConfigMap
+      namespace: "{{ tls_probe_namespace }}"
+      name: "{{ tls_probe_configmap_name }}"
+    ignore_errors: yes

@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ossmconsole-tls
+  labels: {{ ossmconsole_resource_metadata_labels }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ossmconsole-tls
+subjects:
+- kind: ServiceAccount
+  name: ossmconsole-service-account
+  namespace: "{{ ossmconsole_vars.deployment.namespace }}"

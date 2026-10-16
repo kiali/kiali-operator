@@ -2,10 +2,19 @@
   vars:
     status_progress_message: "Creating core resources"
 
+# The ServiceAccount, ClusterRole and ClusterRoleBinding give the OSSMC pod read access to the cluster TLS profile
+# (get on apiservers/cluster). They are created before the ConfigMaps and the Deployment so the pod has its identity
+# and permissions when it starts. The ConfigMaps come before the Deployment so a new pod never mounts an old nginx.conf.
+# Any version-specific deploy role that installs the TLS profile helper must create these resources, and its
+# corresponding remove role must include them in resource removal. Version changes invoke the installed version's
+# remove role before deploying the requested version.
 - name: Create OSSM Console objects on OpenShift
   include_tasks: process-resource.yml
   vars:
     process_resource_templates:
+    - "templates/openshift/serviceaccount.yaml"
+    - "templates/openshift/clusterrole.yaml"
+    - "templates/openshift/clusterrolebinding.yaml"
     - "templates/openshift/configmap-nginx.yaml"
     - "templates/openshift/configmap-plugin.yaml"
     - "templates/openshift/deployment.yaml"
