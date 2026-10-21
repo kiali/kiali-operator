@@ -5,7 +5,10 @@ metadata:
   namespace: "{{ ossmconsole_vars.deployment.namespace }}"
   labels: {{ ossmconsole_resource_metadata_labels }}
 spec:
-  replicas: 1
+  # Scaled to zero when the cluster TLS profile is definitively invalid
+  # (see tasks/openshift/tls-profile.yml). Rendered unquoted with an int cast:
+  # the API rejects a string for this int32 field.
+  replicas: {{ ossmconsole_replicas | default(1) | int }}
   selector:
     matchLabels:
       app.kubernetes.io/name: ossmconsole
@@ -30,6 +33,16 @@ spec:
         ports:
         - containerPort: 9443
           protocol: TCP
+        # The kubelet performs a real TLS handshake, so a config that cannot
+        # complete one (bad groups, ECDSA-only ciphers with an RSA certificate)
+        # leaves the pod Unready instead of serving broken TLS.
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /plugin-manifest.json
+            port: 9443
+          periodSeconds: 10
+          timeoutSeconds: 3
         securityContext:
           allowPrivilegeEscalation: false
           privileged: false

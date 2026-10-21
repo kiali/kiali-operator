@@ -28,6 +28,66 @@
     debug:
       msg: "OpenShift TLSSecurityProfile: {{ openshift_apiserver.resources[0].spec.tlsSecurityProfile | default('not set - will use Intermediate') }}"
 
+  # ========================================
+  # Record and normalize the cluster TLS adherence (spec.tlsAdherence).
+  # The gate under test (roles/*/kiali-deploy/tasks/openshift/tls-adherence.yml)
+  # rejects deployment.tls_config.source=config when the adherence is strict, so
+  # the config-mode phases of this test need the cluster in a legacy state. The
+  # cluster's starting state is not guaranteed, so normalize it here rather than
+  # demanding manual pre-configuration. The original value is restored at the end.
+  # NOTE: the API forbids removing tlsAdherence once set, so an originally-absent
+  # field ends the test at LegacyAdheringComponentsOnly (behaviorally identical
+  # to absent) rather than absent.
+  # ========================================
+
+  - name: Record the original cluster TLS adherence
+    set_fact:
+      original_tls_adherence: "{{ openshift_apiserver.resources[0].spec.tlsAdherence | default('') }}"
+
+  - name: Debug the original cluster TLS adherence
+    debug:
+      msg: "Original APIServer/cluster spec.tlsAdherence: [{{ original_tls_adherence }}]"
+
+  - name: Normalize the cluster TLS adherence to Legacy for the config-mode phases
+    k8s:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+      state: present
+      merge_type: merge
+      definition:
+        spec:
+          tlsAdherence: LegacyAdheringComponentsOnly
+    ignore_errors: yes
+    when:
+    - original_tls_adherence != ''
+    - original_tls_adherence != 'LegacyAdheringComponentsOnly'
+
+  - name: Read back the cluster TLS adherence after normalization
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+    register: normalized_apiserver
+    when:
+    - original_tls_adherence != ''
+    - original_tls_adherence != 'LegacyAdheringComponentsOnly'
+
+  - name: Fail if a non-legacy adherence could not be cleared
+    vars:
+      normalized_tls_adherence: "{{ normalized_apiserver.resources[0].spec.tlsAdherence | default('') }}"
+    assert:
+      that:
+      - normalized_tls_adherence == '' or normalized_tls_adherence == 'LegacyAdheringComponentsOnly'
+      fail_msg: >-
+        The cluster TLS adherence is [{{ normalized_tls_adherence }}] and could not be set
+        to LegacyAdheringComponentsOnly; the config-mode phases of this test cannot run
+        under a strict adherence. Set APIServer/cluster spec.tlsAdherence to
+        LegacyAdheringComponentsOnly and re-run.
+    when:
+    - original_tls_adherence != ''
+    - original_tls_adherence != 'LegacyAdheringComponentsOnly'
+
   # Determine the expected minimum TLS version based on OpenShift profile type
   - name: Determine expected minimum TLS version from OpenShift profile
     set_fact:
@@ -182,6 +242,265 @@
       - kiali_api_final_response.status == 200
       fail_msg: "Kiali API should respond after switching back to auto mode"
 
+  # ========================================
+  # TLS adherence: a strict cluster must not leave a Kiali server running on an
+  # explicit TLS config - the gate fails the reconcile AND removes the running
+  # deployment (the same stance the OSSM Console role takes for an invalid
+  # cluster TLS profile). Recovery is automatic: fixing the CR or relaxing the
+  # cluster adherence re-creates the deployment on the next successful
+  # reconcile (which also works with the HPA enabled - a created deployment
+  # defaults to one replica and the HPA takes it from there).
+  # ========================================
+
+  # Start from the state the gate must stop: an explicit TLS config (under legacy).
+  - name: Set tls_config.source to config for the adherence test
+    set_fact:
+      adherence_test_deployment: "{{ kiali_cr.spec.deployment | combine({'tls_config': {'source': 'config', 'min_version': 'TLSv1.3'}}) }}"
+
+  - import_tasks: ../common/set_kiali_cr.yml
+    vars:
+      new_kiali_cr: "{{ kiali_cr | combine({'spec': kiali_cr.spec | combine({'deployment': adherence_test_deployment})}, recursive=True) }}"
+
+  - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+  - import_tasks: ../common/wait_for_kiali_running.yml
+  - import_tasks: ../common/tasks.yml
+  - import_tasks: ../asserts/pod_asserts.yml
+
+  - name: Assert the explicit config reconciled under legacy adherence
+    assert:
+      that:
+      - kiali_configmap.deployment.tls_config.source == "config"
+      fail_msg: "Kiali ConfigMap should show deployment.tls_config.source=config under legacy adherence"
+
+  # Try to make the cluster strict. The field is feature-gated (TLSAdherence feature
+  # gate), so clusters without the gate either reject the patch or silently prune the
+  # field - acceptance is detected by reading the value back, not by the patch result.
+  - name: Attempt to set the cluster TLS adherence to strict
+    k8s:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+      state: present
+      merge_type: merge
+      definition:
+        spec:
+          tlsAdherence: StrictAllComponents
+    ignore_errors: yes
+
+  - name: Read back the cluster TLS adherence
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+    register: strict_apiserver
+
+  - name: Determine whether the strict adherence was accepted
+    set_fact:
+      strict_adherence_accepted: "{{ strict_apiserver.resources[0].spec.tlsAdherence | default('') == 'StrictAllComponents' }}"
+
+  - name: The strict adherence is not available on this cluster - skipping the strict gate assertions
+    debug:
+      msg: >-
+        APIServer/cluster spec.tlsAdherence could not be set to StrictAllComponents
+        (the TLSAdherence feature gate is not enabled on this cluster). The strict-path
+        gate assertions are skipped; the legacy/inert paths were fully exercised.
+    when: not (strict_adherence_accepted | bool)
+
+  - name: Strict adherence assertions
+    when: strict_adherence_accepted | bool
+    block:
+
+    - name: Set the expected adherence gate values
+      set_fact:
+        strict_gate_value: "strict"
+        non_strict_gate_value: "non-strict"
+
+    # The APIServer watch fires the fan-out playbook, which touches the Kiali CR
+    # with the gate decision - that touch is what re-runs the gate.
+    - name: Wait for the fan-out to touch the Kiali CR with the strict gate value
+      k8s_info:
+        api_version: kiali.io/v1alpha1
+        kind: Kiali
+        name: "{{ custom_resource.metadata.name }}"
+        namespace: "{{ cr_namespace }}"
+      register: touched_cr
+      until:
+      - touched_cr is success
+      - touched_cr.resources[0].metadata.annotations['operator.kiali.io/tls-adherence'] | default('') == strict_gate_value
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    # ansible-operator reports the failed reconcile as a status condition:
+    # type=Failure, status=True, reason=Failed, message=<the fail task message>.
+    - name: Wait for the reconcile to fail on the gate
+      k8s_info:
+        api_version: kiali.io/v1alpha1
+        kind: Kiali
+        name: "{{ custom_resource.metadata.name }}"
+        namespace: "{{ cr_namespace }}"
+      register: failed_cr
+      until:
+      - failed_cr is success
+      - failed_cr | json_query('resources[*].status.conditions[?type==`Failure`].status') | flatten | join == 'True'
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    - name: Assert the CR status reports the gate failure
+      vars:
+        failure_message: "{{ failed_cr | json_query('resources[*].status.conditions[?type==`Failure`].message') | flatten | join(' ') }}"
+      assert:
+        that:
+        - failure_message is search('tlsAdherence')
+        - failure_message is search('deployment.tls_config.source')
+        - failure_message is search('has been removed')
+        fail_msg: "The Kiali CR status must report the adherence gate failure; got: {{ failure_message }}"
+
+    # The server must not keep serving outside the cluster's policy: the
+    # deployment is removed (not scaled to zero - see the gate file for why).
+    - name: Assert the Kiali deployment was removed
+      k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ kiali.install_namespace }}"
+        label_selectors:
+        - "app.kubernetes.io/instance=kiali"
+      register: stopped_deployment
+      until:
+      - stopped_deployment is success
+      - stopped_deployment.resources | length == 0
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    - name: Assert the Kiali pods are gone
+      k8s_info:
+        api_version: v1
+        kind: Pod
+        namespace: "{{ kiali.install_namespace }}"
+        label_selectors:
+        - "app.kubernetes.io/instance=kiali"
+      register: stopped_pods
+      until:
+      - stopped_pods is success
+      - stopped_pods.resources | length == 0
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    - name: Assert the failed reconcile changed nothing else
+      vars:
+        stopped_configmap: "{{ lookup('kubernetes.core.k8s', api_version='v1', kind='ConfigMap', namespace=kiali.install_namespace, resource_name='kiali') }}"
+      assert:
+        that:
+        - (stopped_configmap.data['config.yaml'] | from_yaml).deployment.tls_config.source == 'config'
+        fail_msg: "The failed reconcile must leave the last good ConfigMap in place"
+
+    # Recovery: fixing the CR (back to auto) must reconcile successfully even
+    # while strict - and scale the server back up.
+    - name: Set tls_config.source back to auto to recover
+      set_fact:
+        recovery_deployment: "{{ kiali_cr.spec.deployment | combine({'tls_config': {'source': 'auto'}}) }}"
+
+    - import_tasks: ../common/set_kiali_cr.yml
+      vars:
+        new_kiali_cr: "{{ kiali_cr | combine({'spec': kiali_cr.spec | combine({'deployment': recovery_deployment})}, recursive=True) }}"
+
+    - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+    - import_tasks: ../common/wait_for_kiali_running.yml
+    - import_tasks: ../common/tasks.yml
+    - import_tasks: ../asserts/pod_asserts.yml
+
+    - name: Assert recovery to auto under strict adherence
+      assert:
+        that:
+        - kiali_configmap.deployment.tls_config.source == "auto"
+        fail_msg: "Kiali ConfigMap should show deployment.tls_config.source=auto after recovery"
+
+    # Strict -> Legacy: the fan-out must stamp the non-strict decision and Kiali stays healthy.
+    - name: Set the cluster TLS adherence back to Legacy
+      k8s:
+        api_version: config.openshift.io/v1
+        kind: APIServer
+        name: cluster
+        state: present
+        merge_type: merge
+        definition:
+          spec:
+            tlsAdherence: LegacyAdheringComponentsOnly
+
+    - name: Wait for the fan-out to stamp the non-strict gate value
+      k8s_info:
+        api_version: kiali.io/v1alpha1
+        kind: Kiali
+        name: "{{ custom_resource.metadata.name }}"
+        namespace: "{{ cr_namespace }}"
+      register: recovered_cr
+      until:
+      - recovered_cr is success
+      - recovered_cr.resources[0].metadata.annotations['operator.kiali.io/tls-adherence'] | default('') == non_strict_gate_value
+      retries: "{{ wait_retries }}"
+      delay: 5
+
+    - import_tasks: ../common/wait_for_kiali_cr_changes.yml
+    - import_tasks: ../common/wait_for_kiali_running.yml
+    - import_tasks: ../asserts/pod_asserts.yml
+
+  # ========================================
+  # Unrelated APIServer changes must not re-reconcile the Kiali CRs: the touch
+  # annotation only changes when the adherence itself changes.
+  # ========================================
+
+  - name: Read the current cluster TLS adherence for the no-op check
+    k8s_info:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+    register: noop_apiserver
+
+  # The first invocation seeds the touch annotation with the current adherence gate value
+  # (the CR has no annotation yet when the strict branch was skipped). Passing the
+  # real tlsSecurityProfile also keeps the Kiali restart task a no-op.
+  - name: Run the tls-profile fan-out playbook the way the APIServer watch does
+    command: >
+      ansible-playbook {{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/playbooks/tls-profile-detected.yml
+      -e '{ "apiserver": { "metadata": { "name": "cluster" },
+             "spec": { "tlsSecurityProfile": {{ noop_apiserver.resources[0].spec.tlsSecurityProfile | default(None) | to_json }},
+                        "tlsAdherence": "{{ noop_apiserver.resources[0].spec.tlsAdherence | default('LegacyAdheringComponentsOnly') }}" } } }'
+
+  - name: Record the Kiali CR touch annotation before the unrelated change
+    set_fact:
+      tls_adherence_annotation_before: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name).metadata.annotations['operator.kiali.io/tls-adherence'] | default('') }}"
+
+  - name: Run the fan-out playbook again with an APIServer change that does NOT touch the adherence
+    command: >
+      ansible-playbook {{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') }}/playbooks/tls-profile-detected.yml
+      -e '{ "apiserver": { "metadata": { "name": "cluster" },
+             "spec": { "tlsSecurityProfile": {{ noop_apiserver.resources[0].spec.tlsSecurityProfile | default(None) | to_json }},
+                        "tlsAdherence": "{{ noop_apiserver.resources[0].spec.tlsAdherence | default('LegacyAdheringComponentsOnly') }}",
+                        "audit": { "profile": "Unrelated" } } } }'
+
+  - name: Assert the Kiali CR touch annotation is unchanged by the unrelated change
+    vars:
+      tls_adherence_annotation_after: "{{ lookup('kubernetes.core.k8s', api_version='kiali.io/v1alpha1', kind='Kiali', namespace=cr_namespace, resource_name=custom_resource.metadata.name).metadata.annotations['operator.kiali.io/tls-adherence'] | default('') }}"
+    assert:
+      that:
+      - tls_adherence_annotation_after == tls_adherence_annotation_before
+      fail_msg: "An unrelated APIServer/cluster edit must not re-reconcile the Kiali CRs (annotation before={{ tls_adherence_annotation_before }} after={{ tls_adherence_annotation_after }})"
+
+  # Leave the cluster as found. The one exception: an originally-absent field ends
+  # at LegacyAdheringComponentsOnly because the API forbids removing it once set.
+  - name: Restore the original cluster TLS adherence
+    k8s:
+      api_version: config.openshift.io/v1
+      kind: APIServer
+      name: cluster
+      state: present
+      merge_type: merge
+      definition:
+        spec:
+          tlsAdherence: "{{ original_tls_adherence }}"
+    when:
+    - original_tls_adherence != ''
+    - original_tls_adherence != 'LegacyAdheringComponentsOnly'
+
   - name: Test completed successfully
     debug:
       msg: |
@@ -191,3 +510,4 @@
         - Verified switching between auto and explicit config modes works
         - OpenShift profile type: {{ openshift_profile_type }}
         - Expected min TLS version: {{ expected_min_tls_version }}
+        - Verified the TLS adherence gate (strict adherence tested: {{ strict_adherence_accepted | bool }})
