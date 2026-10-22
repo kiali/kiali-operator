@@ -46,7 +46,7 @@ The operator image is derived from the Operator Framework's `ansible-operator` b
 
 ## Dockerfile
 
-`build/Dockerfile` layers on top of the `ansible-operator` base image. It: removes `subscription-manager` and `python3-subscription-manager-rhsm` (a required workaround for an operator-sdk conflict); runs a full `yum update` for security patching; installs git (needed for collection installs from GitHub) and jmespath (needed for Ansible's `json_query` filter); copies in `roles/`, `playbooks/`, `watches-*.yaml`, and `requirements.yml`; runs `ansible-galaxy collection install` so the collections are baked into the image; and creates an opt-in Ansible task profiler config at `${HOME}/ansible-profiler.cfg` (the standard config with `callbacks_enabled = profile_tasks` appended).
+`build/Dockerfile` layers on top of the `ansible-operator` base image. It: runs a full `microdnf update` for security patching (the base image is UBI Minimal, so `microdnf` is used instead of `yum`; `subscription-manager` is no longer present in the base image so it no longer needs removing); installs git (needed for collection installs from GitHub) and jmespath (needed for Ansible's `json_query` filter); copies in `roles/`, `playbooks/`, `watches-*.yaml`, and `requirements.yml`; runs `ansible-galaxy collection install` so the collections are baked into the image; and creates an opt-in Ansible task profiler config at `${HOME}/ansible-profiler.cfg` (the standard config with `callbacks_enabled = profile_tasks` appended).
 
 Build args `OPERATOR_BASE_IMAGE_REPO` and `OPERATOR_BASE_IMAGE_VERSION` select the base image; their defaults are set in the Makefile. Collections are installed from the GitHub source refs pinned in `requirements.yml` rather than from Galaxy to avoid outage dependencies.
 
@@ -75,7 +75,7 @@ Build args `OPERATOR_BASE_IMAGE_REPO` and `OPERATOR_BASE_IMAGE_VERSION` select t
 | `VERSION` | `v2.26.0-SNAPSHOT` | `make build VERSION=v2.26.0` |
 | `DORP` | `docker` | `make build DORP=podman` |
 | `OPERATOR_IMAGE_ORG` | `kiali` | Change image org |
-| `OPERATOR_BASE_IMAGE_VERSION` | `v1.37.2` | Pin base image version |
+| `OPERATOR_BASE_IMAGE_VERSION` | `v1.42.3` | Pin base image version |
 | `TARGET_ARCHS` | `amd64 arm64 s390x ppc64le` | Multi-arch targets |
 
 ## Multi-Arch Builds
