@@ -3,13 +3,15 @@ ARG OPERATOR_BASE_IMAGE_REPO
 FROM ${OPERATOR_BASE_IMAGE_REPO}:${OPERATOR_BASE_IMAGE_VERSION}
 
 USER root
-# see https://github.com/operator-framework/operator-sdk/issues/5745
-RUN yum remove -y subscription-manager python3-subscription-manager-rhsm
-RUN yum update -y && yum clean all
+# The base image is UBI Minimal which only provides microdnf (not yum or dnf).
+# Note: subscription-manager is no longer in the base image
+# (see https://github.com/operator-framework/operator-sdk/issues/5745) so it no longer needs removing.
+RUN microdnf update -y && microdnf clean all
 # Git is required to install collections from GitHub sources.
-RUN yum install -y git && yum clean all
+RUN microdnf install -y git && microdnf clean all
 # pull in jmespath py library for json processing
-RUN python3 -m pip install jmespath
+# (the base image no longer bundles pip, so bootstrap it with ensurepip)
+RUN python3 -m ensurepip && python3 -m pip install jmespath
 
 USER ${USER_UID}
 

@@ -27,7 +27,7 @@ DORP ?= docker
 # Auto-discover OPM version using GitHub API to ensure compatibility with operator-framework releases
 # You can override this by setting OPM_VERSION explicitly: make validate OPM_VERSION=v1.50.0
 OPM_VERSION ?= $(shell result=$$(curl -s --max-time 5 https://api.github.com/repos/operator-framework/operator-registry/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' 2>/dev/null); if [ -n "$$result" ]; then echo "$$result"; else echo "v1.56.0"; fi)
-OPERATOR_BASE_IMAGE_VERSION ?= v1.37.2
+OPERATOR_BASE_IMAGE_VERSION ?= v1.42.3
 OPERATOR_BASE_IMAGE_REPO ?= quay.io/operator-framework/ansible-operator
 
 .PHONY: help
