@@ -18,10 +18,11 @@ data:
         listen              [::]:9443 ssl;
         ssl_certificate     /var/serving-cert/tls.crt;
         ssl_certificate_key /var/serving-cert/tls.key;
-        # Only TLS client is the OCP Console backend, which supports TLS 1.3
-        ssl_protocols       TLSv1.3;
-        # PQC hybrid + classical groups; ? prefix skips unavailable groups (e.g. on FIPS clusters)
-        ssl_ecdh_curve      ?X25519MLKEM768:?SecP256r1MLKEM768:?X25519:secp256r1:secp384r1;
+        # TLS directives resolved from the cluster TLS security profile (APIServer/cluster).
+        # The operator re-renders this ConfigMap and restarts the pod when the profile changes.
+{% for directive in ossmconsole_tls.directives %}
+        {{ directive }}
+{% endfor %}
 
         add_header oauth_token "$http_Authorization";
 
