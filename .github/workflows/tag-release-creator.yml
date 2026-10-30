@@ -6,7 +6,7 @@ on:
       tag_branch:
         description: Branch to tag
         required: true
-        default: v2.22
+        default: v2.33
         type: string
 
 permissions: read-all
