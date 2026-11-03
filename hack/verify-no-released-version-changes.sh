@@ -96,7 +96,7 @@ main() {
     local new_versions
     base_versions="$(git ls-tree -d --name-only "${merge_base}:${UPSTREAM_DIR}" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
     head_versions="$(ls -1 "${UPSTREAM_DIR}" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true)"
-    new_versions="$(comm -13 <(echo "$base_versions" | sort -V) <(echo "$head_versions" | sort -V))"
+    new_versions="$(comm -13 <(echo "$base_versions" | sort -u) <(echo "$head_versions" | sort -u))"
 
     if [ -n "$new_versions" ]; then
         print_header "This PR introduces new version director(y/ies)"
