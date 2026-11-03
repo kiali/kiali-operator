@@ -4,13 +4,16 @@
   collections:
   - kubernetes.core
   tasks:
+  - include_tasks: ../common/cluster-info.yml
+
   - name: Remove external Jaeger NodePort service
     k8s:
       state: absent
       api_version: v1
       kind: Service
       name: jaeger-query-external
-      namespace: istio-system
+      namespace: "{{ istio.control_plane_namespace }}"
+    when: is_minikube or is_kind
     ignore_errors: yes
 
   - name: Remove external Jaeger Route (OpenShift)
@@ -19,5 +22,6 @@
       api_version: route.openshift.io/v1
       kind: Route
       name: jaeger-query-external
-      namespace: istio-system
+      namespace: "{{ istio.control_plane_namespace }}"
+    when: is_openshift
     ignore_errors: yes
