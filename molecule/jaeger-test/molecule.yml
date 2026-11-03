@@ -13,7 +13,7 @@ provisioner:
     defaults:
       callbacks_enabled: junit
   playbooks:
-    destroy: ../default/destroy.yml
+    destroy: destroy.yml
     prepare: ../default/prepare.yml
     cleanup: ../default/cleanup.yml
   inventory:
