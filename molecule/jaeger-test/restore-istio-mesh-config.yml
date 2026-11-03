@@ -49,8 +49,9 @@
         namespace: "{{ istio.control_plane_namespace }}"
         name: istiod
         wait: true
-        wait_condition:
-          type: Progressing
-          status: "True"
-          reason: NewReplicaSetAvailable
         wait_timeout: 300
+
+    rescue:
+    - name: Record Istio mesh restoration failure for reporting after cleanup
+      set_fact:
+        istio_mesh_restore_error: "{{ ansible_failed_task.name }}: {{ ansible_failed_result.msg | default('Unknown error') }}"

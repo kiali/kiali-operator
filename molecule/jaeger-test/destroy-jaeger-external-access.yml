@@ -13,7 +13,6 @@
       kind: Service
       name: jaeger-query-external
       namespace: "{{ istio.control_plane_namespace }}"
-    when: is_minikube or is_kind
     ignore_errors: yes
 
   - name: Remove external Jaeger Route (OpenShift)

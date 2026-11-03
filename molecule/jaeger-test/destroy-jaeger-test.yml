@@ -6,11 +6,21 @@
   tasks:
   - include_tasks: ../common/cluster-info.yml
 
-- name: Restore Istio mesh tracing configuration
-  import_playbook: ./restore-istio-mesh-config.yml
-
 - name: Include the base destroy play to destroy the kiali install
   import_playbook: ../default/destroy.yml
 
+- name: Restore Istio mesh tracing configuration
+  import_playbook: ./restore-istio-mesh-config.yml
+
 - name: Remove external Jaeger access resources created for jaeger-test
   import_playbook: ./destroy-jaeger-external-access.yml
+
+- name: Report Istio mesh restoration failure after cleanup
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+  - name: Fail if Istio mesh configuration could not be restored
+    fail:
+      msg: "Istio mesh restoration failed; cleanup was attempted: {{ istio_mesh_restore_error }}"
+    when: istio_mesh_restore_error is defined
