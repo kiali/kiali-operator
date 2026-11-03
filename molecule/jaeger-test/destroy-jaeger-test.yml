@@ -1,0 +1,11 @@
+- name: Destroy
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+
+- name: Include the base destroy play to destroy the kiali install
+  import_playbook: ../default/destroy.yml
+
+- name: Remove external Jaeger access resources created for jaeger-test
+  import_playbook: ./destroy-jaeger-external-access.yml

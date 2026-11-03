@@ -1,7 +1,4 @@
----
-- import_playbook: ../default/destroy.yml
-
-- name: Destroy jaeger-test scenario resources
+- name: Remove external Jaeger access resources
   hosts: localhost
   connection: local
   collections:
