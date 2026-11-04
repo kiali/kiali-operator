@@ -178,6 +178,11 @@
     set_fact:
       current_mesh_config: "{{ istio_configmap.resources[0].data.mesh | from_yaml }}"
 
+  - name: Save original Istio mesh configuration for restoration during destroy
+    copy:
+      content: "{{ istio_configmap.resources[0].data.mesh }}"
+      dest: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/istio-mesh-config-original.yaml"
+
   - name: Update mesh config to use Jaeger for tracing
     set_fact:
       updated_mesh_config: "{{ current_mesh_config | combine({'defaultProviders': {'tracing': ['jaeger']}}, recursive=True) }}"

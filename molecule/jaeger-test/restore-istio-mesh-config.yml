@@ -1,0 +1,57 @@
+- name: Restore Istio mesh configuration
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Check if saved Istio mesh configuration exists
+    stat:
+      path: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}/istio-mesh-config-original.yaml"
+    register: saved_mesh_file
+
+  - name: Restore original Istio mesh configuration
+    when: saved_mesh_file.stat.exists
+    block:
+    - name: Load saved Istio mesh configuration
+      set_fact:
+        original_mesh_config: "{{ lookup('file', lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') + '/istio-mesh-config-original.yaml') }}"
+
+    - name: Patch Istio ConfigMap with restored mesh configuration
+      k8s:
+        api_version: v1
+        kind: ConfigMap
+        namespace: "{{ istio.control_plane_namespace }}"
+        name: istio
+        definition:
+          data:
+            mesh: "{{ original_mesh_config }}"
+        merge_type: merge
+
+    - name: Restart istiod to pick up restored tracing configuration
+      k8s:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ istio.control_plane_namespace }}"
+        name: istiod
+        definition:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"
+
+    - name: Wait for istiod to restart
+      k8s_info:
+        api_version: apps/v1
+        kind: Deployment
+        namespace: "{{ istio.control_plane_namespace }}"
+        name: istiod
+        wait: true
+        wait_timeout: 300
+
+    rescue:
+    - name: Record Istio mesh restoration failure for reporting after cleanup
+      set_fact:
+        istio_mesh_restore_error: "{{ ansible_failed_task.name }}: {{ ansible_failed_result.msg | default('Unknown error') }}"

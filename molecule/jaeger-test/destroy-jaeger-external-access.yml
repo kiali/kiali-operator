@@ -1,0 +1,26 @@
+- name: Remove external Jaeger access resources
+  hosts: localhost
+  connection: local
+  collections:
+  - kubernetes.core
+  tasks:
+  - include_tasks: ../common/cluster-info.yml
+
+  - name: Remove external Jaeger NodePort service
+    k8s:
+      state: absent
+      api_version: v1
+      kind: Service
+      name: jaeger-query-external
+      namespace: "{{ istio.control_plane_namespace }}"
+    ignore_errors: yes
+
+  - name: Remove external Jaeger Route (OpenShift)
+    k8s:
+      state: absent
+      api_version: route.openshift.io/v1
+      kind: Route
+      name: jaeger-query-external
+      namespace: "{{ istio.control_plane_namespace }}"
+    when: is_openshift
+    ignore_errors: yes
