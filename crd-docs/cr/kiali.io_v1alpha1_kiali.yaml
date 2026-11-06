@@ -552,6 +552,9 @@ spec:
     istio_upgrade_action: false
     ui_defaults:
       graph:
+        # Support all options under the Display menu.
+        # For example, display_menu: {virtual_services: false} disables Virtual Services by default.
+        display_menu: {}
         find_options:
         - description: "Find: slow edges (> 1s)"
           expression: "rt > 1000"
