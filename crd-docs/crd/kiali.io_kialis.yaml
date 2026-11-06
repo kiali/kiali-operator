@@ -2269,11 +2269,7 @@ spec:
                         properties:
                           display_menu:
                             description: |
-                              Installation-wide overrides for Traffic Graph Display menu options.
-                              Set an option to true to enable it or false to disable it by default.
-                              Omitted options retain their existing defaults. Unknown option names are
-                              ignored with a warning in the browser console. Users can override these
-                              defaults through URL parameters or the Display menu.
+                              Installation-wide overrides for Display menu options. Set an option to true to enable it or false to disable it by default.
                             type: object
                             additionalProperties:
                               type: boolean

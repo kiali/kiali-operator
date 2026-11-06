@@ -284,7 +284,6 @@ spec:
     istio_upgrade_action: true
     ui_defaults:
       graph:
-        # Override the defaults to exercise both false and true values.
         display_menu:
           missing_sidecars: false
           security: true
