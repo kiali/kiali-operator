@@ -379,6 +379,7 @@ kiali_defaults:
     istio_upgrade_action: false
     ui_defaults:
       graph:
+        display_menu: {}
         find_options:
         - auto_select: false
           description: "Find: slow edges (> 1s)"
