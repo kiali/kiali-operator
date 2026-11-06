@@ -284,6 +284,11 @@ spec:
     istio_upgrade_action: true
     ui_defaults:
       graph:
+        # Override the defaults to exercise both false and true values.
+        display_menu:
+          missing_sidecars: false
+          security: true
+          virtual_services: false
         find_options:
         - description: "Find: slow edges (> 1s)"
           expression: "rt > 1000"
