@@ -3,18 +3,22 @@
 - name: "Create Kiali resources from templates"
   k8s:
     state: "present"
-    continue_on_error: false
+    continue_on_error: "{{ process_resource_ignore_errors | default(false) | bool }}"
     template: "{{ process_resource_templates | select() | list }}"
   register: process_resource_templates_result
   retries: 6
   delay: 10
+  failed_when: (not (process_resource_ignore_errors | default(false) | bool)) and (process_resource_templates_result is failed)
 
-# Store the results of the processed resources so they can be examined later (e.g. to know if something changed or stayed the same)
+# Store the results of the processed resources so they can be examined later (e.g. to know if something changed or stayed the same).
+# Results that failed (e.g. a restricted operator forbidden from creating cluster-scoped objects while process_resource_ignore_errors
+# is true) carry no object data, so they are filtered out here rather than failing the reconciliation.
 - vars:
-    kinds: "{{ process_resource_templates_result.result.results | map(attribute='result.kind') | list }}"
-    names: "{{ process_resource_templates_result.result.results | map(attribute='result.metadata.name') | list }}"
-    changed: "{{ process_resource_templates_result.result.results | map(attribute='changed') | list }}"
-    method: "{{ process_resource_templates_result.result.results | map(attribute='method') | list }}"
+    ok_results: "{{ process_resource_templates_result.result.results | selectattr('result.kind', 'defined') | list }}"
+    kinds: "{{ ok_results | map(attribute='result.kind') | list }}"
+    names: "{{ ok_results | map(attribute='result.metadata.name') | list }}"
+    changed: "{{ ok_results | map(attribute='changed') | list }}"
+    method: "{{ ok_results | map(attribute='method') | list }}"
     thedict: "{{ processed_resources_dict | default({}) }}"
   set_fact:
     processed_resources_dict: |
@@ -25,6 +29,8 @@
   when:
   - process_resource_templates_result is defined
   - process_resource_templates_result | length > 0
+  - process_resource_templates_result.result is defined
+  - process_resource_templates_result.result.results is defined
 
 - name: "Kiali resource creation results"
   debug:

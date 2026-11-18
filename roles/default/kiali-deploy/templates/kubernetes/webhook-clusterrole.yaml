@@ -1,0 +1,14 @@
+{% if kiali_vars.deployment.cluster_wide_access == False %}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}-webhook-viewer
+  labels: {{ kiali_resource_metadata_labels }}
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - list
+{% endif %}
