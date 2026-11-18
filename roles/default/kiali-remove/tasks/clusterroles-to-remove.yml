@@ -23,3 +23,13 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ kiali_vars_remove.deployment.instance_name }}-{{ kiali_vars_remove.deployment.namespace }}-openshift
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ kiali_vars_remove.deployment.instance_name }}-{{ kiali_vars_remove.deployment.namespace }}-webhook-viewer
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ kiali_vars_remove.deployment.instance_name }}-{{ kiali_vars_remove.deployment.namespace }}-webhook-viewer

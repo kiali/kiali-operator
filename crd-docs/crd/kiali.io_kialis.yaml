@@ -752,6 +752,7 @@ spec:
                       These selectors will have similar semantics as defined by Istio ( https://istio.io/latest/docs/reference/config/istio.mesh.v1alpha1/#MeshConfig )
                       and the syntax of the equality-based and set-based label selectors are documented by Kubernetes here
                       ( https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#resources-that-support-set-based-requirements )
+                      Note for `cluster_wide_access: false` installs: a per-cluster `overrides` entry must resolve to explicit namespace names - a `matchLabels` on `kubernetes.io/metadata.name` or a single `In`-`matchExpression` on that label with non-empty values. The `default` selectors do not have this restriction. When `cluster_wide_access: true`, any valid selector form works, since the selectors only limit which namespaces are visible.
                     type: object
                     properties:
                       default:

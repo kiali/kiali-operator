@@ -73,6 +73,44 @@
   - is_k8s == True
   - kiali_vars.deployment.cluster_wide_access == False
 
+# The webhook-viewer ClusterRole and binding are cluster-scoped and namespace-independent,
+# so they are applied in their own task rather than the per-namespace role lists. Creation
+# is best-effort: a restricted operator without cluster-scoped create permission (for
+# example clusterRoleCreator=false installs) skips them with a warning rather than failing
+# the reconciliation - the Kiali server degrades gracefully without the permission (istio
+# revision tags are skipped). A transition to cluster-wide access removes them so nothing
+# outlives the configuration that created it.
+- name: Apply the non-cluster-wide-access webhook-viewer cluster RBAC
+  vars:
+    process_resource_templates:
+    - "templates/kubernetes/webhook-clusterrole.yaml"
+    - "templates/kubernetes/webhook-clusterrolebinding.yaml"
+    process_resource_ignore_errors: true
+  include_tasks: process-resource.yml
+  when:
+  - is_k8s == True
+  - kiali_vars.deployment.cluster_wide_access|bool == False
+
+- name: Remove the webhook-viewer cluster RBAC left by a non-cluster-wide-access configuration
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    name: "{{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}-webhook-viewer"
+  when:
+  - is_k8s == True
+  - kiali_vars.deployment.cluster_wide_access|bool == True
+
+- name: Remove the webhook-viewer cluster role binding left by a non-cluster-wide-access configuration
+  k8s:
+    state: absent
+    api_version: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    name: "{{ kiali_vars.deployment.instance_name }}-{{ kiali_vars.deployment.namespace }}-webhook-viewer"
+  when:
+  - is_k8s == True
+  - kiali_vars.deployment.cluster_wide_access|bool == True
+
 - name: Create additional Kiali roles/bindings on all namespaces that are accessible on Kubernetes
   vars:
     role_namespaces: "{{ discovery_selector_namespaces }}"
