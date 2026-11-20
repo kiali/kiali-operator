@@ -19,10 +19,13 @@ spec:
 {% if kiali.discovery_selectors %}
     discovery_selectors:
       default: {{ kiali.discovery_selectors }}
+      # An override for a cluster that is not in the mesh: the operator must tolerate it
+      # (validating only its form, creating no roles from it) and the server must never
+      # consult it. The selectors are name-form so they pass the non-CWA validation.
       overrides:
-        Kubernetes:
+        cluster-that-is-not-in-the-mesh:
         - matchLabels:
-            this-is-just-here: "to-test-that-the-operator-ignores-overrides"
+            kubernetes.io/metadata.name: istio-system
 {% endif%}
     probes:
       liveness:

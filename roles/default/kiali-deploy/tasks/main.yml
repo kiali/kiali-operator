@@ -93,6 +93,13 @@
 # convert snake case to camelCase where appropriate
 - include_tasks: snake_camel_case.yaml
 
+# Reject mis-formed discovery selector overrides before anything is deployed: the CRD
+# schema cannot express the name-form rule, and a bad override fails silently at runtime.
+# This must run after the camelCase restoration above, which is when CR-provided
+# discovery_selectors values (and their nested matchLabels/matchExpressions keys) are
+# final in kiali_vars - validating earlier would see the pre-restoration shape.
+- include_tasks: validate-discovery-selectors.yml
+
 - name: Print some debug information
   vars:
     msg: |
