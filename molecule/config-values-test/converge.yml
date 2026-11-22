@@ -920,6 +920,18 @@
   - import_tasks: ../common/wait_for_kiali_cr_changes.yml
   - import_tasks: ../common/wait_for_kiali_running.yml
   - import_tasks: ../common/tasks.yml
+  
+  - name: Assert graph Display menu overrides are written to ConfigMap
+    vars:
+      expected_display_menu:
+        missing_sidecars: false
+        security: true
+        virtual_services: false
+    assert:
+      that:
+      - kiali_configmap.kiali_feature_flags.ui_defaults.graph.display_menu is defined
+      - kiali_configmap.kiali_feature_flags.ui_defaults.graph.display_menu == expected_display_menu
+      fail_msg: "Graph Display menu overrides were not preserved in the ConfigMap."
 
   - name: Assert prometheus oauth2 config is written to ConfigMap
     assert:
