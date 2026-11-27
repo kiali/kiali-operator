@@ -16,10 +16,10 @@ on:
         default: v2.22
         type: string
 
+permissions: read-all
+
 jobs:
   bump_version:
-    permissions:
-      contents: read
     runs-on: ubuntu-latest
     steps:
     - name: Checkout branch
