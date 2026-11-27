@@ -191,8 +191,8 @@ jobs:
 
   release:
     permissions:
-      contents: write # gh release create (git push uses KIALI_BOT_TOKEN)
-      pull-requests: write # gh pr create
+      contents: write
+      pull-requests: write
     name: Release
     if: ${{ needs.initialize.outputs.release_type != 'skip' && ((github.event_name == 'schedule' && github.repository == 'kiali/kiali-operator') || github.event_name != 'schedule') }}
     runs-on: ubuntu-latest
