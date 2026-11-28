@@ -102,6 +102,15 @@
   debug:
     msg: "{{ msg.split('\n') }}"
 
+# Reject mis-formed discovery selector overrides before anything is deployed: the CRD
+# schema cannot express the name-form rule, and a bad override fails silently at runtime.
+# This must run after the camelCase restoration above, which is when CR-provided
+# discovery_selectors values (and their nested matchLabels/matchExpressions keys) are
+# final in kiali_vars - validating earlier would see the pre-restoration shape. It runs
+# after the debug dump so the effective Kiali Variables are visible in the log before
+# the reconciliation fails on a bad override.
+- include_tasks: validate-discovery-selectors.yml
+
 - name: Set default deployment namespace to the same namespace where the CR lives
   set_fact:
     kiali_vars: "{{ kiali_vars | combine({'deployment': {'namespace': current_cr.metadata.namespace}}, recursive=True) }}"

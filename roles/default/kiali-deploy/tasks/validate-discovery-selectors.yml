@@ -1,0 +1,50 @@
+---
+# In non-cluster-wide-access installs, a discovery selector override that scopes Kiali's
+# access to a remote cluster must resolve to an explicit list of namespace names: the
+# remote informer caches are scoped by a name list at startup, and the Kiali service account
+# cannot list namespaces on the remote to convert any other selector form. A mis-formed
+# override is therefore rejected here, at CR apply time, with an actionable message
+# (mirroring the helm chart's install-time validation).
+- name: Validate discovery selector overrides for non-cluster-wide-access installs
+  when: (kiali_vars.deployment.cluster_wide_access | bool == False) and ((kiali_vars.deployment.discovery_selectors.overrides | default({})) | length > 0)
+  vars:
+    invalid_overrides: >-
+      {%- set errors = [] -%}
+      {%- for cluster, selectors in (kiali_vars.deployment.discovery_selectors.overrides | default({})).items() -%}
+        {%- if selectors is not sequence or selectors is string or (selectors | length) == 0 -%}
+          {%- set _ = errors.append(cluster) -%}
+        {%- else -%}
+          {%- for selector in selectors -%}
+            {%- set valid = false -%}
+            {%- if selector.matchLabels is defined and selector.matchExpressions is not defined
+                   and (selector.matchLabels | length) == 1
+                   and selector.matchLabels['kubernetes.io/metadata.name'] is defined
+                   and selector.matchLabels['kubernetes.io/metadata.name'] | length > 0 -%}
+              {%- set valid = true -%}
+            {%- endif -%}
+            {%- if selector.matchExpressions is defined and selector.matchLabels is not defined
+                   and (selector.matchExpressions | length) == 1 -%}
+              {%- set expr = selector.matchExpressions[0] -%}
+              {%- if expr['key'] is defined and expr['key'] == 'kubernetes.io/metadata.name'
+                     and expr['operator'] is defined and expr['operator'] == 'In'
+                     and (expr['values'] | default([]) | length) > 0
+                     and (expr['values'] | select('equalto', '') | list | length) == 0 -%}
+                {%- set valid = true -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- if not valid -%}
+              {%- set _ = errors.append(cluster) -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ errors | unique | join(', ') }}
+  assert:
+    that: invalid_overrides | length == 0
+    fail_msg: >-
+      Invalid discovery selector overrides for cluster(s) [{{ invalid_overrides }}].
+      When cluster_wide_access is false, every deployment.discovery_selectors.overrides entry
+      must be a non-empty list of selectors that resolve to explicit, non-empty namespace
+      names: a matchLabels on kubernetes.io/metadata.name, or a single In-matchExpression on
+      that label with non-empty values. Any other form cannot scope the remote cluster's
+      access. See the namespace management documentation at kiali.io.

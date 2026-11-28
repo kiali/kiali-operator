@@ -19,10 +19,15 @@ spec:
 {% if kiali.discovery_selectors %}
     discovery_selectors:
       default: {{ kiali.discovery_selectors }}
+      # An override for a cluster this environment never connects. The operator cannot
+      # know which clusters are in the mesh - it validates only the override's form and
+      # creates no roles from it. The server consults an override only for a cluster it
+      # actually knows (one with a remote cluster secret), so this entry is inert here
+      # at runtime. The selectors are name-form so they pass the non-CWA validation.
       overrides:
-        Kubernetes:
+        cluster-that-is-not-in-the-mesh:
         - matchLabels:
-            this-is-just-here: "to-test-that-the-operator-ignores-overrides"
+            kubernetes.io/metadata.name: istio-system
 {% endif%}
     probes:
       liveness:

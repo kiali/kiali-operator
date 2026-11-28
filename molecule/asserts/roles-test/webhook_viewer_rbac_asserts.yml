@@ -1,0 +1,33 @@
+# The Kiali service account gets its read access to mutatingwebhookconfigurations
+# (used for istio revision tags) through the webhook-viewer ClusterRole and
+# ClusterRoleBinding in non-cluster-wide-access mode; a transition to cluster-wide
+# access must remove them so nothing outlives the configuration that created it.
+# Pass in var "webhook_viewer_rbac_should_exist" (default true) to assert presence
+# (non-CWA stages) or absence (after the CWA transition).
+- name: Get the webhook-viewer cluster role
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: ClusterRole
+   name: "{{ instance_name }}-{{ kiali.install_namespace }}-webhook-viewer"
+  register: webhook_viewer_clusterrole
+
+- name: Assert that the webhook-viewer cluster role exists or not, as expected
+  assert:
+    that: "{{ webhook_viewer_clusterrole.resources | length == (1 if (webhook_viewer_rbac_should_exist | default(true) | bool) else 0) }}"
+    fail_msg: "The webhook-viewer cluster role {{ 'does not exist' if (webhook_viewer_rbac_should_exist | default(true) | bool) else 'still exists' }}"
+
+- name: Get the webhook-viewer cluster role binding
+  vars:
+    instance_name: "{{ kiali.instance_name | default('kiali') }}"
+  k8s_info:
+   api_version: rbac.authorization.k8s.io/v1
+   kind: ClusterRoleBinding
+   name: "{{ instance_name }}-{{ kiali.install_namespace }}-webhook-viewer"
+  register: webhook_viewer_clusterrolebinding
+
+- name: Assert that the webhook-viewer cluster role binding exists or not, as expected
+  assert:
+    that: "{{ webhook_viewer_clusterrolebinding.resources | length == (1 if (webhook_viewer_rbac_should_exist | default(true) | bool) else 0) }}"
+    fail_msg: "The webhook-viewer cluster role binding {{ 'does not exist' if (webhook_viewer_rbac_should_exist | default(true) | bool) else 'still exists' }}"
