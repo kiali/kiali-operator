@@ -12,27 +12,36 @@
   # by default, view only mode is off, so the read-write role should be in effect
   - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/webhook_viewer_rbac_asserts.yml
   # turn on view only mode and see the viewer (read-only) role is now in effect
   - include_tasks: ../common/set_view_only_mode.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../asserts/roles-test/ro_role_asserts.yml
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/webhook_viewer_rbac_asserts.yml
   # turn off view only mode which should return back to the read-write role
   - include_tasks: ../common/unset_view_only_mode.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../asserts/roles-test/rw_role_asserts.yml
   - include_tasks: ../asserts/roles-test/none_clusterrole_asserts.yml
+  - include_tasks: ../asserts/roles-test/webhook_viewer_rbac_asserts.yml
   # change to cluster access mode and give access to all namespaces; this switches to cluster roles
   - include_tasks: ../common/set_discovery_selectors_to_all.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../asserts/roles-test/rw_clusterrole_asserts.yml
   - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+  - include_tasks: ../asserts/roles-test/webhook_viewer_rbac_asserts.yml
+    vars:
+      webhook_viewer_rbac_should_exist: false
   # turn on view only mode and see the viewer (read-only) cluster role is now in effect
   - include_tasks: ../common/set_view_only_mode.yml
   - include_tasks: ../common/wait_for_kiali_cr_changes.yml
   - include_tasks: ../common/wait_for_kiali_running.yml
   - include_tasks: ../asserts/roles-test/ro_clusterrole_asserts.yml
   - include_tasks: ../asserts/roles-test/none_role_asserts.yml
+  - include_tasks: ../asserts/roles-test/webhook_viewer_rbac_asserts.yml
+    vars:
+      webhook_viewer_rbac_should_exist: false

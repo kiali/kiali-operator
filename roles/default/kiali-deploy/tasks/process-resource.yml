@@ -10,6 +10,25 @@
   delay: 10
   failed_when: (not (process_resource_ignore_errors | default(false) | bool)) and (process_resource_templates_result is failed)
 
+# Best-effort mode (process_resource_ignore_errors) swallows per-item failures so a
+# restricted operator is not blocked from reconciling - but skipping a resource
+# silently would hide the reason from the operator log. Warn about each failed item
+# here: with continue_on_error a failed result carries no object data (result.kind is
+# undefined - the same marker the success filter below uses) and holds the API error
+# in item.error. This also surfaces transient failures (e.g. an API server outage
+# during the apply), which are otherwise indistinguishable from a deliberate skip.
+- name: "Warn about resources that could not be created and were skipped"
+  vars:
+    failed_results: "{{ process_resource_templates_result.result.results | default([]) | rejectattr('result.kind', 'defined') | list }}"
+  debug:
+    msg: "WARNING: a resource could not be created and was skipped (the reconciliation continues): {{ item.error | default(item | to_json) }}"
+  loop: "{{ failed_results }}"
+  loop_control:
+    label: "{{ item.error | default('unknown resource') | truncate(120) }}"
+  when:
+  - process_resource_ignore_errors | default(false) | bool
+  - failed_results | length > 0
+
 # Store the results of the processed resources so they can be examined later (e.g. to know if something changed or stayed the same).
 # Results that failed (e.g. a restricted operator forbidden from creating cluster-scoped objects while process_resource_ignore_errors
 # is true) carry no object data, so they are filtered out here rather than failing the reconciliation.
